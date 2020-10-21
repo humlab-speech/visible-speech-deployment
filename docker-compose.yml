@@ -1,0 +1,145 @@
+version: '3'
+services:
+  emu-webapp:
+    image: hird-emu-webapp
+    build: "./emu-webapp/docker"
+    ports:
+      - 9000:9000
+    networks:
+      - hird-net
+
+  emu-webapp-server:
+    image: hird-emu-webapp-server
+    build: "./emu-webapp/docker-server"
+    ports:
+      - 9001:9001
+      - 17890:17890
+    networks:
+      - hird-net
+
+  rstudio-router:
+    image: hird-rstudio-router
+    build: ./rstudio-router/docker
+    environment:
+      HIRD_API_ACCESS_TOKEN: $HIRD_API_ACCESS_TOKEN
+      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+    volumes:
+      - "./rstudio-router:/app:Z"
+      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "./mounts/rstudio-router/docker-images:/var/lib/docker/overlay2:Z"
+    networks:
+      - hird-net
+
+  #Ths is a little silly - but the only reason this service is included is because we need to have this image built and tagged in order for the rstudio-router to work
+  rstudio-session-template:
+    image: hird-rstudio-emu
+    build: ./rstudio-router/docker/rstudio-session-instance
+
+  gitlab:
+    image: hird-gitlab
+    build: gitlab/docker
+    networks:
+      - hird-net
+    hostname: gitlab.$BASE_DOMAIN
+    environment:
+      GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
+      HIRD_DOMAIN_NAME: $BASE_DOMAIN
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://gitlab.$BASE_DOMAIN'
+    volumes:
+      - "hird-gitlab-data:/var/opt/gitlab"
+      - "$GITLAB_HOME/config:/etc/gitlab:Z"
+      - "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
+      - "$GITLAB_HOME/shibboleth-logs:/var/log/shibboleth:Z"
+      - "$GITLAB_HOME/apache2.conf:/etc/apache2/apache2.conf:Z"
+      - "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
+      - "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
+      - "$GITLAB_HOME/public:/opt/gitlab/public:Z"
+      - "./certs:/etc/certs:Z"
+
+  edge-router:
+    image: hird-edge-router
+    build: edge-router/docker
+    depends_on:
+      - keycloak
+    networks:
+      - hird-net
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      PROJECT_NAME: $PROJECT_NAME
+      HIRD_DOMAIN_NAME: $BASE_DOMAIN
+      GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
+      RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
+      KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
+      HIRD_API_ACCESS_TOKEN: $HIRD_API_ACCESS_TOKEN
+      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+    volumes:
+      #Shibboleth config for SAMLtest
+      #- "./mounts/edge-router/saml/samltest/localtest.me-samltest-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/edge-router/saml/samltest/certs/samltest-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      #- "./mounts/edge-router/saml/samltest/SAMLtest.xml:/var/cache/shibboleth/SAMLtest.xml:Z"
+      #- "./mounts/edge-router/saml/samltest/samltest-idp-metadata.xml:/etc/shibboleth/samltest-idp-metadata.xml:Z"
+      #- "./mounts/edge-router/saml/samltest/samltest-attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./private/certs/sp-cert/localtest.me-cert.pem:/etc/shibboleth/localtest.me-cert.pem:Z"
+      #- "./private/certs/sp-cert/localtest.me-key.pem:/etc/shibboleth/localtest.me-key.pem:Z"
+      #Shibboleth config for SWAMID
+      #- "./mounts/edge-router/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/edge-router/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      #- "./mounts/edge-router/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./mounts/edge-router/saml/certs/swamid-metadata-signer.crt:/etc/shibboleth/swamid-metadata-signer.crt:Z"
+      #- "./private/certs/sp-cert/hird.humlab.umu.se-cert.pem:/etc/shibboleth/sp-cert.pem:Z"
+      #- "./private/certs/sp-cert/hird.humlab.umu.se-key.pem:/etc/shibboleth/sp-key.pem:Z"
+      #Shibboleth config for KEYCLOAK
+      - "./mounts/edge-router/saml/keycloak/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/edge-router/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      - "./mounts/edge-router/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      - "./mounts/edge-router/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      #GENERAL
+      - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
+      #- "./mounts/edge-router/saml/access-control.xml:/etc/shibboleth/access-control.xml:Z"
+      - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
+      - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
+      - "./mounts/edge-router/apache/htdocs:/var/www/html:Z"
+      - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
+      - "./mounts/edge-router/apache/logs/shibboleth:/var/log/shibboleth:Z"
+      - "./mounts/edge-router/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
+      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "./certs:/etc/certs:Z"
+
+  keycloak:
+    image: jboss/keycloak:11.0.1
+    depends_on:
+      - database
+    environment:
+      KEYCLOAK_USER: $KEYCLOAK_USER
+      KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
+      KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
+      DB_VENDOR: "postgres"
+      DB_ADDR: "database"
+      DB_USER: "keycloak"
+      DB_PASSWORD: $POSTGRES_PASSWORD
+      KEYCLOAK_LOGLEVEL: "INFO"
+      ROOT_LOGLEVEL: "INFO"
+      PROXY_ADDRESS_FORWARDING: "true"
+    networks:
+      - hird-net
+
+  database:
+    image: postgres:12.4
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: keycloak
+      PGDATA: '/pgdata/data'
+    volumes:
+      - "./mounts/postgresql/data:/pgdata:Z"
+    networks:
+      - hird-net  
+
+networks:
+  hird-net:
+
+volumes:
+  hird-gitlab-data:

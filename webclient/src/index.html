@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+    <head></head>
+    <body>
+        <div id="main-container">
+            <div id="header-left-container">
+            </div>
+
+            <div id="header-container">
+                <h1>HIRD</h1>
+            </div>
+            
+            <div id="center-left-container">
+            </div>
+
+            <div id="content-container">
+                <button id="signin-btn">Sign in</button>
+            </div>
+
+            
+            
+        </div>
+    </body>
+
+    <templates>
+        <div id="dashboard-tpl">
+            <div>
+                <h2>Logged in as</h2>
+                <img class="user_gravatar" />
+                <div class="user_displayname"></div>
+                <div class="user_username"></div>
+                <div class="user_email"></div>
+                <!--<button id="sign-out-btn">Sign-out</button>-->
+            </div>
+            
+            <br />
+            <button id="magic-btn">Magick!</button>
+            <br />
+
+            <div id="project-create-form" style="display:none;">
+                <fieldset name="create-project">
+                    <legend>Create new project</legend>
+                    <div>
+                        <input class="dashboard-projects-create-name" type="text" placeholder="Project name" />
+                    </div>
+                    
+                    <div><input id="dmp-selection" type="checkbox" checked /><label for="dmp-selection">Create Data Management Plan</label></div>
+
+                    <div><input id="data-storage-selection" type="checkbox" checked /><label for="data-storage-selection">Create data storage repository</label></div>
+
+                    <div>
+                        <label for="project-application">Project application</label>
+                        <input id="project-application" type="file" placeholder="Project application" />
+                    </div>
+
+                    <div>
+                        <input type="text" placeholder="Invite other people" />
+                    </div>
+
+                    <div>
+                        <button id="project-create-submit">Submit new project</button>
+                    </div>
+
+                </fieldset>
+            </div>
+
+            <div class="dashboard-projects-container">
+                <h2>Projects</h2>
+                
+                <!--
+                <fieldset name="create-project">
+                    <legend>Create new project</legend>
+                    <input class="dashboard-projects-create-name" type="text" placeholder="Project name" /><br />
+                    <label for="project-template">Template</label>
+                    <select id="project-template">
+                        <option>Empty</option>
+                        <option>EMU-db</option>
+                    </select>
+                    <br />
+                    <button class="dashboard-projects-create-btn">Create new project</button>
+                </fieldset>
+                -->
+
+                <button class="dashboard-projects-create-btn">Create new project</button>
+
+                <ul class="projects_list">
+                </ul>
+            </div>
+
+            <!--
+            <ul>
+                <li><a href="https://gitlab.hird.humlab.umu.se">Go to GitLab</a></li>
+                <li><a href="https://rstudio.hird.humlab.umu.se">Go to RStudio</a></li>
+                <li><a href="https://emuanalyze.hird.humlab.umu.se">Go to EMU Analyzer</a></li>
+                <li><a href="https://emurecorder.hird.humlab.umu.se">Go to EMU Recorder</a></li>
+            </ul>
+            -->
+        </div>
+    </templates>
+
+</html>

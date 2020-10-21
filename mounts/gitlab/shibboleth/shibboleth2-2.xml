@@ -1,0 +1,36 @@
+<SPConfig xmlns="urn:mace:shibboleth:sp:config:2.0"
+    xmlns:conf="urn:mace:shibboleth:sp:config:2.0"
+    xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+    logger="syslog.logger" clockSkew="180">
+ 
+    <Extensions/>
+ 
+    <OutOfProcess/>
+ 
+    <InProcess/>
+ 
+    <Listener/>
+ 
+    <StorageService/>
+    <SessionCache/>
+    <ReplayCache/>
+    <ArtifactMap/>
+ 
+    <RequestMapper/>   
+ 
+    <ApplicationDefaults id="default" policyId="default"
+        entityID="https://hird.humlab.umu.se/"
+        homeURL="https://hird.humlab.umu.se/"/>
+ 
+    <SecurityPolicies/> <!-- Earlier Releases -->
+    <SecurityPolicyProvider/> <!-- 2.4 and Above -->
+ 
+    <ProtocolProvider/> <!-- 2.4 and Above -->
+ 
+    <ds:Signature/> <!-- 2.4 and Above -->
+ 
+    <Errors supportContact="support@humlab.umu.se"
+            redirectErrors="https://hird.humlab.umu.se/gitlab_shib_error.php" />
+
+</SPConfig>
+

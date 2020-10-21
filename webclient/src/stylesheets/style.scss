@@ -1,0 +1,50 @@
+
+templates {
+    display:none;
+}
+
+#main-container {
+    display: grid;
+    grid-template-columns: [left-panel]10vw [center]auto [right-panel]10vw;
+    grid-template-rows: [upper-panel]10vh [center]70vh [lower-panel]auto;
+}
+
+#header-left-container {
+    grid-column: left-panel;
+}
+
+#header-container {
+    grid-column: center;
+}
+
+#center-left-container {
+    grid-column: left-panel;
+    grid-row: center;
+}
+
+#content-container {
+    grid-column: center;
+    grid-row: center;
+    padding: 20px;
+}
+
+#dashboard-container {
+    grid-column: center;
+    grid-row: center;
+}
+
+.project-loading-indicator {
+    width: 12px;
+    height: 12px;
+    margin-right: 10px;
+}
+
+#project-create-form input {
+    margin: 8px;
+    padding: 5px;
+}
+
+#project-create-form button {
+    margin: 8px;
+    padding: 5px;
+}
