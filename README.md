@@ -18,6 +18,11 @@ Included services:
 
 ## INSTALLATION
 
+### Prerequisites
+A Linux environment with a somewhat recent version of Docker + Docker Compose. WSL2 on Windows should work.
+
+### Steps
+
 1. Move .env-example to .env and fill it out with appropriate information.
 
 2. Generate self-signed certificates by running `./gen-certs.sh`
