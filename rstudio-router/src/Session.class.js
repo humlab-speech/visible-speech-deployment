@@ -24,7 +24,7 @@ class Session {
 
         let sessionWsPort = 17890;
         // -p "+sessionWsPort+":17890
-        let cmd = "docker run --rm -e DISABLE_AUTH=true --network humlab-speech_hird-net --name "+this.getContainerName(this.user.id, this.project.id)+" -d "+this.rstudioImageName;
+        let cmd = "docker run --rm -e DISABLE_AUTH=true --network humlab-speech-deployment_hird-net --name "+this.getContainerName(this.user.id, this.project.id)+" -d "+this.rstudioImageName;
             
         let dockerContainerId = null;
         try {
