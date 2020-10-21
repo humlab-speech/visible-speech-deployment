@@ -3,19 +3,15 @@
 This is a cluster of docker containers running the Humlab Speech services.
 
 Included services:
-* Edge router (Apache + Shibboleth)
-  Serves the main portal page and handles authentication as well as integration towards Gitlab
+* Edge router (Apache + Shibboleth) - Serves the main portal page and handles authentication as well as integration towards Gitlab
 
 * Gitlab
 
-* Keycloak
-  Acts as an identity provider for authentication.
+* Keycloak - Acts as an identity provider for authentication.
 
-* PostgreSQL
-  Dependency of Keycloak.
+* PostgreSQL - Dependency of Keycloak.
 
-* RStudio router
-  Spawns and manages RStudio session containers on request by edge router.
+* RStudio router - Spawns and manages RStudio session containers on request by edge router.
 
 * (non-functional) EMU-webApp + server
 
