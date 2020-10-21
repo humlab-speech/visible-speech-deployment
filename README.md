@@ -60,8 +60,6 @@ Everything should now be setup for using the system with Keycloak as the local i
 Select an identity provider by uncommenting/commenting out the approrpriate sections in docker-compose.yml. Recommend using keycloak for running locally since local users can be created in keycloak. SAMLtest is also an alternative.
 SWAMID will not work for running locally since you can't have your local address registered as a SP with SWAMID.
 
-## KEYCLOAK
-
 
 ### STARTING IT UP
 
