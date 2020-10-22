@@ -44,6 +44,11 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
   6.5 Edit the newly created client, set `Client Signature Required: OFF`
   6.6 Go to `Mappers` tab. Add (at minimum) attribute mapper for X500 email and edit it to set "SAML Attribute NameFormat" as "URI Reference"
 
+7. Webclient setup
+  7.1 Go to the `webclient` directory.
+  7.2 Run `npm install`
+  7.3 Run `npm run build` - It's ok to exit this process after it seems to be done, it will go into watch mode and thus won't auto-exit.
+
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
 
 ## CAVEATS ON REDHAT
