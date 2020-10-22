@@ -58,15 +58,15 @@ Everything should now be setup for using the system with Keycloak as the local i
 * Needed to do this (on RH) to get container-to-container networking to work:
   `sudo firewall-cmd --zone=public --add-masquerade --permanent`
 
-## Optional
+## OPTIONAL
 
 Select an identity provider by uncommenting/commenting out the approrpriate sections in docker-compose.yml. Recommend using keycloak for running locally since local users can be created in keycloak. SAMLtest is also an alternative.
 SWAMID will not work for running locally since you can't have your local address registered as a SP with SWAMID.
 
 
-### STARTING IT UP
+## TROUBLESHOOTING
 
-`docker-compose up -d`
+* If you get a message about `Unknown or Unusable Identity Provider`, try restarting the edge-router. This is probably because Keycloak wasn't ready when the edge-router went up, preventing it from reading metadata from Keycloak.
 
-It will take some time for the cluster to boot up. Gitlab in particular has a long boot time, as long as a few minutes. It can also take a long time for the edge-router to load the IdP metdata depending on your selected IdP. SWAMID has a rather huge metadata file. Should be a lot quicker for just running local Keycloak or SAMLtest.
+* For errors about proxy timeouts when visiting gitlab, just wait a few minutes, gitlab takes a while to start.
 
