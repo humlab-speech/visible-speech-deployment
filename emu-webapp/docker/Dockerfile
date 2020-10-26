@@ -14,4 +14,5 @@ WORKDIR /app/EMU-webApp
 
 RUN npm install
 
-CMD ["npm", "run", "build-start"]
+CMD ["/usr/bin/npm", "run", "build-start"]
+
