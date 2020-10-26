@@ -30,6 +30,10 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
   * Run `npm install`
   * Run `npm run build` - It's ok to exit this process after it seems to be done, it will go into watch mode and thus won't auto-exit.
   * Go back to root directory `cd ..` and run `docker-compose up -d`
+* RStudio router setup
+  * Go to the `rstudio-router directory.
+  * Run `npm install`
+  * Go back to root directory `cd ..`
 * Gitlab setup
   * Go to gitlab.localtest.me, gitlab will take a couple of minutes to boot but then you should be greeted with a password dialog, enter a new root password here.
   * Sign-in to Gitlab with the root account. 
