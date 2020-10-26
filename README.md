@@ -46,7 +46,7 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
   * Create a realm called `Hird`
   * Go to `Clients`, create a client with Client ID `https://localtest.me` and Client Protocol `SAML`
   * Edit the newly created client, set `Client Signature Required: OFF`
-  * Go to `Mappers` tab. Add built-in attribute mapper for X500 email and edit it to set "SAML Attribute NameFormat" as "URI Reference"
+  * Go to `Mappers` tab. Add built-in attribute mappers for X500 email, X500 surname, and X500 givenName. Then edit these to set "SAML Attribute NameFormat" as "URI Reference"
   * Restart the edge-router to let it read in the new metadata from Keycloak, with `docker-compose restart edge-router`
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
