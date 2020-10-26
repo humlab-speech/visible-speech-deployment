@@ -172,6 +172,10 @@ function createGitlabUser() {
 
     $response = httpRequest("POST", $gitlabApiRequest, $options); 
     
+    if(is_string($response)) {
+        echo "Response was string!\n";
+        echo $response;
+    }
 
     addLog("Creating gitlab user:\nRequest: ".$gitlabApiRequest."\nPOST data:\n".print_r($postData, true)."\nResponse: ".$data);
 
@@ -284,6 +288,11 @@ function getGitlabUserProjects() {
             'hird_api_access_token' => $hirdApiAccessToken
         ]
     ]);
+
+    if(is_string($rstudioSessions)) {
+        echo "Response was string!\n";
+        echo $rstudioSessions;
+    }
 
     $sessions = json_decode($rstudioSessions->getBody());
 
