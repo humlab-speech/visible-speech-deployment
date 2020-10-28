@@ -43,7 +43,7 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
 * Keycloak setup
   * Go to idp.localtest.me
   * Sign-in with the keycloak admin credentials you specified in .env
-  * Create a realm called `Hird`
+  * Create a realm called `hird`
   * Go to `Clients`, create a client with Client ID `https://localtest.me` and Client Protocol `SAML`
   * Edit the newly created client, set `Client Signature Required: OFF`
   * Go to `Mappers` tab. Add built-in attribute mappers for X500 email, X500 surname, and X500 givenName. Then edit these to set "SAML Attribute NameFormat" as "URI Reference"
