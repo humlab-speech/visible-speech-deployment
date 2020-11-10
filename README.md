@@ -51,7 +51,6 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
 
-
 ## CAVEATS ON REDHAT
 
 * Not using latest version of Docker since DNF would not install the latest containerd.io because of how module-streams are configured.
@@ -74,3 +73,4 @@ SWAMID will not work for running locally since you can't have your local address
 
 * For errors about proxy timeouts when visiting gitlab, just wait a few minutes, gitlab takes a while to start.
 
+* You might run into problems if running the project under /mnt/c/<etc> in WSL2, recommend running it somwhere under ~/
