@@ -1,5 +1,18 @@
 version: '3'
 services:
+  #reverse-proxy:
+  #  image: traefik:v2.3
+  #  # Enables the web UI and tells Traefik to listen to docker
+  #  command: --api.insecure=true --providers.docker
+  #  ports:
+  #    - "80:80"
+  #    - "443:443"
+  #    # The Web UI (enabled by --api.insecure=true)
+  #    - "8080:8080"
+  #  volumes:
+  #    # So that Traefik can listen to the Docker events
+  #    - /var/run/docker.sock:/var/run/docker.sock
+
   emu-webapp:
     image: hird-emu-webapp
     build: "./emu-webapp/docker"
@@ -47,7 +60,8 @@ services:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://gitlab.$BASE_DOMAIN'
     volumes:
-      - "hird-gitlab-data:/var/opt/gitlab"
+      #- /root/gitlab-data:/var/opt/gitlab:Z
+      - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
       - "$GITLAB_HOME/config:/etc/gitlab:Z"
       - "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
       - "$GITLAB_HOME/shibboleth-logs:/var/log/shibboleth:Z"
@@ -64,6 +78,8 @@ services:
       - keycloak
     networks:
       - hird-net
+    labels:
+      - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
     ports:
       - 80:80
       - 443:443
@@ -107,6 +123,17 @@ services:
       - "./mounts/edge-router/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "./certs:/etc/certs:Z"
+      - "./certs/letsencrypt:/certs/letsencrypt:Z"
+
+  #This service needs to be run at periods, when the rest of the cluster is already up, in particular the edge-router/apache-server. Someone should probably put this on a timer to run like once a week.
+  #certbot:
+  #  image: certbot/certbot
+  #  depends_on:
+  #    - edge-router
+  #  volumes:
+  #    - "./mounts/edge-router/apache/htdocs:/webroot:Z"
+  #    - "./certs/letsencrypt:/etc/letsencrypt:Z"
+  #  entrypoint: "certbot certonly -d $BASE_DOMAIN,idp.$BASE_DOMAIN,gitlab.$BASE_DOMAIN,rstudio.$BASE_DOMAIN --webroot -w /webroot -n --agree-tos -m $ADMIN_EMAIL --expand"
 
   keycloak:
     image: jboss/keycloak:11.0.1
