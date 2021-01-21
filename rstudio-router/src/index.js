@@ -283,7 +283,8 @@ function getUserSessions(userId) {
     if(sessions[key].user.id == userId) {
       userSessions.push({
         sessionCode: sessions[key].accessCode,
-        projectId: sessions[key].project.id
+        projectId: sessions[key].project.id,
+        'type': 'rstudio'
       });
     }
   }
@@ -297,20 +298,29 @@ app.get('/api/sessions/:user_id', (req, res) => {
 
 app.get('/api/session/:session_id/commit', (req, res) => {
   let sess = getSessionByCode(req.params.session_id);
+  if(sess === false) {
+    //Todo: Add error handling here if session doesn't exist
+    res.end(`{ "msg": "Session does not exist", "level": "error" }`);
+  }
   sess.commit().then((result) => {
     console.log(result);
-    res.end("{ 'msg': "+result+" }");
+    res.end(`{ "msg": "Committed ${result}", "level": "info" }`);
   }).catch((e) => {
-    console.log(e.toString('utf8'));
+    console.error("Error:"+e.toString('utf8'));
   });
 });
 
 app.get('/api/session/:session_id/delete', (req, res) => {
   let sess = getSessionByCode(req.params.session_id);
+  if(sess === false) {
+    console.error("Error on delete: Session not found!");
+    res.end(`{ "msg": "Error on delete: Session not found! Session id:${req.params.session_id}", "level": "error" }`);
+    return false;
+  }
   sess.delete().then(() => {
     let sessId = sess.accessCode;
     removeSession(sess);
-    res.end("{ \"deleted\": \""+sessId+"\" }");
+    res.end(`{ "deleted": "${sessId}" }`);
   }).catch((e) => {
     console.log(e.toString('utf8'));
   });

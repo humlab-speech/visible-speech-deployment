@@ -6,7 +6,7 @@ LABEL description="A debian based installation of apache with shibboleth, acting
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
 #docker.io is for being able to manipulate containers in the outside cluster - for rstudio session containers initially
-RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io --no-install-recommends -y
+RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl --no-install-recommends -y
 
 RUN a2enmod proxy proxy_http ssl headers php7.3 rewrite proxy_wstunnel
 
@@ -17,6 +17,8 @@ ENV APACHE_RUN_DIR=/var/run/apache2
 ENV APACHE_LOCK_DIR=/var/lock/apache2
 ENV APACHE_LOG_DIR=/var/log/apache2
 ENV LANG=C
+
+RUN mkdir -p /var/log/api && chmod 0644 /var/log/api && chown www-data /var/log/api
 
 COPY ./wait-for-it.sh /wait-for-it.sh
 

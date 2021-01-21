@@ -115,19 +115,20 @@ class Session {
         console.log(output.toString('utf8'));
         //docker exec 39d8b5d4dd4b bash -c "cd /home/rstudio/project && git commit -m 'hird-auto-commit' && git push"
 
-        cmd = "docker exec -w /home/rstudio/project "+this.shortDockerContainerId+" bash -c 'git add . && git commit -m \"hird-auto-commit\" && git push'";
+        cmd = "docker exec -w /home/rstudio/project "+this.shortDockerContainerId+" bash -c 'git add . && git commit -m \"system-auto-commit\" && git push'";
         console.log(cmd);
         output = child_process.exec(cmd, {}, (error, stdout, stderr) => {
             if (error) {
                 console.error(`exec error: ${error}`);
-                return;
+                //return;
               }
+              console.log(`output: ${output}`);
               console.log(`stdout: ${stdout}`);
               console.error(`stderr: ${stderr}`);
 
-              return output.toString('utf8');
+              //return output.toString('utf8');
         });
-        
+        return this.accessCode;
 
         /*
         cmd = "docker exec -w /home/rstudio/project "+this.shortDockerContainerId+" git add .";
@@ -177,7 +178,7 @@ class Session {
         }, 5000);
 
         
-        return;
+        return this.accessCode;
     }
 };
 
