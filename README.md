@@ -51,6 +51,19 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
 
+## Keycloak extra
+For setting up Keycloak as an IdP against Gitlab.
+
+1. Add a new client in Keycloak with Client ID `https://gitlab.localtest.me`
+1. Disable `Client Signature Required`
+1. Set `Root URL` to `https://gitlab.localtest.me`
+1. Add a post in `Valid Redirect URIs` and set it to `/*`
+1. Set `Base URL` to `/`
+1. Set `Master SAML Processing URL` to `https://gitlab.localtest.me/users/auth/saml/callback` (this step might not be required)
+1. Go to `Mappers` tab. Add the 3 Builtin X500 attributes.
+1. Go to `https://idp.localtest.me/auth/realms/hird/protocol/saml/descriptor` and copy the certificate. Generate a SHA-1 fingerprint from this certificate.
+1. Update `mounts/gitlab/config/gitlab.rb` with fingerprint in SAML/Keycloak-section.
+
 ## CAVEATS ON REDHAT
 
 * Not using latest version of Docker since DNF would not install the latest containerd.io because of how module-streams are configured.
