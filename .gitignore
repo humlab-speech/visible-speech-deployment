@@ -10,7 +10,8 @@ rstudio-router/node_modules
 gitlab/sp-cert/*
 webclient/node_modules
 mounts/rstudio-router/docker-images
-webclient/backend
+webclient
+webapi
 mounts/gitlab/data
 mounts/gitlab/gitlab-logs
 mounts/edge-router/apache/logs

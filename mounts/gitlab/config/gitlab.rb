@@ -457,7 +457,7 @@ gitlab_rails['omniauth_sync_profile_attributes'] = ['email']
 gitlab_rails['omniauth_sync_profile_from_provider'] = ['saml']
 #gitlab_rails['omniauth_sync_profile_from_provider'] = 'saml'
 #gitlab_rails['omniauth_sync_profile_attributes'] = ['email']
-#gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'saml'
+gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'saml'
 
 # gitlab_rails['omniauth_block_auto_created_users'] = true
 gitlab_rails['omniauth_block_auto_created_users'] = false
@@ -533,9 +533,9 @@ gitlab_rails['omniauth_providers'] = [
   label: 'Keycloak',
   args: {
              assertion_consumer_service_url: 'https://gitlab.localtest.me/users/auth/saml/callback',
-             idp_cert_fingerprint: 'A4:77:0C:31:D8:18:D4:3E:40:E1:41:52:8A:76:51:3D:1F:43:C9:B1',             
-             #certificate: '',
-             #private_key: '',
+             idp_cert_fingerprint: '1A:02:52:8E:68:11:A1:71:38:42:0C:99:AC:0F:AE:08:D3:9B:47:03',             
+             #certificate: '-----BEGIN CERTIFICATE-----MIICxTCCAa0CBgF3TgPkMDANBgkqhkiG9w0BAQsFADAmMSQwIgYDVQQDDBtodHRwczovL2dpdGxhYi5sb2NhbHRlc3QubWUwHhcNMjEwMTI5MTE1ODMzWhcNMzEwMTI5MTIwMDEzWjAmMSQwIgYDVQQDDBtodHRwczovL2dpdGxhYi5sb2NhbHRlc3QubWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC5Ik7/n/QImUDoPo3ZQnlKpFsMzR5bDCYsVtoikleAPh3oIot/bnzuKW+h/FQKS55g+D9uqsE/uyAa8oJWeJS58Ft7WwVWSzYz+8gId9qkyblWPjMZqVtgXkoxREKwjQaL3ICNkYaBN9Msat2rYwwhPLHrZq0gu7jSx1zHvRmLF/aTrgnFkJZntevgn8KGkr8EK9r5td6HqujSTakKINdj92ANbTF4oNfXduGtX3c8Om7XANr10pSKTZXUvQDGgpmUsGPGagjtl3jMy9bEJK+h5L4PxPqVaPJtxK+2Rvc9ZrhwAD2NcccMkIYAdXimoOJzAWKoTibQYUO3efgFDcEbAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAEhUZQ20M8RiA6buwup7elDJK6I3KLATS3ispwZS81mNkxmh+MbRDLoYW0parn7F7fPtgwnzJnv+gv4+6b64iocTXgj/MopT/TSMj4MSviE88LNYZH6iig4y7cZNHZoKCj5tZW+MNV98mKw8jXik73mscBM1+CGgA0sjsGES6ypuEk/z84ROPwMYVfUQASFYW9U4PKipq6tWYLy+fQ0DzNaNB32ar/2YVwqqKq/pvL3bUSmxvXcYQ2/M5X/aR7D89D/LBW8FgeEC1luDjxGh4OjqI+mriumoa+b3vTq0HBhMi83ab/2f0WZwJa+bNAcc/fBMGKirFQ/vEHkwLa3wQt0=-----END CERTIFICATE-----',
+             #private_key: '-----BEGIN PRIVATE KEY-----MIIEpAIBAAKCAQEAuSJO/5/0CJlA6D6N2UJ5SqRbDM0eWwwmLFbaIpJXgD4d6CKLf2587ilvofxUCkueYPg/bqrBP7sgGvKCVniUufBbe1sFVks2M/vICHfapMm5Vj4zGalbYF5KMURCsI0Gi9yAjZGGgTfTLGrdq2MMITyx62atILu40sdcx70Zixf2k64JxZCWZ7Xr4J/ChpK/BCva+bXeh6ro0k2pCiDXY/dgDW0xeKDX13bhrV93PDpu1wDa9dKUik2V1L0AxoKZlLBjxmoI7Zd4zMvWxCSvoeS+D8T6lWjybcSvtkb3PWa4cAA9jXHHDJCGAHV4pqDicwFiqE4m0GFDt3n4BQ3BGwIDAQABAoIBAESyBFo6AhVGuJz0yTG6xsL5pYdkfUUPhwKg36RAZROC+Rnv549LcjP1UCTtOknvsT8OHotz9O0vBES7g72OVLGCDJADQEG6+svjO2BZCNpot8rWnaOCAhQKKMGLMKvOSIWRNmpRe3VrP4KVzNcRk6ipmuNcYBVrUrNzomvDMT047mWMxKqX03nuKW6OaJZXJR+peWomTmVAmprRFr4duftQ1TFk3HiXpcFx9UlDKyeWwj3oZuZJXe3ru2UV/899RwW3gW7Z0W/3U7W5T2hBdY6oTG+NmFUCNYtlRngIOImKq80k6M53Sey6LU9bArnTbPz2Ya5UdNirKXTK8lgmRtECgYEA9RJe48JSQ26E9QGnIYX+2MgQ1LHrvMBxxR5tmUIYE0Zu7ANEpyCw4VKqnrmy5R8ib5zez/LRvpXtYR3BD86rbSlf7heZRVrvT3qjg5biZzG/6qeY0qVL7RdS/731YSQ0a9fTZTZ3wCGmPo+bjHXl+GQ/01Mimtgv12ETkYscdBUCgYEAwWO3LQJqykqBzHsiEqq4iiJvGrUFxfGYWUrGbAzK+HIOxla7hbeg0OISXWeCqw4anAhwGqXbIAgF6TSJphVIvECMHZvVE7qm8ZQ3IqFHx7XgnoUZ0aE3iyRubOXo8K1CVBd7weGeX45sGZF7bgYX7IRUjf+wHRs/nM4cYdqYvG8CgYEArIIF8WTz6yt8w8oqD1r3DTmnP1EOk4sTiqHknCD+OXM22UNjrBFC8RjzqU8mMko8Pzy5Sr+uDO4Ubmw3Xh0oZmrdcAeEiGF+WwAE4bfwHpvScCcRWBWq4HWuov7gH0UQ8Wi3EWPJ36DQGPGVmMXU34gRtXurvDu5UW6wC59UpBECgYEArQXVHkz6VJECvnswSfk6cERMmV16k9YK02DmVEfB1TTe6S8ySXm4RQrvGWiB7R8KSa329rCLc4YaG8LooJKMZ/lsIxWIN0WZFazhA3e+q/yawdkd94NBGZl3vrCYj7TEEk6MaDO/KYlYSCv0fcSv5OmkaQNpgzEc4eM6W4ZjfrsCgYBKvNuyD8jQGfV3mThqxcc6weHwYodY+glLsij6k5mrq2gGWf25hfu8B3rAUZVGfHu9WTWfNdqNmK7+3qK9Eo84Wl9Dr+UC1t2SbiVNp8mi2uWo68uUSnrhMTEmNtNAl2/FoCjFyvzRxPmJ1z8MEsGjnUxU3BHd/a14Hk4MpWYhZw==-----END PRIVATE KEY-----',
              idp_sso_target_url: 'https://idp.localtest.me/auth/realms/hird/protocol/saml',
              issuer: 'https://gitlab.localtest.me',
              #name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
