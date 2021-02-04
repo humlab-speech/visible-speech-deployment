@@ -141,7 +141,7 @@ services:
   #  entrypoint: "certbot certonly -d $BASE_DOMAIN,idp.$BASE_DOMAIN,gitlab.$BASE_DOMAIN,rstudio.$BASE_DOMAIN --webroot -w /webroot -n --agree-tos -m $ADMIN_EMAIL --expand"
 
   keycloak:
-    image: jboss/keycloak:11.0.1
+    image: jboss/keycloak:12.0.2
     depends_on:
       - database
     environment:
@@ -159,7 +159,7 @@ services:
       - hird-net
 
   database:
-    image: postgres:12.4
+    image: postgres:12.5
     environment:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
