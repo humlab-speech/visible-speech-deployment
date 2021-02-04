@@ -221,7 +221,7 @@
         <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
 
         <!-- Simple file-based resolver for using a single keypair. -->
-        <CredentialResolver type="File" key="/etc/certs/localtest.me/key.pem" certificate="/etc/certs/localtest.me/cert.crt"/>
+        <CredentialResolver type="File" key="/etc/certs/localtest.me/cert.key" certificate="/etc/certs/localtest.me/cert.crt"/>
 
         <!--
         <ApplicationOverride id="gitlab" entityID="https://hird.humlab.umu.se">
