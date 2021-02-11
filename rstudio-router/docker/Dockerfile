@@ -17,8 +17,9 @@ RUN add-apt-repository \
 RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
 
 WORKDIR /app
-
-#Somewhere here we should proabably clone the git repo for the rstudio-router (when it exists) and "npm install" it
+#RUN git clone https://github.com/humlab-speech/approuter
+#WORKDIR /approuter
+#RUN npm install
 
 ENV GIT_SSL_NO_VERIFY=true
 ENV GIT_DISCOVERY_ACROSS_FILESYSTEM=true
