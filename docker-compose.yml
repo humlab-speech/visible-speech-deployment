@@ -30,18 +30,45 @@ services:
     networks:
       - hird-net
 
-  rstudio-router:
-    image: hird-rstudio-router
-    build: ./rstudio-router/docker
+  approuter:
+    image: hs-approuter
+    build: "./approuter/docker"
     environment:
-      HIRD_API_ACCESS_TOKEN: $HIRD_API_ACCESS_TOKEN
+      HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+      RSTUDIO_IMAGE_NAME: hs-rstudio-session
     volumes:
-      - "./rstudio-router:/app:Z"
+      #- "./rstudio-router:/app:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
-      - "./mounts/rstudio-router/docker-images:/var/lib/docker/overlay2:Z"
+      #- "./mounts/approuter/docker-images:/var/lib/docker/overlay2:Z"
     networks:
       - hird-net
+
+  #approuter-dev:
+  #  image: hs-approuter-dev
+  #  build: "./approuter/docker-dev"
+  #  environment:
+  #    HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
+  #    GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+  #    RSTUDIO_IMAGE_NAME: hs-rstudio-session
+  #  volumes:
+  #    - "./approuter:/approuter:Z"
+  #    - "/var/run/docker.sock:/var/run/docker.sock:Z"
+  #  networks:
+  #    - hird-net
+
+  #rstudio-router:
+  #  image: hird-rstudio-router
+  #  build: ./rstudio-router/docker
+  #  environment:
+  #    HIRD_API_ACCESS_TOKEN: $HIRD_API_ACCESS_TOKEN
+  #    GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+  #  volumes:
+  #    - "./rstudio-router:/app:Z"
+  #    - "/var/run/docker.sock:/var/run/docker.sock:Z"
+  #    - "./mounts/rstudio-router/docker-images:/var/lib/docker/overlay2:Z"
+  #  networks:
+  #    - hird-net
 
   #Ths is a little silly - but the only reason this service is included is because we need to have this image built and tagged in order for the rstudio-router to work
   rstudio-session-template:
@@ -85,11 +112,12 @@ services:
       - 443:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
+      LOG_LEVEL: debug
       HIRD_DOMAIN_NAME: $BASE_DOMAIN
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
       KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
-      HIRD_API_ACCESS_TOKEN: $HIRD_API_ACCESS_TOKEN
+      HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
     volumes:
       #Shibboleth config for SAMLtest
