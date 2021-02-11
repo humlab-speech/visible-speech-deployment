@@ -8,3 +8,5 @@ RUN echo 'install.packages("emuR")' | R
 RUN echo 'install.packages("git2r")' | R
 
 RUN apt-get install -y docker.io
+
+COPY ./createEmuDb.r /createEmuDb.r
