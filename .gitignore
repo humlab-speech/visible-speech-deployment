@@ -18,6 +18,7 @@ mounts/edge-router/apache/logs
 mounts/edge-router/apache/vhosts-disabled
 mounts/gitlab/apache-logs
 mounts/gitlab/shibboleth/certs
+mounts/gitlab/config/gitlab-secrets.json
 mounts/gitlab/config/ssh_host_ecdsa_key
 mounts/gitlab/config/ssh_host_ecdsa_key.pub
 mounts/gitlab/config/ssh_host_ed25519_key
