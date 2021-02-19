@@ -1,17 +1,5 @@
 version: '3'
 services:
-  #reverse-proxy:
-  #  image: traefik:v2.3
-  #  # Enables the web UI and tells Traefik to listen to docker
-  #  command: --api.insecure=true --providers.docker
-  #  ports:
-  #    - "80:80"
-  #    - "443:443"
-  #    # The Web UI (enabled by --api.insecure=true)
-  #    - "8080:8080"
-  #  volumes:
-  #    # So that Traefik can listen to the Docker events
-  #    - /var/run/docker.sock:/var/run/docker.sock
 
   emu-webapp:
     image: hird-emu-webapp
@@ -21,62 +9,41 @@ services:
     networks:
       - hird-net
 
-  emu-webapp-server:
-    image: hird-emu-webapp-server
-    build: "./emu-webapp/docker-server"
-    ports:
-      - 9001:9001
-      - 17890:17890
-    networks:
-      - hird-net
-
-  approuter:
-    image: hs-approuter
-    build: "./approuter/docker"
+  session-manager:
+    image: hs-session-manager
+    build: "./session-manager/docker"
     environment:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       RSTUDIO_IMAGE_NAME: hs-rstudio-session
+      RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
+      GITLAB_ADDRESS: "http://gitlab:80"
+      WEBSERVER_PORT: 80
+      LOG_LEVEL: "debug"
     volumes:
-      #- "./rstudio-router:/app:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
-      #- "./mounts/approuter/docker-images:/var/lib/docker/overlay2:Z"
     networks:
       - hird-net
 
-  #approuter-dev:
-  #  image: hs-approuter-dev
-  #  build: "./approuter/docker-dev"
+  #session-manager-dev:
+  #  image: hs-session-manager-dev
+  #  #build: "./session-manager/docker-dev"
   #  environment:
   #    HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
   #    GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
-  #    RSTUDIO_IMAGE_NAME: hs-rstudio-session
+  #    RSTUDIO_IMAGE_NAME: $RSTUDIO_IMAGE_NAME
+  #    RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
+  #    GITLAB_ADDRESS: "http://gitlab:80"
+  #    WEBSERVER_PORT: 80
+  #    LOG_LEVEL: "debug"
   #  volumes:
-  #    - "./approuter:/approuter:Z"
+  #    - "./session-manager:/session-manager:Z"
   #    - "/var/run/docker.sock:/var/run/docker.sock:Z"
   #  networks:
   #    - hird-net
-
-  #rstudio-router:
-  #  image: hird-rstudio-router
-  #  build: ./rstudio-router/docker
-  #  environment:
-  #    HIRD_API_ACCESS_TOKEN: $HIRD_API_ACCESS_TOKEN
-  #    GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
-  #  volumes:
-  #    - "./rstudio-router:/app:Z"
-  #    - "/var/run/docker.sock:/var/run/docker.sock:Z"
-  #    - "./mounts/rstudio-router/docker-images:/var/lib/docker/overlay2:Z"
-  #  networks:
-  #    - hird-net
-
-  #Ths is a little silly - but the only reason this service is included is because we need to have this image built and tagged in order for the rstudio-router to work
-  rstudio-session-template:
-    image: hird-rstudio-emu
-    build: ./rstudio-router/docker/rstudio-session-instance
 
   gitlab:
-    image: hird-gitlab
+    image: hs-gitlab
     build: gitlab/docker
     networks:
       - hird-net
@@ -87,7 +54,6 @@ services:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://gitlab.$BASE_DOMAIN'
     volumes:
-      #- /root/gitlab-data:/var/opt/gitlab:Z
       - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
       - "$GITLAB_HOME/config:/etc/gitlab:Z"
       - "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
@@ -96,10 +62,11 @@ services:
       - "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
       - "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
       - "$GITLAB_HOME/public:/opt/gitlab/public:Z"
+      - "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
       - "./certs:/etc/certs:Z"
 
   edge-router:
-    image: hird-edge-router
+    image: hs-edge-router
     build: edge-router/docker
     depends_on:
       - keycloak
@@ -144,11 +111,8 @@ services:
       - "./mounts/webapi:/var/log/api:Z"
       - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
-      #- "./mounts/edge-router/saml/access-control.xml:/etc/shibboleth/access-control.xml:Z"
       - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
-      #- "./mounts/edge-router/apache/htdocs:/var/www/html:Z"
-      #- "./webclient/dist:/var/www/html:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/html/api:Z"
       - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
@@ -157,6 +121,8 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "./certs:/etc/certs:Z"
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
+      - "./mounts/edge-router/apache/uploads:/tmp/uploads:Z"
+      - "./mounts/edge-router/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
 
   #This service needs to be run at periods, when the rest of the cluster is already up, in particular the edge-router/apache-server. Someone should probably put this on a timer to run like once a week.
   #certbot:
@@ -196,10 +162,8 @@ services:
     volumes:
       - "./mounts/postgresql/data:/pgdata:Z"
     networks:
-      - hird-net  
+      - hird-net
 
 networks:
   hird-net:
 
-volumes:
-  hird-gitlab-data:
