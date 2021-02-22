@@ -447,24 +447,33 @@ gitlab_rails['object_store']['objects']['terraform_state']['bucket'] = nil
 ###! Docs: https://docs.gitlab.com/ee/integration/omniauth.html
 # gitlab_rails['omniauth_enabled'] = nil
 gitlab_rails['omniauth_enabled'] = true
-#gitlab_rails['omniauth_allow_single_sign_on'] = ['shibboleth']
 gitlab_rails['omniauth_allow_single_sign_on'] = ['saml']
-#gitlab_rails['omniauth_allow_single_sign_on'] = true
 gitlab_rails['omniauth_sync_email_from_provider'] = 'saml'
-
 gitlab_rails['omniauth_sync_profile_attributes'] = ['email']
-
 gitlab_rails['omniauth_sync_profile_from_provider'] = ['saml']
-#gitlab_rails['omniauth_sync_profile_from_provider'] = 'saml'
 #gitlab_rails['omniauth_sync_profile_attributes'] = ['email']
 gitlab_rails['omniauth_auto_sign_in_with_provider'] = 'saml'
-
-# gitlab_rails['omniauth_block_auto_created_users'] = true
 gitlab_rails['omniauth_block_auto_created_users'] = false
 # gitlab_rails['omniauth_auto_link_ldap_user'] = false
 gitlab_rails['omniauth_auto_link_saml_user'] = true
 # gitlab_rails['omniauth_external_providers'] = ['twitter', 'google_oauth2']
 # gitlab_rails['omniauth_allow_bypass_two_factor'] = ['google_oauth2']
+
+gitlab_rails['omniauth_providers'] = [
+{
+  name: 'saml',
+  label: 'Keycloak',
+  args: {
+             assertion_consumer_service_url: 'https://gitlab.'+ENV["HIRD_DOMAIN_NAME"]+'/users/auth/saml/callback',
+             #idp_cert_fingerprint: '1A:02:52:8E:68:11:A1:71:38:42:0C:99:AC:0F:AE:08:D3:9B:47:03',
+             idp_cert_fingerprint: ENV["KEYCLOAK_SIGNING_CERT_FINGERPRINT"],
+             idp_sso_target_url: 'https://idp.'+ENV["HIRD_DOMAIN_NAME"]+'/auth/realms/hird/protocol/saml',
+             issuer: 'https://gitlab.'+ENV["HIRD_DOMAIN_NAME"],
+             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+             attribute_statements: { email: ['urn:oid:1.2.840.113549.1.9.1'] }
+           }
+}]
+
 # gitlab_rails['omniauth_providers'] = [
 #   {
 #     "name" => "google_oauth2",
@@ -485,128 +494,6 @@ gitlab_rails['omniauth_auto_link_saml_user'] = true
 #    "name_field"                => 'HTTP_CN',
 #    "info_fields" => { "email" => 'HTTP_MAIL'}
 #  }
-#}
-#]
-
-#gitlab_rails['omniauth_providers'] = [
-#{
-#  name: 'saml',
-#  label: 'UMU-ID',
-#  args: {
-#             assertion_consumer_service_url: 'https://gitlab.hird.humlab.umu.se/users/auth/saml/callback',
-#             idp_cert: '-----BEGIN CERTIFICATE-----MIIDNjCCAh6gAwIBAgIQVSHRo4JhuLdHW1GUlYqsITANBgkqhkiG9w0BAQsFADAeMRwwGgYDVQQDDBNzaWduaW5nLmFkZnMudW11LnNlMB4XDTIwMDMzMDE4MTUxOVoXDTMwMDMzMDE4MjUxOFowHjEcMBoGA1UEAwwTc2lnbmluZy5hZGZzLnVtdS5zZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALiKlvURcVQKnT+nobTLtNTRAtQR2GFnhjE0vBb6Hrwa/Iy7hZBEEM7cvtOXByuPuKJ45zBN2ystjYbXyN+2ojZ1tVGj+f4kjGDpz2/lsZrX+NSW+dvcE8b1EC6FId1P37THyOpTgzfrlz7mz06mxAFkGwqqwgjjTfnKT05D6Nc3t1YCA0cJ4FtzLTrEFjS+tFqhf/jg1VtvsYm7CCt9QTbi0guT3XfRxBloQUqsMPTc7N95F1iXrxkLWIgLp7pq35Rwf+M5YHQcNVNEna7sNtHFpWKfNfXVGdEpx9h/k/kqs2qc/22BwAjcblzu7idXqeGR6wNkUl4EA/qJW8kx0ekCAwEAAaNwMG4wDgYDVR0PAQH/BAQDAgWgMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDATAeBgNVHREEFzAVghNzaWduaW5nLmFkZnMudW11LnNlMB0GA1UdDgQWBBTK78kU5AxbYkP3ZoKCF0nOsCQdEjANBgkqhkiG9w0BAQsFAAOCAQEAXD6IfM/pvFZVB1bx/GitQMOgBwoAfBtuEzkj3bqNov5Ez2a7Duq54MVh4YEkmmIBACRgG1pZ9YG51PfrU45pTntEHaoFdHGCKu6xQJYjC3WCGrALJ+vglsDrVvQNNo0+VW3ZERT+fgh8DAkGYEeABO6aRmNZp86NbfUw+UsPsnGKEOPbySanJLIv5DXr23AXUVkZD1iaXP5cNsk1W9Ze5epWz4arEN+t/lywF1Lk/sBrrAhXOie0vnnesaj5PJWOlyPqYekAUH/Hnvu6TcArHgpgrfofn7Xdmz9XLbjavxayFtpXTVqlBiR0Epvw3t4V8jo+yX7/tJfiRmvRwfvSag==-----END CERTIFICATE-----',
-#             certificate: '-----BEGIN CERTIFICATE-----MIIGEzCCA/ugAwIBAgIUHGJzhm1bukLE9GAjiO2gbm8VkKMwDQYJKoZIhvcNAQELBQAwgZgxCzAJBgNVBAYTAlNFMRAwDgYDVQQHDAdVbWXDg8KlMRwwGgYDVQQKDBNVbWXDg8KlIHVuaXZlcnNpdGV0MQ8wDQYDVQQLDAZIdW1sYWIxIjAgBgNVBAMMGWdpdGxhYi5oaXJkLmh1bWxhYi51bXUuc2UxJDAiBgkqhkiG9w0BCQEWFXN1cHBvcnRAaHVtbGFiLnVtdS5zZTAeFw0yMDA5MjEwODMyMzJaFw0zMDA5MTkwODMyMzJaMIGYMQswCQYDVQQGEwJTRTEQMA4GA1UEBwwHVW1lw4PCpTEcMBoGA1UECgwTVW1lw4PCpSB1bml2ZXJzaXRldDEPMA0GA1UECwwGSHVtbGFiMSIwIAYDVQQDDBlnaXRsYWIuaGlyZC5odW1sYWIudW11LnNlMSQwIgYJKoZIhvcNAQkBFhVzdXBwb3J0QGh1bWxhYi51bXUuc2UwggIiMA0GCSqGSIb3DQEBAQUAA4ICDwAwggIKAoICAQDjHB3ojJonGgZzfK6LiU9qphzscS7Djm7A7zTDA8ngBqw1mnsC7j2rJUg5b6hmfbhTbGcbIU0h3bvo/l5a4wiKfnc0Pc0aT/1w57l7SCVgoPWOjHVDYQjhP3fEUxH0xj0M5TpRgLHnuwBJytVEp2/ZbdY/YE4t25IlxBAYgkZ93wtBW6miHJ5yFnv/qwwuq0e3ti4R5VPOxQ4REIgLUZS6nOks15Z5MZ5N9yPt0wCCu5HKzhRaLsg58vCRkAVtvsZHSMCj48E2VUZ1zloj6oHgmoYb4QajAwCDbSK3M9zlVPubR7vLZabBbxP7eBM53QqYatyqwTHaLSkQcvi89YxYVVKc7ygdpGd2UDiZZkvSLTsgz0ZkIjUkZzm+cDFtCbZLv/ycIXAQDtSsTLoZySz4nok5KBOzd7jMSRBaFuTINorc5TyMpp4u1Y4L5aVf6MzDWdDA045oaTwUuhX6UqLHW8Zu3TmSGFOTXk2P1MeJKWrwbFy/FqGLhT33enPjaimvMbrwcAc31sFFyBX7XGwFxHdNF3BrAozTH3ue2Cy2+QWptf/EBadY5kmie3Q285ca1Zr8o9YaCacZTmGjjCp0Dru4zM/u31D0QUhgbjVjPGaINli3NTU96rv1/F46VwyVXshTUqeM3HxEURop4P4z47xUeGwqjcLj5ZRrK90zHwIDAQABo1MwUTAdBgNVHQ4EFgQUCk6sxnkDZq34Cc59DXMbE6W0bAwwHwYDVR0jBBgwFoAUCk6sxnkDZq34Cc59DXMbE6W0bAwwDwYDVR0TAQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAgEAgS6W67eS6JVmHp92AH8vjaT0byjn3fKQ0Bjcemdhlvej+X8neYTMoVbhOA5SMQJQSid6T2ucQHKd67TsRM50Q1/X7gvdOIsW3KShZ2jN+7eqAz+OqPxWiur2ocLbiFViAdPamZeMBKEr8Bnk5aG2glV40lSq9ol1u7+BX9t4WChbPg1nzzVMBksf1KtUt1lIw5UzGnaR9304muf2GQ33HG7RI2RjcLqUcJOKxK80Yr5NzHcXhzNu9Ti6aOiOk3DCPcMTUgGSTX+dDaAUm8RbvqyGniHigLsRVA2ZVAraTPV4rDcmH9Xahe6Cr/N1NrHU3S2+jkn0EYnzkGp5N5/ydqyzad6/IwwdzToHlp1Oyw0Te0/27CD/AKCjzqWa/z+GBKbg424waEnkvddtsNmipv1o7aPDnaA3tSw02VULl3hLG2oUwB7ty59LgCu0rOjHGzL5lwJOrXa6v2zPO+iJ1gdZIftEoNj2LeQzwfot1kQPFzAP1EO+kD5+UMH2wQn5qUVTYgPbSPbVvtIUiUBGoXskpHbLYdjbgkDEBz6f0iOsToCL9mY2YC77ibnswBO34vlHn0RGZ9MHoRCF9rjPpYWBsYvnx6RR5ThPVX4TZVwnUaj6f4g3P4uykOHMr+ma/pYVwliSmxKf4+ZhtywTOQDL5NeWH2i3yE/4vnG5vbw=-----END CERTIFICATE-----',
-#             private_key: '-----BEGIN PRIVATE KEY-----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-----END PRIVATE KEY-----',
-#             idp_sso_target_url: 'https://adfs.umu.se/adfs/ls/',
-#             #ido_sso_target_url: 'http://adfs.umu.se/adfs/services/trust',
-#             issuer: 'https://gitlab.hird.humlab.umu.se',
-#             #name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-#             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-#             #name_identifier_format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-#             #request_attributes: [
-#             #  {
-#             #    name: "urn:oid:0.9.2342.19200300.100.1.3",
-#             #    name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-#             #    friendly_name: 'email'
-#             #  },
-#             #  {
-#             #    name: "urn:oid:1.3.6.1.4.1.5923.1.1.1.6",
-#             #    name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-#             #    friendly_name: 'eppn'
-#             #  },
-#             #  {
-#             #    name: "urn:oid:2.16.840.1.113730.3.1.241",
-#             #    name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-#             #    friendly_name: 'displayName'
-#             #  }
-#             #],
-#             #attribute_statements: { email: ['email'] }
-#             #attribute_statements: { email: ['mail'] }
-#             #attribute_statements: { email: ['EmailAddress'] }
-#             #attribute_statements: { email: ['urn:oid:0.9.2342.19200300.100.1.3'] }
-#           }
-#}]
-
-gitlab_rails['omniauth_providers'] = [
-{
-  name: 'saml',
-  label: 'Keycloak',
-  args: {
-             assertion_consumer_service_url: 'https://gitlab.localtest.me/users/auth/saml/callback',
-             idp_cert_fingerprint: '1A:02:52:8E:68:11:A1:71:38:42:0C:99:AC:0F:AE:08:D3:9B:47:03',             
-             #certificate: '-----BEGIN CERTIFICATE----- -----END CERTIFICATE-----',
-             #private_key: '-----BEGIN PRIVATE KEY----- -----END PRIVATE KEY-----',
-             idp_sso_target_url: 'https://idp.localtest.me/auth/realms/hird/protocol/saml',
-             issuer: 'https://gitlab.localtest.me',
-             #name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-             #name_identifier_format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-             #request_attributes: [
-             #  {
-             #    name: "urn:oid:0.9.2342.19200300.100.1.3",
-             #    name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-             #    friendly_name: 'email'
-             #  },
-             #  {
-             #    name: "urn:oid:2.16.840.1.113730.3.1.241",
-             #    name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-             #    friendly_name: 'displayName'
-             #  }
-             #],
-             #attribute_statements: { email: ['urn:oid:0.9.2342.19200300.100.1.3'] }
-             attribute_statements: { email: ['urn:oid:1.2.840.113549.1.9.1'] }
-           }
-}]
-
-#gitlab_rails['omniauth_providers'] = [
-#{
-#  name: 'saml',
-#  label: 'SAMLtest',
-#  args: {
-#             assertion_consumer_service_url: 'https://gitlab.hird.humlab.umu.se/users/auth/saml/callback',
-#             idp_cert: '-----BEGIN CERTIFICATE-----
-#MIIDEjCCAfqgAwIBAgIVAMECQ1tjghafm5OxWDh9hwZfxthWMA0GCSqGSIb3DQEB
-#CwUAMBYxFDASBgNVBAMMC3NhbWx0ZXN0LmlkMB4XDTE4MDgyNDIxMTQwOVoXDTM4
-#MDgyNDIxMTQwOVowFjEUMBIGA1UEAwwLc2FtbHRlc3QuaWQwggEiMA0GCSqGSIb3
-#DQEBAQUAA4IBDwAwggEKAoIBAQC0Z4QX1NFKs71ufbQwoQoW7qkNAJRIANGA4iM0
-#ThYghul3pC+FwrGv37aTxWXfA1UG9njKbbDreiDAZKngCgyjxj0uJ4lArgkr4AOE
-#jj5zXA81uGHARfUBctvQcsZpBIxDOvUUImAl+3NqLgMGF2fktxMG7kX3GEVNc1kl
-#bN3dfYsaw5dUrw25DheL9np7G/+28GwHPvLb4aptOiONbCaVvh9UMHEA9F7c0zfF
-#/cL5fOpdVa54wTI0u12CsFKt78h6lEGG5jUs/qX9clZncJM7EFkN3imPPy+0HC8n
-#spXiH/MZW8o2cqWRkrw3MzBZW3Ojk5nQj40V6NUbjb7kfejzAgMBAAGjVzBVMB0G
-#A1UdDgQWBBQT6Y9J3Tw/hOGc8PNV7JEE4k2ZNTA0BgNVHREELTArggtzYW1sdGVz
-#dC5pZIYcaHR0cHM6Ly9zYW1sdGVzdC5pZC9zYW1sL2lkcDANBgkqhkiG9w0BAQsF
-#AAOCAQEASk3guKfTkVhEaIVvxEPNR2w3vWt3fwmwJCccW98XXLWgNbu3YaMb2RSn
-#7Th4p3h+mfyk2don6au7Uyzc1Jd39RNv80TG5iQoxfCgphy1FYmmdaSfO8wvDtHT
-#TNiLArAxOYtzfYbzb5QrNNH/gQEN8RJaEf/g/1GTw9x/103dSMK0RXtl+fRs2nbl
-#D1JJKSQ3AdhxK/weP3aUPtLxVVJ9wMOQOfcy02l+hHMb6uAjsPOpOVKqi3M8XmcU
-#ZOpx4swtgGdeoSpeRyrtMvRwdcciNBp9UZome44qZAYH1iqrpmmjsfI9pJItsgWu
-#3kXPjhSfj1AJGR1l9JGvJrHki1iHTA==
-#-----END CERTIFICATE-----',
-#             certificate: '',
-#             private_key: '',
-#             #security: {
-#             #  authn_requests_signed: true,
-#             #  want_assertions_signed: false
-#             #},
-#             #"idp_cert_fingerprint": 'E7:6B:5E:8E:6E:1E:28:C4:7C:8A:3B:46:2D:D0:41:37:CA:5C:6E:1E',
-#             #"idp_sso_target_url": 'https://samltest.id/idp/profile/Shibboleth/SSO',
-#             #"idp_sso_target_url": 'https://samltest.id/idp/profile/SAML2/POST/SSO',
-#             #"idp_sso_target_url": 'https://samltest.id/saml/idp',
-#             #"idp_sso_target_url": "https://samltest.id/auth/saml",
-#             idp_sso_target_url: 'https://samltest.id/idp/profile/SAML2/Redirect/SSO',
-#             issuer: 'https://gitlab.hird.humlab.umu.se',
-#             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-#             request_attributes: [ 
-#               {
-#                 name: "urn:oid:0.9.2342.19200300.100.1.3",
-#                 name_format: "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-#                 friendly_name: 'email'
-#               }
-#             ],
-#             #attribute_statements: { email: ['mail'], name: ['mail'] },
-#             attribute_statements: { email: ['urn:oid:0.9.2342.19200300.100.1.3'] }
-#           }
 #}
 #]
 
