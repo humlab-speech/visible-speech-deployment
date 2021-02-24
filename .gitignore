@@ -1,4 +1,5 @@
-session-manager/
+keycloak-config-with-idps.json
+./session-manager/
 install.sh
 .env
 dist
