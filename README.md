@@ -11,9 +11,9 @@ Included services:
 
 * PostgreSQL - Dependency of Keycloak.
 
-* RStudio router - Spawns and manages RStudio session containers on request by edge router.
+* Session Manager - Spawns and manages RStudio session containers on request by edge router.
 
-* (non-functional) EMU-webApp + server
+* EMU-webApp
 
 
 ## INSTALLATION
@@ -25,10 +25,6 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
 
 * Move .env-example to .env and fill it out with appropriate information.
 * Run `install.sh`. This will grab the latest versions of The WebClient and WebApi and install these. It will also generate self-signed TLS-certificates.
-* RStudio router setup
-  * Go to the `rstudio-router directory.
-  * Run `npm install`
-  * Go back to root directory `cd ..`
 * Run `docker-compose up -d`
 * Gitlab setup
   * Go to gitlab.localtest.me, gitlab will take a couple of minutes to boot but then you should be greeted with a password dialog, enter a new root password here.
@@ -43,6 +39,7 @@ A Linux environment with a somewhat recent version of Docker + Docker Compose. W
   * Go to `Clients`, create a client with Client ID `https://localtest.me` and Client Protocol `SAML`
   * Edit the newly created client, set `Client Signature Required: OFF`
   * Go to `Mappers` tab. Add built-in attribute mappers for X500 email, X500 surname, and X500 givenName. Then edit these to set "SAML Attribute NameFormat" as "URI Reference"
+  * Run the bash script `idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file.
   * Restart the edge-router to let it read in the new metadata from Keycloak, with `docker-compose restart edge-router`
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
