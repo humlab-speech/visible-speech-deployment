@@ -94,7 +94,7 @@ services:
 
   gitlab:
     image: hs-gitlab
-    build: gitlab/docker
+    build: "./docker/gitlab"
     networks:
       - hs-net
     hostname: gitlab.$BASE_DOMAIN
