@@ -2,7 +2,7 @@ version: '3'
 services:
   edge-router:
     image: hs-edge-router
-    build: edge-router/docker
+    build: "./docker/edge-router"
     depends_on:
       - keycloak
     networks:
