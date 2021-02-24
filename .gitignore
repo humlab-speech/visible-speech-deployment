@@ -1,3 +1,5 @@
+session-manager/
+install.sh
 .env
 dist
 certs/*
