@@ -1,5 +1,19 @@
 version: '3'
 services:
+  #edge-router-actual:
+  #  image: traefik:v2.4.0
+  #  volumes:
+  #    - "./mounts/traefik/conf:/etc/traefik"
+  #    - "./mounts/traefik/acme:/acme"
+  #    - "./mounts/traefik/log:/var/log/"
+  #    - "/var/run/docker.sock:/var/run/docker.sock"
+  #  #network_mode: host
+  #  ports:
+  #    - 80:80
+  #    - 443:443
+  #  networks:
+  #    - hs-net
+
   edge-router:
     image: hs-edge-router
     build: "./docker/edge-router"
@@ -7,8 +21,8 @@ services:
       - keycloak
     networks:
       - hs-net
-    labels:
-      - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
+    #labels:
+    #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
     ports:
       - 80:80
       - 443:443
@@ -102,6 +116,7 @@ services:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       HS_DOMAIN_NAME: $BASE_DOMAIN
       KEYCLOAK_SIGNING_CERT_FINGERPRINT: $KEYCLOAK_SIGNING_CERT_FINGERPRINT
+      GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://gitlab.$BASE_DOMAIN'
     volumes:
