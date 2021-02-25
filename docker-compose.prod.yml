@@ -1,0 +1,191 @@
+version: '3'
+services:
+  #edge-router-actual:
+  #  image: traefik:v2.4.0
+  #  volumes:
+  #    - "./mounts/traefik/conf:/etc/traefik"
+  #    - "./mounts/traefik/acme:/acme"
+  #    - "./mounts/traefik/log:/var/log/"
+  #    - "/var/run/docker.sock:/var/run/docker.sock"
+  #  #network_mode: host
+  #  ports:
+  #    - 80:80
+  #    - 443:443
+  #  networks:
+  #    - hs-net
+
+  edge-router:
+    image: hs-edge-router
+    build: "./docker/edge-router"
+    depends_on:
+      - keycloak
+    networks:
+      - hs-net
+    #labels:
+    #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      PROJECT_NAME: $PROJECT_NAME
+      LOG_LEVEL: debug
+      HS_DOMAIN_NAME: $BASE_DOMAIN
+      GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
+      RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
+      KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
+      HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
+      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+    volumes:
+      #Shibboleth config for SAMLtest
+      #- "./mounts/edge-router/saml/samltest/localtest.me-samltest-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/edge-router/saml/samltest/certs/samltest-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      #- "./mounts/edge-router/saml/samltest/SAMLtest.xml:/var/cache/shibboleth/SAMLtest.xml:Z"
+      #- "./mounts/edge-router/saml/samltest/samltest-idp-metadata.xml:/etc/shibboleth/samltest-idp-metadata.xml:Z"
+      #- "./mounts/edge-router/saml/samltest/samltest-attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./private/certs/sp-cert/localtest.me-cert.pem:/etc/shibboleth/localtest.me-cert.pem:Z"
+      #- "./private/certs/sp-cert/localtest.me-key.pem:/etc/shibboleth/localtest.me-key.pem:Z"
+      #Shibboleth config for SWAMID
+      #- "./mounts/edge-router/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/edge-router/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      #- "./mounts/edge-router/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./mounts/edge-router/saml/certs/swamid-metadata-signer.crt:/etc/shibboleth/swamid-metadata-signer.crt:Z"
+      #- "./private/certs/sp-cert/hird.humlab.umu.se-cert.pem:/etc/shibboleth/sp-cert.pem:Z"
+      #- "./private/certs/sp-cert/hird.humlab.umu.se-key.pem:/etc/shibboleth/sp-key.pem:Z"
+      #Shibboleth config for KEYCLOAK
+      - "./mounts/edge-router/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/edge-router/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      - "./mounts/edge-router/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      - "./mounts/edge-router/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      #GENERAL
+      - "./mounts/webapi:/var/log/api:Z"
+      - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
+      - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
+      - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
+      - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
+      - "./webclient/dist:/var/www/html:Z"
+      - "./webapi:/var/www/html/api:Z"
+      - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
+      - "./mounts/edge-router/apache/logs/shibboleth:/var/log/shibboleth:Z"
+      - "./mounts/edge-router/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
+      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "./certs:/etc/certs:Z"
+      - "./certs/letsencrypt:/certs/letsencrypt:Z"
+      - "./mounts/edge-router/apache/uploads:/tmp/uploads:Z"
+      - "./mounts/edge-router/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
+
+  session-manager:
+    image: hs-session-manager
+    build: "./docker/session-manager"
+    environment:
+      HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
+      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+      RSTUDIO_IMAGE_NAME: $RSTUDIO_IMAGE_NAME
+      RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
+      GITLAB_ADDRESS: "http://gitlab:80"
+      WEBSERVER_PORT: 80
+      LOG_LEVEL: "debug"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+    networks:
+      - hs-net
+
+  #session-manager-dev:
+  #  image: hs-session-manager-dev
+  #  #build: "./docker/session-manager/dev"
+  #  environment:
+  #    HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
+  #    GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+  #    RSTUDIO_IMAGE_NAME: $RSTUDIO_IMAGE_NAME
+  #    RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
+  #    GITLAB_ADDRESS: "http://gitlab:80"
+  #    WEBSERVER_PORT: 80
+  #    LOG_LEVEL: "debug"
+  #  volumes:
+  #    - "./session-manager:/session-manager:Z"
+  #    - "/var/run/docker.sock:/var/run/docker.sock:Z"
+  #  networks:
+  #    - hs-net
+
+  gitlab:
+    image: hs-gitlab
+    build: "./docker/gitlab"
+    networks:
+      - hs-net
+    hostname: gitlab.$BASE_DOMAIN
+    environment:
+      GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
+      HS_DOMAIN_NAME: $BASE_DOMAIN
+      KEYCLOAK_SIGNING_CERT_FINGERPRINT: $KEYCLOAK_SIGNING_CERT_FINGERPRINT
+      GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://gitlab.$BASE_DOMAIN'
+    volumes:
+      - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
+      - "$GITLAB_HOME/config:/etc/gitlab:Z"
+      - "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
+      - "$GITLAB_HOME/shibboleth-logs:/var/log/shibboleth:Z"
+      - "$GITLAB_HOME/apache2.conf:/etc/apache2/apache2.conf:Z"
+      - "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
+      - "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
+      - "$GITLAB_HOME/public:/opt/gitlab/public:Z"
+      - "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
+      - "./certs:/etc/certs:Z"
+
+
+  #This service needs to be run at periods, when the rest of the cluster is already up, in particular the edge-router/apache-server. Someone should probably put this on a timer to run like once a week.
+  #certbot:
+  #  image: certbot/certbot
+  #  depends_on:
+  #    - edge-router
+  #  volumes:
+  #    - "./mounts/edge-router/apache/htdocs:/webroot:Z"
+  #    - "./certs/letsencrypt:/etc/letsencrypt:Z"
+  #  entrypoint: "certbot certonly -d $BASE_DOMAIN,idp.$BASE_DOMAIN,gitlab.$BASE_DOMAIN,rstudio.$BASE_DOMAIN --webroot -w /webroot -n --agree-tos -m $ADMIN_EMAIL --expand"
+
+  emu-webapp:
+    image: hird-emu-webapp
+    build: "./docker/emu-webapp"
+    ports:
+      - 9000:9000
+    networks:
+      - hs-net
+
+  octra:
+    image: hs-octra
+    build: "./docker/octra"
+    networks:
+      - hs-net
+
+  keycloak:
+    image: jboss/keycloak:12.0.2
+    depends_on:
+      - database
+    environment:
+      KEYCLOAK_USER: $KEYCLOAK_USER
+      KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
+      KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
+      DB_VENDOR: "postgres"
+      DB_ADDR: "database"
+      DB_USER: "keycloak"
+      DB_PASSWORD: $POSTGRES_PASSWORD
+      KEYCLOAK_LOGLEVEL: "INFO"
+      ROOT_LOGLEVEL: "INFO"
+      PROXY_ADDRESS_FORWARDING: "true"
+    networks:
+      - hs-net
+
+  database:
+    image: postgres:12.5
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: keycloak
+      PGDATA: '/pgdata/data'
+    volumes:
+      - "./mounts/postgresql/data:/pgdata:Z"
+    networks:
+      - hs-net
+
+networks:
+  hs-net:
+
