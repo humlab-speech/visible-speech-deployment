@@ -6,3 +6,5 @@ echo $certval >> cert.crt
 echo "-----END CERTIFICATE-----" >> cert.crt
 
 openssl x509 -in cert.crt -noout -fingerprint
+
+rm cert.crt
