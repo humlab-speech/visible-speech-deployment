@@ -1,9 +1,9 @@
-# Humlab Speech Cluster
+# Humlab Speech Deployment
 
 This is a cluster of docker containers running the Humlab Speech services.
 
 Included services:
-* Edge router (Apache + Shibboleth) - Serves the main portal page and handles authentication as well as integration towards Gitlab
+* Edge router (Apache + Shibboleth) - Serves the main portal page, handles authentication towards Keycloak and integration with Gitlab API
 
 * Gitlab
 
@@ -11,67 +11,42 @@ Included services:
 
 * PostgreSQL - Dependency of Keycloak.
 
-* Session Manager - Spawns and manages RStudio session containers on request by edge router.
+* Session Manager - Spawns and manages session containers (such as RStudio and Jupyter) on request. Also handles dynamic proxying.
 
-* EMU-webApp
+* EMU-webApp - Integrated via its own Gitlab functionality
+
+* OCTRA - Local mode only (only hosted, not integrated)
 
 
 ## INSTALLATION
 
 ### Prerequisites
-A Linux environment with a somewhat recent version of Docker + Docker Compose. WSL2 on Windows should work.
+A Linux environment with a somewhat recent version of Docker + Docker Compose.
 
 ### Steps
 
 * Move .env-example to .env and fill it out with appropriate information.
-* Run `install.sh`. This will grab the latest versions of The WebClient and WebApi and install these. It will also generate self-signed TLS-certificates.
+docker build -t hs-rstudio-session ./session-manager/docker/rstudio-session-instance
+* Generate some local certificates. These would not be used in production, but we assume a local development installation here. `openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650`
+* Grab latest webclient `git clone https://github.com/humlab-speech/webclient`
+* Grab latest webapi `git clone https://github.com/humlab-speech/webapi`
+* Install & build webclient `cd webclient && npm install && npm run build && cd ..`
+* Install vendors for webapi `cd webapi && php composer.phar install && cd ..`
 * Run `docker-compose up -d`
 * Gitlab setup
-  * Go to gitlab.localtest.me, gitlab will take a couple of minutes to boot but then you should be greeted with a password dialog, enter a new root password here.
   * Sign-in to Gitlab with the root account. 
   * Go to `settings` in your avatar menu.
   * Go to `Access Tokens`.
   * Create an access token with `api` access. Name doesn't matter. Enter this access token into your .env 
+  * Edit .env and set `GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER=saml` (revert this if you need to login as root at some future point)
 * Keycloak setup
   * Go to idp.localtest.me
   * Sign-in with the keycloak admin credentials you specified in .env
-  * Create a realm called `hird`
-  * Go to `Clients`, create a client with Client ID `https://localtest.me` and Client Protocol `SAML`
-  * Edit the newly created client, set `Client Signature Required: OFF`
-  * Go to `Mappers` tab. Add built-in attribute mappers for X500 email, X500 surname, and X500 givenName. Then edit these to set "SAML Attribute NameFormat" as "URI Reference"
-  * Run the bash script `idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file.
-  * Restart the edge-router to let it read in the new metadata from Keycloak, with `docker-compose restart edge-router`
+  * Create a realm called `hird` and import the keycloak-config.json file in the same step.
+  * Run the included script `idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file like `KEYCLOAK_SIGNING_CERT_FINGERPRINT=42:31:C4:AF...`.  
+* Run `docker-compose down && docker-compose up -d` to let various services read in new data.
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
-
-## Keycloak extra
-For setting up Keycloak as an IdP against Gitlab.
-
-1. Add a new client in Keycloak with Client ID `https://gitlab.localtest.me`
-1. Disable `Client Signature Required`
-1. Set `Root URL` to `https://gitlab.localtest.me`
-1. Add a post in `Valid Redirect URIs` and set it to `/*`
-1. Set `Base URL` to `/`
-1. Set `Master SAML Processing URL` to `https://gitlab.localtest.me/users/auth/saml/callback` (this step might not be required)
-1. Go to `Mappers` tab. Add the 3 Builtin X500 attributes.
-1. Go to `https://idp.localtest.me/auth/realms/hird/protocol/saml/descriptor` and copy the certificate. Generate a SHA-1 fingerprint from this certificate.
-1. Update `mounts/gitlab/config/gitlab.rb` with fingerprint in SAML/Keycloak-section.
-
-## CAVEATS ON REDHAT
-
-* Not using latest version of Docker since DNF would not install the latest containerd.io because of how module-streams are configured.
-
-* docker-compose is installed as a static/manually pulled binary, and thus won't auto-update, it was installed using this command:
-  `sudo curl -L "https://github.com/docker/compose/releases/download/1.26.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose`
-
-* Needed to do this (on RH) to get container-to-container networking to work:
-  `sudo firewall-cmd --zone=public --add-masquerade --permanent`
-
-## OPTIONAL
-
-Select an identity provider by uncommenting/commenting out the approrpriate sections in docker-compose.yml. Recommend using keycloak for running locally since local users can be created in keycloak. SAMLtest is also an alternative.
-SWAMID will not work for running locally since you can't have your local address registered as a SP with SWAMID.
-
 
 ## TROUBLESHOOTING
 
@@ -79,4 +54,4 @@ SWAMID will not work for running locally since you can't have your local address
 
 * For errors about proxy timeouts when visiting gitlab, just wait a few minutes, gitlab takes a while to start.
 
-* You might run into problems if running the project under /mnt/c/<etc> in WSL2, recommend running it somwhere under ~/
+* You might run into problems if running the project under /mnt/c/<etc> in WSL2, recommend running it somewhere under ~/
