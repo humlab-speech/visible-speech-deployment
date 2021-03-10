@@ -127,7 +127,7 @@ services:
   #  entrypoint: "certbot certonly -d $BASE_DOMAIN,idp.$BASE_DOMAIN,gitlab.$BASE_DOMAIN,rstudio.$BASE_DOMAIN --webroot -w /webroot -n --agree-tos -m $ADMIN_EMAIL --expand"
 
   emu-webapp:
-    image: hird-emu-webapp
+    image: hs-emu-webapp
     build: "./docker/emu-webapp"
     ports:
       - 9000:9000
