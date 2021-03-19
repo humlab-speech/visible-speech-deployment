@@ -1,3 +1,4 @@
+./mounts/edge-router/apache/uploads/*
 keycloak-config-with-idps.json
 ./session-manager/
 install.sh
