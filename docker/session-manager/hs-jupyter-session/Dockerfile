@@ -13,5 +13,5 @@ RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("git2r")' | 
 
 #RUN apt-get install -y docker.io
 
-COPY ./rscripts /rscripts
+COPY ./scripts /scripts
 
