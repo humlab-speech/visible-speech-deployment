@@ -2,11 +2,11 @@ FROM debian:buster
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 
-LABEL description="A debian based installation of apache with shibboleth, acting as the HIRD edge-router and authentication layer"
+LABEL description="A debian based installation of apache with shibboleth, acting as the Humlab Speech edge-router and authentication layer"
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
 #docker.io is for being able to manipulate containers in the outside cluster - for rstudio session containers initially
-RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php7.3-mbstring --no-install-recommends -y
+RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php7.3-mbstring php-mongodb --no-install-recommends -y
 
 RUN a2enmod proxy proxy_http ssl headers php7.3 rewrite proxy_wstunnel
 
