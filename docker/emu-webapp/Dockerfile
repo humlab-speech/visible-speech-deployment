@@ -12,9 +12,14 @@ RUN gem install sass
 
 RUN gem install compass
 
-RUN git clone https://github.com/IPS-LMU/EMU-webApp.git
+#RUN git clone https://github.com/IPS-LMU/EMU-webApp.git
+
+#Temporarily using the gitlab_path branch of the forked repo
+RUN git clone https://github.com/humlab-speech/EMU-webApp
 
 WORKDIR /app/EMU-webApp
+
+RUN git checkout gitlab_path
 
 RUN npm install
 
