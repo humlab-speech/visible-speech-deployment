@@ -35,7 +35,8 @@ services:
       KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
-      UPLOAD_PATH: $UPLOAD_PATH
+      ABS_ROOT_PATH: $ABS_ROOT_PATH
+      MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       #Shibboleth config for SAMLtest
       #- "./mounts/edge-router/saml/samltest/localtest.me-samltest-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
