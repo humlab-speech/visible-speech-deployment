@@ -36,6 +36,7 @@ services:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
+      MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       #Shibboleth config for SAMLtest
       #- "./mounts/edge-router/saml/samltest/localtest.me-samltest-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
@@ -145,6 +146,30 @@ services:
     networks:
       - hs-net
 
+  wsr-client:
+    image: hs-wsr-client
+    build: "./docker/hs-wsr-client"
+    volumes:
+      - "./hs-wsr-client/dist:/usr/local/apache2/htdocs:Z"
+      - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
+      - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+    networks:
+      - hs-net
+
+  wsr-server:
+    image: hs-wsr-server
+    build: "./docker/hs-wsr-server"
+    volumes:
+      - "./hs-wsr-server:/hs-wsr-server:Z"
+    networks:
+      - hs-net
+
+  labjs:
+    image: hs-labjs
+    build: "./docker/labjs"
+    networks:
+      - hs-net
+
   keycloak:
     image: jboss/keycloak:12.0.2
     depends_on:
@@ -172,6 +197,26 @@ services:
       PGDATA: '/pgdata/data'
     volumes:
       - "./mounts/postgresql/data:/pgdata:Z"
+    networks:
+      - hs-net
+
+  mongo:
+    image: mongo:4.4.4
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+    volumes:
+      - "./mounts/mongo/data:/data/db:Z"
+    networks:
+      - hs-net
+    
+  mongo-express:
+    image: mongo-express
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: $MONGO_ROOT_PASSWORD
     networks:
       - hs-net
 

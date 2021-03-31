@@ -140,6 +140,12 @@ services:
     networks:
       - hs-net
 
+  labjs:
+    image: hs-labjs
+    build: "./docker/labjs"
+    networks:
+      - hs-net
+
   keycloak:
     image: jboss/keycloak:12.0.2
     depends_on:
@@ -167,6 +173,16 @@ services:
       PGDATA: '/pgdata/data'
     volumes:
       - "./mounts/postgresql/data:/pgdata:Z"
+    networks:
+      - hs-net
+
+  mongo:
+    image: mongo:4.4.4
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+    volumes:
+      - "./mounts/mongo/data:/data/db:Z"
     networks:
       - hs-net
 
