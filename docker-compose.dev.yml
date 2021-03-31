@@ -150,9 +150,9 @@ services:
     image: hs-wsr-client
     build: "./docker/hs-wsr-client"
     volumes:
-      - "./hs-wsr/dist:/usr/local/apache2/htdocs:Z"
-      - "./hs-wsr/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
-      - "./hs-wsr/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+      - "./hs-wsr-client/dist:/usr/local/apache2/htdocs:Z"
+      - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
+      - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
     networks:
       - hs-net
 
