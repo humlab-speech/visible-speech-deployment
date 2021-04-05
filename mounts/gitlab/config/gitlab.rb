@@ -467,7 +467,7 @@ gitlab_rails['omniauth_providers'] = [
              assertion_consumer_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/callback',
              #idp_cert_fingerprint: '1A:02:52:8E:68:11:A1:71:38:42:0C:99:AC:0F:AE:08:D3:9B:47:03',
              idp_cert_fingerprint: ENV["KEYCLOAK_SIGNING_CERT_FINGERPRINT"],
-             idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/humlab-speech/protocol/saml',
+             idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/hird/protocol/saml',
              issuer: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"],
              name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
              attribute_statements: { email: ['urn:oid:1.2.840.113549.1.9.1'] }
