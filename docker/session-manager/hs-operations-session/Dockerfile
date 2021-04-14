@@ -1,21 +1,13 @@
-FROM rocker/rstudio:4.0.4
+FROM rocker/rstudio:4.0.5
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
-RUN apt-get update
-
-#zlib is needed to build the R git2r lib, which is a dependency of emuR
-RUN apt-get install -y zlib1g-dev nano curl
-
 RUN echo 'install.packages("emuR")' | R
 
-#RUN echo 'install.packages("git2r")' | R
-
-RUN apt-get install -y docker.io r-cran-git2r libgit2-28
+RUN apt-get update && apt-get install -y zlib1g-dev nano r-cran-git2r curl
 
 #Get nodejs so we can run the git-agent
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs
 
 COPY ./scripts /scripts
-
