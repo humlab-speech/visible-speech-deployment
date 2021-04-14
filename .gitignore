@@ -1,3 +1,4 @@
+./git-agent
 mounts/gitlab/postgresql.conf
 archive
 WebSpeechRecorderNg
