@@ -51,6 +51,8 @@ If you are using WSL2, you will run into issues if you put this project inside a
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
 
+Users in Keycloak MUST have an email, since this is what's used to generate the GitLab username.
+
 ## TROUBLESHOOTING
 
 * If you get a message about `Unknown or Unusable Identity Provider`, try restarting the edge-router. This is probably because Keycloak wasn't ready when the edge-router went up, preventing it from reading metadata from Keycloak.
