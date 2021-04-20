@@ -24,8 +24,8 @@ services:
     #labels:
     #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
     ports:
-      - 80:80
-      - 443:443
+      - 8580:80
+      - 8581:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
@@ -101,6 +101,7 @@ services:
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       HS_DOMAIN_NAME: $BASE_DOMAIN
+      HS_AUTH_REALM: $AUTH_REALM
       KEYCLOAK_SIGNING_CERT_FINGERPRINT: $KEYCLOAK_SIGNING_CERT_FINGERPRINT
       GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
       GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER: $GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER
@@ -140,29 +141,29 @@ services:
     networks:
       - hs-net
 
-  octra:
-    image: hs-octra
-    build: "./docker/octra"
-    networks:
-      - hs-net
+  #octra:
+  #  image: hs-octra
+  #  build: "./docker/octra"
+  #  networks:
+  #    - hs-net
 
-  wsr-client:
-    image: hs-wsr-client
-    build: "./docker/hs-wsr-client"
-    volumes:
-      - "./hs-wsr-client/dist:/usr/local/apache2/htdocs:Z"
-      - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
-      - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
-    networks:
-      - hs-net
+  #wsr-client:
+  #  image: hs-wsr-client
+  #  build: "./docker/hs-wsr-client"
+  #  volumes:
+  #    - "./hs-wsr-client/dist:/usr/local/apache2/htdocs:Z"
+  #    - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
+  #    - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+  #  networks:
+  #    - hs-net
 
-  wsr-server:
-    image: hs-wsr-server
-    build: "./docker/hs-wsr-server"
-    volumes:
-      - "./hs-wsr-server:/hs-wsr-server:Z"
-    networks:
-      - hs-net
+  #wsr-server:
+  #  image: hs-wsr-server
+  #  build: "./docker/hs-wsr-server"
+  #  volumes:
+  #    - "./hs-wsr-server:/hs-wsr-server:Z"
+  #  networks:
+  #    - hs-net
 
   labjs:
     image: hs-labjs

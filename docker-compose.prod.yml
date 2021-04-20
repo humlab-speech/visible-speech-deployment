@@ -24,8 +24,8 @@ services:
     #labels:
     #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
     ports:
-      - 80:80
-      - 443:443
+      - 8580:80
+      - 8581:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
@@ -63,7 +63,7 @@ services:
       - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
-      - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
+      - "./mounts/edge-router/apache/vhosts-tls/:/etc/apache2/sites-enabled/:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/html/api:Z"
       - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
@@ -100,6 +100,7 @@ services:
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       HS_DOMAIN_NAME: $BASE_DOMAIN
+      HS_AUTH_REALM: $AUTH_REALM
       KEYCLOAK_SIGNING_CERT_FINGERPRINT: $KEYCLOAK_SIGNING_CERT_FINGERPRINT
       GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
       GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER: $GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER
@@ -129,19 +130,19 @@ services:
   #    - "./certs/letsencrypt:/etc/letsencrypt:Z"
   #  entrypoint: "certbot certonly -d $BASE_DOMAIN,idp.$BASE_DOMAIN,gitlab.$BASE_DOMAIN,rstudio.$BASE_DOMAIN --webroot -w /webroot -n --agree-tos -m $ADMIN_EMAIL --expand"
 
-  emu-webapp:
-    image: hs-emu-webapp
-    build: "./docker/emu-webapp"
-    ports:
-      - 9000:9000
-    networks:
-      - hs-net
+  #emu-webapp:
+  #  image: hs-emu-webapp
+  #  build: "./docker/emu-webapp"
+  #  ports:
+  #    - 9000:9000
+  #  networks:
+  #    - hs-net
 
-  octra:
-    image: hs-octra
-    build: "./docker/octra"
-    networks:
-      - hs-net
+  #octra:
+  #  image: hs-octra
+  #  build: "./docker/octra"
+  #  networks:
+  #    - hs-net
 
   labjs:
     image: hs-labjs
