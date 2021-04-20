@@ -8,8 +8,8 @@ services:
     networks:
       - hs-net
     ports:
-      - 8580:80
-      - 8581:443
+      - 80:80
+      - 443:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
