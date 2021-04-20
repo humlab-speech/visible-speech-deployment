@@ -1,19 +1,5 @@
 version: '3'
 services:
-  #edge-router-actual:
-  #  image: traefik:v2.4.0
-  #  volumes:
-  #    - "./mounts/traefik/conf:/etc/traefik"
-  #    - "./mounts/traefik/acme:/acme"
-  #    - "./mounts/traefik/log:/var/log/"
-  #    - "/var/run/docker.sock:/var/run/docker.sock"
-  #  #network_mode: host
-  #  ports:
-  #    - 80:80
-  #    - 443:443
-  #  networks:
-  #    - hs-net
-
   edge-router:
     image: hs-edge-router
     build: "./docker/edge-router"
@@ -38,14 +24,6 @@ services:
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
-      #Shibboleth config for SAMLtest
-      #- "./mounts/edge-router/saml/samltest/localtest.me-samltest-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      #- "./mounts/edge-router/saml/samltest/certs/samltest-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
-      #- "./mounts/edge-router/saml/samltest/SAMLtest.xml:/var/cache/shibboleth/SAMLtest.xml:Z"
-      #- "./mounts/edge-router/saml/samltest/samltest-idp-metadata.xml:/etc/shibboleth/samltest-idp-metadata.xml:Z"
-      #- "./mounts/edge-router/saml/samltest/samltest-attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      #- "./private/certs/sp-cert/localtest.me-cert.pem:/etc/shibboleth/localtest.me-cert.pem:Z"
-      #- "./private/certs/sp-cert/localtest.me-key.pem:/etc/shibboleth/localtest.me-key.pem:Z"
       #Shibboleth config for SWAMID
       #- "./mounts/edge-router/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
       #- "./mounts/edge-router/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
@@ -119,30 +97,19 @@ services:
       - "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
       - "./certs:/etc/certs:Z"
 
+  emu-webapp:
+    image: hs-emu-webapp
+    build: "./docker/emu-webapp"
+    ports:
+      - 9000:9000
+    networks:
+      - hs-net
 
-  #This service needs to be run at periods, when the rest of the cluster is already up, in particular the edge-router/apache-server. Someone should probably put this on a timer to run like once a week.
-  #certbot:
-  #  image: certbot/certbot
-  #  depends_on:
-  #    - edge-router
-  #  volumes:
-  #    - "./mounts/edge-router/apache/htdocs:/webroot:Z"
-  #    - "./certs/letsencrypt:/etc/letsencrypt:Z"
-  #  entrypoint: "certbot certonly -d $BASE_DOMAIN,idp.$BASE_DOMAIN,gitlab.$BASE_DOMAIN,rstudio.$BASE_DOMAIN --webroot -w /webroot -n --agree-tos -m $ADMIN_EMAIL --expand"
-
-  #emu-webapp:
-  #  image: hs-emu-webapp
-  #  build: "./docker/emu-webapp"
-  #  ports:
-  #    - 9000:9000
-  #  networks:
-  #    - hs-net
-
-  #octra:
-  #  image: hs-octra
-  #  build: "./docker/octra"
-  #  networks:
-  #    - hs-net
+  octra:
+    image: hs-octra
+    build: "./docker/octra"
+    networks:
+      - hs-net
 
   labjs:
     image: hs-labjs
