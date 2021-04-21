@@ -31,8 +31,8 @@ If you are using WSL2, you will run into issues if you put this project inside a
 * Generate some local certificates. These would not be used in production, but we assume a local development installation here. `openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650`
 * Grab latest webclient `git clone https://github.com/humlab-speech/webclient`
 * Grab latest webapi `git clone https://github.com/humlab-speech/webapi`
-* Grab latest git-agent `https://github.com/humlab-speech/git-agent`
-* Install & build git-agent `cd git-agent && npm install && npm run build && cd ..`
+* Grab latest container-agent `https://github.com/humlab-speech/container-agent`
+* Install & build container-agent `cd container-agent && npm install && npm run build && cd ..`
 * Install & build webclient `cd webclient && npm install && npm run build && cd ..`
 * Make sure you have the PHP extension for MongoDB & Install vendors for webapi `cd webapi && php composer.phar install && cd ..`
 * Go to docker/session-manager and run `build-session-images.sh`. This will take some time and it's fine if this isn't completed before you proceed, so you might want to do this in a separate terminal.
