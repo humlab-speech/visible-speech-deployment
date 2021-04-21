@@ -1,5 +1,5 @@
-mkdir -p ./scripts/git-agent
-cp -Rvp ../../git-agent/dist/* ./scripts/git-agent/
+mkdir -p ./scripts/container-agent
+cp -Rvp ../../container-agent/dist/* ./scripts/container-agent/
 
 echo "Building RStudio session image"
 docker build -t hs-rstudio-session -f hs-rstudio-session/Dockerfile .
