@@ -55,6 +55,9 @@ Everything should now be setup for using the system with Keycloak as the local i
 
 Users in Keycloak MUST have an email, since this is what's used to generate the GitLab username.
 
+## Extras
+* You might want to go to https://gitlab.localtest.me/admin/application_settings/general#js-signup-settings and uncheck 'Sign-up enabled'
+
 ## TROUBLESHOOTING
 
 * If you get a message about `Unknown or Unusable Identity Provider`, try restarting the edge-router. This is probably because Keycloak wasn't ready when the edge-router went up, preventing it from reading metadata from Keycloak.
