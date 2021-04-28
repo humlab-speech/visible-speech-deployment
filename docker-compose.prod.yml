@@ -118,7 +118,8 @@ services:
       - hs-net
 
   keycloak:
-    image: jboss/keycloak:12.0.2
+    image: hs-keycloak
+    build: "./docker/keycloak"
     depends_on:
       - database
     environment:
