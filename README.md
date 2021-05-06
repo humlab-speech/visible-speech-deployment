@@ -51,16 +51,15 @@ If you are using WSL2, you will run into issues if you put this project inside a
   * Run the included script `idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file like `KEYCLOAK_SIGNING_CERT_FINGERPRINT=42:31:C4:AF...`.  
 * Run `docker-compose down && docker-compose up -d` to let various services read in new data.
 
-Everything should now be setup for using the system with Keycloak as the local identity provider. You may create a normal user account in Keycloak to then use for sign-in at http://localtest.me
+Everything should now be setup for using the system with Keycloak as the local identity provider. A user for testing has been created for you in Keycloak, you need to login to Keycloak as admin to set a password for it.
+If you wish to add more test users, you can just do so in Keycloak, the minimum requirements are an email as well as the eppn_keycloak attribute, which can be the same as the email.
 
-Users in Keycloak MUST have an email, since this is what's used to generate the GitLab username.
+For a production setup you might want to add your organization as an identity provider in Keycloak.
 
 ## Extras
-* You might want to go to https://gitlab.localtest.me/admin/application_settings/general#js-signup-settings and uncheck 'Sign-up enabled'
+* You might want to go to https://gitlab.localtest.me/admin/application_settings/general#js-signup-settings and uncheck 'Sign-up enabled' to prevent the creation of local GitLab accounts.
+
+* If you need to sign-in to GitLab as root again after enabling the auto-redirect to SAML/Keycloak, this is a useful URL: `https://gitlab.localtest.me/users/sign_in?auto_sign_in=false`
 
 ## TROUBLESHOOTING
-
-* If you get a message about `Unknown or Unusable Identity Provider`, try restarting the edge-router. This is probably because Keycloak wasn't ready when the edge-router went up, preventing it from reading metadata from Keycloak.
-
 * For errors about proxy timeouts when visiting gitlab, just wait a few minutes, gitlab takes a while to start.
-
