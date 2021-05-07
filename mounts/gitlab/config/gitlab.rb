@@ -469,8 +469,8 @@ gitlab_rails['omniauth_providers'] = [
              idp_cert_fingerprint: ENV["KEYCLOAK_SIGNING_CERT_FINGERPRINT"],
              idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/'+ENV["HS_AUTH_REALM"]+'/protocol/saml',
              issuer: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"],
-             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
-             attribute_statements: { email: ['urn:oid:1.2.840.113549.1.9.1'] }
+             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+             attribute_statements: { nickname: ['eppn_replaced'], email: ['urn:oid:1.2.840.113549.1.9.1'] }
            }
 }]
 
