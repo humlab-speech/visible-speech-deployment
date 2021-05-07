@@ -89,6 +89,7 @@
     <Attribute name="urn:oid:2.5.4.4" id="sn"/>    
     <Attribute name="urn:oid:2.5.4.42" id="givenName"/>
     <Attribute name="eppn_keycloak" id="eppn_keycloak"/>
+    <Attribute name="eppn_replaced" id="eppn_replaced"/>
 
     <!-- Older LDAP-defined attributes (SAML 2.0 names followed by SAML 1 names)... -->
     <!--
