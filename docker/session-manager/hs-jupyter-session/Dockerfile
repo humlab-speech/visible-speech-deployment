@@ -7,13 +7,14 @@ RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localti
 #zlib is needed to build the R git2r lib, which is a dependency of emuR
 RUN apt-get update && apt-get install -y zlib1g-dev nano curl
 
-RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("emuR")' | R --save
+#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("emuR")' | R --save
 
 RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("git2r")' | R --save
+
+RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("packrat")' | R --save
 
 #Get nodejs so we can run the git-agent
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs
 
 COPY ./scripts /scripts
-
