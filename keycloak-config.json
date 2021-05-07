@@ -677,6 +677,20 @@
           }
         },
         {
+          "id": "9454a1de-01ab-45a0-8d25-b0877f2ee21e",
+          "name": "eppn_replaced",
+          "protocol": "saml",
+          "protocolMapper": "saml-javascript-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "true",
+            "Script": "/**\n * Available variables: \n * user - the current user\n * realm - the current realm\n * clientSession - the current clientSession\n * userSession - the current userSession\n * keycloakSession - the current keycloakSession\n */\n\n \n\n\n//insert your code here...\n\n \n\nfunction replace_at_dot(email_like) {\n  return email_like.replace(/@/g,\"_at_\").replace(/\\./g,\"_dot_\")\n}\n\n \n\neppn = user.getAttribute(\"eppn_keycloak\")\nif (eppn.length > 0) {\n    return_value = replace_at_dot(eppn[0])\n} else {\n    email = user.getEmail()\n    if (email !== null) {\n        return_value = replace_at_dot(email)\n    } else {\n        return_value = null //we let gitlab handle it (if at all)\n    }\n\n \n\n}\n\n \n\nreturn_value",
+            "attribute.nameformat": "URI Reference",
+            "friendly.name": "eppn_replaced",
+            "attribute.name": "eppn_replaced"
+          }
+        },
+        {
           "id": "bc87139f-ea69-4d16-a918-4b15dd401e67",
           "name": "eppn",
           "protocol": "saml",
@@ -805,6 +819,20 @@
             "user.attribute": "email",
             "friendly.name": "email",
             "attribute.name": "urn:oid:1.2.840.113549.1.9.1"
+          }
+        },
+        {
+          "id": "9f384283-7263-4f7a-9999-43080fb611f0",
+          "name": "eppn_replaced",
+          "protocol": "saml",
+          "protocolMapper": "saml-javascript-mapper",
+          "consentRequired": false,
+          "config": {
+            "single": "true",
+            "attribute.nameformat": "URI Reference",
+            "Script": "/**\n * Available variables: \n * user - the current user\n * realm - the current realm\n * clientSession - the current clientSession\n * userSession - the current userSession\n * keycloakSession - the current keycloakSession\n */\n\n \n\n\n//insert your code here...\n\n \n\nfunction replace_at_dot(email_like) {\n  return email_like.replace(/@/g,\"_at_\").replace(/\\./g,\"_dot_\")\n}\n\n \n\neppn = user.getAttribute(\"eppn_keycloak\")\nif (eppn.length > 0) {\n    return_value = replace_at_dot(eppn[0])\n} else {\n    email = user.getEmail()\n    if (email !== null) {\n        return_value = replace_at_dot(email)\n    } else {\n        return_value = null //we let gitlab handle it (if at all)\n    }\n\n \n\n}\n\n \n\nreturn_value",
+            "friendly.name": "eppn_replaced",
+            "attribute.name": "eppn_replaced"
           }
         },
         {
