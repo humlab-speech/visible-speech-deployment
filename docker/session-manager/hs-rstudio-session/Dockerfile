@@ -19,18 +19,10 @@ RUN echo 'install.packages("tidyverse")' | R
 RUN echo 'install.packages("tidymodels")' | R
 RUN echo 'install.packages("devtools")' | R
 RUN echo 'install.packages("rPraat")' | R
-#RUN echo 'library(devtools); install_github("humlab-speech/superassp")' | R
-#RUN echo 'library(devtools); install_github("humlab-speech/reindeer")' | R
-
-#IN THE FUTURE:
-#RUN echo 'install.packages("reindeer")' | R
-#RUN echo 'install.packages("superassp")' | R
-
-#MAYBE AT SOME POINT ONE OF THESE:
-#RUN echo 'install.packages("packrat")' | R
-#RUN echo 'install.packages("renv")' | R
+RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R
+RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R
+#RUN echo 'library(devtools); install_github("humlab-speech/reindeer",dependencies = "Imports")' | R
 
 COPY ./files/.Rprofile /home/rstudio/.Rprofile
-
 COPY ./scripts /scripts
 
