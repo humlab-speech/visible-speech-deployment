@@ -97,9 +97,9 @@ services:
       - "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
       - "./certs:/etc/certs:Z"
 
-  emu-webapp:
-    image: hs-emu-webapp
-    build: "./docker/emu-webapp"
+  emuwebapp:
+    image: hs-emuwebapp
+    build: "./docker/emuwebapp"
     ports:
       - 9000:9000
     networks:
