@@ -22,7 +22,7 @@ RUN echo 'install.packages("rPraat")' | R
 RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R
 RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R
 #RUN echo 'library(devtools); install_github("humlab-speech/reindeer",dependencies = "Imports")' | R
+RUN echo 'library(devtools); install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R
 
-COPY ./files/.Rprofile /home/rstudio/.Rprofile
 COPY ./scripts /scripts
-
+COPY ./files/rsession.conf /etc/rstudio/rsession.conf
