@@ -41,7 +41,7 @@ services:
       - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
-      - "./mounts/edge-router/apache/vhosts-tls/:/etc/apache2/sites-enabled/:Z"
+      - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/html/api:Z"
       - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
