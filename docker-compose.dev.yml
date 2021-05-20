@@ -8,8 +8,8 @@ services:
     networks:
       - hs-net
     ports:
-      - 80:80
-      - 443:443
+      - $HTTP_PORT:80
+      - $HTTPS_PORT:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
@@ -112,23 +112,23 @@ services:
     networks:
       - hs-net
 
-  wsr-client:
-    image: hs-wsr-client
-    build: "./docker/hs-wsr-client"
-    volumes:
-      - "./hs-wsr-client/dist:/usr/local/apache2/htdocs:Z"
-      - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
-      - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
-    networks:
-      - hs-net
+  #wsr-client:
+  #  image: hs-wsr-client
+  #  build: "./docker/hs-wsr-client"
+  #  volumes:
+  #    - "./hs-wsr-client/dist:/usr/local/apache2/htdocs:Z"
+  #    - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
+  #    - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+  #  networks:
+  #    - hs-net
 
-  wsr-server:
-    image: hs-wsr-server
-    build: "./docker/hs-wsr-server"
-    volumes:
-      - "./hs-wsr-server:/hs-wsr-server:Z"
-    networks:
-      - hs-net
+  #wsr-server:
+  #  image: hs-wsr-server
+  #  build: "./docker/hs-wsr-server"
+  #  volumes:
+  #    - "./hs-wsr-server:/hs-wsr-server:Z"
+  #  networks:
+  #    - hs-net
 
   labjs:
     image: hs-labjs

@@ -10,8 +10,8 @@ services:
     #labels:
     #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
     ports:
-      - 8580:80
-      - 8581:443
+      - $HTTP_PORT:80
+      - $HTTPS_PORT:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
