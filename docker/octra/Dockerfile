@@ -1,24 +1,30 @@
-FROM nginx:1.19
+#FROM nginx:1.19
+FROM httpd:2.4
+
+# COPY ./public-html/ /usr/local/apache2/htdocs/
+
 
 RUN apt-get update && apt-get -y install nginx curl
 
+COPY cacert.pem /etc/ssl/certs/cacert.pem
+
+COPY demo_file.wav /usr/local/apache2/htdocs/media/demo_file.wav
+
 WORKDIR /
 
-RUN curl -OL https://github.com/IPS-LMU/octra/archive/v1.4.2.tar.gz
+RUN curl -k -OL https://github.com/IPS-LMU/octra/releases/download/v1.4.3/octra-v1-4-3.zip
 
-RUN tar xzf v1.4.2.tar.gz
+RUN apt-get update && apt-get -y install unzip
+#RUN apt-get update && apt-get -y install nodejs unzip
 
-WORKDIR /octra-1.4.2
+RUN unzip octra-v1-4-3.zip -d /
 
-RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+# Files in the zip file are in an /octra dir, so no need to create it...
+WORKDIR /octra/
 
-RUN apt-get update && apt-get -y install nodejs
+#RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
 
-RUN npm install
+RUN cp -R ./* /usr/local/apache2/htdocs/
 
-RUN cp ./src/config/appconfig_sample.json src/config/appconfig.json
 
-RUN npm run build
-
-RUN cp -R ./dist/octra/* /usr/share/nginx/html/
 

@@ -1,0 +1,51 @@
+{
+  "version": "1.2.5",
+  "audio_server": {
+    "url": ""
+  },
+  "octra": {
+    "database": {
+      "name": "octra"
+    },
+    "login": {
+      "enabled": false
+    },
+    "showdetails": false,
+    "responsive": {
+      "enabled": true,
+      "fixedwidth": 1200
+    },
+    "bugreport": {
+      "enabled": false,
+      "name": "Email",
+      "auth_token": "",
+      "url": ""
+    },
+    "plugins": {
+      "asr": {
+        "enabled": false
+		}
+	},
+    "allowed_browsers": [],
+    "allowed_projects": [],
+    "languages": [
+      "en",
+      "de"
+    ],
+    "audioExamples": [
+      {
+        "language" : "en",
+        "url": "./media/demo_file.wav",
+        "description": "Demo media file"
+      }
+    ],
+
+    "tracking": {
+      "active": "",
+      "matomo": {
+        "host": "",
+        "siteID": 0
+      }
+    }
+  }
+}
