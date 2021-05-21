@@ -5,11 +5,13 @@ LABEL description="The RStudio session image, which is instantiated when a new R
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
+RUN apt-get update && apt-get install -y curl
+
 #Get nodejs so we can run the git-agent
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get update
 
-RUN apt-get install -y zlib1g-dev nano curl docker.io r-cran-git2r libgit2-28 nodejs
+RUN apt-get install -y zlib1g-dev nano docker.io r-cran-git2r libgit2-28 nodejs
 
 RUN echo 'install.packages("emuR")' | R
 RUN echo 'install.packages("openxlsx")' | R

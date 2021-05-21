@@ -5,9 +5,11 @@ LABEL description="This image is used for background operations in the humlab sp
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
+RUN apt-get update && apt-get install -y curl
+
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
 
-RUN apt-get update && apt-get install -y zlib1g-dev nano r-cran-git2r curl nodejs
+RUN apt-get update && apt-get install -y zlib1g-dev nano r-cran-git2r nodejs
 
 RUN echo 'install.packages("devtools")' | R
 
