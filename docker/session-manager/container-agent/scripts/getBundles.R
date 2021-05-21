@@ -1,0 +1,6 @@
+library(emuR)
+dbPath = file.path(Sys.getenv("PROJECT_PATH"), "Data", "humlabspeech_emuDB")
+VISPDB = load_emuDB(dbPath)
+bundles <- list_bundles(VISPDB)
+bundlesJson <- jsonlite::toJSON(bundles)
+print(bundlesJson)

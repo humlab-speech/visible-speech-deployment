@@ -28,10 +28,10 @@ RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("emuR")' | R
 
 RUN echo 'devtools::install_github("tjmahr/tjm.praat")' | R --save
 RUN echo 'devtools::install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save
-#RUN echo 'devtools::install_github("humlab-speech/reindeer",dependencies = "Imports")' | R --save
+RUN echo 'devtools::install_github("humlab-speech/reindeer",dependencies = "Imports")' | R --save
+RUN echo 'devtools::install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R --save
 
-COPY ./scripts /scripts
-
+COPY ./container-agent /container-agent
 COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
 
 RUN mkdir /home/jovyan/project

@@ -26,5 +26,5 @@ RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependenci
 #RUN echo 'library(devtools); install_github("humlab-speech/reindeer",dependencies = "Imports")' | R
 RUN echo 'library(devtools); install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R
 
-COPY ./scripts /scripts
+COPY ./container-agent /container-agent
 COPY ./files/rsession.conf /etc/rstudio/rsession.conf

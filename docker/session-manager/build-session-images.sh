@@ -1,5 +1,6 @@
-mkdir -p ./scripts/container-agent
-cp -Rvp ../../container-agent/dist/* ./scripts/container-agent/
+#mkdir -p ./scripts/container-agent
+#cp -Rvp ../../container-agent/dist/* ./scripts/container-agent/
+cp -Rvp ../../container-agent/dist ./container-agent
 
 echo "Building Operations session image"
 docker build -t hs-operations-session -f hs-operations-session/Dockerfile .
