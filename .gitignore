@@ -1,3 +1,4 @@
+docker-compose.yml
 ./git-agent
 mounts/gitlab/postgresql.conf
 archive
