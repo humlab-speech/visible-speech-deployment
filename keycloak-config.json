@@ -1,7 +1,7 @@
 {
-  "id": "hird",
-  "realm": "hird",
-  "displayName": "Humlab Speech",
+  "id": "visp",
+  "realm": "visp",
+  "displayName": "Visual Speech",
   "notBefore": 0,
   "revokeRefreshToken": false,
   "refreshTokenMaxReuse": 0,
@@ -49,7 +49,7 @@
         "description": "${role_offline-access}",
         "composite": false,
         "clientRole": false,
-        "containerId": "hird",
+        "containerId": "visp",
         "attributes": {}
       },
       {
@@ -58,7 +58,7 @@
         "description": "${role_uma_authorization}",
         "composite": false,
         "clientRole": false,
-        "containerId": "hird",
+        "containerId": "visp",
         "attributes": {}
       }
     ],
@@ -438,7 +438,7 @@
       "clientId": "account",
       "name": "${client_account}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/hird/account/",
+      "baseUrl": "/realms/visp/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
@@ -449,7 +449,7 @@
         "view-profile"
       ],
       "redirectUris": [
-        "/realms/hird/account/*"
+        "/realms/visp/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -485,14 +485,14 @@
       "clientId": "account-console",
       "name": "${client_account-console}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/hird/account/",
+      "baseUrl": "/realms/visp/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "/realms/hird/account/*"
+        "/realms/visp/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -920,14 +920,14 @@
       "clientId": "security-admin-console",
       "name": "${client_security-admin-console}",
       "rootUrl": "${authAdminUrl}",
-      "baseUrl": "/admin/hird/console/",
+      "baseUrl": "/admin/visp/console/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "/admin/hird/console/*"
+        "/admin/visp/console/*"
       ],
       "webOrigins": [
         "+"
