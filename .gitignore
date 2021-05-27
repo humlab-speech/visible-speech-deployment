@@ -2,9 +2,9 @@ container-agent
 mounts/gitlab/postgresql.conf
 archive
 WebSpeechRecorderNg
-./mounts/edge-router/apache/uploads/*
+/mounts/edge-router/apache/uploads/*
 keycloak-config-with-idps.json
-./session-manager/
+/session-manager/
 install.sh
 .env
 dist
