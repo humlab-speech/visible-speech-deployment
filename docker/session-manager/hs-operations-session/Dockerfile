@@ -15,4 +15,4 @@ RUN echo 'install.packages("devtools")' | R
 
 RUN echo 'library(devtools); install_github("IPS-LMU/emuR")' | R
 
-COPY ./scripts /scripts
+COPY ./container-agent /container-agent

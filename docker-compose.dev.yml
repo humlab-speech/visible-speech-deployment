@@ -35,7 +35,7 @@ services:
       - "./mounts/edge-router/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
       - "./mounts/edge-router/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
       #GENERAL
-      - "./mounts/webapi:/var/log/api:Z"
+      - "./mounts/webapi/logs:/var/log/api:Z"
       - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
@@ -109,6 +109,9 @@ services:
   octra:
     image: hs-octra
     build: "./docker/octra"
+    volumes:
+      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
+      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
     networks:
       - hs-net
     volumes:

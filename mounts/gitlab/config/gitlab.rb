@@ -470,7 +470,7 @@ gitlab_rails['omniauth_providers'] = [
              idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/'+ENV["HS_AUTH_REALM"]+'/protocol/saml',
              issuer: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"],
              name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-             attribute_statements: { nickname: ['eppn_replaced'], email: ['urn:oid:1.2.840.113549.1.9.1'] }
+             attribute_statements: { first_name: ['urn:oid:2.5.4.42'], last_name: ['urn:oid:2.5.4.4'], nickname: ['eppn_replaced'], email: ['urn:oid:1.2.840.113549.1.9.1'] }
            }
 }]
 

@@ -45,7 +45,7 @@
             </SSO>
             -->
 
-            <SSO entityID="https://idp.localtest.me/auth/realms/hird">
+            <SSO entityID="https://idp.localtest.me/auth/realms/visp">
               SAML2
             </SSO>
 
@@ -178,7 +178,7 @@
         
         <MetadataProvider 
                 type="XML" 
-                url="http://keycloak:8080/auth/realms/hird/protocol/saml/descriptor"
+                url="http://keycloak:8080/auth/realms/visp/protocol/saml/descriptor"
                 backingFilePath="keycloak-idp-metadata.xml" reloadInterval="300">
 
                 <!--<MetadataFilter type="Signature" certificate="swamid-metadata-signer.crt" verifyBackup="false"/>-->
@@ -224,7 +224,7 @@
         <CredentialResolver type="File" key="/etc/certs/localtest.me/cert.key" certificate="/etc/certs/localtest.me/cert.crt"/>
 
         <!--
-        <ApplicationOverride id="gitlab" entityID="https://hird.humlab.umu.se">
+        <ApplicationOverride id="gitlab" entityID="https://visp.humlab.umu.se">
         </ApplicationOverride>
         -->        
 

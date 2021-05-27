@@ -1,11 +1,11 @@
 docker-compose.yml
-./git-agent
+container-agent
 mounts/gitlab/postgresql.conf
 archive
 WebSpeechRecorderNg
-./mounts/edge-router/apache/uploads/*
+/mounts/edge-router/apache/uploads/*
 keycloak-config-with-idps.json
-./session-manager/
+/session-manager/
 install.sh
 .env
 dist
@@ -36,3 +36,4 @@ mounts/gitlab/config/ssh_host_rsa_key
 mounts/gitlab/config/ssh_host_rsa_key.pub
 kc-realm-export.json
 docker/session-manager/scripts/container-agent/main.js
+mounts/mongo/data/

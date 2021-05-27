@@ -27,31 +27,32 @@ then
     exit
 fi
 
-echo "Building RStudio session image"
-docker build -t hs-rstudio-session ./session-manager/docker/rstudio-session-instance
+echo "Copy .env-example to .env"
+cp .env-example .env
 
-#Generate some local certificates. These would not be used in production, but we assume a local development installation here.
-#openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650
+echo "Generating local self-signed certificate"
+openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650
 
-#Grab latest webclient
+echo "Grab latest webclient"
 git clone https://github.com/humlab-speech/webclient
 
-#Grab latest webapi
+echo "Grab latest webapi"
 git clone https://github.com/humlab-speech/webapi
 
-#Install & build webclient
-cd webclient
-npm install && npm run build
-cd ..
+echo "Grab latest container-agent"
+git clone https://github.com/humlab-speech/container-agent
 
-#Install vendors for webapi
-cd webapi
-php composer.phar install
-cd ..
+echo "Install & build container-agent"
+cd container-agent && npm install && npm run build && cd ..
 
+echo "Install & build webclient"
+cd webclient && npm install && npm run build && cd ..
 
-#At some point:
-#curl https://idp.localtest.me/auth/realms/hird/protocol/saml/descriptor
-#get certificate from this metadata-xml, and generate its fingerprint with:
-#openssl x509 -in cert.crt -noout -fingerprint
-#then create an env-var with this fingerprint and insert that into gitlab config
+echo "Install Session-Manager"
+git clone https://github.com/humlab-speech/session-manager
+cd session-manager && npm install && cd ..
+
+echo "Skipping PHP WebApi install"
+
+echo "You should now fill out .env as best you can and then do the rest of the install manually."
+
