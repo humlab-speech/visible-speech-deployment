@@ -1,4 +1,4 @@
-./container-agent
+container-agent
 mounts/gitlab/postgresql.conf
 archive
 WebSpeechRecorderNg
