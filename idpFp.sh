@@ -1,4 +1,4 @@
-curl --silent -k https://idp.localtest.me/auth/realms/hird/protocol/saml/descriptor | grep -oPm1 "(?<=<ds:X509Certificate>)[^<]+" > cert.crt
+curl --silent -k https://idp.localtest.me/auth/realms/visp/protocol/saml/descriptor | grep -oPm1 "(?<=<ds:X509Certificate>)[^<]+" > cert.crt
 certval=`cat cert.crt`
 
 echo "-----BEGIN CERTIFICATE-----" > cert.crt
