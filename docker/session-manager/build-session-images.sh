@@ -1,5 +1,3 @@
-#mkdir -p ./scripts/container-agent
-#cp -Rvp ../../container-agent/dist/* ./scripts/container-agent/
 cp -Rvp ../../container-agent/dist ./container-agent
 
 echo "Building Operations session image"
@@ -11,3 +9,4 @@ docker build -t hs-rstudio-session -f hs-rstudio-session/Dockerfile .
 echo "Building Jupyter session image"
 docker build -t hs-jupyter-session -f hs-jupyter-session/Dockerfile .
 
+rm -R ./container-agent
