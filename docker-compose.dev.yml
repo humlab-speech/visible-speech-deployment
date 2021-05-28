@@ -109,6 +109,9 @@ services:
   octra:
     image: hs-octra
     build: "./docker/octra"
+    volumes:
+      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
+      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
     networks:
       - hs-net
 
