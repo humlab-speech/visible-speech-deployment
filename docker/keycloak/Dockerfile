@@ -1,3 +1,3 @@
-FROM jboss/keycloak:12.0.2
+FROM jboss/keycloak:13.0.1
 
 COPY ./Stockholm /etc/localtime
