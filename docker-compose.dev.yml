@@ -98,9 +98,9 @@ services:
       #- "$GITLAB_HOME/postgresql.conf:/var/opt/gitlab/postgresql/data.11/postgresql.conf:Z"
       - "./certs:/etc/certs:Z"
 
-  emuwebapp:
-    image: hs-emuwebapp
-    build: "./docker/emuwebapp"
+  emu-webapp:
+    image: hs-emu-webapp
+    build: "./docker/emu-webapp"
     ports:
       - 9000:9000
     networks:
