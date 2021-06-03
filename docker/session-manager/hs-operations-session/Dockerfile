@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y curl
 
 RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
 
-RUN apt-get update && apt-get install -y zlib1g-dev nano r-cran-git2r nodejs r-cran-jsonlite
+RUN apt-get update && apt-get install -y zlib1g-dev nano r-cran-git2r nodejs r-cran-jsonlite r-cran-base64enc
 
 RUN echo 'install.packages("devtools")' | R
 
