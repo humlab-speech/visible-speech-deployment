@@ -31,6 +31,9 @@ RUN echo 'devtools::install_github("humlab-speech/superassp",dependencies = "Imp
 RUN echo 'devtools::install_github("humlab-speech/reindeer",dependencies = "Imports")' | R --save
 RUN echo 'devtools::install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R --save
 
+#Always force the next COPY cmd, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
 COPY ./container-agent /container-agent
 COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
 

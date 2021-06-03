@@ -26,5 +26,8 @@ RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependenci
 #RUN echo 'library(devtools); install_github("humlab-speech/reindeer",dependencies = "Imports")' | R
 RUN echo 'library(devtools); install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R
 
+#Always force the next COPY cmd, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
 COPY ./container-agent /container-agent
 COPY ./files/rsession.conf /etc/rstudio/rsession.conf
