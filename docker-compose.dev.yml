@@ -158,6 +158,8 @@ services:
       KEYCLOAK_LOGLEVEL: "INFO"
       ROOT_LOGLEVEL: "INFO"
       PROXY_ADDRESS_FORWARDING: "true"
+    volumes:
+      - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
     networks:
       - hs-net
 
