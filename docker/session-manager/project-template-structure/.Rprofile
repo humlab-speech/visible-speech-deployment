@@ -1,2 +1,1 @@
-#setwd("project")
-options(defaultPackages="eloquent.researcher")
+#options(defaultPackages="eloquent.researcher")
