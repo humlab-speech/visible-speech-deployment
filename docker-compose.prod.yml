@@ -6,7 +6,7 @@ services:
     depends_on:
       - keycloak
     networks:
-      - hs-net
+      - visp-net
     #labels:
     #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
     ports:
@@ -67,13 +67,13 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
-      - hs-net
+      - visp-net
 
   gitlab:
     image: hs-gitlab
     build: "./docker/gitlab"
     networks:
-      - hs-net
+      - visp-net
     hostname: gitlab.$BASE_DOMAIN
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
@@ -103,13 +103,13 @@ services:
     ports:
       - 9000:9000
     networks:
-      - hs-net
+      - visp-net
 
   octra:
     image: hs-octra
     build: "./docker/octra"
     networks:
-      - hs-net
+      - visp-net
     volumes:
       - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
@@ -118,7 +118,7 @@ services:
     image: hs-labjs
     build: "./docker/labjs"
     networks:
-      - hs-net
+      - visp-net
 
   keycloak:
     image: hs-keycloak
@@ -139,7 +139,7 @@ services:
     volumes:
       - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
     networks:
-      - hs-net
+      - visp-net
 
   database:
     image: postgres:12.5
@@ -151,7 +151,7 @@ services:
     volumes:
       - "./mounts/postgresql/data:/pgdata:Z"
     networks:
-      - hs-net
+      - visp-net
 
   mongo:
     image: mongo:4.4.4
@@ -161,8 +161,8 @@ services:
     volumes:
       - "./mounts/mongo/data:/data/db:Z"
     networks:
-      - hs-net
+      - visp-net
 
 networks:
-  hs-net:
+  visp-net:
 

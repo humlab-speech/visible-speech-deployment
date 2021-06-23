@@ -6,7 +6,7 @@ services:
     depends_on:
       - keycloak
     networks:
-      - hs-net
+      - visp-net
     ports:
       - $HTTP_PORT:80
       - $HTTPS_PORT:443
@@ -57,22 +57,22 @@ services:
     environment:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
-      RSTUDIO_IMAGE_NAME: "hs-rstudio-session"
+      RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
       RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
-      JUPYTER_IMAGE_NAME: "hs-jupyter-session"
+      JUPYTER_IMAGE_NAME: "visp-jupyter-session"
       GITLAB_ADDRESS: "http://gitlab:80"
       LOG_LEVEL: "debug"
     volumes:
       - "./session-manager:/session-manager:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
-      - hs-net
+      - visp-net
 
   gitlab:
     image: hs-gitlab
     build: "./docker/gitlab"
     networks:
-      - hs-net
+      - visp-net
     hostname: gitlab.$BASE_DOMAIN
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
@@ -104,7 +104,7 @@ services:
     ports:
       - 9000:9000
     networks:
-      - hs-net
+      - visp-net
 
   octra:
     image: hs-octra
@@ -113,7 +113,7 @@ services:
       - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
     networks:
-      - hs-net
+      - visp-net
     volumes:
       - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
@@ -126,7 +126,7 @@ services:
   #    - "./hs-wsr-client/.htaccess:/usr/local/apache2/htdocs/.htaccess:Z"
   #    - "./hs-wsr-client/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
   #  networks:
-  #    - hs-net
+  #    - visp-net
 
   #wsr-server:
   #  image: hs-wsr-server
@@ -134,13 +134,13 @@ services:
   #  volumes:
   #    - "./hs-wsr-server:/hs-wsr-server:Z"
   #  networks:
-  #    - hs-net
+  #    - visp-net
 
   labjs:
     image: hs-labjs
     build: "./docker/labjs"
     networks:
-      - hs-net
+      - visp-net
 
   keycloak:
     image: hs-keycloak
@@ -161,7 +161,7 @@ services:
     volumes:
       - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
     networks:
-      - hs-net
+      - visp-net
 
   database:
     image: postgres:12.5
@@ -173,7 +173,7 @@ services:
     volumes:
       - "./mounts/postgresql/data:/pgdata:Z"
     networks:
-      - hs-net
+      - visp-net
 
   mongo:
     image: mongo:4.4.4
@@ -183,7 +183,7 @@ services:
     volumes:
       - "./mounts/mongo/data:/data/db:Z"
     networks:
-      - hs-net
+      - visp-net
     
   mongo-express:
     image: mongo-express
@@ -193,8 +193,8 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: $MONGO_ROOT_PASSWORD
     networks:
-      - hs-net
+      - visp-net
 
 networks:
-  hs-net:
+  visp-net:
 
