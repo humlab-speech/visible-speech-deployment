@@ -1,4 +1,4 @@
-FROM gitlab/gitlab-ce:13.9.3-ce.0
+FROM gitlab/gitlab-ce:13.10.5-ce.0
 
 RUN echo 'gitlab_workhorse_options="-listenUmask 0 -listenNetwork tcp -listenAddr 127.0.0.1:8181 -authBackend http://127.0.0.1:8080"' > /etc/default/gitlab
 
