@@ -1,7 +1,7 @@
 FROM rocker/rstudio:4.0.5
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
-LABEL description="The RStudio session image, which is instantiated when a new RStudio session is spawned in the humlab speech interface"
+LABEL description="The RStudio session image, which is instantiated when a new RStudio session is spawned in the VISP interface"
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
