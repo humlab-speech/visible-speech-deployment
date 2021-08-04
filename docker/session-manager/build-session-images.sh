@@ -1,5 +1,4 @@
-cd ../../container-agent && npm run build && cd ../docker/session-manager
-cp -Rvp ../../container-agent/dist ./container-agent
+cd ../../container-agent && npm run build && cd ../docker/session-manager && cp -Rvp ../../container-agent/dist ./container-agent
 
 echo "Building Operations session image"
 docker build -t visp-operations-session -f operations-session/Dockerfile .
