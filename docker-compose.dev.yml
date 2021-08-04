@@ -57,6 +57,7 @@ services:
     environment:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+      ABS_ROOT_PATH: $ABS_ROOT_PATH
       RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
       RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
       JUPYTER_IMAGE_NAME: "visp-jupyter-session"
