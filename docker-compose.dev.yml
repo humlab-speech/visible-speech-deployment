@@ -3,6 +3,7 @@ services:
   edge-router:
     image: hs-edge-router
     build: "./docker/edge-router"
+    restart: unless-stopped
     depends_on:
       - keycloak
     networks:
@@ -49,11 +50,12 @@ services:
       - "./certs:/etc/certs:Z"
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
       - "./mounts/edge-router/apache/uploads:/tmp/uploads:Z"
-      - "./mounts/edge-router/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
+      - "./mounts/edge-router/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"      
 
   session-manager:
     image: hs-session-manager-dev
     build: "./docker/session-manager/dev"
+    restart: unless-stopped
     environment:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
@@ -72,6 +74,7 @@ services:
   gitlab:
     image: hs-gitlab
     build: "./docker/gitlab"
+    restart: unless-stopped
     networks:
       - visp-net
     hostname: gitlab.$BASE_DOMAIN
@@ -102,6 +105,7 @@ services:
   emu-webapp:
     image: hs-emu-webapp
     build: "./docker/emu-webapp"
+    restart: unless-stopped
     ports:
       - 9000:9000
     networks:
@@ -110,6 +114,7 @@ services:
   octra:
     image: hs-octra
     build: "./docker/octra"
+    restart: unless-stopped
     volumes:
       - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
@@ -140,12 +145,14 @@ services:
   labjs:
     image: hs-labjs
     build: "./docker/labjs"
+    restart: unless-stopped
     networks:
       - visp-net
 
   keycloak:
     image: hs-keycloak
     build: "./docker/keycloak"
+    restart: unless-stopped
     depends_on:
       - database
     environment:
@@ -166,6 +173,7 @@ services:
 
   database:
     image: postgres:12.5
+    restart: unless-stopped
     environment:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -178,6 +186,7 @@ services:
 
   mongo:
     image: mongo:4.4.4
+    restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
@@ -188,6 +197,7 @@ services:
     
   mongo-express:
     image: mongo-express
+    restart: unless-stopped
     ports:
       - 8081:8081
     environment:

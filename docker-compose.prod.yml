@@ -3,6 +3,7 @@ services:
   edge-router:
     image: hs-edge-router
     build: "./docker/edge-router"
+    restart: always
     depends_on:
       - keycloak
     networks:
@@ -56,6 +57,7 @@ services:
   session-manager:
     image: hs-session-manager
     build: "./docker/session-manager"
+    restart: always
     environment:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
@@ -76,6 +78,7 @@ services:
     networks:
       - visp-net
     hostname: gitlab.$BASE_DOMAIN
+    restart: always
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       HS_DOMAIN_NAME: $BASE_DOMAIN
@@ -101,6 +104,7 @@ services:
   emu-webapp:
     image: hs-emu-webapp
     build: "./docker/emu-webapp"
+    restart: always
     ports:
       - 9000:9000
     networks:
@@ -109,6 +113,7 @@ services:
   octra:
     image: hs-octra
     build: "./docker/octra"
+    restart: always
     networks:
       - visp-net
     volumes:
@@ -118,12 +123,14 @@ services:
   labjs:
     image: hs-labjs
     build: "./docker/labjs"
+    restart: always
     networks:
       - visp-net
 
   keycloak:
     image: hs-keycloak
     build: "./docker/keycloak"
+    restart: always
     depends_on:
       - database
     environment:
@@ -144,6 +151,7 @@ services:
 
   database:
     image: postgres:12.5
+    restart: always
     environment:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -156,6 +164,7 @@ services:
 
   mongo:
     image: mongo:4.4.4
+    restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
