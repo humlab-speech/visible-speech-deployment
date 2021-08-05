@@ -62,12 +62,13 @@ services:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
-      RSTUDIO_IMAGE_NAME: "hs-rstudio-session"
+      RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
       RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
-      JUPYTER_IMAGE_NAME: "hs-jupyter-session"
+      JUPYTER_IMAGE_NAME: "visp-jupyter-session"
       GITLAB_ADDRESS: "http://gitlab:80"
       LOG_LEVEL: "debug"
     volumes:
+      - "./mounts/edge-router/apache/uploads:/mounts/edge-router/apache/uploads:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
       - visp-net
