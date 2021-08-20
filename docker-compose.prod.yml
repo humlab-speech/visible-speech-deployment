@@ -67,6 +67,7 @@ services:
       JUPYTER_IMAGE_NAME: "visp-jupyter-session"
       GITLAB_ADDRESS: "http://gitlab:80"
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      ACCESS_LIST_ENABLED: $ACCESS_LIST_ENABLED
       LOG_LEVEL: "debug"
     volumes:
       - "./mounts/edge-router/apache/uploads:/mounts/edge-router/apache/uploads:Z"

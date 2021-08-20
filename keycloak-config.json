@@ -369,7 +369,24 @@
           "attributes": {}
         }
       ],
-      "https://localtest.me": []
+      "https://localtest.me": [
+        {
+          "id": "d7b536a7-d76a-4373-80cc-4328fc92230c",
+          "name": "user",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "42b7650a-9f22-4ab7-a67b-2836cecf22e7",
+          "attributes": {}
+        },
+        {
+          "id": "99c86144-2c8c-4b0b-925a-f98a61133970",
+          "name": "admin",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "42b7650a-9f22-4ab7-a67b-2836cecf22e7",
+          "attributes": {}
+        }
+      ]
     }
   },
   "groups": [],
@@ -380,15 +397,14 @@
   "requiredCredentials": [
     "password"
   ],
-  "otpPolicyType": "totp",
+  "otpPolicyType": "hotp",
   "otpPolicyAlgorithm": "HmacSHA1",
-  "otpPolicyInitialCounter": 0,
+  "otpPolicyInitialCounter": 1,
   "otpPolicyDigits": 6,
   "otpPolicyLookAheadWindow": 1,
   "otpPolicyPeriod": 30,
   "otpSupportedApplications": [
-    "FreeOTP",
-    "Google Authenticator"
+    "FreeOTP"
   ],
   "webAuthnPolicyRpEntityName": "keycloak",
   "webAuthnPolicySignatureAlgorithms": [
@@ -438,7 +454,7 @@
       "clientId": "account",
       "name": "${client_account}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/visp/account/",
+      "baseUrl": "/realms/hird/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
@@ -449,7 +465,7 @@
         "view-profile"
       ],
       "redirectUris": [
-        "/realms/visp/account/*"
+        "/realms/hird/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -485,14 +501,14 @@
       "clientId": "account-console",
       "name": "${client_account-console}",
       "rootUrl": "${authBaseUrl}",
-      "baseUrl": "/realms/visp/account/",
+      "baseUrl": "/realms/hird/account/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "/realms/visp/account/*"
+        "/realms/hird/account/*"
       ],
       "webOrigins": [],
       "notBefore": 0,
@@ -834,6 +850,19 @@
             "friendly.name": "surname",
             "attribute.name": "urn:oid:2.5.4.4"
           }
+        },
+        {
+          "id": "9143f07b-c38d-42f8-a3d8-3ff2858bba77",
+          "name": "eppn_keycloak",
+          "protocol": "saml",
+          "protocolMapper": "saml-user-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "attribute.nameformat": "URI Reference",
+            "user.attribute": "eppn_keycloak",
+            "friendly.name": "eppn_keycloak",
+            "attribute.name": "eppn_keycloak"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -894,14 +923,14 @@
       "clientId": "security-admin-console",
       "name": "${client_security-admin-console}",
       "rootUrl": "${authAdminUrl}",
-      "baseUrl": "/admin/visp/console/",
+      "baseUrl": "/admin/hird/console/",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "secret": "**********",
       "redirectUris": [
-        "/admin/visp/console/*"
+        "/admin/hird/console/*"
       ],
       "webOrigins": [
         "+"
@@ -1463,6 +1492,7 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
   "smtpServer": {},
+  "loginTheme": "visp",
   "eventsEnabled": false,
   "eventsListeners": [
     "jboss-logging"
@@ -1470,7 +1500,33 @@
   "enabledEventTypes": [],
   "adminEventsEnabled": false,
   "adminEventsDetailsEnabled": false,
-  "identityProviders": [],
+  "identityProviders": [
+    {
+      "alias": "saml",
+      "displayName": "Umu-id",
+      "internalId": "159e17ca-d6d3-4142-87ad-b2144ddf019d",
+      "providerId": "saml",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": false,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "nameIDPolicyFormat": "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+        "authnContextComparisonType": "exact",
+        "syncMode": "IMPORT",
+        "entityId": "https://idp.localtest.me/auth/realms/visp",
+        "singleSignOnServiceUrl": "https://idp.localtest.me/auth/realms/visp",
+        "principalType": "SUBJECT",
+        "signatureAlgorithm": "RSA_SHA256",
+        "xmlSigKeyInfoKeyNameTransformer": "KEY_ID",
+        "useJwksUrl": "true"
+      }
+    }
+  ],
   "identityProviderMappers": [],
   "components": {
     "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
@@ -1620,7 +1676,9 @@
     ]
   },
   "internationalizationEnabled": false,
-  "supportedLocales": [],
+  "supportedLocales": [
+    ""
+  ],
   "authenticationFlows": [
     {
       "id": "24e5b355-4edd-4fad-a5c3-9b54e1129188",
@@ -2185,8 +2243,8 @@
       "alias": "terms_and_conditions",
       "name": "Terms and Conditions",
       "providerId": "terms_and_conditions",
-      "enabled": false,
-      "defaultAction": false,
+      "enabled": true,
+      "defaultAction": true,
       "priority": 20,
       "config": {}
     },
