@@ -26,11 +26,18 @@ RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("tidymodels"
 RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("devtools")' | R --save
 RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("emuR")' | R --save
 
-RUN echo 'devtools::install_github("tjmahr/tjm.praat")' | R --save
-RUN echo 'devtools::install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save
-RUN echo 'devtools::install_github("humlab-speech/reindeer",dependencies = "Imports")' | R --save
-#RUN echo 'devtools::install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R --save
+#RUN echo 'devtools::install_github("tjmahr/tjm.praat")' | R --save
+#RUN echo 'devtools::install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save
+#RUN echo 'devtools::install_github("humlab-speech/reindeer",dependencies = "Imports")' | R --save
+##RUN echo 'devtools::install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R --save
+#RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
+
+RUN echo 'library(devtools); install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R --save
+RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R --save
+RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save
+RUN echo 'library(devtools); install_github("humlab-speech/reindeer")' | R --save
 RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
+
 
 #Always force the next COPY cmd, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
