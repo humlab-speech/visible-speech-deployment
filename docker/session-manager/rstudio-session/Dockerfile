@@ -31,11 +31,12 @@ RUN echo 'install.packages("rPraat")' | R
 RUN echo 'library(devtools); install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R
 RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R
 RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R
-RUN echo 'library(devtools); install_github("humlab-speech/reindeer")' | R
 RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
 
-#Always force the next COPY cmd, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
+#Always force the next cmds, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
+RUN echo 'library(devtools); install_github("humlab-speech/reindeer", dependencies = TRUE)' | R
 
 COPY ./container-agent /container-agent
 COPY ./files/rsession.conf /etc/rstudio/rsession.conf
