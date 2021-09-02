@@ -1,3 +1,5 @@
+filebeat.docker.yml
+docker_bench.sh
 visp-user-access-tool
 container-agent
 mounts/gitlab/postgresql.conf
