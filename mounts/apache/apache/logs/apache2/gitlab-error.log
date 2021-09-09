@@ -1,0 +1,646 @@
+[Thu May 27 08:27:39.548115 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:27:39.548126 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:27:39.573862 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:27:39.573870 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:32:46.065393 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:32:46.065400 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:32:46.088128 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:32:46.088136 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:34:42.895558 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:34:42.895567 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:34:42.931440 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:34:42.931448 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:11:40.346042 2021] [ssl:warn] [pid 67] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:11:40.346076 2021] [ssl:warn] [pid 67] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:11:40.378145 2021] [ssl:warn] [pid 67] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:11:40.378169 2021] [ssl:warn] [pid 67] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:26:47.367179 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:26:47.367187 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:26:47.390729 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:26:47.390736 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:46:30.427855 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:46:30.427865 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:46:30.451205 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:46:30.451213 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:54:40.865469 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:54:40.865480 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:54:40.890248 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:54:40.890256 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:56:08.183036 2021] [proxy_http:error] [pid 64] (20014)Internal error (specific information not available): [client 192.168.0.1:52256] AH01102: error reading status line from remote server gitlab:80, referer: https://gitlab.localtest.me/
+[Thu May 27 09:57:19.027538 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:57:19.027548 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:57:19.050985 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:57:19.050992 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 10:01:01.437898 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 10:01:01.437907 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 10:01:01.461290 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 10:01:01.461298 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 07:01:03.836423 2021] [ssl:warn] [pid 51] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 07:01:03.836434 2021] [ssl:warn] [pid 51] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 07:01:03.877646 2021] [ssl:warn] [pid 51] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 07:01:03.877655 2021] [ssl:warn] [pid 51] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:33:28.442934 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:33:28.442956 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:33:28.470233 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:33:28.470248 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:38:17.449850 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:38:17.449861 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:38:17.475679 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:38:17.475689 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:25:32.400554 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:25:32.400826 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:25:32.471862 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:25:32.471869 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:36:19.974434 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:36:19.974443 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:36:19.998981 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:36:19.998989 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:21:57.143981 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:21:57.143989 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:21:57.168038 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:21:57.168047 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:31:55.645709 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:31:55.645719 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:31:55.671463 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:31:55.671474 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:39:21.748968 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:39:21.748977 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:39:21.776981 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:39:21.776991 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:47:45.706130 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:47:45.706138 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:47:45.729695 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:47:45.729703 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:53:48.851433 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:53:48.851442 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:53:48.875458 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:53:48.875513 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:57:03.943955 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:57:03.943965 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:57:03.967903 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:57:03.967911 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:02:35.969611 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:02:35.969620 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:02:35.993261 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:02:35.993269 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:48:35.087869 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:48:35.087879 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:48:35.113673 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:48:35.113681 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:09:37.400138 2021] [ssl:warn] [pid 66] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 13:09:37.400165 2021] [ssl:warn] [pid 66] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:09:37.436719 2021] [ssl:warn] [pid 66] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 13:09:37.436728 2021] [ssl:warn] [pid 66] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 07:19:54.743705 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 07:19:54.744018 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 07:19:54.821791 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 07:19:54.821799 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 17:08:51.879440 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 17:08:51.879474 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 17:08:51.910056 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 17:08:51.910064 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 02 07:55:30.518056 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 02 07:55:30.518389 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 02 07:55:30.586393 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 02 07:55:30.586401 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 07:44:19.220885 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 07:44:19.220893 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 07:44:19.245452 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 07:44:19.245461 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 13:31:18.260026 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 13:31:18.260034 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 13:31:18.283559 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 13:31:18.283567 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 06:55:08.327139 2021] [ssl:warn] [pid 93] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 06:55:08.327157 2021] [ssl:warn] [pid 93] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 06:55:08.447382 2021] [ssl:warn] [pid 93] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 06:55:08.447396 2021] [ssl:warn] [pid 93] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 10:22:06.972854 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 10:22:06.972887 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 10:22:07.018251 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 10:22:07.018261 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 07:02:49.126443 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 07:02:49.126940 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 07:02:49.206058 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 07:02:49.206066 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 12:11:33.018133 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 12:11:33.018432 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 12:11:33.115655 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 12:11:33.115675 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 13:31:43.646870 2021] [ssl:warn] [pid 85] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 13:31:43.646885 2021] [ssl:warn] [pid 85] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 13:31:43.702849 2021] [ssl:warn] [pid 85] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 13:31:43.702865 2021] [ssl:warn] [pid 85] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:19:52.776056 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:19:52.776073 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:19:52.845039 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:19:52.845057 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:24:31.041252 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:24:31.041288 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:24:31.106806 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:24:31.106819 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 09 07:51:50.209357 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 09 07:51:50.209374 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 09 07:51:50.247983 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 09 07:51:50.247993 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 10 07:27:27.763660 2021] [ssl:warn] [pid 87] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 10 07:27:27.763957 2021] [ssl:warn] [pid 87] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 10 07:27:27.876962 2021] [ssl:warn] [pid 87] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 10 07:27:27.876975 2021] [ssl:warn] [pid 87] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 11 07:20:44.882576 2021] [ssl:warn] [pid 80] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 11 07:20:44.882857 2021] [ssl:warn] [pid 80] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 11 07:20:44.980111 2021] [ssl:warn] [pid 80] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 11 07:20:44.980135 2021] [ssl:warn] [pid 80] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 14 07:04:54.912087 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 14 07:04:54.912414 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 14 07:04:55.007441 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 14 07:04:55.007451 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 15 07:31:10.438808 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 15 07:31:10.439056 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 15 07:31:10.518332 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 15 07:31:10.518340 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 06:39:27.588784 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 06:39:27.588984 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 06:39:27.687636 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 06:39:27.687648 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 07:33:43.785257 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 07:33:43.785275 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 07:33:43.839087 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 07:33:43.839102 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 17 07:55:42.381847 2021] [ssl:warn] [pid 80] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 17 07:55:42.382125 2021] [ssl:warn] [pid 80] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 17 07:55:42.489088 2021] [ssl:warn] [pid 80] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 17 07:55:42.489099 2021] [ssl:warn] [pid 80] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 06:34:53.252799 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 06:34:53.253054 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 06:34:53.350065 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 06:34:53.350077 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 07:55:28.036508 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 07:55:28.036520 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 07:55:28.086411 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 07:55:28.086430 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 21 06:51:13.308160 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 21 06:51:13.308407 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 21 06:51:13.405997 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 21 06:51:13.406012 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 22 07:11:51.398404 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 22 07:11:51.398635 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 22 07:11:51.488606 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 22 07:11:51.488616 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 07:00:57.237158 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 07:00:57.237437 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 07:00:57.359236 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 07:00:57.359248 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:03:59.568591 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:03:59.568600 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:03:59.597836 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:03:59.597844 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:09:43.576836 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:09:43.576854 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:09:43.628149 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:09:43.628166 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 09:15:22.583127 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 09:15:22.583140 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 09:15:22.632099 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 09:15:22.632116 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:10:32.335173 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:10:32.335187 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:10:32.376244 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:10:32.376255 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:21:43.695966 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:21:43.695995 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:21:43.748606 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:21:43.748627 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 24 07:10:23.440404 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 24 07:10:23.440880 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 24 07:10:23.528204 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 24 07:10:23.528213 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 07:16:53.852003 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 07:16:53.852022 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 07:16:53.903770 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 07:16:53.903788 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 12:50:55.384528 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 12:50:55.384596 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 12:50:55.490672 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 12:50:55.490688 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 08:51:55.476504 2021] [ssl:warn] [pid 52] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 08:51:55.477052 2021] [ssl:warn] [pid 52] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 08:51:55.579137 2021] [ssl:warn] [pid 52] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 08:51:55.579214 2021] [ssl:warn] [pid 52] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 09:27:17.051155 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 09:27:17.051168 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 09:27:17.094235 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 09:27:17.094243 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 07:00:52.541429 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 07:00:52.542157 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 07:00:52.661971 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 07:00:52.661981 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 14:12:11.231884 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 14:12:11.231896 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 14:12:11.271399 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 14:12:11.271410 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 04 07:01:38.699478 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 04 07:01:38.700070 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 04 07:01:38.778330 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 04 07:01:38.778337 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 06:42:53.215322 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 06:42:53.215856 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 06:42:53.309012 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 06:42:53.309024 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:23:51.210873 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:23:51.210881 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:23:51.240654 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:23:51.240663 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:32:35.555619 2021] [ssl:warn] [pid 67] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:32:35.555651 2021] [ssl:warn] [pid 67] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:32:35.599437 2021] [ssl:warn] [pid 67] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:32:35.599449 2021] [ssl:warn] [pid 67] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:16:31.673841 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:16:31.673852 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:16:31.714465 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:16:31.714476 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:51:22.779712 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:51:22.779726 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:51:22.807891 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:51:22.807899 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 06 06:41:50.764953 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 06 06:41:50.765470 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 06 06:41:50.857272 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 06 06:41:50.857282 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:06:26.919838 2021] [ssl:warn] [pid 69] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:06:26.920331 2021] [ssl:warn] [pid 69] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:06:27.023797 2021] [ssl:warn] [pid 69] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:06:27.023807 2021] [ssl:warn] [pid 69] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:17:27.814840 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:17:27.814868 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:17:27.921300 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:17:27.921330 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 11:08:22.183232 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 11:08:22.183252 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 11:08:22.226861 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 11:08:22.226871 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 10 07:07:36.170536 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 10 07:07:36.171236 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 10 07:07:36.258997 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 10 07:07:36.259004 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 11 06:37:32.130195 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 11 06:37:32.130622 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 11 06:37:32.233117 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 11 06:37:32.233140 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 07:13:55.667730 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 07:13:55.668253 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 07:13:55.768562 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 07:13:55.768571 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:24:53.649703 2021] [ssl:warn] [pid 52] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:24:53.650343 2021] [ssl:warn] [pid 52] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:24:53.761172 2021] [ssl:warn] [pid 52] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:24:53.761187 2021] [ssl:warn] [pid 52] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:37:00.504212 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:37:00.504910 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:37:00.665447 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:37:00.665466 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:50:01.080712 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:50:01.080735 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:50:01.142077 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:50:01.142121 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 13:58:04.931857 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 13:58:04.931873 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 13:58:04.988756 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 13:58:04.988775 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 06:50:41.612730 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 06:50:41.613234 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 06:50:41.696565 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 06:50:41.696573 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:15:30.133514 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:15:30.133527 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:15:30.184864 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:15:30.184881 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:54:22.744581 2021] [ssl:warn] [pid 68] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:54:22.744588 2021] [ssl:warn] [pid 68] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:54:22.770815 2021] [ssl:warn] [pid 68] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:54:22.770822 2021] [ssl:warn] [pid 68] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 16 06:59:34.393023 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 16 06:59:34.393564 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 16 06:59:34.474775 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 16 06:59:34.474781 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 17 07:09:59.105593 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 17 07:09:59.106147 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 17 07:09:59.199932 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 17 07:09:59.200008 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 18 06:59:45.995402 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 18 06:59:45.996173 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 18 06:59:46.088882 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 18 06:59:46.088892 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 19 07:02:02.860836 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 19 07:02:02.861501 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 19 07:02:02.955677 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 19 07:02:02.955687 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:30:29.815328 2021] [ssl:warn] [pid 56] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:30:29.815860 2021] [ssl:warn] [pid 56] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:30:29.923670 2021] [ssl:warn] [pid 56] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:30:29.923685 2021] [ssl:warn] [pid 56] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:39:17.748547 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:39:17.748566 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:39:17.796986 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:39:17.796999 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 09:53:06.222849 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 09:53:06.222864 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 09:53:06.266243 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 09:53:06.266253 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 12:13:43.495721 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 12:13:43.495731 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 12:13:43.529705 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 12:13:43.529721 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 23 09:26:54.874059 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 23 09:26:54.874642 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 23 09:26:54.974533 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 23 09:26:54.974544 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 07:04:12.735034 2021] [ssl:warn] [pid 70] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 07:04:12.735567 2021] [ssl:warn] [pid 70] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 07:04:12.828766 2021] [ssl:warn] [pid 70] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 07:04:12.828776 2021] [ssl:warn] [pid 70] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:33:58.663559 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:33:58.663569 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:33:58.692926 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:33:58.692934 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:35:18.845877 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:35:18.845890 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:35:18.881817 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:35:18.881827 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:42:32.213018 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:42:32.213091 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:42:32.287614 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:42:32.287640 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:46:58.508901 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:46:58.508914 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:46:58.550839 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:46:58.550850 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:01:42.891102 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.891114 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:01:42.936578 2021] [ssl:warn] [pid 73] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.936606 2021] [ssl:warn] [pid 73] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.169675 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.169718 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.221161 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.221270 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.490566 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.490634 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.539912 2021] [ssl:warn] [pid 74] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.539989 2021] [ssl:warn] [pid 74] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.718651 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.718711 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.751861 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.751921 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.544037 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.544108 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.608943 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.609005 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.502239 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.502271 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.545699 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.545736 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.607445 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.608931 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.738559 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.738585 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.404470 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.404489 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.454751 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.454763 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.745505 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.745545 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.798224 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.798247 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.084743 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.084753 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.118313 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.118324 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 06:41:01.105312 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.105859 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 06:41:01.195420 2021] [ssl:warn] [pid 72] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.195430 2021] [ssl:warn] [pid 72] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 08:52:44.965251 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 08:52:44.965269 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 08:52:45.023846 2021] [ssl:warn] [pid 81] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 08:52:45.023870 2021] [ssl:warn] [pid 81] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:13:42.609898 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 09:13:42.609920 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:13:42.650066 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 09:13:42.650078 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 11:45:00.322976 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 11:45:00.323028 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 11:45:00.380296 2021] [ssl:warn] [pid 78] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 11:45:00.380308 2021] [ssl:warn] [pid 78] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 15:33:23.529791 2021] [ssl:warn] [pid 82] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 15:33:23.529853 2021] [ssl:warn] [pid 82] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 15:33:23.582757 2021] [ssl:warn] [pid 82] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 15:33:23.582767 2021] [ssl:warn] [pid 82] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 06:56:35.809403 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 06:56:35.810071 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 06:56:35.915853 2021] [ssl:warn] [pid 77] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 06:56:35.915869 2021] [ssl:warn] [pid 77] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 07:29:51.591562 2021] [proxy:error] [pid 134] [client 172.18.0.1:51342] AH00898: DNS lookup failure for: gitlab returned by /api/v4/version, referer: https://localtest.me/
+[Fri Aug 27 08:02:36.385652 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:02:36.385660 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:02:36.432487 2021] [ssl:warn] [pid 75] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:02:36.432497 2021] [ssl:warn] [pid 75] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:12:01.491886 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:12:01.491899 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:12:01.540978 2021] [ssl:warn] [pid 79] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:12:01.540988 2021] [ssl:warn] [pid 79] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 12:33:11.757476 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 12:33:11.757538 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 12:33:11.836556 2021] [ssl:warn] [pid 76] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 12:33:11.836569 2021] [ssl:warn] [pid 76] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:14:33.245976 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:14:33.245992 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:14:33.384119 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:14:33.384136 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:40:22.813924 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:40:22.813936 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:40:22.847721 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:40:22.847728 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:04:34.417685 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:04:34.417692 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:04:34.442468 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:04:34.442475 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:09:27.538251 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:09:27.538605 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:09:27.569090 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:09:27.569097 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:53:36.918220 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:53:36.918231 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:53:36.963014 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:53:36.963021 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:55:14.471118 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:55:14.471128 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:55:14.503398 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:55:14.503406 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:00:44.986574 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 10:00:44.986880 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:00:45.062032 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 10:00:45.062039 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 11:31:24.062085 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 11:31:24.062094 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 11:31:24.088877 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 11:31:24.088885 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 12:45:44.550446 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 12:45:44.550454 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 12:45:44.575719 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 12:45:44.575726 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 13:50:23.688188 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 13:50:23.688196 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 13:50:23.716592 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 13:50:23.716604 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 07:43:35.515222 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 07:43:35.515230 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 07:43:35.543045 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 07:43:35.543052 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:51:27.824426 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:51:27.824449 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:51:27.852848 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:51:27.852870 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:53:26.672142 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:53:26.672164 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:53:26.698240 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:53:26.698263 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 10:45:56.367304 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 10:45:56.367347 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 10:45:56.394201 2021] [ssl:warn] [pid 65] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 10:45:56.394223 2021] [ssl:warn] [pid 65] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:02:25.065133 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:02:25.065157 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:02:25.091495 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:02:25.091517 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:06:45.115607 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:06:45.115630 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:06:45.145439 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:06:45.145463 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:06:09.918545 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:06:09.918577 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:06:09.951878 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:06:09.951901 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:14:10.933271 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:14:10.933295 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:14:10.959711 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:14:10.959734 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 15:02:21.944981 2021] [ssl:warn] [pid 49] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 15:02:21.945013 2021] [ssl:warn] [pid 49] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 15:02:21.986736 2021] [ssl:warn] [pid 49] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 15:02:21.986765 2021] [ssl:warn] [pid 49] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 06:34:18.572854 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 06:34:18.572863 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 06:34:18.600323 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 06:34:18.600331 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 11:46:38.788687 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 11:46:38.788700 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 11:46:38.824107 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 11:46:38.824115 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:50:50.008763 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 12:50:50.008771 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:50:50.033924 2021] [ssl:warn] [pid 64] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 12:50:50.033931 2021] [ssl:warn] [pid 64] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 17:10:56.554840 2021] [ssl:warn] [pid 53] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 17:10:56.555108 2021] [ssl:warn] [pid 53] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 17:10:56.629216 2021] [ssl:warn] [pid 53] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 17:10:56.629224 2021] [ssl:warn] [pid 53] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 06:17:27.770007 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 06:17:27.770192 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 06:17:27.852277 2021] [ssl:warn] [pid 62] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 06:17:27.852284 2021] [ssl:warn] [pid 62] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:01:35.372643 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:01:35.372650 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:01:35.396662 2021] [ssl:warn] [pid 63] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:01:35.396668 2021] [ssl:warn] [pid 63] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:37:41.702034 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:37:41.702041 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:37:41.726024 2021] [ssl:warn] [pid 71] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:37:41.726031 2021] [ssl:warn] [pid 71] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:52:37.322416 2021] [ssl:warn] [pid 85] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:52:37.322425 2021] [ssl:warn] [pid 85] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:52:37.358420 2021] [ssl:warn] [pid 85] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:52:37.358427 2021] [ssl:warn] [pid 85] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:55:21.205948 2021] [ssl:warn] [pid 90] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:55:21.205955 2021] [ssl:warn] [pid 90] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:55:21.232340 2021] [ssl:warn] [pid 90] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:55:21.232347 2021] [ssl:warn] [pid 90] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:58:11.782924 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:58:11.782931 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:58:11.806235 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:58:11.806242 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:53:02.052698 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:53:02.052906 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:53:02.128121 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:53:02.128128 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:55:17.770779 2021] [ssl:warn] [pid 97] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:55:17.770786 2021] [ssl:warn] [pid 97] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:55:17.795950 2021] [ssl:warn] [pid 97] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:55:17.795957 2021] [ssl:warn] [pid 97] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:01:43.022776 2021] [ssl:warn] [pid 87] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:01:43.022783 2021] [ssl:warn] [pid 87] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:01:43.047472 2021] [ssl:warn] [pid 87] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:01:43.047478 2021] [ssl:warn] [pid 87] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:04:55.521998 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:04:55.522008 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:04:55.546478 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:04:55.546485 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:07:40.809739 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:07:40.809745 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:07:40.834173 2021] [ssl:warn] [pid 83] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:07:40.834180 2021] [ssl:warn] [pid 83] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:56:15.992050 2021] [ssl:warn] [pid 88] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:56:15.992065 2021] [ssl:warn] [pid 88] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:56:16.034144 2021] [ssl:warn] [pid 88] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:56:16.034154 2021] [ssl:warn] [pid 88] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:37:16.030747 2021] [ssl:warn] [pid 87] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:37:16.030756 2021] [ssl:warn] [pid 87] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:37:16.057018 2021] [ssl:warn] [pid 87] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:37:16.057025 2021] [ssl:warn] [pid 87] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:46:40.037335 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:46:40.037341 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:46:40.061239 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:46:40.061246 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:56:35.853676 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:56:35.853683 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:56:35.879893 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:56:35.879901 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Sep 07 07:43:21.328334 2021] [ssl:warn] [pid 82] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Sep 07 07:43:21.328512 2021] [ssl:warn] [pid 82] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Sep 07 07:43:21.398498 2021] [ssl:warn] [pid 82] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Sep 07 07:43:21.398506 2021] [ssl:warn] [pid 82] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:00:56.183664 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:00:56.183945 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:00:56.256201 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:00:56.256207 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:06:14.218467 2021] [ssl:warn] [pid 88] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:06:14.218475 2021] [ssl:warn] [pid 88] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:06:14.249034 2021] [ssl:warn] [pid 88] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:06:14.249044 2021] [ssl:warn] [pid 88] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:23:44.362790 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:23:44.362812 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:23:44.387509 2021] [ssl:warn] [pid 89] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:23:44.387543 2021] [ssl:warn] [pid 89] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:26:29.700055 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:26:29.700077 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:26:29.726147 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:26:29.726170 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:52:24.202413 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:52:24.202435 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:52:24.227706 2021] [ssl:warn] [pid 91] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:52:24.227729 2021] [ssl:warn] [pid 91] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:53:51.971198 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:53:51.971219 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:53:51.995825 2021] [ssl:warn] [pid 42] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:53:51.995847 2021] [ssl:warn] [pid 42] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:55:37.575327 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:55:37.575351 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:55:37.602446 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:55:37.602476 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:57:55.600155 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:57:55.600178 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:57:55.623773 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:57:55.623796 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:00:27.586094 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:00:27.586117 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:00:27.609831 2021] [ssl:warn] [pid 41] AH01906: gitlab.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:00:27.609854 2021] [ssl:warn] [pid 41] AH01909: gitlab.localtest.me:443:0 server certificate does NOT include an ID which matches the server name

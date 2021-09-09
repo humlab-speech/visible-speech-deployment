@@ -1,0 +1,112 @@
+[Thu May 27 08:27:39.548449 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:27:39.548459 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:27:39.574175 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:27:39.574181 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:32:46.065826 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:32:46.065834 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:32:46.088439 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:32:46.088446 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:34:42.895889 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:34:42.895897 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:34:42.931747 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:34:42.931754 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:11:40.346417 2021] [ssl:warn] [pid 67] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:11:40.346425 2021] [ssl:warn] [pid 67] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:11:40.378481 2021] [ssl:warn] [pid 67] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:11:40.378488 2021] [ssl:warn] [pid 67] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:26:47.367530 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:26:47.367541 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:26:47.391041 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:26:47.391048 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:46:30.428170 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:46:30.428178 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:46:30.451509 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:46:30.451516 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:54:40.865797 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:54:40.865808 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:54:40.890560 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:54:40.890566 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:57:19.027859 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:57:19.027867 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:57:19.051317 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:57:19.051325 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 10:01:01.438229 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 10:01:01.438237 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 10:01:01.461603 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 10:01:01.461610 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 13:13:11.038441 2021] [proxy:warn] [pid 125] [client 192.168.32.1:52666] AH01092: no HTTP 0.9 request (with no host line) on incoming request and preserve host set forcing hostname to be emuwebapp.localtest.me for uri /
+[Fri May 28 07:01:03.836742 2021] [ssl:warn] [pid 51] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 07:01:03.836750 2021] [ssl:warn] [pid 51] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 07:01:03.877952 2021] [ssl:warn] [pid 51] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 07:01:03.877959 2021] [ssl:warn] [pid 51] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:33:28.443458 2021] [ssl:warn] [pid 64] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:33:28.443471 2021] [ssl:warn] [pid 64] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:33:28.470566 2021] [ssl:warn] [pid 64] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:33:28.470576 2021] [ssl:warn] [pid 64] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:38:17.450193 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:38:17.450202 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:38:17.476022 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:38:17.476030 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:51:41.787478 2021] [proxy:error] [pid 126] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.23.0.7:9000 (emuwebapp) failed
+[Fri May 28 11:51:41.787531 2021] [proxy_http:error] [pid 126] [client 172.23.0.1:33780] AH01114: HTTP: failed to make connection to backend: emuwebapp, referer: https://localtest.me/
+[Fri May 28 11:51:42.006845 2021] [proxy:error] [pid 101] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.23.0.7:9000 (emuwebapp) failed
+[Fri May 28 11:51:42.006896 2021] [proxy_http:error] [pid 101] [client 172.23.0.1:33790] AH01114: HTTP: failed to make connection to backend: emuwebapp, referer: https://emu-webapp.localtest.me/?autoConnect=true&comMode=GITLAB&gitlabURL=https%3A%2F%2Fgitlab.localtest.me&projectID=69&gitlabPath=Data%2FVISP_emuDB&emuDBname=VISP&bundleListName=user.user&privateToken=zSCxmDC-KBGoebKr_e75
+[Fri May 28 11:51:46.513659 2021] [proxy:error] [pid 90] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.23.0.7:9000 (emuwebapp) failed
+[Fri May 28 11:51:46.513745 2021] [proxy_http:error] [pid 90] [client 172.23.0.1:33802] AH01114: HTTP: failed to make connection to backend: emuwebapp, referer: https://localtest.me/
+[Fri May 28 11:51:46.689431 2021] [proxy:error] [pid 144] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.23.0.7:9000 (emuwebapp) failed
+[Fri May 28 11:51:46.689555 2021] [proxy_http:error] [pid 144] [client 172.23.0.1:33812] AH01114: HTTP: failed to make connection to backend: emuwebapp, referer: https://emu-webapp.localtest.me/?autoConnect=true&comMode=GITLAB&gitlabURL=https%3A%2F%2Fgitlab.localtest.me&projectID=69&gitlabPath=Data%2FVISP_emuDB&emuDBname=VISP&bundleListName=user.user&privateToken=zSCxmDC-KBGoebKr_e75
+[Fri May 28 13:13:02.819672 2021] [proxy:warn] [pid 65] [client 172.23.0.1:35030] AH01092: no HTTP 0.9 request (with no host line) on incoming request and preserve host set forcing hostname to be emuwebapp.localtest.me for uri /
+[Mon May 31 08:25:32.401181 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:25:32.401441 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:25:32.472162 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:25:32.472169 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:36:19.974766 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:36:19.974775 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:36:19.999294 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:36:19.999302 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:21:57.144285 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:21:57.144292 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:21:57.168347 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:21:57.168355 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:31:55.646036 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:31:55.646064 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:31:55.671810 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:31:55.671818 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:39:21.749327 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:39:21.749336 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:39:21.777347 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:39:21.777355 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:47:45.706436 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:47:45.706444 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:47:45.730022 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:47:45.730030 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:53:48.851776 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:53:48.851785 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:53:48.875850 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:53:48.875857 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:57:03.944263 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:57:03.944272 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:57:03.968210 2021] [ssl:warn] [pid 63] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:57:03.968218 2021] [ssl:warn] [pid 63] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:02:35.969952 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:02:35.969961 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:02:35.993569 2021] [ssl:warn] [pid 62] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:02:35.993576 2021] [ssl:warn] [pid 62] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:48:35.088185 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:48:35.088194 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:48:35.114017 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:48:35.114054 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:09:37.400562 2021] [ssl:warn] [pid 66] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 13:09:37.400596 2021] [ssl:warn] [pid 66] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:09:37.437034 2021] [ssl:warn] [pid 66] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 13:09:37.437041 2021] [ssl:warn] [pid 66] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:13:16.617902 2021] [proxy:warn] [pid 82] [client 192.168.32.1:32862] AH01092: no HTTP 0.9 request (with no host line) on incoming request and preserve host set forcing hostname to be emuwebapp.localtest.me for uri /
+[Tue Jun 01 07:19:54.744349 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 07:19:54.744965 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 07:19:54.822107 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 07:19:54.822115 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 13:13:07.719724 2021] [proxy:warn] [pid 212] [client 172.22.0.1:52018] AH01092: no HTTP 0.9 request (with no host line) on incoming request and preserve host set forcing hostname to be emuwebapp.localtest.me for uri /
+[Tue Jun 01 17:08:51.879807 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 17:08:51.879815 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 17:08:51.910372 2021] [ssl:warn] [pid 65] AH01906: emuwebapp.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 17:08:51.910380 2021] [ssl:warn] [pid 65] AH01909: emuwebapp.localtest.me:443:0 server certificate does NOT include an ID which matches the server name

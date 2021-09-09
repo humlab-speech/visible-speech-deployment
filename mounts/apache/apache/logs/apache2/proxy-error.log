@@ -1,0 +1,93 @@
+[Tue Aug 24 13:42:32.207619 2021] [ssl:warn] [pid 91] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:42:32.207671 2021] [ssl:warn] [pid 91] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:42:32.282805 2021] [ssl:warn] [pid 91] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:42:32.282835 2021] [ssl:warn] [pid 91] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:46:58.506160 2021] [ssl:warn] [pid 73] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:46:58.506176 2021] [ssl:warn] [pid 73] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:46:58.548201 2021] [ssl:warn] [pid 73] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:46:58.548214 2021] [ssl:warn] [pid 73] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:01:42.888310 2021] [ssl:warn] [pid 73] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.888326 2021] [ssl:warn] [pid 73] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:01:42.933453 2021] [ssl:warn] [pid 73] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.933467 2021] [ssl:warn] [pid 73] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.167127 2021] [ssl:warn] [pid 76] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.167165 2021] [ssl:warn] [pid 76] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.215888 2021] [ssl:warn] [pid 76] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.215938 2021] [ssl:warn] [pid 76] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.487033 2021] [ssl:warn] [pid 74] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.487111 2021] [ssl:warn] [pid 74] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.535521 2021] [ssl:warn] [pid 74] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.535592 2021] [ssl:warn] [pid 74] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:27:57.303583 2021] [proxy_http:error] [pid 75] (70007)The timeout specified has expired: [client 172.27.0.1:35498] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:27:57.303608 2021] [proxy_http:error] [pid 78] (70007)The timeout specified has expired: [client 172.27.0.1:35500] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:27:57.303698 2021] [proxy:error] [pid 78] [client 172.27.0.1:35500] AH00898: Error reading from remote server returned by /events/get_events, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:27:57.303691 2021] [proxy:error] [pid 75] [client 172.27.0.1:35498] AH00898: Error reading from remote server returned by /auth-update-credentials, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:32:57.293618 2021] [proxy_http:error] [pid 76] (70007)The timeout specified has expired: [client 172.27.0.1:35664] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:32:57.293774 2021] [proxy:error] [pid 76] [client 172.27.0.1:35664] AH00898: Error reading from remote server returned by /auth-update-credentials, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:32:58.265734 2021] [proxy_http:error] [pid 78] (70007)The timeout specified has expired: [client 172.27.0.1:35500] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:32:58.265817 2021] [proxy:error] [pid 78] [client 172.27.0.1:35500] AH00898: Error reading from remote server returned by /events/get_events, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649652 2021] [proxy_http:error] [pid 76] (20014)Internal error (specific information not available): [client 172.27.0.1:35932] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649736 2021] [proxy:error] [pid 76] [client 172.27.0.1:35932] AH00898: Error reading from remote server returned by /rpc/set_client_state, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649716 2021] [proxy_http:error] [pid 105] (20014)Internal error (specific information not available): [client 172.27.0.1:35922] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649755 2021] [proxy:error] [pid 105] [client 172.27.0.1:35922] AH00898: Error reading from remote server returned by /events/get_events, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649740 2021] [proxy_http:error] [pid 101] (20014)Internal error (specific information not available): [client 172.27.0.1:35912] AH01102: error reading status line from remote server session-manager:80
+[Tue Aug 24 14:37:38.649775 2021] [proxy:error] [pid 101] [client 172.27.0.1:35912] AH00898: Error reading from remote server returned by /
+[Tue Aug 24 14:37:38.649771 2021] [proxy_http:error] [pid 82] (20014)Internal error (specific information not available): [client 172.27.0.1:35898] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649781 2021] [proxy_http:error] [pid 96] (20014)Internal error (specific information not available): [client 172.27.0.1:35884] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649805 2021] [proxy:error] [pid 82] [client 172.27.0.1:35898] AH00898: Error reading from remote server returned by /rpc/set_workbench_metrics, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649814 2021] [proxy:error] [pid 96] [client 172.27.0.1:35884] AH00898: Error reading from remote server returned by /theme/default/textmate.rstheme, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649817 2021] [proxy_http:error] [pid 93] (20014)Internal error (specific information not available): [client 172.27.0.1:35880] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649849 2021] [proxy_http:error] [pid 75] (20014)Internal error (specific information not available): [client 172.27.0.1:35828] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649874 2021] [proxy:error] [pid 75] [client 172.27.0.1:35828] AH00898: Error reading from remote server returned by /auth-update-credentials, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649865 2021] [proxy_http:error] [pid 80] (20014)Internal error (specific information not available): [client 172.27.0.1:35876] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649896 2021] [proxy:error] [pid 80] [client 172.27.0.1:35876] AH00898: Error reading from remote server returned by /css/icons.css, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649915 2021] [proxy:error] [pid 93] [client 172.27.0.1:35880] AH00898: Error reading from remote server returned by /rstudio/8F7951420339BE404651DAC70BD1C264.cache.css, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:37:38.649991 2021] [proxy_http:error] [pid 78] (20014)Internal error (specific information not available): [client 172.27.0.1:35500] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me//
+[Tue Aug 24 14:38:36.715927 2021] [ssl:warn] [pid 75] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.715988 2021] [ssl:warn] [pid 75] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.748795 2021] [ssl:warn] [pid 75] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.748837 2021] [ssl:warn] [pid 75] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:48:16.608559 2021] [proxy_http:error] [pid 158] (20014)Internal error (specific information not available): [client 172.28.0.1:41450] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 24 14:48:16.608593 2021] [proxy_http:error] [pid 95] (20014)Internal error (specific information not available): [client 172.28.0.1:41440] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 24 14:48:16.608666 2021] [proxy:error] [pid 158] [client 172.28.0.1:41450] AH00898: Error reading from remote server returned by /, referer: https://app.localtest.me/
+[Tue Aug 24 14:48:16.608676 2021] [proxy:error] [pid 95] [client 172.28.0.1:41440] AH00898: Error reading from remote server returned by /, referer: https://app.localtest.me/
+[Tue Aug 24 14:55:27.540064 2021] [ssl:warn] [pid 76] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.540163 2021] [ssl:warn] [pid 76] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.603408 2021] [ssl:warn] [pid 76] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.603486 2021] [ssl:warn] [pid 76] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:01:17.714769 2021] [proxy_http:error] [pid 117] (20014)Internal error (specific information not available): [client 172.29.0.1:40548] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 24 15:01:17.714822 2021] [proxy:error] [pid 117] [client 172.29.0.1:40548] AH00898: Error reading from remote server returned by /, referer: https://app.localtest.me/
+[Tue Aug 24 15:09:10.499288 2021] [ssl:warn] [pid 77] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.499331 2021] [ssl:warn] [pid 77] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.542474 2021] [ssl:warn] [pid 77] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.542509 2021] [ssl:warn] [pid 77] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.599123 2021] [ssl:warn] [pid 81] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.599529 2021] [ssl:warn] [pid 81] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.734627 2021] [ssl:warn] [pid 81] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.734640 2021] [ssl:warn] [pid 81] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.402250 2021] [ssl:warn] [pid 72] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.402263 2021] [ssl:warn] [pid 72] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.452315 2021] [ssl:warn] [pid 72] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.452326 2021] [ssl:warn] [pid 72] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.742576 2021] [ssl:warn] [pid 79] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.742593 2021] [ssl:warn] [pid 79] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.793509 2021] [ssl:warn] [pid 79] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.793527 2021] [ssl:warn] [pid 79] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.082837 2021] [ssl:warn] [pid 41] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.082850 2021] [ssl:warn] [pid 41] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.116170 2021] [ssl:warn] [pid 41] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.116184 2021] [ssl:warn] [pid 41] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 09:06:19.312487 2021] [proxy_http:error] [pid 60] (70007)The timeout specified has expired: [client 172.21.0.1:37596] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me/
+[Wed Aug 25 09:06:19.312558 2021] [proxy:error] [pid 60] [client 172.21.0.1:37596] AH00898: Error reading from remote server returned by /events/get_events, referer: https://proxy.localtest.me/
+[Wed Aug 25 14:36:00.893189 2021] [proxy_http:error] [pid 1066] (70007)The timeout specified has expired: [client 172.21.0.1:57874] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me/lab
+[Wed Aug 25 14:36:00.893369 2021] [proxy:error] [pid 1066] [client 172.21.0.1:57874] AH00898: Error reading from remote server returned by /api/nbconvert, referer: https://proxy.localtest.me/lab
+[Wed Aug 25 14:56:03.135282 2021] [proxy_http:error] [pid 1100] (20014)Internal error (specific information not available): [client 172.21.0.1:58944] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me/?token=iG6DxUSabB8BcnPJghExTozM08Ml0yRp
+[Thu Aug 26 06:41:01.100163 2021] [ssl:warn] [pid 72] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.100526 2021] [ssl:warn] [pid 72] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 06:41:01.193200 2021] [ssl:warn] [pid 72] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.193210 2021] [ssl:warn] [pid 72] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 08:50:24.812324 2021] [proxy_http:error] [pid 332] (20014)Internal error (specific information not available): [client 172.18.0.1:42970] AH01102: error reading status line from remote server session-manager:80, referer: https://proxy.localtest.me/?token=D73FFojpfkiZNBBE2pabgp7EDvnT6DCZ
+[Thu Aug 26 08:52:44.959603 2021] [ssl:warn] [pid 81] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 08:52:44.959623 2021] [ssl:warn] [pid 81] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 08:52:45.019172 2021] [ssl:warn] [pid 81] AH01906: proxy.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 08:52:45.019190 2021] [ssl:warn] [pid 81] AH01909: proxy.localtest.me:443:0 server certificate does NOT include an ID which matches the server name

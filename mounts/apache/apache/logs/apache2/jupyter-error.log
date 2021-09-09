@@ -1,0 +1,666 @@
+[Thu May 27 08:27:39.547506 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:27:39.547515 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:27:39.573289 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:27:39.573297 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:32:46.064879 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:32:46.064886 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:32:46.087325 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:32:46.087332 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:34:42.895009 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:34:42.895017 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 08:34:42.930854 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 08:34:42.930862 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:11:40.345452 2021] [ssl:warn] [pid 67] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:11:40.345460 2021] [ssl:warn] [pid 67] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:11:40.377505 2021] [ssl:warn] [pid 67] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:11:40.377512 2021] [ssl:warn] [pid 67] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:26:47.366627 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:26:47.366635 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:26:47.390153 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:26:47.390160 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:46:30.427211 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:46:30.427219 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:46:30.450640 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:46:30.450647 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:54:40.864883 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:54:40.864891 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:54:40.889634 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:54:40.889641 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:57:19.026944 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:57:19.026952 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 09:57:19.050433 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 09:57:19.050441 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 10:01:01.437326 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 10:01:01.437333 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu May 27 10:01:01.460716 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu May 27 10:01:01.460723 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 07:01:03.835865 2021] [ssl:warn] [pid 51] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 07:01:03.835874 2021] [ssl:warn] [pid 51] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 07:01:03.877083 2021] [ssl:warn] [pid 51] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 07:01:03.877091 2021] [ssl:warn] [pid 51] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:33:28.442184 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:33:28.442192 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:33:28.469272 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:33:28.469280 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:38:17.449227 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:38:17.449242 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri May 28 11:38:17.475055 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri May 28 11:38:17.475063 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:25:32.399398 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:25:32.399670 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:25:32.471278 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:25:32.471288 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:36:19.973875 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:36:19.973884 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 08:36:19.998378 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 08:36:19.998385 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:21:57.143436 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:21:57.143445 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:21:57.167482 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:21:57.167489 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:31:55.645087 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:31:55.645096 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:31:55.670742 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:31:55.670750 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:39:21.748390 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:39:21.748399 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:39:21.776291 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:39:21.776300 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:47:45.705572 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:47:45.705579 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:47:45.729136 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:47:45.729156 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:53:48.850879 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:53:48.850887 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:53:48.874900 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:53:48.874908 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:57:03.943349 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:57:03.943358 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 10:57:03.967336 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 10:57:03.967344 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:02:35.969070 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:02:35.969078 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:02:35.992592 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:02:35.992599 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:48:35.087291 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:48:35.087299 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 11:48:35.113063 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 11:48:35.113070 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:09:37.399481 2021] [ssl:warn] [pid 66] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 13:09:37.399507 2021] [ssl:warn] [pid 66] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon May 31 13:09:37.436141 2021] [ssl:warn] [pid 66] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon May 31 13:09:37.436149 2021] [ssl:warn] [pid 66] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 07:19:54.742472 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 07:19:54.742785 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 07:19:54.821258 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 07:19:54.821265 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 17:08:51.878899 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 17:08:51.878907 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 01 17:08:51.909485 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 01 17:08:51.909492 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 02 07:55:30.517000 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 02 07:55:30.517264 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 02 07:55:30.585846 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 02 07:55:30.585853 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 07:44:19.220315 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 07:44:19.220322 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 07:44:19.244546 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 07:44:19.244553 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 13:31:18.259472 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 13:31:18.259479 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 03 13:31:18.282975 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 03 13:31:18.282982 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 06:55:08.325305 2021] [ssl:warn] [pid 93] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 06:55:08.325329 2021] [ssl:warn] [pid 93] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 06:55:08.446115 2021] [ssl:warn] [pid 93] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 06:55:08.446133 2021] [ssl:warn] [pid 93] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 08:29:11.994195 2021] [proxy_http:error] [pid 118] (70007)The timeout specified has expired: [client 172.18.0.1:42540] AH01102: error reading status line from remote server session-manager:80
+[Mon Jun 07 08:29:11.994250 2021] [proxy:error] [pid 118] [client 172.18.0.1:42540] AH00898: Error reading from remote server returned by /
+[Mon Jun 07 08:36:29.972133 2021] [proxy_http:error] [pid 166] (70007)The timeout specified has expired: [client 172.18.0.1:50090] AH01102: error reading status line from remote server session-manager:80, referer: https://jupyter.localtest.me/lab?
+[Mon Jun 07 08:36:29.972178 2021] [proxy:error] [pid 166] [client 172.18.0.1:50090] AH00898: Error reading from remote server returned by /api/nbconvert, referer: https://jupyter.localtest.me/lab?
+[Mon Jun 07 10:22:06.971782 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 10:22:06.971852 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 07 10:22:07.017318 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 07 10:22:07.017330 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 07:02:49.124789 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 07:02:49.125104 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 07:02:49.205287 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 07:02:49.205296 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 12:11:33.015674 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 12:11:33.015967 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 12:11:33.114031 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 12:11:33.114045 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 13:31:43.645036 2021] [ssl:warn] [pid 85] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 13:31:43.645062 2021] [ssl:warn] [pid 85] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 13:31:43.701452 2021] [ssl:warn] [pid 85] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 13:31:43.701468 2021] [ssl:warn] [pid 85] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:19:52.774665 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:19:52.774685 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:19:52.843022 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:19:52.843048 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:24:31.038054 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:24:31.038094 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 08 14:24:31.105385 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 08 14:24:31.105405 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 09 07:51:50.207632 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 09 07:51:50.207650 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 09 07:51:50.247005 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 09 07:51:50.247015 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 10 07:27:27.761681 2021] [ssl:warn] [pid 87] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 10 07:27:27.762130 2021] [ssl:warn] [pid 87] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 10 07:27:27.875835 2021] [ssl:warn] [pid 87] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 10 07:27:27.875861 2021] [ssl:warn] [pid 87] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 11 07:20:44.880668 2021] [ssl:warn] [pid 80] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 11 07:20:44.880980 2021] [ssl:warn] [pid 80] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 11 07:20:44.978933 2021] [ssl:warn] [pid 80] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 11 07:20:44.978953 2021] [ssl:warn] [pid 80] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 14 07:04:54.910066 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 14 07:04:54.910469 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 14 07:04:55.006607 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 14 07:04:55.006618 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 15 07:31:10.437366 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 15 07:31:10.437671 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 15 07:31:10.517556 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 15 07:31:10.517565 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 06:39:27.587163 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 06:39:27.587381 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 06:39:27.686159 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 06:39:27.686172 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 07:33:43.783400 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 07:33:43.783419 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 16 07:33:43.837404 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 16 07:33:43.837423 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 17 07:55:42.379989 2021] [ssl:warn] [pid 80] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 17 07:55:42.380354 2021] [ssl:warn] [pid 80] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 17 07:55:42.488104 2021] [ssl:warn] [pid 80] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 17 07:55:42.488117 2021] [ssl:warn] [pid 80] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 06:34:53.250854 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 06:34:53.251191 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 06:34:53.348934 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 06:34:53.348947 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 07:55:28.035221 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 07:55:28.035241 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Jun 18 07:55:28.084375 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Jun 18 07:55:28.084401 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 21 06:51:13.306376 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 21 06:51:13.306664 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 21 06:51:13.404429 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 21 06:51:13.404448 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 22 07:11:51.396922 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 22 07:11:51.397248 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Jun 22 07:11:51.487720 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Jun 22 07:11:51.487731 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 07:00:57.234648 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 07:00:57.234923 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 07:00:57.358196 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 07:00:57.358212 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:03:59.567849 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:03:59.567858 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:03:59.597092 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:03:59.597101 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:09:43.575456 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:09:43.575516 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 08:09:43.626710 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 08:09:43.626740 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 09:15:22.581938 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 09:15:22.581956 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 09:15:22.630693 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 09:15:22.630717 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:10:32.334168 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:10:32.334189 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:10:32.374571 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:10:32.374586 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:21:43.695007 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:21:43.695025 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Jun 23 12:21:43.746595 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Jun 23 12:21:43.746623 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 24 07:10:23.438232 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 24 07:10:23.438713 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Jun 24 07:10:23.527305 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Jun 24 07:10:23.527317 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 07:16:53.850782 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 07:16:53.850795 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 07:16:53.902338 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 07:16:53.902372 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 12:50:55.381978 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 12:50:55.382075 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Jun 28 12:50:55.489294 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Jun 28 12:50:55.489390 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 08:51:55.474295 2021] [ssl:warn] [pid 52] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 08:51:55.474823 2021] [ssl:warn] [pid 52] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 08:51:55.577492 2021] [ssl:warn] [pid 52] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 08:51:55.577510 2021] [ssl:warn] [pid 52] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 09:27:17.049812 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 09:27:17.049849 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 02 09:27:17.093368 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 02 09:27:17.093378 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 07:00:52.533424 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 07:00:52.537359 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 07:00:52.660753 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 07:00:52.660765 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 14:12:11.230810 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 14:12:11.230823 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 03 14:12:11.270477 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 03 14:12:11.270487 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 04 07:01:38.697500 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 04 07:01:38.698115 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 04 07:01:38.777683 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 04 07:01:38.777691 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 06:42:53.213419 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 06:42:53.214126 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 06:42:53.307879 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 06:42:53.307891 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:23:51.210125 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:23:51.210153 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:23:51.239932 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:23:51.239942 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:32:35.554020 2021] [ssl:warn] [pid 67] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:32:35.554050 2021] [ssl:warn] [pid 67] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 07:32:35.598231 2021] [ssl:warn] [pid 67] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 07:32:35.598246 2021] [ssl:warn] [pid 67] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:16:31.672813 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:16:31.672828 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:16:31.713539 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:16:31.713551 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:51:22.778385 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:51:22.778406 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 05 11:51:22.807222 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 05 11:51:22.807231 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 06 06:41:50.763136 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 06 06:41:50.763617 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 06 06:41:50.856184 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 06 06:41:50.856205 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:06:26.917625 2021] [ssl:warn] [pid 69] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:06:26.918168 2021] [ssl:warn] [pid 69] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:06:27.022854 2021] [ssl:warn] [pid 69] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:06:27.022865 2021] [ssl:warn] [pid 69] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:17:27.812943 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:17:27.812991 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 07:17:27.918977 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 07:17:27.919023 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 11:08:22.181493 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 11:08:22.181528 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 09 11:08:22.225966 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 09 11:08:22.225992 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 10 07:07:36.168492 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 10 07:07:36.169178 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 10 07:07:36.258212 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 10 07:07:36.258220 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 11 06:37:32.128295 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 11 06:37:32.128709 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 11 06:37:32.231821 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 11 06:37:32.231867 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 07:13:55.665489 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 07:13:55.666358 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 07:13:55.767670 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 07:13:55.767682 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:24:53.647224 2021] [ssl:warn] [pid 52] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:24:53.647856 2021] [ssl:warn] [pid 52] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:24:53.759362 2021] [ssl:warn] [pid 52] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:24:53.759384 2021] [ssl:warn] [pid 52] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:37:00.500069 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:37:00.500583 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:37:00.663602 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:37:00.663621 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:50:01.078799 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:50:01.078850 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 11:50:01.140103 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 11:50:01.140123 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 13:58:04.930389 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 13:58:04.930411 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 12 13:58:04.986899 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 12 13:58:04.986921 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 06:50:41.610903 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 06:50:41.611497 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 06:50:41.695803 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 06:50:41.695814 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:15:30.132444 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:15:30.132457 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:15:30.183003 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:15:30.183021 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:54:22.743902 2021] [ssl:warn] [pid 68] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:54:22.743909 2021] [ssl:warn] [pid 68] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 13 07:54:22.770167 2021] [ssl:warn] [pid 68] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 13 07:54:22.770175 2021] [ssl:warn] [pid 68] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 16 06:59:34.390953 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 16 06:59:34.391558 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 16 06:59:34.474110 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 16 06:59:34.474128 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 17 07:09:59.103391 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 17 07:09:59.104071 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 17 07:09:59.198293 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 17 07:09:59.198306 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 18 06:59:45.992781 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 18 06:59:45.993482 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 18 06:59:46.087998 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 18 06:59:46.088010 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 19 07:02:02.858370 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 19 07:02:02.859115 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 19 07:02:02.954903 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 19 07:02:02.954915 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:30:29.813046 2021] [ssl:warn] [pid 56] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:30:29.813575 2021] [ssl:warn] [pid 56] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:30:29.922605 2021] [ssl:warn] [pid 56] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:30:29.922638 2021] [ssl:warn] [pid 56] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:39:17.747663 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:39:17.747676 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 06:39:17.795613 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 06:39:17.795630 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 09:53:06.221623 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 09:53:06.221640 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 09:53:06.265307 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 09:53:06.265323 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 12:13:43.494767 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 12:13:43.494790 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 20 12:13:43.528875 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 20 12:13:43.528884 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 23 09:26:54.871972 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 23 09:26:54.872430 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 23 09:26:54.973234 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 23 09:26:54.973261 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 07:04:12.732829 2021] [ssl:warn] [pid 70] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 07:04:12.733447 2021] [ssl:warn] [pid 70] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 07:04:12.827908 2021] [ssl:warn] [pid 70] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 07:04:12.827920 2021] [ssl:warn] [pid 70] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:33:58.662835 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:33:58.662845 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:33:58.692170 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:33:58.692183 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:35:18.844888 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:35:18.844905 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:35:18.881002 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:35:18.881015 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:42:32.211028 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:42:32.211060 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:42:32.285515 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:42:32.285546 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:46:58.507890 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:46:58.507906 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:46:58.549841 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 13:46:58.549853 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 13:54:23.274405 2021] [proxy_http:error] [pid 158] (70007)The timeout specified has expired: [client 172.24.0.1:43290] AH01102: error reading status line from remote server session-manager:80, referer: https://jupyter.localtest.me/
+[Tue Aug 24 13:54:23.274449 2021] [proxy:error] [pid 158] [client 172.24.0.1:43290] AH00898: Error reading from remote server returned by /events/get_events, referer: https://jupyter.localtest.me/
+[Tue Aug 24 13:54:24.273620 2021] [proxy_http:error] [pid 89] (70007)The timeout specified has expired: [client 172.24.0.1:43334] AH01102: error reading status line from remote server session-manager:80, referer: https://jupyter.localtest.me/
+[Tue Aug 24 13:54:24.273670 2021] [proxy:error] [pid 89] [client 172.24.0.1:43334] AH00898: Error reading from remote server returned by /events/get_events, referer: https://jupyter.localtest.me/
+[Tue Aug 24 14:01:42.890157 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.890170 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:01:42.935474 2021] [ssl:warn] [pid 73] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.935490 2021] [ssl:warn] [pid 73] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.168787 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.168823 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.219064 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.219167 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:18:00.623846 2021] [proxy_http:error] [pid 77] (70007)The timeout specified has expired: [client 172.26.0.1:44496] AH01102: error reading status line from remote server session-manager:80, referer: https://localtest.me/
+[Tue Aug 24 14:18:00.623945 2021] [proxy:error] [pid 77] [client 172.26.0.1:44496] AH00898: Error reading from remote server returned by /, referer: https://localtest.me/
+[Tue Aug 24 14:19:46.489309 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.489387 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.538180 2021] [ssl:warn] [pid 74] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.538253 2021] [ssl:warn] [pid 74] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.717458 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.717503 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.750456 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.750544 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.542753 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.542796 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.607072 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.607179 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.501044 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.501080 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.544498 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.544547 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.604201 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.604837 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.736474 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.736514 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.403621 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.403631 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.453874 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.453885 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.744262 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.744275 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.795861 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.795927 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.084028 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.084039 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.117454 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.117465 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 06:41:01.103192 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.103931 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 06:41:01.194603 2021] [ssl:warn] [pid 72] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.194614 2021] [ssl:warn] [pid 72] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 08:52:44.963920 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 08:52:44.963941 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 08:52:45.022105 2021] [ssl:warn] [pid 81] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 08:52:45.022140 2021] [ssl:warn] [pid 81] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:13:42.608796 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 09:13:42.608814 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:13:42.649112 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 09:13:42.649128 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 11:45:00.321791 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 11:45:00.321835 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 11:45:00.379309 2021] [ssl:warn] [pid 78] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 11:45:00.379322 2021] [ssl:warn] [pid 78] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 15:33:23.528643 2021] [ssl:warn] [pid 82] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 15:33:23.528658 2021] [ssl:warn] [pid 82] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 15:33:23.581862 2021] [ssl:warn] [pid 82] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 15:33:23.581873 2021] [ssl:warn] [pid 82] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 06:56:35.807360 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 06:56:35.807881 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 06:56:35.914486 2021] [ssl:warn] [pid 77] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 06:56:35.914510 2021] [ssl:warn] [pid 77] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:02:36.384885 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:02:36.384942 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:02:36.431592 2021] [ssl:warn] [pid 75] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:02:36.431602 2021] [ssl:warn] [pid 75] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:12:01.490926 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:12:01.490943 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:12:01.540099 2021] [ssl:warn] [pid 79] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:12:01.540112 2021] [ssl:warn] [pid 79] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 12:33:11.756053 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 12:33:11.756131 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 12:33:11.835454 2021] [ssl:warn] [pid 76] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 12:33:11.835467 2021] [ssl:warn] [pid 76] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:14:33.244929 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:14:33.244947 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:14:33.382450 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:14:33.382505 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:40:22.813038 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:40:22.813052 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:40:22.847150 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:40:22.847158 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:04:34.417099 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:04:34.417107 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:04:34.441906 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:04:34.441914 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:09:27.537427 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:09:27.537436 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:09:27.568517 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:09:27.568527 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:53:36.917216 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:53:36.917230 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:53:36.962422 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:53:36.962431 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:55:14.470225 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:55:14.470239 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:55:14.502840 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:55:14.502849 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:00:44.985409 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 10:00:44.985675 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:00:45.061464 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 10:00:45.061473 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 11:31:24.061498 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 11:31:24.061507 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 11:31:24.088281 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 11:31:24.088290 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 12:45:44.549850 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 12:45:44.549859 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 12:45:44.575124 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 12:45:44.575133 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 13:50:23.687610 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 13:50:23.687621 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 13:50:23.715666 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 13:50:23.715682 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 07:43:35.514624 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 07:43:35.514634 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 07:43:35.542450 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 07:43:35.542460 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:51:27.823752 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:51:27.823778 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:51:27.852204 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:51:27.852229 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:53:26.671484 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:53:26.671511 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:53:26.697579 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:53:26.697604 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 10:45:56.366557 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 10:45:56.366595 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 10:45:56.393561 2021] [ssl:warn] [pid 65] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 10:45:56.393585 2021] [ssl:warn] [pid 65] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:02:25.064454 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:02:25.064481 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:02:25.090832 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:02:25.090857 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:06:45.114944 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:06:45.114970 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:06:45.144767 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:06:45.144794 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:06:09.917323 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:06:09.917381 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:06:09.951163 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:06:09.951186 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:14:10.932611 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:14:10.932635 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:14:10.959071 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:14:10.959095 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 15:02:21.943569 2021] [ssl:warn] [pid 49] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 15:02:21.943607 2021] [ssl:warn] [pid 49] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 15:02:21.985774 2021] [ssl:warn] [pid 49] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 15:02:21.985804 2021] [ssl:warn] [pid 49] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 06:34:18.572128 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 06:34:18.572140 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 06:34:18.599731 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 06:34:18.599741 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 11:46:38.787872 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 11:46:38.787888 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 11:46:38.823495 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 11:46:38.823503 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:50:50.008164 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 12:50:50.008173 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:50:50.033322 2021] [ssl:warn] [pid 64] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 12:50:50.033330 2021] [ssl:warn] [pid 64] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 17:10:56.553410 2021] [ssl:warn] [pid 53] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 17:10:56.553845 2021] [ssl:warn] [pid 53] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 17:10:56.628634 2021] [ssl:warn] [pid 53] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 17:10:56.628641 2021] [ssl:warn] [pid 53] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 06:17:27.769024 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 06:17:27.769226 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 06:17:27.851662 2021] [ssl:warn] [pid 62] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 06:17:27.851670 2021] [ssl:warn] [pid 62] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:01:35.372067 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:01:35.372074 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:01:35.396107 2021] [ssl:warn] [pid 63] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:01:35.396115 2021] [ssl:warn] [pid 63] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:37:41.701470 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:37:41.701478 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:37:41.725451 2021] [ssl:warn] [pid 71] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:37:41.725459 2021] [ssl:warn] [pid 71] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:52:37.321821 2021] [ssl:warn] [pid 85] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:52:37.321832 2021] [ssl:warn] [pid 85] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:52:37.357829 2021] [ssl:warn] [pid 85] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:52:37.357839 2021] [ssl:warn] [pid 85] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:55:21.205331 2021] [ssl:warn] [pid 90] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:55:21.205341 2021] [ssl:warn] [pid 90] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:55:21.231739 2021] [ssl:warn] [pid 90] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:55:21.231747 2021] [ssl:warn] [pid 90] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:58:11.782317 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:58:11.782325 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:58:11.805634 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:58:11.805659 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:53:02.051769 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:53:02.051962 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:53:02.127572 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:53:02.127579 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:55:17.770215 2021] [ssl:warn] [pid 97] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:55:17.770223 2021] [ssl:warn] [pid 97] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:55:17.795410 2021] [ssl:warn] [pid 97] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:55:17.795419 2021] [ssl:warn] [pid 97] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:01:43.022186 2021] [ssl:warn] [pid 87] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:01:43.022195 2021] [ssl:warn] [pid 87] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:01:43.046930 2021] [ssl:warn] [pid 87] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:01:43.046938 2021] [ssl:warn] [pid 87] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:04:55.521441 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:04:55.521451 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:04:55.545905 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:04:55.545912 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:07:40.809182 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:07:40.809189 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:07:40.833635 2021] [ssl:warn] [pid 83] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:07:40.833643 2021] [ssl:warn] [pid 83] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:56:15.990905 2021] [ssl:warn] [pid 88] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:56:15.990928 2021] [ssl:warn] [pid 88] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:56:16.033270 2021] [ssl:warn] [pid 88] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:56:16.033293 2021] [ssl:warn] [pid 88] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:37:16.030178 2021] [ssl:warn] [pid 87] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:37:16.030191 2021] [ssl:warn] [pid 87] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:37:16.056428 2021] [ssl:warn] [pid 87] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:37:16.056435 2021] [ssl:warn] [pid 87] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:46:40.036603 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:46:40.036611 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:46:40.060675 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:46:40.060684 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:56:35.853081 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:56:35.853090 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:56:35.879296 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:56:35.879305 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Sep 07 07:43:21.327136 2021] [ssl:warn] [pid 82] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Sep 07 07:43:21.327394 2021] [ssl:warn] [pid 82] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Sep 07 07:43:21.397830 2021] [ssl:warn] [pid 82] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Sep 07 07:43:21.397838 2021] [ssl:warn] [pid 82] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:00:56.181887 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:00:56.182132 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:00:56.255659 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:00:56.255667 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:06:14.217913 2021] [ssl:warn] [pid 88] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:06:14.217924 2021] [ssl:warn] [pid 88] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:06:14.248181 2021] [ssl:warn] [pid 88] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:06:14.248195 2021] [ssl:warn] [pid 88] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:23:44.362152 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:23:44.362176 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:23:44.386787 2021] [ssl:warn] [pid 89] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:23:44.386811 2021] [ssl:warn] [pid 89] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:26:29.699411 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:26:29.699436 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:26:29.725483 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:26:29.725519 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:52:24.201781 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:52:24.201806 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:52:24.227092 2021] [ssl:warn] [pid 91] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:52:24.227116 2021] [ssl:warn] [pid 91] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:53:51.970859 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:53:51.970884 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:53:51.995475 2021] [ssl:warn] [pid 42] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:53:51.995497 2021] [ssl:warn] [pid 42] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:55:37.574938 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:55:37.574964 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:55:37.601902 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:55:37.601932 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:57:55.599803 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:57:55.599827 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:57:55.623351 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:57:55.623375 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:00:27.585738 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:00:27.585764 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:00:27.609460 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:00:27.609488 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:07:29.665861 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:07:29.665899 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:07:29.689352 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:07:29.689395 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:18:15.898165 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:18:15.898190 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:18:15.920137 2021] [ssl:warn] [pid 41] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:18:15.920161 2021] [ssl:warn] [pid 41] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:21:28.343348 2021] [ssl:warn] [pid 97] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:21:28.343373 2021] [ssl:warn] [pid 97] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:21:28.365869 2021] [ssl:warn] [pid 97] AH01906: jupyter.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:21:28.365894 2021] [ssl:warn] [pid 97] AH01909: jupyter.localtest.me:443:0 server certificate does NOT include an ID which matches the server name

@@ -1,0 +1,576 @@
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.6. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 08:27:39.579257 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 08:27:39.579282 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.7. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 08:32:46.093172 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 08:32:46.093206 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.4. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 08:34:42.937060 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 08:34:42.937097 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.28.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 09:11:40.384831 2021] [mpm_prefork:notice] [pid 67] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 09:11:40.384878 2021] [core:notice] [pid 67] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.30.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 09:26:47.395677 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 09:26:47.395698 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.31.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 09:46:30.456080 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 09:46:30.456100 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 09:54:40.895340 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 09:54:40.895373 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.16.11. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 09:57:19.055838 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 09:57:19.055861 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.32.11. Set the 'ServerName' directive globally to suppress this message
+[Thu May 27 10:01:01.466335 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu May 27 10:01:01.466359 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.32.11. Set the 'ServerName' directive globally to suppress this message
+[Fri May 28 07:01:03.881185 2021] [core:warn] [pid 51] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Fri May 28 07:01:03.883410 2021] [mpm_prefork:notice] [pid 51] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri May 28 07:01:03.883455 2021] [core:notice] [pid 51] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri May 28 11:33:28.476685 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri May 28 11:33:28.476746 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri May 28 11:38:17.481723 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri May 28 11:38:17.481755 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 08:25:32.476682 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 08:25:32.476703 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 08:36:20.003854 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 08:36:20.003891 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 10:21:57.172913 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 10:21:57.172977 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 10:31:55.676482 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 10:31:55.676514 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 10:39:21.782639 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 10:39:21.782671 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.28.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 10:47:45.734924 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 10:47:45.734990 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.30.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 10:53:48.880413 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 10:53:48.880436 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.31.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 10:57:03.973145 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 10:57:03.973192 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 11:02:35.998207 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 11:02:35.998228 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.16.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 11:48:35.119036 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 11:48:35.119067 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Mon May 31 12:14:35.860710 2021] [core:notice] [pid 65] AH00052: child pid 138 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.32.11. Set the 'ServerName' directive globally to suppress this message
+[Mon May 31 13:09:37.443598 2021] [mpm_prefork:notice] [pid 66] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon May 31 13:09:37.443632 2021] [core:notice] [pid 66] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Mon May 31 13:12:22.633645 2021] [core:notice] [pid 66] AH00052: child pid 89 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 01 07:19:54.826449 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 01 07:19:54.826467 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 01 17:08:51.915628 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 01 17:08:51.915653 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 02 07:55:30.591639 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 02 07:55:30.591671 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Jun 03 07:44:19.250813 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Jun 03 07:44:19.250833 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Jun 03 13:31:18.288733 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Jun 03 13:31:18.288752 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Thu Jun 03 14:05:54.604802 2021] [core:notice] [pid 63] AH00052: child pid 165 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Jun 07 06:55:08.459380 2021] [mpm_prefork:notice] [pid 93] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Jun 07 06:55:08.459432 2021] [core:notice] [pid 93] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Mon Jun 07 09:06:31.996575 2021] [core:notice] [pid 93] AH00052: child pid 182 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Jun 07 10:22:07.025029 2021] [mpm_prefork:notice] [pid 78] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Jun 07 10:22:07.025053 2021] [core:notice] [pid 78] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 08 07:02:49.212364 2021] [mpm_prefork:notice] [pid 78] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 08 07:02:49.212384 2021] [core:notice] [pid 78] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Jun 08 10:05:02.911466 2021] [core:notice] [pid 78] AH00052: child pid 219 exit signal Bus error (7)
+[Tue Jun 08 10:33:49.796051 2021] [core:notice] [pid 78] AH00052: child pid 293 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 08 12:11:33.128913 2021] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 08 12:11:33.128957 2021] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Jun 08 12:38:54.945747 2021] [core:notice] [pid 76] AH00052: child pid 124 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 08 13:31:43.713456 2021] [mpm_prefork:notice] [pid 85] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 08 13:31:43.713502 2021] [core:notice] [pid 85] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.20.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 08 14:19:52.858382 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 08 14:19:52.858420 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 08 14:24:31.115963 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 08 14:24:31.115996 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 09 07:51:50.255517 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 09 07:51:50.255612 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Jun 10 07:27:27.887472 2021] [mpm_prefork:notice] [pid 87] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Jun 10 07:27:27.887512 2021] [core:notice] [pid 87] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Jun 11 07:20:44.988364 2021] [mpm_prefork:notice] [pid 80] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Jun 11 07:20:44.988405 2021] [core:notice] [pid 80] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Jun 14 07:04:55.014608 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Jun 14 07:04:55.014651 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Mon Jun 14 13:45:52.726743 2021] [core:notice] [pid 81] AH00052: child pid 210 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 15 07:31:10.524205 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 15 07:31:10.524227 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 16 06:39:27.695844 2021] [mpm_prefork:notice] [pid 83] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 16 06:39:27.695871 2021] [core:notice] [pid 83] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 16 07:33:43.848833 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 16 07:33:43.848866 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Jun 17 07:55:42.497368 2021] [mpm_prefork:notice] [pid 80] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Jun 17 07:55:42.497408 2021] [core:notice] [pid 80] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Jun 18 06:34:53.359795 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Jun 18 06:34:53.359822 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Jun 18 07:55:28.094656 2021] [core:warn] [pid 42] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Fri Jun 18 07:55:28.097285 2021] [mpm_prefork:notice] [pid 42] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Jun 18 07:55:28.097324 2021] [core:notice] [pid 42] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Jun 21 06:51:13.414959 2021] [mpm_prefork:notice] [pid 78] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Jun 21 06:51:13.414991 2021] [core:notice] [pid 78] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Jun 22 07:11:51.498018 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Jun 22 07:11:51.498065 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 23 07:00:57.369525 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 23 07:00:57.369563 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 23 08:03:59.604264 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 23 08:03:59.604291 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.20.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 23 08:09:43.639811 2021] [mpm_prefork:notice] [pid 79] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 23 08:09:43.639850 2021] [core:notice] [pid 79] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 23 09:15:22.641545 2021] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 23 09:15:22.641587 2021] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.20.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 23 12:10:32.385617 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 23 12:10:32.385669 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Jun 23 12:21:43.762113 2021] [mpm_prefork:notice] [pid 83] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Jun 23 12:21:43.762166 2021] [core:notice] [pid 83] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Jun 24 07:10:23.540229 2021] [mpm_prefork:notice] [pid 79] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Jun 24 07:10:23.540759 2021] [core:notice] [pid 79] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Jun 28 07:16:53.914453 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Jun 28 07:16:53.914515 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Jun 28 12:50:55.510090 2021] [mpm_prefork:notice] [pid 83] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Jun 28 12:50:55.510152 2021] [core:notice] [pid 83] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 02 08:51:55.587485 2021] [core:warn] [pid 52] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Mon Aug 02 08:51:55.591666 2021] [mpm_prefork:notice] [pid 52] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 02 08:51:55.591709 2021] [core:notice] [pid 52] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 02 09:27:17.103921 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 02 09:27:17.103958 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 03 07:00:52.673389 2021] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 03 07:00:52.673436 2021] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 03 14:12:11.279768 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 03 14:12:11.279800 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 04 07:01:38.784359 2021] [mpm_prefork:notice] [pid 71] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 04 07:01:38.784398 2021] [core:notice] [pid 71] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 05 06:42:53.318895 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 05 06:42:53.318932 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 05 07:23:51.247768 2021] [mpm_prefork:notice] [pid 42] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 05 07:23:51.247793 2021] [core:notice] [pid 42] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 05 07:32:35.608997 2021] [mpm_prefork:notice] [pid 67] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 05 07:32:35.609067 2021] [core:notice] [pid 67] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 05 11:16:31.723741 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 05 11:16:31.723773 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 05 11:51:22.814901 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 05 11:51:22.814924 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 06 06:41:50.865560 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 06 06:41:50.865599 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.9. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 09 07:06:27.029246 2021] [core:warn] [pid 69] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Mon Aug 09 07:06:27.032749 2021] [mpm_prefork:notice] [pid 69] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 09 07:06:27.032783 2021] [core:notice] [pid 69] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 09 07:17:27.940172 2021] [mpm_prefork:notice] [pid 74] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 09 07:17:27.940225 2021] [core:notice] [pid 74] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 09 11:08:22.236211 2021] [mpm_prefork:notice] [pid 72] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 09 11:08:22.236274 2021] [core:notice] [pid 72] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 10 07:07:36.266756 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 10 07:07:36.266790 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 11 06:37:32.243290 2021] [mpm_prefork:notice] [pid 74] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 11 06:37:32.243339 2021] [core:notice] [pid 74] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 12 07:13:55.777394 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 12 07:13:55.777437 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.6. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 12 11:24:53.769682 2021] [core:warn] [pid 52] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Thu Aug 12 11:24:53.773891 2021] [mpm_prefork:notice] [pid 52] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 12 11:24:53.773931 2021] [core:notice] [pid 52] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.8. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 12 11:37:00.674684 2021] [core:warn] [pid 64] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Thu Aug 12 11:37:00.679433 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 12 11:37:00.679475 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 12 11:50:01.155757 2021] [mpm_prefork:notice] [pid 74] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 12 11:50:01.155799 2021] [core:notice] [pid 74] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 12 13:58:05.002500 2021] [mpm_prefork:notice] [pid 72] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 12 13:58:05.002570 2021] [core:notice] [pid 72] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 13 06:50:41.704133 2021] [mpm_prefork:notice] [pid 74] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 13 06:50:41.704159 2021] [core:notice] [pid 74] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 13 07:15:30.199015 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 13 07:15:30.199060 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 13 07:54:22.776912 2021] [mpm_prefork:notice] [pid 68] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 13 07:54:22.776934 2021] [core:notice] [pid 68] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 16 06:59:34.481054 2021] [mpm_prefork:notice] [pid 71] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 16 06:59:34.481077 2021] [core:notice] [pid 71] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 17 07:09:59.208600 2021] [mpm_prefork:notice] [pid 74] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 17 07:09:59.208634 2021] [core:notice] [pid 74] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 18 06:59:46.097692 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 18 06:59:46.097751 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 19 07:02:02.963099 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 19 07:02:02.963149 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.3. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 20 06:30:29.928903 2021] [core:warn] [pid 56] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Fri Aug 20 06:30:29.932206 2021] [mpm_prefork:notice] [pid 56] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 20 06:30:29.932251 2021] [core:notice] [pid 56] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 20 06:39:17.808294 2021] [mpm_prefork:notice] [pid 71] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 20 06:39:17.808334 2021] [core:notice] [pid 71] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Fri Aug 20 08:14:20.036885 2021] [core:notice] [pid 71] AH00052: child pid 164 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 20 09:53:06.277934 2021] [mpm_prefork:notice] [pid 71] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 20 09:53:06.277973 2021] [core:notice] [pid 71] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 20 12:13:43.539860 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 20 12:13:43.539899 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 23 09:26:54.982980 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 23 09:26:54.983041 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 07:04:12.836778 2021] [mpm_prefork:notice] [pid 70] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 07:04:12.836821 2021] [core:notice] [pid 70] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 24 13:25:56.516997 2021] [ssl:emerg] [pid 78] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:25:59.456558 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:02.251187 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:04.858580 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:07.657909 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:11.435583 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:17.170634 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:26.068047 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:26:41.060381 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:27:08.980831 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:28:01.938179 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:29:03.770617 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:30:05.509096 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:31:52.908614 2021] [ssl:emerg] [pid 78] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:31:55.731512 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:31:58.329755 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:32:01.240547 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:32:04.306943 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:32:08.407028 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:32:14.055082 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:32:22.790838 2021] [ssl:emerg] [pid 41] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:32:37.851339 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+[Tue Aug 24 13:33:05.609449 2021] [ssl:emerg] [pid 42] AH02311: Fatal error initialising mod_ssl, exiting. See /var/log/apache2/rstudio-error.log for more information
+AH00016: Configuration Failed
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 13:33:58.699601 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 13:33:58.699655 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 13:35:18.890124 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 13:35:18.890172 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 13:42:32.302442 2021] [mpm_prefork:notice] [pid 91] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 13:42:32.302527 2021] [core:notice] [pid 91] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 13:46:58.560908 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 13:46:58.560964 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 14:01:42.947930 2021] [mpm_prefork:notice] [pid 73] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 14:01:42.947980 2021] [core:notice] [pid 73] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.26.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 14:10:12.236330 2021] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 14:10:12.236422 2021] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 14:19:46.554039 2021] [mpm_prefork:notice] [pid 74] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 14:19:46.554164 2021] [core:notice] [pid 74] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.28.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 14:38:36.760392 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 14:38:36.760520 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.29.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 14:55:27.628229 2021] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 14:55:27.628352 2021] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.30.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 24 15:09:10.558510 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 24 15:09:10.558615 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 25 07:35:25.751541 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 25 07:35:25.751589 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 25 08:23:04.463808 2021] [mpm_prefork:notice] [pid 72] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 25 08:23:04.463870 2021] [core:notice] [pid 72] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 25 08:30:52.813760 2021] [mpm_prefork:notice] [pid 79] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 25 08:30:52.813809 2021] [core:notice] [pid 79] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 25 08:59:46.123057 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Aug 25 08:59:46.125484 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Aug 25 08:59:46.125509 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 26 06:41:01.204115 2021] [mpm_prefork:notice] [pid 72] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 26 06:41:01.204163 2021] [core:notice] [pid 72] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 26 08:52:45.037962 2021] [mpm_prefork:notice] [pid 81] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 26 08:52:45.038006 2021] [core:notice] [pid 81] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 26 09:13:42.659495 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 26 09:13:42.659527 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 26 11:45:00.390546 2021] [mpm_prefork:notice] [pid 78] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 26 11:45:00.390587 2021] [core:notice] [pid 78] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Aug 26 15:33:23.592920 2021] [mpm_prefork:notice] [pid 82] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Aug 26 15:33:23.592960 2021] [core:notice] [pid 82] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.18.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 27 06:56:35.927842 2021] [mpm_prefork:notice] [pid 77] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 27 06:56:35.927894 2021] [core:notice] [pid 77] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.19.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 27 08:02:36.440459 2021] [mpm_prefork:notice] [pid 75] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 27 08:02:36.440484 2021] [core:notice] [pid 75] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.21.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 27 08:12:01.551338 2021] [mpm_prefork:notice] [pid 79] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 27 08:12:01.551378 2021] [core:notice] [pid 79] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Fri Aug 27 12:33:11.852921 2021] [mpm_prefork:notice] [pid 76] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Aug 27 12:33:11.852982 2021] [core:notice] [pid 76] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 30 09:14:33.397761 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 30 09:14:33.397795 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 30 09:40:22.853719 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 30 09:40:22.853748 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 30 10:04:34.447977 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 30 10:04:34.447994 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 30 10:09:27.574761 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 30 10:09:27.574791 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 30 14:53:36.968707 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 30 14:53:36.968730 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.28.0.11. Set the 'ServerName' directive globally to suppress this message
+[Mon Aug 30 14:55:14.509164 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Aug 30 14:55:14.509190 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 31 10:00:45.067373 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 31 10:00:45.067390 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 31 11:31:24.094696 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 31 11:31:24.094716 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 31 12:45:44.581619 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 31 12:45:44.581639 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.11. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 31 13:50:23.724360 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Aug 31 13:50:23.724390 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 31 14:18:26.549190 2021] [core:notice] [pid 65] AH00052: child pid 169 exit signal Bus error (7)
+[Tue Aug 31 14:18:38.562569 2021] [core:notice] [pid 65] AH00052: child pid 137 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 07:43:35.549074 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 07:43:35.549113 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 08:51:27.858612 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 08:51:27.858657 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 08:53:26.704117 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 08:53:26.704160 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 10:45:56.401278 2021] [mpm_prefork:notice] [pid 65] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 10:45:56.401334 2021] [core:notice] [pid 65] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Wed Sep 01 10:47:04.482376 2021] [core:notice] [pid 65] AH00052: child pid 67 exit signal Bus error (7)
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 11:02:25.097876 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 11:02:25.097931 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.30.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 11:06:45.151984 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 11:06:45.152037 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.31.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 14:06:09.958776 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 14:06:09.958823 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 14:14:10.965890 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 14:14:10.965934 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.0.11. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 01 15:02:21.992257 2021] [core:warn] [pid 49] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 01 15:02:21.996354 2021] [mpm_prefork:notice] [pid 49] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 01 15:02:21.996417 2021] [core:notice] [pid 49] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Sep 02 06:34:18.606596 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Sep 02 06:34:18.606621 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.4. Set the 'ServerName' directive globally to suppress this message
+[Thu Sep 02 11:46:38.830124 2021] [mpm_prefork:notice] [pid 42] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Sep 02 11:46:38.830152 2021] [core:notice] [pid 42] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.11. Set the 'ServerName' directive globally to suppress this message
+[Thu Sep 02 12:50:50.039596 2021] [mpm_prefork:notice] [pid 64] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Sep 02 12:50:50.039618 2021] [core:notice] [pid 64] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.10. Set the 'ServerName' directive globally to suppress this message
+[Thu Sep 02 17:10:56.633074 2021] [core:warn] [pid 53] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Thu Sep 02 17:10:56.634484 2021] [mpm_prefork:notice] [pid 53] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Thu Sep 02 17:10:56.634500 2021] [core:notice] [pid 53] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.2. Set the 'ServerName' directive globally to suppress this message
+[Fri Sep 03 06:17:27.856009 2021] [core:warn] [pid 62] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Fri Sep 03 06:17:27.857404 2021] [mpm_prefork:notice] [pid 62] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Sep 03 06:17:27.857420 2021] [core:notice] [pid 62] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.12. Set the 'ServerName' directive globally to suppress this message
+[Fri Sep 03 12:01:35.402481 2021] [mpm_prefork:notice] [pid 63] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Sep 03 12:01:35.402499 2021] [core:notice] [pid 63] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.14. Set the 'ServerName' directive globally to suppress this message
+[Fri Sep 03 12:37:41.731417 2021] [mpm_prefork:notice] [pid 71] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Sep 03 12:37:41.731434 2021] [core:notice] [pid 71] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.15. Set the 'ServerName' directive globally to suppress this message
+[Fri Sep 03 12:52:37.365817 2021] [mpm_prefork:notice] [pid 85] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Sep 03 12:52:37.365851 2021] [core:notice] [pid 85] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.15. Set the 'ServerName' directive globally to suppress this message
+[Fri Sep 03 12:55:21.238942 2021] [mpm_prefork:notice] [pid 90] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Sep 03 12:55:21.238968 2021] [core:notice] [pid 90] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.15. Set the 'ServerName' directive globally to suppress this message
+[Fri Sep 03 12:58:11.811696 2021] [mpm_prefork:notice] [pid 89] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Fri Sep 03 12:58:11.811723 2021] [core:notice] [pid 89] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.15. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 07:53:02.133314 2021] [mpm_prefork:notice] [pid 89] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 07:53:02.133345 2021] [core:notice] [pid 89] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.23.0.5. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 07:55:17.801620 2021] [mpm_prefork:notice] [pid 97] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 07:55:17.801646 2021] [core:notice] [pid 97] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 08:01:43.054975 2021] [mpm_prefork:notice] [pid 87] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 08:01:43.054996 2021] [core:notice] [pid 87] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 08:04:55.552193 2021] [mpm_prefork:notice] [pid 91] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 08:04:55.552214 2021] [core:notice] [pid 91] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 08:07:40.839779 2021] [mpm_prefork:notice] [pid 83] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 08:07:40.839798 2021] [core:notice] [pid 83] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.28.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 08:56:16.042242 2021] [mpm_prefork:notice] [pid 88] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 08:56:16.042296 2021] [core:notice] [pid 88] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.30.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 10:37:16.062749 2021] [mpm_prefork:notice] [pid 87] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 10:37:16.062781 2021] [core:notice] [pid 87] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.31.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 10:46:40.066459 2021] [mpm_prefork:notice] [pid 89] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 10:46:40.066477 2021] [core:notice] [pid 89] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.0.16. Set the 'ServerName' directive globally to suppress this message
+[Mon Sep 06 10:56:35.885434 2021] [mpm_prefork:notice] [pid 91] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Mon Sep 06 10:56:35.885464 2021] [core:notice] [pid 91] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.16. Set the 'ServerName' directive globally to suppress this message
+[Tue Sep 07 07:43:21.404236 2021] [mpm_prefork:notice] [pid 82] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Tue Sep 07 07:43:21.404262 2021] [core:notice] [pid 82] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.22.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 12:00:56.261728 2021] [mpm_prefork:notice] [pid 89] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 12:00:56.261748 2021] [core:notice] [pid 89] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.24.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 12:06:14.257070 2021] [mpm_prefork:notice] [pid 88] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 12:06:14.257101 2021] [core:notice] [pid 88] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 13:23:44.392933 2021] [mpm_prefork:notice] [pid 89] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 13:23:44.392988 2021] [core:notice] [pid 89] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.25.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 13:26:29.729821 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 13:26:29.731445 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 13:26:29.731493 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 13:52:24.233146 2021] [mpm_prefork:notice] [pid 91] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 13:52:24.233197 2021] [core:notice] [pid 91] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 13:53:51.999375 2021] [core:warn] [pid 42] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 13:53:52.001182 2021] [mpm_prefork:notice] [pid 42] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 13:53:52.001235 2021] [core:notice] [pid 42] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 13:55:37.606964 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 13:55:37.609079 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 13:55:37.609126 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 13:57:55.627874 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 13:57:55.629767 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 13:57:55.629804 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 14:00:27.613462 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 14:00:27.615617 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 14:00:27.615661 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 14:07:29.693041 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 14:07:29.695116 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 14:07:29.695155 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Wed Sep 08 14:18:15.898808 2021] [ssl:warn] [pid 41] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+[Wed Sep 08 14:18:15.898852 2021] [ssl:warn] [pid 41] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.27.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 14:18:15.920809 2021] [ssl:warn] [pid 41] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+[Wed Sep 08 14:18:15.920839 2021] [ssl:warn] [pid 41] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+[Wed Sep 08 14:18:15.924070 2021] [core:warn] [pid 41] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Wed Sep 08 14:18:15.926202 2021] [mpm_prefork:notice] [pid 41] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 14:18:15.926241 2021] [core:notice] [pid 41] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Wed Sep 08 14:21:28.343995 2021] [ssl:warn] [pid 97] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+[Wed Sep 08 14:21:28.344020 2021] [ssl:warn] [pid 97] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 172.28.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Sep 08 14:21:28.366418 2021] [ssl:warn] [pid 97] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+[Wed Sep 08 14:21:28.366441 2021] [ssl:warn] [pid 97] AH01916: Init: (localtest.me:443) You configured HTTP(80) on the standard HTTPS(443) port!
+[Wed Sep 08 14:21:28.371143 2021] [mpm_prefork:notice] [pid 97] AH00163: Apache/2.4.38 (Debian) OpenSSL/1.1.1d configured -- resuming normal operations
+[Wed Sep 08 14:21:28.371186 2021] [core:notice] [pid 97] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'

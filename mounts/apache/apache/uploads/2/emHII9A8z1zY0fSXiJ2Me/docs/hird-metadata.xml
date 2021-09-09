@@ -1,0 +1,118 @@
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                     validUntil="2021-08-13T12:20:00Z"
+                     cacheDuration="P365DT0H0M0S"
+                     entityID="https://hird.humlab.umu.se">
+
+    <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:SignedInfo>
+            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            <ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+            <ds:Reference URI="#_fd3b5bb72cef0b79b9067a0f8bcd94a6c59916b7">
+            <ds:Transforms>
+            <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+            <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+            </ds:Transforms>
+            <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+            <ds:DigestValue>KCw+97HjyRTb+lHGJCGRtMt/sGF8jLiWEwUJ6M1jZ4c=</ds:DigestValue>
+            </ds:Reference>
+        </ds:SignedInfo>
+        <ds:SignatureValue>s3JWjzdbusQje4l/iRe3qAiFqVdkiHpz2yC8QkXgfQwgChDGQsL2zYdNmqPtAkyA KRf1ym/5Z9sipxMFySBbiiiRmnlqc0vLi6WBRbhNv0T/970j/wD0SfrSSGCj/WMe olAF/4B1PJAPYsdFi8m+CH0sqCMIbG37YT+c+CVEuBw47hi1K9nq15zt3E/TQL7X uvmQ08cH1pD+T0lu8erLJI3a5mLN4LPB/WVELnlqUhnQircOTat7CYA/I9P1HZzw dzbPbqb73iCm21MpqCohdp1kgUWpYaGONco50V/EQWoGa+wZPv0SGvfXCndEklZi 5vwx/ci93j2bLiT5pJ18u1lgikfibB+2kqyqrAMrSyPCVr1/1bvzqf8V1kNLpphI Sq7gSGpe3Pq0Ap0tM2OHe4y3n7J0eqNomq6RPzJd2iwzyR3bhiVUKSqkorppSi5+ gTv6v05FyzULPjKobEtMWLlQ8GHnwlNXgg710g6mMQzM4wRct2ND2NwR8vdsjRpm</ds:SignatureValue>
+        <ds:KeyInfo>
+            <ds:KeyName>hird.humlab.umu.se</ds:KeyName>
+            <ds:X509Data>
+                <ds:X509SubjectName>CN=hird.humlab.umu.se</ds:X509SubjectName>
+                <ds:X509Certificate>MIIECDCCAnCgAwIBAgIUY6KqTt/4lC/Ltq/Vh3Ogbog4k3owDQYJKoZIhvcNAQEL BQAwHTEbMBkGA1UEAxMSaGlyZC5odW1sYWIudW11LnNlMB4XDTIwMDgxMzA5Mzgy MFoXDTMwMDgxMTA5MzgyMFowHTEbMBkGA1UEAxMSaGlyZC5odW1sYWIudW11LnNl MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA/YhjrgTK1nCYerOBctuN 3S5EAiyVO7314vd9TqmggAaH1rxa2m9umIEFPyonRH5H1i+9itRutMiZBzshBPl9 CmRRKvEewsz3W+tlVDplYJHcepy9q8pfJjUQTiQrwCCWPTUvA8TuNtA/au3IVgLG vOhcBWc/tO2ooJSazJjBJ49kuv15CSiazzwE3gdbK50PjIsYMZ4/r+GtNHLapadA 5ZvuZzF6Ahj/t16Wkv/2stlaIvguS2J9li6pcD2bq8Lpl7mQ5W4e3SRY4JP/TYUW AJw8upbGUJrqkj6x+bjkc62rFEkFVZ4IjCAP0SdCG0MWkKPCGRNUuM+fZhTam5+k A0JPMyOQyuKXEdL+MRQ+qa8HBa5iTuPzL5kiVok3rdtdkbHrO0oxmO/pNF7b6+LK L4TZbUke22xuGIPcHUk3vLuQrkxPVCOns7ABiq0bkbs3TO81MitwYUod7m328iNE ifWT3tueI3mSdXiZIAdaA6py/1vpK6Wm5Bf3iz5WupTjAgMBAAGjQDA+MB0GA1Ud EQQWMBSCEmhpcmQuaHVtbGFiLnVtdS5zZTAdBgNVHQ4EFgQULRbe1RmRSTENXqcl 6sUzGWu4KEswDQYJKoZIhvcNAQELBQADggGBAD0yg5FpbFPI14l05Nr1poT3O8K3 CAT97zyHZQdn+hiRjLM9eOFIdBMaSF/Sm83eDFKrWfNu0fZAHz6oiDiVTRBv1/D0 tH4NrBB2vSd7EcZ0le28lhOwRt7M5tY4DQG5ukmg32vQDf3HbrkzEwHbxRojdBX7 1MpKuzEbZzGxcBFsMWByZJusrfZW8zsuNiUUF1cPkgR7WexAJZEaiRRyVED3tn7V FQXlmm06WfWHk9JxxNbnSRDIWzo6HUpB9muU/4HejvYgx2fZi7iEoQkfzaDUvL/Y d5uYcsTZFrDOoNu1bnQ0OBaZxZmd16nI5vOuvQIOsnZh1+rNCZ0P/oAgwofMM6m0 an1/NapNDRBhcQeUufz63Tv9Mi+DUvL5xcLtniVIjdt4qS7Xah4ltcOS5B4ER8Zd wj/LFBAE34tzjjGQXM0dIqZPt7hTtaHtFC/vVir2x+bLLy77ZpnA8GmR3E3oAIel x2wYv1X/dBixYZg1TYFENUI3k0fk5i4jO54+SA== </ds:X509Certificate>
+            </ds:X509Data>
+        </ds:KeyInfo>
+    </ds:Signature>
+
+    <md:Extensions xmlns:alg="urn:oasis:names:tc:SAML:metadata:algsupport">
+        <alg:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"/>
+        <alg:DigestMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#sha384"/>
+        <alg:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+        <alg:DigestMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#sha224"/>
+        <alg:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha224"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha512"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha384"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2009/xmldsig11#dsa-sha256"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha1"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+        <alg:SigningMethod Algorithm="http://www.w3.org/2000/09/xmldsig#dsa-sha1"/>
+    </md:Extensions>
+
+    <md:SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <md:Extensions>
+            <init:RequestInitiator xmlns:init="urn:oasis:names:tc:SAML:profiles:SSO:request-init" Binding="urn:oasis:names:tc:SAML:profiles:SSO:request-init" Location="https://hird.humlab.umu.se/Shibboleth.sso/Login"/>
+            <idpdisc:DiscoveryResponse xmlns:idpdisc="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Binding="urn:oasis:names:tc:SAML:profiles:SSO:idp-discovery-protocol" Location="https://hird.humlab.umu.se/Shibboleth.sso/Login" index="1"/>
+        </md:Extensions>
+        <md:KeyDescriptor>
+            <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+            <ds:KeyName>hird.humlab.umu.se</ds:KeyName>
+            <ds:X509Data>
+                <ds:X509SubjectName>CN=hird.humlab.umu.se</ds:X509SubjectName>
+                <ds:X509Certificate>MIIECDCCAnCgAwIBAgIUY6KqTt/4lC/Ltq/Vh3Ogbog4k3owDQYJKoZIhvcNAQEL BQAwHTEbMBkGA1UEAxMSaGlyZC5odW1sYWIudW11LnNlMB4XDTIwMDgxMzA5Mzgy MFoXDTMwMDgxMTA5MzgyMFowHTEbMBkGA1UEAxMSaGlyZC5odW1sYWIudW11LnNl MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA/YhjrgTK1nCYerOBctuN 3S5EAiyVO7314vd9TqmggAaH1rxa2m9umIEFPyonRH5H1i+9itRutMiZBzshBPl9 CmRRKvEewsz3W+tlVDplYJHcepy9q8pfJjUQTiQrwCCWPTUvA8TuNtA/au3IVgLG vOhcBWc/tO2ooJSazJjBJ49kuv15CSiazzwE3gdbK50PjIsYMZ4/r+GtNHLapadA 5ZvuZzF6Ahj/t16Wkv/2stlaIvguS2J9li6pcD2bq8Lpl7mQ5W4e3SRY4JP/TYUW AJw8upbGUJrqkj6x+bjkc62rFEkFVZ4IjCAP0SdCG0MWkKPCGRNUuM+fZhTam5+k A0JPMyOQyuKXEdL+MRQ+qa8HBa5iTuPzL5kiVok3rdtdkbHrO0oxmO/pNF7b6+LK L4TZbUke22xuGIPcHUk3vLuQrkxPVCOns7ABiq0bkbs3TO81MitwYUod7m328iNE ifWT3tueI3mSdXiZIAdaA6py/1vpK6Wm5Bf3iz5WupTjAgMBAAGjQDA+MB0GA1Ud EQQWMBSCEmhpcmQuaHVtbGFiLnVtdS5zZTAdBgNVHQ4EFgQULRbe1RmRSTENXqcl 6sUzGWu4KEswDQYJKoZIhvcNAQELBQADggGBAD0yg5FpbFPI14l05Nr1poT3O8K3 CAT97zyHZQdn+hiRjLM9eOFIdBMaSF/Sm83eDFKrWfNu0fZAHz6oiDiVTRBv1/D0 tH4NrBB2vSd7EcZ0le28lhOwRt7M5tY4DQG5ukmg32vQDf3HbrkzEwHbxRojdBX7 1MpKuzEbZzGxcBFsMWByZJusrfZW8zsuNiUUF1cPkgR7WexAJZEaiRRyVED3tn7V FQXlmm06WfWHk9JxxNbnSRDIWzo6HUpB9muU/4HejvYgx2fZi7iEoQkfzaDUvL/Y d5uYcsTZFrDOoNu1bnQ0OBaZxZmd16nI5vOuvQIOsnZh1+rNCZ0P/oAgwofMM6m0 an1/NapNDRBhcQeUufz63Tv9Mi+DUvL5xcLtniVIjdt4qS7Xah4ltcOS5B4ER8Zd wj/LFBAE34tzjjGQXM0dIqZPt7hTtaHtFC/vVir2x+bLLy77ZpnA8GmR3E3oAIel x2wYv1X/dBixYZg1TYFENUI3k0fk5i4jO54+SA== </ds:X509Certificate>
+            </ds:X509Data>
+            </ds:KeyInfo>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2009/xmlenc11#aes128-gcm"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2009/xmlenc11#aes192-gcm"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2009/xmlenc11#aes256-gcm"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes192-cbc"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#aes256-cbc"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#tripledes-cbc"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2009/xmlenc11#rsa-oaep"/>
+            <md:EncryptionMethod Algorithm="http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p"/>
+        </md:KeyDescriptor>
+
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://hird.humlab.umu.se/Shibboleth.sso/SLO/SOAP"/>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://hird.humlab.umu.se/Shibboleth.sso/SLO/Redirect"/>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://hird.humlab.umu.se/Shibboleth.sso/SLO/POST"/>
+        <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://hird.humlab.umu.se/Shibboleth.sso/SLO/Artifact"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://hird.humlab.umu.se/Shibboleth.sso/SAML2/POST" index="1"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" Location="https://hird.humlab.umu.se/Shibboleth.sso/SAML2/POST-SimpleSign" index="2"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://hird.humlab.umu.se/Shibboleth.sso/SAML2/Artifact" index="3"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" Location="https://hird.humlab.umu.se/Shibboleth.sso/SAML2/ECP" index="4"/>
+
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://gitlab.hird.humlab.umu.se/Shibboleth.sso/SAML2/POST" index="5"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" Location="https://gitlab.hird.humlab.umu.se/Shibboleth.sso/SAML2/POST-SimpleSign" index="6"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://gitlab.hird.humlab.umu.se/Shibboleth.sso/SAML2/Artifact" index="7"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" Location="https://gitlab.hird.humlab.umu.se/Shibboleth.sso/SAML2/ECP" index="8"/>
+
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://rstudio.hird.humlab.umu.se/Shibboleth.sso/SAML2/POST" index="9"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST-SimpleSign" Location="https://rstudio.hird.humlab.umu.se/Shibboleth.sso/SAML2/POST-SimpleSign" index="10"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact" Location="https://rstudio.hird.humlab.umu.se/Shibboleth.sso/SAML2/Artifact" index="11"/>
+        <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:PAOS" Location="https://rstudio.hird.humlab.umu.se/Shibboleth.sso/SAML2/ECP" index="12"/>
+
+    </md:SPSSODescriptor>
+    <md:Organization>
+       <md:OrganizationName xml:lang="en-US">Umeå universitet</md:OrganizationName>
+       <md:OrganizationDisplayName xml:lang="en-US">Umeå universitet</md:OrganizationDisplayName>
+       <md:OrganizationURL xml:lang="en-US">https://umu.se</md:OrganizationURL>
+    </md:Organization>
+    <md:ContactPerson contactType="technical">
+        <md:GivenName>Johan von Boer</md:GivenName>
+        <md:EmailAddress>johan.von.boer@umu.se</md:EmailAddress>
+    </md:ContactPerson>
+    <md:ContactPerson contactType="support">
+        <md:GivenName>Humlab</md:GivenName>
+        <md:EmailAddress>support@humlab.umu.se</md:EmailAddress>
+    </md:ContactPerson>
+
+    <!--
+    <mdui:UIInfo xmlns:mdui="urn:oasis:names:tc:SAML:metadata:ui">
+        <mdui:DisplayName xml:lang="sv">HIRD</mdui:DisplayName>
+        <mdui:DisplayName xml:lang="en">HIRD</mdui:DisplayName>
+        <mdui:Description xml:lang="sv">Humlabs infrastruktur för forskningsdata</mdui:Description>
+        <mdui:Description xml:lang="en">Humlab Infrastructure for Research Data</mdui:Description>
+        <mdui:Logo height="100" width="100">https://hird.humlab.umu.se/assets/hird-logo-100x100.png</mdui:Logo>
+    </mdui:UIInfo>
+    -->
+
+</md:EntityDescriptor>
+
+

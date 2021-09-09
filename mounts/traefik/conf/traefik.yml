@@ -1,0 +1,48 @@
+sendAnonymousUsage: false
+
+api:
+  insecure: false
+  dashboard: false
+
+log:
+  filePath: "/var/log/traefik.log"
+  #level: DEBUG
+
+accessLog:
+  filePath: "/var/log/traefik-access.log"
+
+serversTransport:
+  insecureSkipVerify: true
+
+certificatesResolvers:
+  cr1:
+    acme:
+      email: "support@humlab.umu.se"
+      #caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      storage: "/acme/acme.json"
+      httpChallenge:
+        entryPoint: web
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+  traefik:
+    address: ":8080"
+
+providers:
+  file:
+    directory: "/etc/traefik/dynamic"
+
+
+http:
+  middlewares:
+    humlabRedirectSchemeMiddleware:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    api:
+      rule: "PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
+      service: api@internal

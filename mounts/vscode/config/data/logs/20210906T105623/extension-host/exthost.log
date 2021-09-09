@@ -1,0 +1,38 @@
+[2021-09-06 10:56:25.831] [exthost] [info] extension host started
+[2021-09-06 10:56:25.941] [exthost] [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch {"startup":true,"extensionId":{"value":"vscode.debug-auto-launch","_lower":"vscode.debug-auto-launch"},"activationEvent":"*"}
+[2021-09-06 10:56:25.942] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/debug-auto-launch/dist/extension
+[2021-09-06 10:56:25.948] [exthost] [info] ExtensionService#_doActivateExtension vscode.git {"startup":true,"extensionId":{"value":"vscode.github","_lower":"vscode.github"},"activationEvent":"*"}
+[2021-09-06 10:56:25.948] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/git/dist/main
+[2021-09-06 10:56:26.339] [exthost] [info] ExtensionService#_doActivateExtension vscode.github {"startup":true,"extensionId":{"value":"vscode.github","_lower":"vscode.github"},"activationEvent":"*"}
+[2021-09-06 10:56:26.340] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/github/dist/extension.js
+[2021-09-06 10:56:26.375] [exthost] [info] ExtensionService#_doActivateExtension vscode.emmet {"startup":false,"extensionId":{"value":"vscode.emmet","_lower":"vscode.emmet"},"activationEvent":"onStartupFinished"}
+[2021-09-06 10:56:26.375] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/emmet/dist/node/emmetNodeMain
+[2021-09-06 10:56:26.390] [exthost] [info] ExtensionService#_doActivateExtension vscode.merge-conflict {"startup":false,"extensionId":{"value":"vscode.merge-conflict","_lower":"vscode.merge-conflict"},"activationEvent":"onStartupFinished"}
+[2021-09-06 10:56:26.390] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/merge-conflict/dist/mergeConflictMain
+[2021-09-06 10:56:26.394] [exthost] [info] ExtensionService#_doActivateExtension vscode.testing-editor-contributions {"startup":false,"extensionId":{"value":"vscode.testing-editor-contributions","_lower":"vscode.testing-editor-contributions"},"activationEvent":"onStartupFinished"}
+[2021-09-06 10:56:26.394] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/testing-editor-contributions/dist/extension.js
+[2021-09-06 10:56:26.395] [exthost] [info] eager extensions activated
+[2021-09-06 10:56:26.519] [exthost] [info] ExtensionService#_doActivateExtension ms-vscode.js-debug {"startup":false,"extensionId":{"value":"ms-vscode.js-debug","_lower":"ms-vscode.js-debug"},"activationEvent":"onCommand:extension.js-debug.clearAutoAttachVariables"}
+[2021-09-06 10:56:26.519] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/ms-vscode.js-debug/src/extension.js
+[2021-09-06 10:56:26.794] [exthost] [info] extension host terminating: received terminate message from renderer
+[2021-09-06 10:56:27.803] [exthost] [info] exiting with code 0
+[2021-09-06 10:56:29.382] [exthost] [info] extension host started
+[2021-09-06 10:56:29.416] [exthost] [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch {"startup":true,"extensionId":{"value":"vscode.debug-auto-launch","_lower":"vscode.debug-auto-launch"},"activationEvent":"*"}
+[2021-09-06 10:56:29.416] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/debug-auto-launch/dist/extension
+[2021-09-06 10:56:29.421] [exthost] [info] ExtensionService#_doActivateExtension vscode.git {"startup":true,"extensionId":{"value":"vscode.github","_lower":"vscode.github"},"activationEvent":"*"}
+[2021-09-06 10:56:29.421] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/git/dist/main
+[2021-09-06 10:56:29.509] [exthost] [info] ExtensionService#_doActivateExtension vscode.github {"startup":true,"extensionId":{"value":"vscode.github","_lower":"vscode.github"},"activationEvent":"*"}
+[2021-09-06 10:56:29.509] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/github/dist/extension.js
+[2021-09-06 10:56:29.543] [exthost] [info] ExtensionService#_doActivateExtension vscode.emmet {"startup":false,"extensionId":{"value":"vscode.emmet","_lower":"vscode.emmet"},"activationEvent":"onStartupFinished"}
+[2021-09-06 10:56:29.543] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/emmet/dist/node/emmetNodeMain
+[2021-09-06 10:56:29.553] [exthost] [info] ExtensionService#_doActivateExtension vscode.merge-conflict {"startup":false,"extensionId":{"value":"vscode.merge-conflict","_lower":"vscode.merge-conflict"},"activationEvent":"onStartupFinished"}
+[2021-09-06 10:56:29.553] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/merge-conflict/dist/mergeConflictMain
+[2021-09-06 10:56:29.557] [exthost] [info] ExtensionService#_doActivateExtension vscode.testing-editor-contributions {"startup":false,"extensionId":{"value":"vscode.testing-editor-contributions","_lower":"vscode.testing-editor-contributions"},"activationEvent":"onStartupFinished"}
+[2021-09-06 10:56:29.557] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/testing-editor-contributions/dist/extension.js
+[2021-09-06 10:56:29.557] [exthost] [info] eager extensions activated
+[2021-09-06 10:56:29.586] [exthost] [info] ExtensionService#_doActivateExtension ms-vscode.js-debug {"startup":false,"extensionId":{"value":"ms-vscode.js-debug","_lower":"ms-vscode.js-debug"},"activationEvent":"onCommand:extension.js-debug.clearAutoAttachVariables"}
+[2021-09-06 10:56:29.586] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/ms-vscode.js-debug/src/extension.js
+[2021-09-06 10:57:34.551] [exthost] [info] ExtensionService#_doActivateExtension vscode.extension-editing {"startup":false,"extensionId":{"value":"vscode.extension-editing","_lower":"vscode.extension-editing"},"activationEvent":"onLanguage:markdown"}
+[2021-09-06 10:57:34.551] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/extension-editing/dist/extensionEditingMain
+[2021-09-06 10:57:34.562] [exthost] [info] ExtensionService#_doActivateExtension vscode.markdown-language-features {"startup":false,"extensionId":{"value":"vscode.markdown-language-features","_lower":"vscode.markdown-language-features"},"activationEvent":"onLanguage:markdown"}
+[2021-09-06 10:57:34.562] [exthost] [info] ExtensionService#loadCommonJSModule file:///usr/local/share/.config/yarn/global/node_modules/code-server/lib/vscode/extensions/markdown-language-features/dist/extension

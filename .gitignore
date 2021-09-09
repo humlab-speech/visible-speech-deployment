@@ -1,3 +1,11 @@
+mounts/traefik/acme/acme.json
+docker-elk/
+docker/elasticsearch/
+docker/filebeat/
+docker/kibana/
+docker/logstash/
+filebeat-demo/
+mounts/elasticsearch/
 filebeat.docker.yml
 docker_bench.sh
 visp-user-access-tool

@@ -1,16 +1,32 @@
 version: '3'
 services:
-  edge-router:
-    image: hs-edge-router
-    build: "./docker/edge-router"
+  traefik:
+    image: traefik:v2.5.2
+    restart: always
+    volumes:
+      - "./mounts/traefik/conf:/etc/traefik"
+      - "./mounts/traefik/acme:/acme"
+      - "./mounts/traefik/log:/var/log/"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - $HTTP_PORT:80
+      - $HTTPS_PORT:443
+    environment:
+      HS_DOMAIN_NAME: $BASE_DOMAIN
+    networks:
+      - visp-net
+
+  apache:
+    image: hird-apache
+    build: "./docker/apache"
     restart: unless-stopped
     depends_on:
       - keycloak
     networks:
       - visp-net
-    ports:
-      - $HTTP_PORT:80
-      - $HTTPS_PORT:443
+    #ports:
+    #  - $HTTP_PORT:80
+    #  - $HTTPS_PORT:443
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
@@ -31,26 +47,26 @@ services:
       #- "./private/certs/sp-cert/hird.humlab.umu.se-cert.pem:/etc/shibboleth/sp-cert.pem:Z"
       #- "./private/certs/sp-cert/hird.humlab.umu.se-key.pem:/etc/shibboleth/sp-key.pem:Z"
       #Shibboleth config for KEYCLOAK
-      - "./mounts/edge-router/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/edge-router/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      - "./mounts/edge-router/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
-      - "./mounts/edge-router/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      - "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      - "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      - "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
       #GENERAL
       - "./mounts/webapi/logs:/var/log/api:Z"
-      - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
-      - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
-      - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
-      - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
+      - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
+      - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
+      - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
+      - "./mounts/apache/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/html/api:Z"
-      - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
-      - "./mounts/edge-router/apache/logs/shibboleth:/var/log/shibboleth:Z"
-      - "./mounts/edge-router/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
+      - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
+      - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
+      - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "./certs:/etc/certs:Z"
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
-      - "./mounts/edge-router/apache/uploads:/tmp/uploads:Z"
-      - "./mounts/edge-router/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"      
+      - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
+      - "./mounts/apache/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"      
 
   session-manager:
     image: hs-session-manager-dev
@@ -209,6 +225,83 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: $MONGO_ROOT_PASSWORD
+    networks:
+      - visp-net
+
+  filebeat:
+    image: visp-filebeat
+    build:
+      context: docker/filebeat/
+    restart: unless-stopped
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "/var/lib/docker/containers:/usr/share/dockerlogs/data:ro"
+    networks:
+      - visp-net
+
+  elasticsearch:
+    build:
+      context: docker/elasticsearch/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    volumes:
+      - "./docker/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro"
+      - "./mounts/elasticsearch:/usr/share/elasticsearch/data:Z"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      ELASTIC_PASSWORD: changeme
+      # Use single node discovery in order to disable production mode and avoid bootstrap checks.
+      # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
+      discovery.type: single-node
+    networks:
+      - visp-net
+
+  logstash:
+    build:
+      context: docker/logstash/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    volumes:
+      - "./docker/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro"
+      - "./docker/logstash/pipeline:/usr/share/logstash/pipeline:ro"
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - visp-net
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    build:
+      context: docker/kibana/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    volumes:
+      - "./docker/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro"
+    ports:
+      - "5601:5601"
+    networks:
+      - visp-net
+    depends_on:
+      - elasticsearch
+
+  vscode:
+    image: linuxserver/code-server:version-v3.11.1
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Stockholm
+      PROXY_DOMAIN: vscode.$BASE_DOMAIN
+    volumes:
+      - "./mounts/vscode/config:/config"
     networks:
       - visp-net
 

@@ -13,6 +13,11 @@ services:
     ports:
       - $HTTP_PORT:80
       - $HTTPS_PORT:443
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2000M
     environment:
       PROJECT_NAME: $PROJECT_NAME
       LOG_LEVEL: debug
@@ -58,6 +63,11 @@ services:
     image: hs-session-manager
     build: "./docker/session-manager"
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2000M
     environment:
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
@@ -84,6 +94,11 @@ services:
       - visp-net
     hostname: gitlab.$BASE_DOMAIN
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 8000M
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       HS_DOMAIN_NAME: $BASE_DOMAIN
@@ -110,6 +125,11 @@ services:
     image: hs-emu-webapp
     build: "./docker/emu-webapp"
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 200M
     ports:
       - 9000:9000
     networks:
@@ -119,6 +139,11 @@ services:
     image: hs-octra
     build: "./docker/octra"
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 200M
     networks:
       - visp-net
     volumes:
@@ -129,6 +154,11 @@ services:
     image: hs-labjs
     build: "./docker/labjs"
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 200M
     networks:
       - visp-net
 
@@ -138,6 +168,11 @@ services:
     restart: always
     depends_on:
       - database
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2000M
     environment:
       KEYCLOAK_USER: $KEYCLOAK_USER
       KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
@@ -157,6 +192,11 @@ services:
   database:
     image: postgres:12.5
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 500M
     environment:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -172,6 +212,11 @@ services:
     restart: always
     ports:
       - 27017:27017
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1000M
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD

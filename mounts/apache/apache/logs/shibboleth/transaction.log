@@ -1,0 +1,941 @@
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|New session (ID: _8f57815985dc31a223e9a851f40cced5) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.27.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_14600366-5c1b-476c-8db8-5552d5eec74f)
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _8f57815985dc31a223e9a851f40cced5) for (applicationId: default) {
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-05-27 08:35:43|Shibboleth-TRANSACTION|}
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|New session (ID: _c63b1ae2ba1ef0edeab1ae98b2447a5e) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.28.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0a02d3fb-1527-48b8-a268-204319024696)
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _c63b1ae2ba1ef0edeab1ae98b2447a5e) for (applicationId: default) {
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-05-27 09:12:49|Shibboleth-TRANSACTION|}
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|New session (ID: _19bfd4bf8dc73918ab0cbf0de02fd47a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.30.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_fa864efe-fc90-40c9-b80a-4eedb3b84acf)
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _19bfd4bf8dc73918ab0cbf0de02fd47a) for (applicationId: default) {
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-05-27 09:27:57|Shibboleth-TRANSACTION|}
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|New session (ID: _3341a51d558a3fdcaf542e34e020a4b3) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.31.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_b8b6b5a1-cc58-44dc-afec-def60ca1d39e)
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _3341a51d558a3fdcaf542e34e020a4b3) for (applicationId: default) {
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-27 09:51:10|Shibboleth-TRANSACTION|}
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|New session (ID: _cbd7dcf7567e8d606873bf85ae9cae7a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.16.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_b12f1987-aae8-4b4b-9ae0-0d8de9e7fcdd)
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _cbd7dcf7567e8d606873bf85ae9cae7a) for (applicationId: default) {
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-27 09:59:31|Shibboleth-TRANSACTION|}
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|New session (ID: _24ca831ebd925c62e968c047bc1e6cb3) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.32.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_5cb0701b-7feb-4c0a-ba5b-39a39d55eb3d)
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _24ca831ebd925c62e968c047bc1e6cb3) for (applicationId: default) {
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-27 11:43:54|Shibboleth-TRANSACTION|}
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|New session (ID: _e9337dcacf39fa4eeb847fc1b005ac8a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.32.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e694eea4-bd0a-48a3-98f6-a6084e559bc3)
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e9337dcacf39fa4eeb847fc1b005ac8a) for (applicationId: default) {
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-28 08:16:21|Shibboleth-TRANSACTION|}
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|New session (ID: _9deb0457710fc23b1b9cbebbf25fd0f0) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_47173c85-2f15-40f6-9dab-cae86d58d26f)
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _9deb0457710fc23b1b9cbebbf25fd0f0) for (applicationId: default) {
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-28 11:35:13|Shibboleth-TRANSACTION|}
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|New session (ID: _1707a9a3d6adcfa77621e8e036f6e13c) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.23.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e4612b2e-4d45-4eaf-b410-6dc0df20b4a0)
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _1707a9a3d6adcfa77621e8e036f6e13c) for (applicationId: default) {
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-28 11:39:02|Shibboleth-TRANSACTION|}
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|New session (ID: _ce9995e9f9dbccad74f8081be4477acb) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8fdd1202-95e6-41b4-b9f7-5e916f51cda3)
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _ce9995e9f9dbccad74f8081be4477acb) for (applicationId: default) {
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 08:25:58|Shibboleth-TRANSACTION|}
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|New session (ID: _82543db5852b74a354f8c79da862ae14) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.23.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_959bf9ae-6a1c-4c26-a449-008a74e486f3)
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _82543db5852b74a354f8c79da862ae14) for (applicationId: default) {
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 08:36:59|Shibboleth-TRANSACTION|}
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|New session (ID: _8b1aca74a030d5e643f19d7c478332f8) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.24.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_63ad22bb-f24c-4e7e-8e4c-db1a9eeb674b)
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _8b1aca74a030d5e643f19d7c478332f8) for (applicationId: default) {
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 10:25:44|Shibboleth-TRANSACTION|}
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|New session (ID: _d95ee956d7e79a119244aa504d62091c) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.25.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_5b9aa18d-25b5-4ede-8cb3-b9efa5a9ec0c)
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _d95ee956d7e79a119244aa504d62091c) for (applicationId: default) {
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 10:32:10|Shibboleth-TRANSACTION|}
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|New session (ID: _2cbcafdf475ae2f05e49b377fff4d6bc) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.27.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_28014221-4522-4b85-8cf7-8b35d82e36c8)
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _2cbcafdf475ae2f05e49b377fff4d6bc) for (applicationId: default) {
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 10:45:47|Shibboleth-TRANSACTION|}
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|New session (ID: _36b7a4dcadd77d03de9f05f714c43a59) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.28.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_50d990c6-9cc6-4a09-a182-2f05bb90a2f6)
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _36b7a4dcadd77d03de9f05f714c43a59) for (applicationId: default) {
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 10:47:54|Shibboleth-TRANSACTION|}
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|New session (ID: _67030e3a579c6b5bbe801690469616b5) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.30.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_cccab0ec-723b-4094-9584-def6cdcdc7da)
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _67030e3a579c6b5bbe801690469616b5) for (applicationId: default) {
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 10:54:00|Shibboleth-TRANSACTION|}
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|New session (ID: _2a9d8f094000ff5439a338ac94942831) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.31.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_35befd78-0e57-4fed-a740-9797ef2f87ac)
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _2a9d8f094000ff5439a338ac94942831) for (applicationId: default) {
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 10:59:37|Shibboleth-TRANSACTION|}
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|New session (ID: _6404c6eae4f041d5489e3149f0ee0f28) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_c6852753-8d39-4e86-b611-1df3cc2f2123)
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6404c6eae4f041d5489e3149f0ee0f28) for (applicationId: default) {
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 11:07:53|Shibboleth-TRANSACTION|}
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|New session (ID: _92ba7aa70588b6f5d3eedce10d26a11c) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.16.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0ffff6b7-5190-494b-a23d-a7ad24fd2378)
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _92ba7aa70588b6f5d3eedce10d26a11c) for (applicationId: default) {
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 11:49:02|Shibboleth-TRANSACTION|}
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|New session (ID: _6e15217056c23c3f2d1b4fa3f9b50af1) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.32.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_dcfb5724-8c46-42dd-bc05-8d1c98b598cd)
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6e15217056c23c3f2d1b4fa3f9b50af1) for (applicationId: default) {
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|	email (1 values)
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|	sn (1 values)
+2021-05-31 13:11:57|Shibboleth-TRANSACTION|}
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|New session (ID: _6e3f7c65acc1f81ad9fe676004a2fd83) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_42ca7db5-2490-48ea-9cb8-e78a4ba9d7d3)
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6e3f7c65acc1f81ad9fe676004a2fd83) for (applicationId: default) {
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-01 07:49:57|Shibboleth-TRANSACTION|}
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|New session (ID: _5e1befe54fc9687f1ec8fe5980cc3c81) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.23.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_fedf7316-0a2e-4665-a959-359670adbc52)
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _5e1befe54fc9687f1ec8fe5980cc3c81) for (applicationId: default) {
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-02 07:55:40|Shibboleth-TRANSACTION|}
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|New session (ID: _04c13308a6e1f020a1e502fe27bc050f) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_dbdea5b2-136d-4fe9-8969-47d5b478fe2c)
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _04c13308a6e1f020a1e502fe27bc050f) for (applicationId: default) {
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-03 07:45:26|Shibboleth-TRANSACTION|}
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|New session (ID: _d22417e7452cef2b31612e58cb42cc53) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.23.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0415d263-f2d5-4f17-97d6-51281f747a88)
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _d22417e7452cef2b31612e58cb42cc53) for (applicationId: default) {
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-03 13:38:50|Shibboleth-TRANSACTION|}
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|New session (ID: _ae36ae4474283f4d67a8745278272fea) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_64eb1284-829d-488c-a344-67d4c35ab26d)
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _ae36ae4474283f4d67a8745278272fea) for (applicationId: default) {
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-07 06:58:05|Shibboleth-TRANSACTION|}
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|New session (ID: _63695c6e16d2f9e1c9379837acf68c52) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_13517700-457b-4498-8e32-3d58c3ff95ce)
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _63695c6e16d2f9e1c9379837acf68c52) for (applicationId: default) {
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-07 10:23:11|Shibboleth-TRANSACTION|}
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|New session (ID: _445bc8050d4b0f48fe7ee02bb8cd72b9) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_40bd8659-e26c-4f5a-acc0-53eeb2248f19)
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _445bc8050d4b0f48fe7ee02bb8cd72b9) for (applicationId: default) {
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-08 07:14:52|Shibboleth-TRANSACTION|}
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|New session (ID: _10c8d7b3d39fadfa32ea5858f0f13b6a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_c6a2e0a3-1f13-4bb0-a25f-0a91485e78de)
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _10c8d7b3d39fadfa32ea5858f0f13b6a) for (applicationId: default) {
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-08 12:12:06|Shibboleth-TRANSACTION|}
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|New session (ID: _71b1f15216050be821e7b43e4e8fb138) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e06a8424-32a9-419b-ad49-bf10eb1e13d5)
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _71b1f15216050be821e7b43e4e8fb138) for (applicationId: default) {
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-09 07:52:12|Shibboleth-TRANSACTION|}
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|New session (ID: _cce4a92997ded7b9ad19d1a8ca91fe9d) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_1c07be68-8aad-4cea-b227-4b2638de7d24)
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _cce4a92997ded7b9ad19d1a8ca91fe9d) for (applicationId: default) {
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-10 08:26:17|Shibboleth-TRANSACTION|}
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|New session (ID: _665b302c45a03481dd0c07f337ae5320) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_bb4885b5-f359-4ac1-b20c-e9bebd43622e)
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _665b302c45a03481dd0c07f337ae5320) for (applicationId: default) {
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-11 07:22:31|Shibboleth-TRANSACTION|}
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|New session (ID: _1c46c2ab4a3a1348ab606e2ed8fcd23b) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e7e93699-83d4-436d-9b32-022f8a2a1932)
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _1c46c2ab4a3a1348ab606e2ed8fcd23b) for (applicationId: default) {
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-14 07:05:23|Shibboleth-TRANSACTION|}
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|New session (ID: _ae73d512b8e967860b05ad40471c0bed) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e9551262-8da5-4a62-a408-9f110ed5e4bc)
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _ae73d512b8e967860b05ad40471c0bed) for (applicationId: default) {
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-15 07:38:45|Shibboleth-TRANSACTION|}
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|New session (ID: _6bf218216e818dbf66632c6d31044fbf) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_f65c9555-5cdc-44f8-83e1-f77f327fc223)
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6bf218216e818dbf66632c6d31044fbf) for (applicationId: default) {
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-16 07:13:00|Shibboleth-TRANSACTION|}
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|New session (ID: _8b458b72349cd5b375a50c58a92fbd1a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_daf6c652-4971-4d80-9844-a54e9d511887)
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _8b458b72349cd5b375a50c58a92fbd1a) for (applicationId: default) {
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-16 07:34:03|Shibboleth-TRANSACTION|}
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|New session (ID: _20a13b071a3fec7efa23f7851264b79c) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_5d2b72a9-83ae-49ef-8dad-89fe6443a1f4)
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _20a13b071a3fec7efa23f7851264b79c) for (applicationId: default) {
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-17 07:59:16|Shibboleth-TRANSACTION|}
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|New session (ID: _a583cdc00cbc4936f0b582e0c884c93d) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d01415e6-4bc7-4296-b30f-d2b40a4cad80)
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _a583cdc00cbc4936f0b582e0c884c93d) for (applicationId: default) {
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-18 07:24:56|Shibboleth-TRANSACTION|}
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|New session (ID: _a83e26f62787b94b1a14a4fb153430cc) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_deec4af0-019d-427b-991e-5608313257a4)
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _a83e26f62787b94b1a14a4fb153430cc) for (applicationId: default) {
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-21 06:54:15|Shibboleth-TRANSACTION|}
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|New session (ID: _46c34a86c0ef18b638d7e439a7335d81) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_c2bf7969-c5be-4951-8271-f4163d637d45)
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _46c34a86c0ef18b638d7e439a7335d81) for (applicationId: default) {
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-22 07:15:53|Shibboleth-TRANSACTION|}
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|New session (ID: _bce961bf66fd0f9c1f78fe91a722ad28) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_a5ceacfe-9c84-4a1f-8f28-f73e9bb83971)
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _bce961bf66fd0f9c1f78fe91a722ad28) for (applicationId: default) {
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-23 07:06:40|Shibboleth-TRANSACTION|}
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|New session (ID: _1e6410702bb1fe07990c7109be375368) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.20.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_a0570d6f-b16a-4347-ac02-207163796a03)
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _1e6410702bb1fe07990c7109be375368) for (applicationId: default) {
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-23 08:21:51|Shibboleth-TRANSACTION|}
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|New session (ID: _a18fa88dd764048379f4e0250ba4388a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_581d2111-e4e3-49ae-bd02-63a6f446e99d)
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _a18fa88dd764048379f4e0250ba4388a) for (applicationId: default) {
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-23 09:28:37|Shibboleth-TRANSACTION|}
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|New session (ID: _124c01b3ee8f61e9a01ddab769234b49) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.20.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_4b198d26-fe1a-45f4-9d5b-696a1ad77357)
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _124c01b3ee8f61e9a01ddab769234b49) for (applicationId: default) {
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-23 12:11:22|Shibboleth-TRANSACTION|}
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|New session (ID: _94f5608832e1fb4fff3f48e861a1cf5e) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_6f324ac3-6ddb-42a3-9a73-b477f23f0ac1)
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _94f5608832e1fb4fff3f48e861a1cf5e) for (applicationId: default) {
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-23 12:23:10|Shibboleth-TRANSACTION|}
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|New session (ID: _7a55340051e5866dd10c0d984c2534f3) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d6eae5a0-ceef-4592-8a57-aa8971d574c0)
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _7a55340051e5866dd10c0d984c2534f3) for (applicationId: default) {
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-24 10:30:43|Shibboleth-TRANSACTION|}
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|New session (ID: _6fc692349467c445f9258496641bf33f) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0f1c4de6-3ec5-401c-9974-eb1e69f25bab)
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6fc692349467c445f9258496641bf33f) for (applicationId: default) {
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-28 07:24:32|Shibboleth-TRANSACTION|}
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|New session (ID: _7164abdeaeba58fe81f28f9dcc826462) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_20e8d144-1a8d-4015-8e2d-849d50cf6ca2)
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _7164abdeaeba58fe81f28f9dcc826462) for (applicationId: default) {
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|	email (1 values)
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|	sn (1 values)
+2021-06-28 13:29:26|Shibboleth-TRANSACTION|}
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|New session (ID: _2437ba6102cc5fefa69190f6db17e7db) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_6c437f12-ca47-46bf-92e5-fce96337e1a4)
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _2437ba6102cc5fefa69190f6db17e7db) for (applicationId: default) {
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-02 11:13:56|Shibboleth-TRANSACTION|}
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|New session (ID: _995e2f8055082119390642a9f78c6502) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_36df4f40-4ae2-438a-919d-acef521076a8)
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _995e2f8055082119390642a9f78c6502) for (applicationId: default) {
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-03 07:10:08|Shibboleth-TRANSACTION|}
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|New session (ID: _73140dd1d779a9a14c3a38b4685a84ab) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_7cf4a8ce-0373-43ee-b8ab-c851c2e4dde0)
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _73140dd1d779a9a14c3a38b4685a84ab) for (applicationId: default) {
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-03 14:12:34|Shibboleth-TRANSACTION|}
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|New session (ID: _3b935dafd948261bd868d19f14316102) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_609d150e-c70c-4420-8714-dc13b50a62e5)
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _3b935dafd948261bd868d19f14316102) for (applicationId: default) {
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-04 07:21:40|Shibboleth-TRANSACTION|}
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|New session (ID: _c5e3fa971f504664e61bb20adaccb2d2) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_1ee89118-052b-4a1a-b52f-6d4e7e1c34fc)
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _c5e3fa971f504664e61bb20adaccb2d2) for (applicationId: default) {
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-05 06:56:56|Shibboleth-TRANSACTION|}
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|New session (ID: _a5f88c3c7fffe9eec7ad72c42e1db9f5) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_ea982919-63ae-44c7-967a-e9f4471e3b77)
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _a5f88c3c7fffe9eec7ad72c42e1db9f5) for (applicationId: default) {
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-05 07:57:32|Shibboleth-TRANSACTION|}
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|New session (ID: _641ded0a4ab458e07bfba5e6d06387df) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_3f9275e8-b8a2-4097-8fc0-61fbd1bf9cb1)
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _641ded0a4ab458e07bfba5e6d06387df) for (applicationId: default) {
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-05 11:16:58|Shibboleth-TRANSACTION|}
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|New session (ID: _7a7ca77d7ebfb21a43b1a6a10ef09bc6) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_fca7d58a-1ff6-4296-a9dc-bde2e41ef848)
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _7a7ca77d7ebfb21a43b1a6a10ef09bc6) for (applicationId: default) {
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-05 11:52:06|Shibboleth-TRANSACTION|}
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|New session (ID: _bb798936edaab3a1a68fc08e79b997cf) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_331f8962-5993-40c2-8e7c-07bdb9e9690b)
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _bb798936edaab3a1a68fc08e79b997cf) for (applicationId: default) {
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-06 06:46:24|Shibboleth-TRANSACTION|}
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|New session (ID: _67d7ea5ff47ea73a3875a31af327d697) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_dca32601-8041-48ae-80e8-5c5f270593b1)
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _67d7ea5ff47ea73a3875a31af327d697) for (applicationId: default) {
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-09 07:28:21|Shibboleth-TRANSACTION|}
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|New session (ID: _c3ea60221c8c3a8a8aa17ae6ca79ff1e) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_442767be-0519-4615-bc5c-1e9563be8e0c)
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _c3ea60221c8c3a8a8aa17ae6ca79ff1e) for (applicationId: default) {
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-09 11:15:15|Shibboleth-TRANSACTION|}
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|New session (ID: _ce73b8ca84064b91296bf909f6cf06b6) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_f29044b7-2c1b-4a40-8bdc-6d12e320c9f4)
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _ce73b8ca84064b91296bf909f6cf06b6) for (applicationId: default) {
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-09 12:51:31|Shibboleth-TRANSACTION|}
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|New session (ID: _e9b092c6d4fbd25b54d6c45a6253d369) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_2db361a2-707d-4c60-acaf-aa7dc2f619b5)
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e9b092c6d4fbd25b54d6c45a6253d369) for (applicationId: default) {
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-10 07:09:34|Shibboleth-TRANSACTION|}
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|New session (ID: _79a5229dbb088900ea8bfe7d4f6830e1) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_ec15b2d0-8fbb-48db-8d62-054ce0c7c861)
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _79a5229dbb088900ea8bfe7d4f6830e1) for (applicationId: default) {
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-11 06:39:24|Shibboleth-TRANSACTION|}
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|New session (ID: _86634b4851ccd0104777e499bb7fcba2) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_1b2e4182-447e-481d-a68a-9a02c842da13)
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _86634b4851ccd0104777e499bb7fcba2) for (applicationId: default) {
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 07:23:53|Shibboleth-TRANSACTION|}
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|New session (ID: _fd41d2fe611bf819ac07a36f3cf35dd7) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_6a4e0d0f-47b9-44b2-aaf5-0db615360ff1)
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _fd41d2fe611bf819ac07a36f3cf35dd7) for (applicationId: default) {
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 11:50:22|Shibboleth-TRANSACTION|}
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|New session (ID: _22f0ab2c785794bf76a8038397fb6700) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_c1ec1c89-43c8-4c2d-8801-5f618dd30efe)
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _22f0ab2c785794bf76a8038397fb6700) for (applicationId: default) {
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 11:51:00|Shibboleth-TRANSACTION|}
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|New session (ID: _e8e922d581858be2cb48c3f8fba536cb) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_bb904a79-7bd0-4259-afb4-0a5bf557cd81)
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e8e922d581858be2cb48c3f8fba536cb) for (applicationId: default) {
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 13:28:14|Shibboleth-TRANSACTION|}
+2021-08-12 13:30:08|Shibboleth-TRANSACTION|Destroyed session (applicationId: default) (ID: _e8e922d581858be2cb48c3f8fba536cb)
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|New session (ID: _d88858e8c15641352abba8748353a6cc) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_5bc95589-afd0-43c7-b3bd-138ba96ace9a)
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _d88858e8c15641352abba8748353a6cc) for (applicationId: default) {
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 13:30:11|Shibboleth-TRANSACTION|}
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|New session (ID: _3473a19012b45dd5a663638885afe663) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_547c9ed5-e831-4e4b-aae1-f16858fb0971)
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _3473a19012b45dd5a663638885afe663) for (applicationId: default) {
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 13:30:24|Shibboleth-TRANSACTION|}
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|New session (ID: _47341381b9b5af475265362fc6635261) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_fcc9937c-eadd-48e2-b561-290bd834f4c8)
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _47341381b9b5af475265362fc6635261) for (applicationId: default) {
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-12 13:58:49|Shibboleth-TRANSACTION|}
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|New session (ID: _4c4ff81b5bb4e952953b6324dad7cf91) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_68509ab7-4c03-4b89-8248-5d17d162b532)
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _4c4ff81b5bb4e952953b6324dad7cf91) for (applicationId: default) {
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-13 07:11:46|Shibboleth-TRANSACTION|}
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|New session (ID: _efacca064100a41bf24c93beadf3b5da) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0b2114c8-3b54-4a5f-91ac-4b5761cbf363)
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _efacca064100a41bf24c93beadf3b5da) for (applicationId: default) {
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-13 07:29:47|Shibboleth-TRANSACTION|}
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|New session (ID: _9bf9123569310e4db858d151f745f075) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0dd392f4-864d-4d42-8c2a-d053249e777f)
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _9bf9123569310e4db858d151f745f075) for (applicationId: default) {
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-13 07:31:21|Shibboleth-TRANSACTION|}
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|New session (ID: _13c7cf9bfecbe64d4566946d75d7e56b) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_7625a9d4-e200-4c08-9a57-1735e744fe36)
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _13c7cf9bfecbe64d4566946d75d7e56b) for (applicationId: default) {
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-13 07:55:16|Shibboleth-TRANSACTION|}
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|New session (ID: _3704827f053892fb8cc2cdeeaa357017) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_adcc17c0-b6fe-4885-8e4a-24e0cff745f1)
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _3704827f053892fb8cc2cdeeaa357017) for (applicationId: default) {
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-13 11:05:55|Shibboleth-TRANSACTION|}
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|New session (ID: _f3fd157baf1ef77eb13c1f630d6e2be8) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_234919c1-e1ac-4d23-b00f-084335dfb8ff)
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _f3fd157baf1ef77eb13c1f630d6e2be8) for (applicationId: default) {
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-16 09:34:45|Shibboleth-TRANSACTION|}
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|New session (ID: _cc2ee7d4bfc0250ea79f9c0fc0edbab4) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_10514d15-ef45-4fa6-9717-1bd546d3e36a)
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _cc2ee7d4bfc0250ea79f9c0fc0edbab4) for (applicationId: default) {
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 07:51:17|Shibboleth-TRANSACTION|}
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|New session (ID: _dc5018c9c920df4c5a217c881576d29f) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_6a323fcf-bb51-4b93-b00e-dcd805429d49)
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _dc5018c9c920df4c5a217c881576d29f) for (applicationId: default) {
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 09:32:56|Shibboleth-TRANSACTION|}
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|New session (ID: _bf9676d11e07bc0b060e30d9f79a0900) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_34bd2530-b1ca-4ff9-8a74-2b2849fb0ff7)
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _bf9676d11e07bc0b060e30d9f79a0900) for (applicationId: default) {
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-17 12:27:24|Shibboleth-TRANSACTION|}
+2021-08-17 12:29:11|Shibboleth-TRANSACTION|Destroyed session (applicationId: default) (ID: _bf9676d11e07bc0b060e30d9f79a0900)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|New session (ID: _dc199f27bfc953ba8f1b4afe95e6e930) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_a0886e4c-4c53-41f7-a53d-a9edff74d0a8)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _dc199f27bfc953ba8f1b4afe95e6e930) for (applicationId: default) {
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-17 12:29:13|Shibboleth-TRANSACTION|}
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|New session (ID: _d750c9eabd700603a0ae45d62349b91c) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_433a5d8b-f9b7-41a1-b5d7-d5b86b7da250)
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _d750c9eabd700603a0ae45d62349b91c) for (applicationId: default) {
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-17 12:34:56|Shibboleth-TRANSACTION|}
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|New session (ID: _5a1cbacfbe58125873b7de2c87366117) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_65611c19-378e-4529-b0c5-045e45b99042)
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _5a1cbacfbe58125873b7de2c87366117) for (applicationId: default) {
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-17 12:35:35|Shibboleth-TRANSACTION|}
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|New session (ID: _ca0fd44ab4f6f3f5b4af00e5c704d6ca) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_96afbe0b-9716-4cc8-8fdf-aa3282a6146b)
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _ca0fd44ab4f6f3f5b4af00e5c704d6ca) for (applicationId: default) {
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-17 14:16:18|Shibboleth-TRANSACTION|}
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|New session (ID: _98a9b33c9d3e90a0c7b633fe108b2eab) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_ca440a9c-5fe9-44ef-9fd8-5acf5cce7428)
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _98a9b33c9d3e90a0c7b633fe108b2eab) for (applicationId: default) {
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-18 07:14:06|Shibboleth-TRANSACTION|}
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|New session (ID: _bab6eac11b41a84a8e5a4e4ff86b3dd6) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_54fb4304-783f-4b4e-b887-3446418ace80)
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _bab6eac11b41a84a8e5a4e4ff86b3dd6) for (applicationId: default) {
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-19 07:18:01|Shibboleth-TRANSACTION|}
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|New session (ID: _80640c9bed9f2ecf83f7468a1bce1e1f) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8c3d72cf-198a-493d-8f9b-de5091036f87)
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _80640c9bed9f2ecf83f7468a1bce1e1f) for (applicationId: default) {
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-20 06:42:19|Shibboleth-TRANSACTION|}
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|New session (ID: _c98bf09aefe861ef5dd1692b0d6142aa) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d508835e-bfbf-40f0-8f8a-b77c29ecb2ff)
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _c98bf09aefe861ef5dd1692b0d6142aa) for (applicationId: default) {
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-20 12:14:59|Shibboleth-TRANSACTION|}
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|New session (ID: _b10038c72f7585239f6e8b613c4a5963) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_07a24af9-24dd-41c1-a055-8f7e9f2853be)
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _b10038c72f7585239f6e8b613c4a5963) for (applicationId: default) {
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-23 09:28:44|Shibboleth-TRANSACTION|}
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|New session (ID: _6976b02cf7fae2914ef838ef0a27156a) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_ceb1474e-a6ff-4658-b718-d208f68c9de9)
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6976b02cf7fae2914ef838ef0a27156a) for (applicationId: default) {
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 07:07:39|Shibboleth-TRANSACTION|}
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|New session (ID: _75b123bd9969c5c1554302e5c755c7b8) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.24.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_7af863d4-f4e4-4d2a-a9ac-3a2093b37812)
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _75b123bd9969c5c1554302e5c755c7b8) for (applicationId: default) {
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 13:48:07|Shibboleth-TRANSACTION|}
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|New session (ID: _e21c0ca308e6786bc3850909fd88cc8f) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.25.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_17b25933-f956-4e96-ae39-77c729dff674)
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e21c0ca308e6786bc3850909fd88cc8f) for (applicationId: default) {
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:02:12|Shibboleth-TRANSACTION|}
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|New session (ID: _481f974e9506edc703e240bda94886d0) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.26.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_238e3946-3648-47bd-bf9b-6ae57f5a996c)
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _481f974e9506edc703e240bda94886d0) for (applicationId: default) {
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:10:29|Shibboleth-TRANSACTION|}
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|New session (ID: _c7d43e122eeed80968ab3ab7d9517d9d) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.27.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_7a5fdb99-f469-4e1a-a747-3cfbce07eee0)
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _c7d43e122eeed80968ab3ab7d9517d9d) for (applicationId: default) {
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:33:59|Shibboleth-TRANSACTION|}
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|New session (ID: _99c758d290e38bc139b076e89fc5b03e) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.28.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8da589eb-0276-468c-8f53-3cf841a4be68)
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _99c758d290e38bc139b076e89fc5b03e) for (applicationId: default) {
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:38:53|Shibboleth-TRANSACTION|}
+2021-08-24 14:39:48|Shibboleth-TRANSACTION|Destroyed session (applicationId: default) (ID: _99c758d290e38bc139b076e89fc5b03e)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|New session (ID: _801f8c3e80a156cde83e682ee827a65e) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.28.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_f60d4127-88cd-4dab-bc85-b130e8aaf310)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _801f8c3e80a156cde83e682ee827a65e) for (applicationId: default) {
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:39:54|Shibboleth-TRANSACTION|}
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|New session (ID: _0d6326d250fcb879a313bb451277a4ec) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.29.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_223eaf4b-38ed-4f28-adbc-b550c121ec7e)
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _0d6326d250fcb879a313bb451277a4ec) for (applicationId: default) {
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:56:34|Shibboleth-TRANSACTION|}
+2021-08-24 14:56:52|Shibboleth-TRANSACTION|Destroyed session (applicationId: default) (ID: _0d6326d250fcb879a313bb451277a4ec)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|New session (ID: _035a43047a4140bcf7d412ee0e447da1) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.29.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_3b50ff86-efcf-4937-9e40-ea0149e92bc9)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _035a43047a4140bcf7d412ee0e447da1) for (applicationId: default) {
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 14:57:26|Shibboleth-TRANSACTION|}
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|New session (ID: _e14484c56abf337a5418c68aafb2ca60) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.30.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_90766515-958d-4f9e-abe3-dc204e724d9d)
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e14484c56abf337a5418c68aafb2ca60) for (applicationId: default) {
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-24 15:10:32|Shibboleth-TRANSACTION|}
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|New session (ID: _4b4b781fda95a427ded54f9e4e40ea84) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_c413dc1a-3e28-4aa6-a7b5-43e629e2ce56)
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _4b4b781fda95a427ded54f9e4e40ea84) for (applicationId: default) {
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-25 07:36:50|Shibboleth-TRANSACTION|}
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|New session (ID: _e5e0647cb0cf8aca751e7be7cfa7dc53) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8271e3e3-3a09-4b9c-b714-b308d402c88b)
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e5e0647cb0cf8aca751e7be7cfa7dc53) for (applicationId: default) {
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-25 08:24:05|Shibboleth-TRANSACTION|}
+2021-08-25 08:24:29|Shibboleth-TRANSACTION|Destroyed session (applicationId: default) (ID: _e5e0647cb0cf8aca751e7be7cfa7dc53)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|New session (ID: _04fa267fc9d9388dea6cf0ba9189d2ce) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_f9b91916-3da7-4409-89d0-71e2a1063e18)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _04fa267fc9d9388dea6cf0ba9189d2ce) for (applicationId: default) {
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-25 08:27:04|Shibboleth-TRANSACTION|}
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|New session (ID: _eea91f61ff0a35d4af84488defadbdf2) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_03ce9e29-be8a-45d7-8c5a-54c59dcd9fe8)
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _eea91f61ff0a35d4af84488defadbdf2) for (applicationId: default) {
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-25 08:54:50|Shibboleth-TRANSACTION|}
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|New session (ID: _b6308c41a038b045af88a6dcdba0d308) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_5408ce72-8668-426b-9eef-47380f313a7b)
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _b6308c41a038b045af88a6dcdba0d308) for (applicationId: default) {
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-26 06:42:23|Shibboleth-TRANSACTION|}
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|New session (ID: _5678ab0452cca46bc61fdc7aefe20bc3) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_3a101006-8eb3-4f30-828d-feb352a0a4f4)
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _5678ab0452cca46bc61fdc7aefe20bc3) for (applicationId: default) {
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-26 08:49:42|Shibboleth-TRANSACTION|}
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|New session (ID: _93e45bcb5a60dccc92a4e80e76b82171) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.19.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e847227c-8371-4b07-813a-2cadb9356619)
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _93e45bcb5a60dccc92a4e80e76b82171) for (applicationId: default) {
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-26 08:53:16|Shibboleth-TRANSACTION|}
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|New session (ID: _456cb35b8acd6b3c6d563e79d98d465c) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d0d30168-c023-43c4-94e8-bd06bd6bef65)
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _456cb35b8acd6b3c6d563e79d98d465c) for (applicationId: default) {
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-26 09:15:35|Shibboleth-TRANSACTION|}
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|New session (ID: _dd2148713a9bc8842fd28c038c120a91) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_80a52f1f-a97d-4803-8cdd-e2ed054d37f5)
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _dd2148713a9bc8842fd28c038c120a91) for (applicationId: default) {
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-26 12:03:21|Shibboleth-TRANSACTION|}
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|New session (ID: _04747370388d1d2a7ba03eb62eb91c76) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.23.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d6c54fbf-f2ba-4338-8ebf-fb9a676b0d5c)
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _04747370388d1d2a7ba03eb62eb91c76) for (applicationId: default) {
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-26 15:34:47|Shibboleth-TRANSACTION|}
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|New session (ID: _1c51bb22175d8f424abb0893ac60a1e7) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.18.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d1c8c2e4-7bde-47ec-ac48-be4b9be1ba4a)
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _1c51bb22175d8f424abb0893ac60a1e7) for (applicationId: default) {
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-27 07:00:43|Shibboleth-TRANSACTION|}
+2021-08-27 07:00:52|Shibboleth-TRANSACTION|Destroyed session (applicationId: default) (ID: _1c51bb22175d8f424abb0893ac60a1e7)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|New session (ID: _36cad5172bc258f0369801b98fdef0cb) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.21.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_987c8d62-15ce-48c1-a245-39f5a2ab94da)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _36cad5172bc258f0369801b98fdef0cb) for (applicationId: default) {
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-27 08:38:42|Shibboleth-TRANSACTION|}
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|New session (ID: _e5a426f9ee89e68668b7ab93e3e3af10) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_a89825e5-54b8-4ab6-8f57-939deb95e514)
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e5a426f9ee89e68668b7ab93e3e3af10) for (applicationId: default) {
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-27 12:35:13|Shibboleth-TRANSACTION|}
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|New session (ID: _567bdd68035242ef77bd4f5dad5cfa67) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.24.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_77e5a121-aa47-480b-987b-13c0a7ddcd1c)
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _567bdd68035242ef77bd4f5dad5cfa67) for (applicationId: default) {
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-30 10:07:53|Shibboleth-TRANSACTION|}
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|New session (ID: _dba34134e3de684a76fb46fcc58a12c2) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.25.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_0a45efb2-7680-476a-8f49-82cc6feed4ac)
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _dba34134e3de684a76fb46fcc58a12c2) for (applicationId: default) {
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-30 10:11:19|Shibboleth-TRANSACTION|}
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|New session (ID: _3064519dc38bc8658e78db73a11c4521) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.28.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_e6d08028-2003-444e-91c2-eaffb2398354)
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _3064519dc38bc8658e78db73a11c4521) for (applicationId: default) {
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-30 14:56:33|Shibboleth-TRANSACTION|}
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|New session (ID: _e27da93536dfa605f054392713788909) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_ac5afc53-00f4-4ac4-85a9-3c248b7b1fbc)
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _e27da93536dfa605f054392713788909) for (applicationId: default) {
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-31 10:13:56|Shibboleth-TRANSACTION|}
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|New session (ID: _ce426b765b3b5b1a4ddd82c5ae4ed04f) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.23.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_af585591-7829-4f5a-94de-7083d65d3fd8)
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _ce426b765b3b5b1a4ddd82c5ae4ed04f) for (applicationId: default) {
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-31 11:33:58|Shibboleth-TRANSACTION|}
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|New session (ID: _27b8cbf950722001a8d374be85eda975) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.27.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_3393ef05-8d8a-458b-b89d-66b0458c5343)
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _27b8cbf950722001a8d374be85eda975) for (applicationId: default) {
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|	email (1 values)
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|	sn (1 values)
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-08-31 13:51:34|Shibboleth-TRANSACTION|}
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|New session (ID: _6e914cf833e498642449333a62eff512) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8d0814fa-81ce-4b2b-800f-b7d18ec54a8d)
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _6e914cf833e498642449333a62eff512) for (applicationId: default) {
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-01 07:44:40|Shibboleth-TRANSACTION|}
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|New session (ID: _4bbd2d89701692c5d4d53abb80be9a28) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.24.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_265d4ad7-b421-4a81-80fb-ee0e2c1e5091)
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _4bbd2d89701692c5d4d53abb80be9a28) for (applicationId: default) {
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-01 08:59:02|Shibboleth-TRANSACTION|}
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|New session (ID: _5cfac4f3818434a2c79b0606d540a689) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_9a8682ce-e62f-4b97-ba25-4c4df4c15383)
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _5cfac4f3818434a2c79b0606d540a689) for (applicationId: default) {
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-01 14:38:02|Shibboleth-TRANSACTION|}
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|New session (ID: _457c987180440f33ff6ec82e2043f489) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.22.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_115b4494-795d-4b80-92dd-d3c6cc6ce858)
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _457c987180440f33ff6ec82e2043f489) for (applicationId: default) {
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-02 07:46:11|Shibboleth-TRANSACTION|}
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|New session (ID: _9f16646dfb82e2a3f26704298b8f5124) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.24.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8f641e77-cdd7-47db-8960-40f06d3826ff)
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _9f16646dfb82e2a3f26704298b8f5124) for (applicationId: default) {
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-02 12:51:55|Shibboleth-TRANSACTION|}
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|New session (ID: _cffa3a519874310af42238368fb6d5ef) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.24.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_8be1c111-eac4-4a9a-a785-252f18849728)
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _cffa3a519874310af42238368fb6d5ef) for (applicationId: default) {
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-03 10:37:46|Shibboleth-TRANSACTION|}
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|New session (ID: _4b1604af00f280758d88c186075868d2) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.30.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_ebae9cdc-98eb-416a-b9ed-d41030ee7254)
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _4b1604af00f280758d88c186075868d2) for (applicationId: default) {
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-06 10:38:59|Shibboleth-TRANSACTION|}
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|New session (ID: _5a4ce9424915eae9d09eb817228f9a09) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.31.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_969161f8-030c-481b-abe2-8e2e01d510ff)
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _5a4ce9424915eae9d09eb817228f9a09) for (applicationId: default) {
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-06 10:48:01|Shibboleth-TRANSACTION|}
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|New session (ID: _8eda5835ce4d4b88e949e95fce2493f3) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 192.168.0.1) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_55cdc450-2d25-405a-930a-046d0ba12dc2)
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _8eda5835ce4d4b88e949e95fce2493f3) for (applicationId: default) {
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-06 10:58:05|Shibboleth-TRANSACTION|}
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|New session (ID: _71b46dded12a3d09034f4df7dda50d27) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.27.0.9) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_d0dbc5a6-42f1-41dd-896e-99e57323ef0a)
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _71b46dded12a3d09034f4df7dda50d27) for (applicationId: default) {
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-08 14:18:41|Shibboleth-TRANSACTION|}
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|New session (ID: _b1fdaf9fdecfda0c39d80d6575ac3952) with (applicationId: default) for principal from (IdP: https://idp.localtest.me/auth/realms/visp) at (ClientAddress: 172.28.0.13) with (NameIdentifier: testuser) using (Protocol: urn:oasis:names:tc:SAML:2.0:protocol) from (AssertionID: ID_a41d33e4-5358-4380-bda8-cdd9dff015ba)
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|Cached the following attributes with session (ID: _b1fdaf9fdecfda0c39d80d6575ac3952) for (applicationId: default) {
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|	givenName (1 values)
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|	email (1 values)
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|	eppn_replaced (1 values)
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|	sn (1 values)
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|	eppn_keycloak (1 values)
+2021-09-08 14:22:28|Shibboleth-TRANSACTION|}

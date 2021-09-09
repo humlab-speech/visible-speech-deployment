@@ -1,0 +1,458 @@
+[Tue Aug 24 14:01:42.892417 2021] [ssl:warn] [pid 73] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.892436 2021] [ssl:warn] [pid 73] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:01:42.937943 2021] [ssl:warn] [pid 73] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:01:42.937958 2021] [ssl:warn] [pid 73] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.171131 2021] [ssl:warn] [pid 76] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.171188 2021] [ssl:warn] [pid 76] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:10:12.223810 2021] [ssl:warn] [pid 76] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:10:12.223885 2021] [ssl:warn] [pid 76] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.492410 2021] [ssl:warn] [pid 74] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.492474 2021] [ssl:warn] [pid 74] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:19:46.541842 2021] [ssl:warn] [pid 74] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:19:46.541913 2021] [ssl:warn] [pid 74] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.719906 2021] [ssl:warn] [pid 75] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.719950 2021] [ssl:warn] [pid 75] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:38:36.752938 2021] [ssl:warn] [pid 75] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:38:36.752982 2021] [ssl:warn] [pid 75] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.545619 2021] [ssl:warn] [pid 76] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.545670 2021] [ssl:warn] [pid 76] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 14:55:27.611898 2021] [ssl:warn] [pid 76] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 14:55:27.612021 2021] [ssl:warn] [pid 76] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.504539 2021] [ssl:warn] [pid 77] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.504592 2021] [ssl:warn] [pid 77] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 24 15:09:10.547313 2021] [ssl:warn] [pid 77] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 24 15:09:10.547409 2021] [ssl:warn] [pid 77] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.611745 2021] [ssl:warn] [pid 81] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.612050 2021] [ssl:warn] [pid 81] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 07:35:25.740153 2021] [ssl:warn] [pid 81] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 07:35:25.740168 2021] [ssl:warn] [pid 81] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.405450 2021] [ssl:warn] [pid 72] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.405463 2021] [ssl:warn] [pid 72] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:23:04.455795 2021] [ssl:warn] [pid 72] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:23:04.455815 2021] [ssl:warn] [pid 72] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.747716 2021] [ssl:warn] [pid 79] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.747745 2021] [ssl:warn] [pid 79] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:30:52.800661 2021] [ssl:warn] [pid 79] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:30:52.800692 2021] [ssl:warn] [pid 79] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.085604 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.085621 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 08:59:46.119354 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Aug 25 08:59:46.119375 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 25 09:00:56.989114 2021] [php7:notice] [pid 48] [client 172.21.0.1:36912] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:18:11.032195 2021] [php7:notice] [pid 57] [client 172.21.0.1:45100] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:18:13.361986 2021] [php7:notice] [pid 57] [client 172.21.0.1:45100] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:18:29.253392 2021] [php7:notice] [pid 101] [client 172.21.0.1:45486] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:18:45.552181 2021] [php7:notice] [pid 66] [client 172.21.0.1:45738] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:19:09.111900 2021] [php7:notice] [pid 157] [client 172.21.0.1:46000] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:19:26.597010 2021] [php7:notice] [pid 101] [client 172.21.0.1:46258] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:20:55.296510 2021] [php7:notice] [pid 44] [client 172.21.0.1:46538] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:21:09.829898 2021] [php7:notice] [pid 101] [client 172.21.0.1:46796] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:47:20.390452 2021] [php7:notice] [pid 191] [client 172.21.0.1:47446] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:47:33.561335 2021] [php7:notice] [pid 157] [client 172.21.0.1:47704] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:47:37.858999 2021] [php7:notice] [pid 157] [client 172.21.0.1:47704] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:47:44.820481 2021] [php7:notice] [pid 178] [client 172.21.0.1:48176] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:48:01.480211 2021] [php7:notice] [pid 66] [client 172.21.0.1:48424] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 16
+[Wed Aug 25 09:48:22.574486 2021] [php7:notice] [pid 178] [client 172.21.0.1:48682] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:49:08.783220 2021] [php7:notice] [pid 66] [client 172.21.0.1:48946] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:49:37.459246 2021] [php7:notice] [pid 157] [client 172.21.0.1:49210] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:49:54.757712 2021] [php7:notice] [pid 57] [client 172.21.0.1:49472] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:50:00.263507 2021] [php7:notice] [pid 101] [client 172.21.0.1:49722] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:50:12.962849 2021] [php7:notice] [pid 157] [client 172.21.0.1:49966] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:50:14.649118 2021] [php7:notice] [pid 157] [client 172.21.0.1:49966] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:50:40.331466 2021] [php7:notice] [pid 115] [client 172.21.0.1:50278] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:50:47.174243 2021] [php7:notice] [pid 162] [client 172.21.0.1:50532] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:50:51.449130 2021] [php7:notice] [pid 162] [client 172.21.0.1:50532] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:06.550323 2021] [php7:notice] [pid 57] [client 172.21.0.1:51022] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:19.167599 2021] [php7:notice] [pid 101] [client 172.21.0.1:51280] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:19.820552 2021] [php7:notice] [pid 101] [client 172.21.0.1:51280] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:30.752009 2021] [php7:notice] [pid 66] [client 172.21.0.1:51570] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:32.267215 2021] [php7:notice] [pid 66] [client 172.21.0.1:51570] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:37.309687 2021] [php7:notice] [pid 66] [client 172.21.0.1:51570] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:47.311395 2021] [php7:notice] [pid 101] [client 172.21.0.1:52106] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:54.705488 2021] [php7:notice] [pid 115] [client 172.21.0.1:52346] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Wed Aug 25 09:51:58.046101 2021] [php7:notice] [pid 115] [client 172.21.0.1:52346] PHP Notice:  Undefined index: token in /var/www/html/proxybar/index.php on line 19
+[Thu Aug 26 06:41:01.107462 2021] [ssl:warn] [pid 72] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.107831 2021] [ssl:warn] [pid 72] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 06:41:01.196357 2021] [ssl:warn] [pid 72] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 06:41:01.196375 2021] [ssl:warn] [pid 72] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:13:42.611593 2021] [ssl:warn] [pid 77] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 09:13:42.611614 2021] [ssl:warn] [pid 77] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:13:42.651120 2021] [ssl:warn] [pid 77] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 09:13:42.651132 2021] [ssl:warn] [pid 77] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 09:21:00.830525 2021] [proxy_http:error] [pid 110] (70007)The timeout specified has expired: [client 172.21.0.1:56610] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Thu Aug 26 09:21:00.830611 2021] [proxy:error] [pid 110] [client 172.21.0.1:56610] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Thu Aug 26 09:21:01.844349 2021] [proxy_http:error] [pid 127] (70007)The timeout specified has expired: [client 172.21.0.1:56606] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Thu Aug 26 09:21:01.844393 2021] [proxy:error] [pid 127] [client 172.21.0.1:56606] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Thu Aug 26 11:01:40.738732 2021] [proxy_http:error] [pid 197] (70007)The timeout specified has expired: [client 172.21.0.1:35318] AH01102: error reading status line from remote server session-manager:80, referer: https://localtest.me/
+[Thu Aug 26 11:01:40.738921 2021] [proxy:error] [pid 197] [client 172.21.0.1:35318] AH00898: Error reading from remote server returned by /, referer: https://localtest.me/
+[Thu Aug 26 11:45:00.325139 2021] [ssl:warn] [pid 78] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 11:45:00.325203 2021] [ssl:warn] [pid 78] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 11:45:00.381452 2021] [ssl:warn] [pid 78] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 11:45:00.381465 2021] [ssl:warn] [pid 78] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 15:33:23.531228 2021] [ssl:warn] [pid 82] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 15:33:23.531328 2021] [ssl:warn] [pid 82] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Aug 26 15:33:23.583756 2021] [ssl:warn] [pid 82] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Aug 26 15:33:23.583767 2021] [ssl:warn] [pid 82] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 06:56:35.812023 2021] [ssl:warn] [pid 77] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 06:56:35.812385 2021] [ssl:warn] [pid 77] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 06:56:35.917036 2021] [ssl:warn] [pid 77] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 06:56:35.917050 2021] [ssl:warn] [pid 77] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:02:36.386642 2021] [ssl:warn] [pid 75] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:02:36.386693 2021] [ssl:warn] [pid 75] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:02:36.433423 2021] [ssl:warn] [pid 75] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:02:36.433434 2021] [ssl:warn] [pid 75] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:12:01.492957 2021] [ssl:warn] [pid 79] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:12:01.492974 2021] [ssl:warn] [pid 79] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 08:12:01.542216 2021] [ssl:warn] [pid 79] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 08:12:01.542228 2021] [ssl:warn] [pid 79] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 12:33:11.759082 2021] [ssl:warn] [pid 76] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 12:33:11.759159 2021] [ssl:warn] [pid 76] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Aug 27 12:33:11.837751 2021] [ssl:warn] [pid 76] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Aug 27 12:33:11.837764 2021] [ssl:warn] [pid 76] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:14:33.247182 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:14:33.247199 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:14:33.385886 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:14:33.385905 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:40:22.814922 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:40:22.814933 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 09:40:22.848401 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 09:40:22.848408 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:04:34.418360 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:04:34.418367 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:04:34.443136 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:04:34.443142 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:09:27.539309 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:09:27.539317 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 10:09:27.570027 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 10:09:27.570037 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 12:13:22.640088 2021] [proxy_http:error] [pid 67] (70007)The timeout specified has expired: [client 172.25.0.1:55908] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Mon Aug 30 12:13:22.640199 2021] [proxy:error] [pid 67] [client 172.25.0.1:55908] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Mon Aug 30 14:23:30.459439 2021] [proxy_http:error] [pid 380] (70007)The timeout specified has expired: [client 172.25.0.1:48646] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Mon Aug 30 14:23:30.459567 2021] [proxy:error] [pid 380] [client 172.25.0.1:48646] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Mon Aug 30 14:23:57.494156 2021] [proxy_http:error] [pid 296] (70007)The timeout specified has expired: [client 172.25.0.1:54120] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Mon Aug 30 14:23:57.494218 2021] [proxy:error] [pid 296] [client 172.25.0.1:54120] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Mon Aug 30 14:53:36.919332 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:53:36.919345 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:53:36.963691 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:53:36.963699 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:55:14.472095 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:55:14.472108 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Aug 30 14:55:14.504126 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Aug 30 14:55:14.504135 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:00:44.987863 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 10:00:44.988149 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:00:45.062696 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 10:00:45.062703 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 10:15:03.347319 2021] [proxy_http:error] [pid 67] (20014)Internal error (specific information not available): [client 172.22.0.1:56210] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:16:03.656515 2021] [proxy_http:error] [pid 107] (20014)Internal error (specific information not available): [client 172.22.0.1:56966] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:17:26.844050 2021] [proxy_http:error] [pid 85] (20014)Internal error (specific information not available): [client 172.22.0.1:57724] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:17:26.855091 2021] [proxy:error] [pid 136] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:17:26.855180 2021] [proxy_http:error] [pid 136] [client 172.22.0.1:57964] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:18:56.668458 2021] [proxy_http:error] [pid 136] (20014)Internal error (specific information not available): [client 172.22.0.1:58448] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:18:56.668489 2021] [proxy_http:error] [pid 107] (20014)Internal error (specific information not available): [client 172.22.0.1:57976] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:18:56.668547 2021] [proxy:error] [pid 107] [client 172.22.0.1:57976] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:18:56.679489 2021] [proxy:error] [pid 149] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:18:56.679567 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:58728] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:20:11.214079 2021] [proxy_http:error] [pid 148] (20014)Internal error (specific information not available): [client 172.22.0.1:59230] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:20:11.214118 2021] [proxy_http:error] [pid 68] (20014)Internal error (specific information not available): [client 172.22.0.1:58738] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:20:11.214140 2021] [proxy:error] [pid 68] [client 172.22.0.1:58738] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:22:36.004053 2021] [proxy_http:error] [pid 142] (20014)Internal error (specific information not available): [client 172.22.0.1:59996] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:06.883177 2021] [proxy_http:error] [pid 136] (20014)Internal error (specific information not available): [client 172.22.0.1:60840] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:06.898638 2021] [proxy:error] [pid 157] (111)Connection refused: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:23:06.898698 2021] [proxy_http:error] [pid 157] [client 172.22.0.1:32826] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:17.482860 2021] [proxy:error] [pid 167] [client 172.22.0.1:32836] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:28.013651 2021] [proxy:error] [pid 167] [client 172.22.0.1:32836] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:38.541927 2021] [proxy:error] [pid 167] [client 172.22.0.1:32836] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:49.076177 2021] [proxy:error] [pid 167] [client 172.22.0.1:32836] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:23:59.611755 2021] [proxy:error] [pid 167] [client 172.22.0.1:32836] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:24:10.135085 2021] [proxy:error] [pid 167] [client 172.22.0.1:32836] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:27:55.943858 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:04.926535 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:28:04.926584 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:33058] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:06.477829 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:17.012792 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:27.541688 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:38.072980 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:48.603808 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:28:59.121632 2021] [proxy:error] [pid 158] [client 172.22.0.1:33054] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:32:49.086641 2021] [proxy:error] [pid 157] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:32:49.086685 2021] [proxy_http:error] [pid 157] [client 172.22.0.1:33288] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:32:55.948546 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:33:06.482139 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:33:17.017161 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:33:27.543842 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:33:38.076503 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:33:48.596498 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:33:59.124568 2021] [proxy:error] [pid 163] [client 172.22.0.1:33284] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:37:49.006612 2021] [proxy:error] [pid 154] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:37:49.006629 2021] [proxy:error] [pid 86] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:37:49.006864 2021] [proxy_http:error] [pid 154] [client 172.22.0.1:33514] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:37:49.006869 2021] [proxy_http:error] [pid 86] [client 172.22.0.1:33518] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:37:52.126667 2021] [proxy:error] [pid 136] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:37:52.126706 2021] [proxy_http:error] [pid 136] [client 172.22.0.1:33538] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:38:02.666553 2021] [proxy:error] [pid 167] [client 172.22.0.1:33548] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:38:13.190043 2021] [proxy:error] [pid 167] [client 172.22.0.1:33548] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:38:23.711649 2021] [proxy:error] [pid 167] [client 172.22.0.1:33548] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:38:34.237783 2021] [proxy:error] [pid 167] [client 172.22.0.1:33548] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:38:44.769986 2021] [proxy:error] [pid 167] [client 172.22.0.1:33548] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:42:49.006560 2021] [proxy:error] [pid 142] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:42:49.006548 2021] [proxy:error] [pid 145] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:42:49.006676 2021] [proxy_http:error] [pid 142] [client 172.22.0.1:33764] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:42:49.006682 2021] [proxy_http:error] [pid 145] [client 172.22.0.1:33768] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:42:59.536486 2021] [proxy:error] [pid 167] [client 172.22.0.1:33788] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:43:10.056545 2021] [proxy:error] [pid 167] [client 172.22.0.1:33788] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:43:21.287923 2021] [proxy:error] [pid 167] [client 172.22.0.1:33788] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:43:32.284515 2021] [proxy:error] [pid 167] [client 172.22.0.1:33788] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:43:43.281680 2021] [proxy:error] [pid 167] [client 172.22.0.1:33788] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:43:54.286543 2021] [proxy:error] [pid 167] [client 172.22.0.1:33788] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:47:50.366535 2021] [proxy:error] [pid 86] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:47:50.366626 2021] [proxy_http:error] [pid 86] [client 172.22.0.1:34024] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:47:53.486596 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:47:53.486634 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:34042] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:47:56.309075 2021] [proxy:error] [pid 163] [client 172.22.0.1:34016] AH00898: DNS lookup failure for: session-manager returned by /auth-update-credentials, referer: https://app.localtest.me/
+[Tue Aug 31 10:47:56.606620 2021] [proxy:error] [pid 157] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:47:56.606657 2021] [proxy_http:error] [pid 157] [client 172.22.0.1:34052] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:48:08.291645 2021] [proxy:error] [pid 163] [client 172.22.0.1:34016] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:48:19.291507 2021] [proxy:error] [pid 163] [client 172.22.0.1:34016] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:48:30.286568 2021] [proxy:error] [pid 163] [client 172.22.0.1:34016] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:48:41.277751 2021] [proxy:error] [pid 163] [client 172.22.0.1:34016] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:53:25.406611 2021] [proxy:error] [pid 86] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:53:25.406691 2021] [proxy_http:error] [pid 86] [client 172.22.0.1:34208] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:25.406698 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:54:25.406759 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:34228] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:28.526717 2021] [proxy:error] [pid 86] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:54:28.526753 2021] [proxy_http:error] [pid 86] [client 172.22.0.1:34254] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:31.646592 2021] [proxy:error] [pid 145] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:54:31.646631 2021] [proxy_http:error] [pid 145] [client 172.22.0.1:34266] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:34.766625 2021] [proxy:error] [pid 136] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:54:34.766686 2021] [proxy_http:error] [pid 136] [client 172.22.0.1:34276] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:37.886624 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:54:37.886683 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:34288] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:41.006607 2021] [proxy:error] [pid 86] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:54:41.006675 2021] [proxy_http:error] [pid 86] [client 172.22.0.1:34298] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:54:52.291715 2021] [proxy:error] [pid 158] [client 172.22.0.1:34308] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:58:25.486602 2021] [proxy:error] [pid 86] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 10:58:25.486679 2021] [proxy_http:error] [pid 86] [client 172.22.0.1:34418] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 10:59:32.277307 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:59:43.286542 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 10:59:54.276721 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:00:05.278309 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:00:16.291710 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:00:27.277429 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:00:38.277351 2021] [proxy:error] [pid 158] [client 172.22.0.1:34438] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:03:25.486559 2021] [proxy:error] [pid 142] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:03:25.486597 2021] [proxy_http:error] [pid 142] [client 172.22.0.1:34568] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:04:32.291685 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:04:43.281592 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:04:54.291711 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:05:05.283945 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:05:16.286532 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:05:27.286573 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:05:38.291343 2021] [proxy:error] [pid 163] [client 172.22.0.1:34588] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:08:25.406586 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:08:25.406627 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:34718] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:09:32.298346 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:09:43.276545 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:09:54.277324 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:10:05.291673 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:10:16.288350 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:10:27.282374 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:10:38.295764 2021] [proxy:error] [pid 167] [client 172.22.0.1:34738] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:13:25.406864 2021] [proxy:error] [pid 154] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:13:25.406994 2021] [proxy_http:error] [pid 154] [client 172.22.0.1:34868] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:25.416932 2021] [proxy:error] [pid 157] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:14:25.417057 2021] [proxy_http:error] [pid 157] [client 172.22.0.1:34888] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:28.526630 2021] [proxy:error] [pid 154] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:14:28.526667 2021] [proxy_http:error] [pid 154] [client 172.22.0.1:34914] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:31.647007 2021] [proxy:error] [pid 142] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:14:31.647128 2021] [proxy_http:error] [pid 142] [client 172.22.0.1:34926] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:34.766879 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:14:34.766969 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:34936] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:37.886767 2021] [proxy:error] [pid 157] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:14:37.886813 2021] [proxy_http:error] [pid 157] [client 172.22.0.1:34946] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:41.007008 2021] [proxy:error] [pid 154] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:14:41.007127 2021] [proxy_http:error] [pid 154] [client 172.22.0.1:34956] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:14:52.296512 2021] [proxy:error] [pid 158] [client 172.22.0.1:34968] AH00898: DNS lookup failure for: session-manager returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Aug 31 11:17:49.016534 2021] [proxy:error] [pid 149] (113)No route to host: AH00957: HTTP: attempt to connect to 172.22.0.3:80 (session-manager) failed
+[Tue Aug 31 11:17:49.016573 2021] [proxy_http:error] [pid 149] [client 172.22.0.1:35098] AH01114: HTTP: failed to make connection to backend: session-manager, referer: https://app.localtest.me/
+[Tue Aug 31 11:17:55.925208 2021] [proxy:error] [pid 167] [client 172.22.0.1:35094] AH00898: DNS lookup failure for: session-manager returned by /auth-update-credentials, referer: https://app.localtest.me/
+[Tue Aug 31 11:31:24.062742 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 11:31:24.062750 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 11:31:24.089540 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 11:31:24.089548 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 12:45:44.551123 2021] [ssl:warn] [pid 65] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 12:45:44.551131 2021] [ssl:warn] [pid 65] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 12:45:44.576384 2021] [ssl:warn] [pid 65] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 12:45:44.576393 2021] [ssl:warn] [pid 65] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 13:50:23.688861 2021] [ssl:warn] [pid 65] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 13:50:23.688869 2021] [ssl:warn] [pid 65] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 13:50:23.717592 2021] [ssl:warn] [pid 65] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Aug 31 13:50:23.717603 2021] [ssl:warn] [pid 65] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Aug 31 14:50:21.466529 2021] [proxy_http:error] [pid 246] (70007)The timeout specified has expired: [client 172.27.0.1:53458] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/lab
+[Tue Aug 31 14:50:21.466579 2021] [proxy:error] [pid 246] [client 172.27.0.1:53458] AH00898: Error reading from remote server returned by /api/terminals, referer: https://app.localtest.me/lab
+[Tue Aug 31 14:50:21.471537 2021] [proxy_http:error] [pid 216] (70007)The timeout specified has expired: [client 172.27.0.1:53194] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/lab
+[Tue Aug 31 14:50:21.471572 2021] [proxy:error] [pid 216] [client 172.27.0.1:53194] AH00898: Error reading from remote server returned by /api/kernels, referer: https://app.localtest.me/lab
+[Tue Aug 31 14:50:21.486499 2021] [proxy_http:error] [pid 247] (70007)The timeout specified has expired: [client 172.27.0.1:53454] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/lab
+[Tue Aug 31 14:50:21.486549 2021] [proxy:error] [pid 247] [client 172.27.0.1:53454] AH00898: Error reading from remote server returned by /api/sessions, referer: https://app.localtest.me/lab
+[Tue Aug 31 14:50:26.896789 2021] [proxy_http:error] [pid 188] (70007)The timeout specified has expired: [client 172.27.0.1:53502] AH01102: error reading status line from remote server session-manager:80, referer: https://localtest.me/
+[Tue Aug 31 14:50:26.896852 2021] [proxy:error] [pid 188] [client 172.27.0.1:53502] AH00898: Error reading from remote server returned by /, referer: https://localtest.me/
+[Wed Sep 01 07:43:35.515893 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 07:43:35.515906 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 07:43:35.543770 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 07:43:35.543778 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:51:27.825167 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:51:27.825190 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:51:27.853591 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:51:27.853613 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:53:26.672919 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:53:26.672943 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 08:53:26.698961 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 08:53:26.698983 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 10:37:12.480303 2021] [proxy_http:error] [pid 69] (70007)The timeout specified has expired: [client 172.24.0.1:34788] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Wed Sep 01 10:37:12.480535 2021] [proxy:error] [pid 69] [client 172.24.0.1:34788] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Wed Sep 01 10:45:56.368157 2021] [ssl:warn] [pid 65] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 10:45:56.368180 2021] [ssl:warn] [pid 65] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 10:45:56.395018 2021] [ssl:warn] [pid 65] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 10:45:56.395045 2021] [ssl:warn] [pid 65] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:02:25.065881 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:02:25.065905 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:02:25.092218 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:02:25.092240 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:06:45.116380 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:06:45.116406 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 11:06:45.146206 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 11:06:45.146229 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:06:09.919766 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:06:09.919815 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:06:09.952595 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:06:09.952617 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:14:10.934034 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:14:10.934057 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 14:14:10.960485 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 14:14:10.960508 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 15:02:21.946535 2021] [ssl:warn] [pid 49] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 15:02:21.946551 2021] [ssl:warn] [pid 49] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 01 15:02:21.987839 2021] [ssl:warn] [pid 49] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 01 15:02:21.987876 2021] [ssl:warn] [pid 49] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 06:34:18.573678 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 06:34:18.573704 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 06:34:18.600980 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 06:34:18.600988 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 07:51:37.614873 2021] [proxy_http:error] [pid 137] (70007)The timeout specified has expired: [client 172.22.0.1:59356] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Thu Sep 02 07:51:37.614995 2021] [proxy:error] [pid 137] [client 172.22.0.1:59356] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Thu Sep 02 11:46:38.789876 2021] [ssl:warn] [pid 42] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 11:46:38.789890 2021] [ssl:warn] [pid 42] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 11:46:38.824842 2021] [ssl:warn] [pid 42] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 11:46:38.824850 2021] [ssl:warn] [pid 42] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:50:50.009432 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 12:50:50.009441 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:50:50.034597 2021] [ssl:warn] [pid 64] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 12:50:50.034605 2021] [ssl:warn] [pid 64] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 12:56:06.702039 2021] [proxy_http:error] [pid 133] (20014)Internal error (specific information not available): [client 172.24.0.1:32990] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Thu Sep 02 13:46:55.958097 2021] [proxy_http:error] [pid 152] (20014)Internal error (specific information not available): [client 172.24.0.1:36308] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Thu Sep 02 17:10:56.555992 2021] [ssl:warn] [pid 53] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 17:10:56.556306 2021] [ssl:warn] [pid 53] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Sep 02 17:10:56.629860 2021] [ssl:warn] [pid 53] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Thu Sep 02 17:10:56.629867 2021] [ssl:warn] [pid 53] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 06:17:27.771051 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 06:17:27.771438 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 06:17:27.852936 2021] [ssl:warn] [pid 62] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 06:17:27.852944 2021] [ssl:warn] [pid 62] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:01:35.373290 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:01:35.373298 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:01:35.397313 2021] [ssl:warn] [pid 63] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:01:35.397320 2021] [ssl:warn] [pid 63] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:37:41.702702 2021] [ssl:warn] [pid 71] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:37:41.702709 2021] [ssl:warn] [pid 71] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:37:41.726697 2021] [ssl:warn] [pid 71] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:37:41.726704 2021] [ssl:warn] [pid 71] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:52:37.323068 2021] [ssl:warn] [pid 85] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:52:37.323076 2021] [ssl:warn] [pid 85] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:52:37.359128 2021] [ssl:warn] [pid 85] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:52:37.359139 2021] [ssl:warn] [pid 85] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:55:21.206632 2021] [ssl:warn] [pid 90] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:55:21.206639 2021] [ssl:warn] [pid 90] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:55:21.233377 2021] [ssl:warn] [pid 90] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:55:21.233385 2021] [ssl:warn] [pid 90] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:58:11.783582 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:58:11.783590 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Fri Sep 03 12:58:11.806894 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Fri Sep 03 12:58:11.806901 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:53:02.053759 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:53:02.054136 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:53:02.128745 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:53:02.128752 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:55:17.771432 2021] [ssl:warn] [pid 97] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:55:17.771440 2021] [ssl:warn] [pid 97] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 07:55:17.796965 2021] [ssl:warn] [pid 97] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 07:55:17.796975 2021] [ssl:warn] [pid 97] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:01:43.023414 2021] [ssl:warn] [pid 87] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:01:43.023422 2021] [ssl:warn] [pid 87] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:01:43.048139 2021] [ssl:warn] [pid 87] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:01:43.048146 2021] [ssl:warn] [pid 87] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:04:55.522663 2021] [ssl:warn] [pid 91] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:04:55.522671 2021] [ssl:warn] [pid 91] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:04:55.547174 2021] [ssl:warn] [pid 91] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:04:55.547181 2021] [ssl:warn] [pid 91] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:07:40.810397 2021] [ssl:warn] [pid 83] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:07:40.810404 2021] [ssl:warn] [pid 83] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:07:40.834850 2021] [ssl:warn] [pid 83] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:07:40.834857 2021] [ssl:warn] [pid 83] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:56:15.993112 2021] [ssl:warn] [pid 88] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:56:15.993131 2021] [ssl:warn] [pid 88] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 08:56:16.034909 2021] [ssl:warn] [pid 88] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 08:56:16.034923 2021] [ssl:warn] [pid 88] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:37:16.031431 2021] [ssl:warn] [pid 87] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:37:16.031439 2021] [ssl:warn] [pid 87] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:37:16.057696 2021] [ssl:warn] [pid 87] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:37:16.057703 2021] [ssl:warn] [pid 87] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:46:40.037988 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:46:40.037995 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:46:40.061896 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:46:40.061903 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:56:35.854416 2021] [ssl:warn] [pid 91] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:56:35.854425 2021] [ssl:warn] [pid 91] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 10:56:35.880605 2021] [ssl:warn] [pid 91] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Mon Sep 06 10:56:35.880613 2021] [ssl:warn] [pid 91] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Mon Sep 06 11:15:58.434004 2021] [proxy_http:error] [pid 270] (70007)The timeout specified has expired: [client 192.168.0.1:52358] AH01102: error reading status line from remote server session-manager:80, referer: https://app.localtest.me/
+[Mon Sep 06 11:15:58.434045 2021] [proxy:error] [pid 270] [client 192.168.0.1:52358] AH00898: Error reading from remote server returned by /events/get_events, referer: https://app.localtest.me/
+[Tue Sep 07 07:43:21.329557 2021] [ssl:warn] [pid 82] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Sep 07 07:43:21.329970 2021] [ssl:warn] [pid 82] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Tue Sep 07 07:43:21.399403 2021] [ssl:warn] [pid 82] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Tue Sep 07 07:43:21.399410 2021] [ssl:warn] [pid 82] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:00:56.184886 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:00:56.185355 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:00:56.256856 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:00:56.256869 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:06:14.219147 2021] [ssl:warn] [pid 88] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:06:14.219155 2021] [ssl:warn] [pid 88] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 12:06:14.250161 2021] [ssl:warn] [pid 88] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 12:06:14.250175 2021] [ssl:warn] [pid 88] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:23:44.363534 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:23:44.363557 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:23:44.388445 2021] [ssl:warn] [pid 89] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:23:44.388469 2021] [ssl:warn] [pid 89] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:26:29.700841 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:26:29.700863 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:26:29.726938 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:26:29.726960 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:52:24.203147 2021] [ssl:warn] [pid 91] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:52:24.203170 2021] [ssl:warn] [pid 91] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:52:24.228594 2021] [ssl:warn] [pid 91] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:52:24.228624 2021] [ssl:warn] [pid 91] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:53:51.971917 2021] [ssl:warn] [pid 42] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:53:51.971939 2021] [ssl:warn] [pid 42] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:53:51.996575 2021] [ssl:warn] [pid 42] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:53:51.996598 2021] [ssl:warn] [pid 42] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:55:37.576040 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:55:37.576062 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:55:37.603568 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:55:37.603600 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:57:55.600885 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:57:55.600918 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 13:57:55.624489 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 13:57:55.624509 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:00:27.586847 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:00:27.586869 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name
+[Wed Sep 08 14:00:27.610544 2021] [ssl:warn] [pid 41] AH01906: app.localtest.me:443:0 server certificate is a CA certificate (BasicConstraints: CA == TRUE !?)
+[Wed Sep 08 14:00:27.610566 2021] [ssl:warn] [pid 41] AH01909: app.localtest.me:443:0 server certificate does NOT include an ID which matches the server name

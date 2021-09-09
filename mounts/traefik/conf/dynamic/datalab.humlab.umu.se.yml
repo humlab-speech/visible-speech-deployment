@@ -1,0 +1,22 @@
+http:
+  middlewares:
+    datalabRedirectSchemeMiddleware:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    datalabRouterHttp:
+      rule: "Host(`datalab.humlab.umu.se`) || Host(`gitlab.datalab.humlab.umu.se`) || Host(`idp.datalab.humlab.umu.se`) || Host(`app.datalab.humlab.umu.se`) || Host(`labjs.datalab.humlab.umu.se`)"
+      middlewares:
+      - datalabRedirectSchemeMiddleware
+      service: datalabService
+    datalabRouterHttps:
+      rule: "Host(`datalab.humlab.umu.se`) || Host(`gitlab.datalab.humlab.umu.se`) || Host(`idp.datalab.humlab.umu.se`) || Host(`app.datalab.humlab.umu.se`) || Host(`labjs.datalab.humlab.umu.se`)"
+      service: datalabService
+      tls:
+        certResolver: cr1
+  services:
+    datalabService:
+      loadBalancer:
+        servers:
+          - url: "https://apache:443"
