@@ -1,0 +1,23 @@
+http:
+  middlewares:
+    vispRedirectSchemeMiddleware:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    vispRouterHttp:
+      rule: "Host(`visp.humlab.umu.se`) || Host(`gitlab.visp.humlab.umu.se`) || Host(`idp.visp.humlab.umu.se`) || Host(`app.visp.humlab.umu.se`) || Host(`labjs.visp.humlab.umu.se`) || Host(`octra.visp.humlab.umu.se`) || Host(`emu-webapp.visp.humlab.umu.se`)"
+      middlewares:
+      - vispRedirectSchemeMiddleware
+      service: vispService
+    vispRouterHttps:
+      rule: "Host(`visp.humlab.umu.se`) || Host(`gitlab.visp.humlab.umu.se`) || Host(`idp.visp.humlab.umu.se`) || Host(`app.visp.humlab.umu.se`) || Host(`labjs.visp.humlab.umu.se`) || Host(`octra.visp.humlab.umu.se`) || Host(`emu-webapp.visp.humlab.umu.se`)"
+      service: vispService
+      tls:
+        certResolver: cr1
+  services:
+    vispService:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://apache:80"
