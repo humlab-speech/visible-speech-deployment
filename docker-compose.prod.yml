@@ -1,18 +1,29 @@
 version: '3'
 services:
-  edge-router:
-    image: hs-edge-router
-    build: "./docker/edge-router"
+  traefik:
+    image: traefik:v2.5.2
+    restart: always
+    volumes:
+      - "./mounts/traefik/conf:/etc/traefik"
+      - "./mounts/traefik/acme:/acme"
+      - "./mounts/traefik/log:/var/log/"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - $HTTP_PORT:80
+      - $HTTPS_PORT:443
+    environment:
+      HS_DOMAIN_NAME: $BASE_DOMAIN
+    networks:
+      - visp-net
+
+  apache:
+    image: hird-apache
+    build: "./docker/apache"
     restart: always
     depends_on:
       - keycloak
     networks:
       - visp-net
-    #labels:
-    #  - "traefik.http.routers.edge-router.rule=Host(`speech.humlab.umu.se`)"
-    ports:
-      - $HTTP_PORT:80
-      - $HTTPS_PORT:443
     deploy:
       resources:
         limits:
@@ -31,33 +42,33 @@ services:
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       #Shibboleth config for SWAMID
-      #- "./mounts/edge-router/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      #- "./mounts/edge-router/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
-      #- "./mounts/edge-router/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      #- "./mounts/edge-router/saml/certs/swamid-metadata-signer.crt:/etc/shibboleth/swamid-metadata-signer.crt:Z"
+      #- "./mounts/apache/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/apache/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      #- "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./mounts/apache/saml/certs/swamid-metadata-signer.crt:/etc/shibboleth/swamid-metadata-signer.crt:Z"
       #- "./private/certs/sp-cert/hird.humlab.umu.se-cert.pem:/etc/shibboleth/sp-cert.pem:Z"
       #- "./private/certs/sp-cert/hird.humlab.umu.se-key.pem:/etc/shibboleth/sp-key.pem:Z"
       #Shibboleth config for KEYCLOAK
-      - "./mounts/edge-router/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/edge-router/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      - "./mounts/edge-router/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
-      - "./mounts/edge-router/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      - "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      - "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      - "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
       #GENERAL
       - "./mounts/webapi/logs:/var/log/api:Z"
-      - "./mounts/edge-router/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
-      - "./mounts/edge-router/apache/envvars:/etc/apache2/envvars:Z"
-      - "./mounts/edge-router/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
-      - "./mounts/edge-router/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
+      - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
+      - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
+      - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
+      - "./mounts/apache/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/html/api:Z"
-      - "./mounts/edge-router/apache/logs/apache2:/var/log/apache2:Z"
-      - "./mounts/edge-router/apache/logs/shibboleth:/var/log/shibboleth:Z"
-      - "./mounts/edge-router/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
+      - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
+      - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
+      - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "./certs:/etc/certs:Z"
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
-      - "./mounts/edge-router/apache/uploads:/tmp/uploads:Z"
-      - "./mounts/edge-router/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
+      - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
+      - "./mounts/apache/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
 
   session-manager:
     image: hs-session-manager
@@ -81,7 +92,7 @@ services:
       EMUDB_INTEGRATION_ENABLED: $EMUDB_INTEGRATION_ENABLED
       LOG_LEVEL: "debug"
     volumes:
-      - "./mounts/edge-router/apache/uploads:/mounts/edge-router/apache/uploads:Z"
+      - "./mounts/apache/apache/uploads:/mounts/apache/apache/uploads:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/session-manager.log:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
@@ -222,6 +233,18 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       - "./mounts/mongo/data:/data/db:Z"
+    networks:
+      - visp-net
+
+  vscode:
+    image: linuxserver/code-server:version-v3.11.1
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Stockholm
+      PROXY_DOMAIN: vscode.$BASE_DOMAIN
+    volumes:
+      - "./mounts/vscode/config:/config"
     networks:
       - visp-net
 
