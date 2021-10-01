@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:bullseye
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 
@@ -6,9 +6,9 @@ LABEL description="A debian based installation of apache with shibboleth, acting
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
 #docker.io is for being able to manipulate containers in the outside cluster - for rstudio session containers initially
-RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php7.3-mbstring php-mongodb --no-install-recommends -y
+RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php-mbstring php-mongodb --no-install-recommends -y
 
-RUN a2enmod proxy proxy_http ssl headers php7.3 rewrite proxy_wstunnel
+RUN a2enmod proxy proxy_http ssl headers php7.4 rewrite proxy_wstunnel
 
 ENV APACHE_RUN_USER=www-data
 ENV APACHE_RUN_GROUP=www-data
