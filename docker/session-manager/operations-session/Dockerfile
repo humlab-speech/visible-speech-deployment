@@ -23,6 +23,8 @@ ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
 RUN echo 'library(devtools); install_github("humlab-speech/reindeer", dependencies = TRUE)' | R
 
-RUN curl --output praat.tgz https://www.fon.hum.uva.nl/praat/praat6152_linux64nogui.tar.gz && tar xzf praat.tgz && mv praat_nogui /usr/bin/praat_nogui && ln -s /usr/bin/praat_nogui /usr/bin/praat
+RUN curl --output praat.tgz https://www.fon.hum.uva.nl/praat/praat6155_linux64nogui.tar.gz && tar xzf praat.tgz && mv praat_nogui /usr/bin/praat_nogui && ln -s /usr/bin/praat_nogui /usr/bin/praat
+
+COPY ./operations-session/wavs /tmp/wavs
 
 COPY ./container-agent /container-agent
