@@ -1,3 +1,5 @@
+mounts/traefik/log/*
+mounts/apache/apache/logs/*
 docker-compose.dev.central-logging.yml
 mounts/traefik/log
 mounts/traefik/acme/acme.json
