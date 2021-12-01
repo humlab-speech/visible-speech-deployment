@@ -1,3 +1,5 @@
+docker-compose.dev.central-logging.yml
+mounts/traefik/log
 mounts/traefik/acme/acme.json
 docker-elk/
 docker/elasticsearch/
@@ -13,17 +15,17 @@ container-agent
 mounts/gitlab/postgresql.conf
 archive
 WebSpeechRecorderNg
-/mounts/edge-router/apache/uploads/*
+mounts/apache/apache/uploads/*
 keycloak-config-with-idps.json
-/session-manager/
+./session-manager
 install.sh
 .env
 dist
 certs/*
 private/*
 node_modules
-mounts/edge-router/saml/certs
-mounts/edge-router/saml/swamid
+mounts/apache/saml/certs
+mounts/apache/saml/swamid
 mounts/postgresql/data
 rstudio-router/node_modules
 gitlab/sp-cert/*
@@ -33,8 +35,8 @@ webclient
 webapi
 mounts/gitlab/data
 mounts/gitlab/gitlab-logs
-mounts/edge-router/apache/logs
-mounts/edge-router/apache/vhosts-disabled
+mounts/apache/apache/logs
+mounts/apache/apache/vhosts-disabled
 mounts/gitlab/apache-logs
 mounts/gitlab/shibboleth/certs
 mounts/gitlab/config/gitlab-secrets.json
@@ -45,5 +47,5 @@ mounts/gitlab/config/ssh_host_ed25519_key.pub
 mounts/gitlab/config/ssh_host_rsa_key
 mounts/gitlab/config/ssh_host_rsa_key.pub
 kc-realm-export.json
-docker/session-manager/scripts/container-agent/main.js
+#docker/session-manager/scripts/container-agent/main.js
 mounts/mongo/data/
