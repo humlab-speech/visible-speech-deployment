@@ -4,9 +4,9 @@ services:
     image: traefik:v2.5.2
     restart: always
     volumes:
-      - "./mounts/traefik/conf:/etc/traefik"
-      - "./mounts/traefik/acme:/acme"
-      - "./mounts/traefik/log:/var/log/"
+      - "./mounts/traefik/conf:/etc/traefik:Z"
+      - "./mounts/traefik/acme:/acme:Z"
+      - "./mounts/traefik/log:/var/log:Z"
       - "/var/run/docker.sock:/var/run/docker.sock"
     ports:
       - $HTTP_PORT:80
@@ -17,7 +17,7 @@ services:
       - visp-net
 
   apache:
-    image: hird-apache
+    image: visp-apache
     build: "./docker/apache"
     restart: always
     depends_on:
@@ -36,13 +36,6 @@ services:
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
-      #Shibboleth config for SWAMID
-      #- "./mounts/apache/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      #- "./mounts/apache/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
-      #- "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      #- "./mounts/apache/saml/certs/swamid-metadata-signer.crt:/etc/shibboleth/swamid-metadata-signer.crt:Z"
-      #- "./private/certs/sp-cert/hird.humlab.umu.se-cert.pem:/etc/shibboleth/sp-cert.pem:Z"
-      #- "./private/certs/sp-cert/hird.humlab.umu.se-key.pem:/etc/shibboleth/sp-key.pem:Z"
       #Shibboleth config for KEYCLOAK
       - "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
       - "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
@@ -53,7 +46,7 @@ services:
       - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
-      - "./mounts/apache/apache/vhosts/:/etc/apache2/sites-enabled/:Z"
+      - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/html/api:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
@@ -109,7 +102,6 @@ services:
       - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
       - "$GITLAB_HOME/config:/etc/gitlab:Z"
       - "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
-      - "$GITLAB_HOME/shibboleth-logs:/var/log/shibboleth:Z"
       - "$GITLAB_HOME/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
       - "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
@@ -179,7 +171,7 @@ services:
       - visp-net
 
   mongo:
-    image: mongo:4.4.4
+    image: mongo:4.4.10
     restart: always
     ports:
       - 27017:27017
@@ -188,6 +180,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       - "./mounts/mongo/data:/data/db:Z"
+      - "./mounts/mongo/logs:/var/log/mongodb:Z"
+    command: ['--logpath', '/var/log/mongodb/mongodb.log'
     networks:
       - visp-net
 
