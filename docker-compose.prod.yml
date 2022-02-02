@@ -56,7 +56,7 @@ services:
       - "./certs:/etc/certs:Z"
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
-      - "./mounts/apache/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
+      - "./mounts/apache/apache/php.ini:/etc/php/7.4/apache2/php.ini:Z"
 
   session-manager:
     image: hs-session-manager
