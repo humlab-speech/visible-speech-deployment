@@ -25,7 +25,7 @@ services:
     networks:
       - visp-net
     environment:
-      PROJECT_NAME: $PROJECT_NAME
+      PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
       HS_DOMAIN_NAME: $BASE_DOMAIN
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
