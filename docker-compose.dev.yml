@@ -1,7 +1,7 @@
 version: '3'
 services:
   traefik:
-    image: traefik:v2.5.2
+    image: traefik:v2.5.7
     restart: always
     volumes:
       - "./mounts/traefik/conf:/etc/traefik:Z"
@@ -63,7 +63,7 @@ services:
       - "./certs:/etc/certs:Z"
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
-      - "./mounts/apache/apache/php.ini:/etc/php/7.3/apache2/php.ini:Z"
+      - "./mounts/apache/apache/php.ini:/etc/php/7.4/apache2/php.ini:Z"
 
   session-manager:
     image: hs-session-manager-dev
@@ -82,8 +82,6 @@ services:
       EMUDB_INTEGRATION_ENABLED: $EMUDB_INTEGRATION_ENABLED
       LOG_LEVEL: "debug"
     volumes:
-      #- "./mounts/apache/apache/uploads:/mounts/edge-router/apache/uploads:Z"
-      - "./mounts/apache/apache/uploads:/home/uploads:Z"
       - "./session-manager:/session-manager:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
@@ -135,9 +133,6 @@ services:
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
     networks:
       - visp-net
-    volumes:
-      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
-      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
 
   #wsr-client:
   #  image: hs-wsr-client
@@ -200,7 +195,7 @@ services:
       - visp-net
 
   mongo:
-    image: mongo:4.4.10
+    image: mongo:4.4.12
     restart: unless-stopped
     ports:
       - 27017:27017
@@ -254,6 +249,40 @@ services:
       - "./mounts/vscode/config:/config"
     networks:
       - visp-net
+
+  #matomo:
+  #  image: matomo:4.5.0-apache
+  #  environment:
+  #    MATOMO_DATABASE_HOST: mariadb
+  #    MATOMO_DATABASE_USERNAME: $MARIADB_USER
+  #    MATOMO_DATABASE_PASSWORD: $MARIADB_PASSWORD
+  #    MATOMO_DATABASE_DBNAME: matomo
+  #  ports:
+  #    - 8082:80
+  #  volumes:
+  #    - "./mounts/matomo:/var/www/html:Z"
+  #  networks:
+  #    - visp-net
+
+  #mariadb:
+  #  image: mariadb:10.7.1
+  #  environment:
+  #    MARIADB_USER: $MARIADB_USER
+  #    MARIADB_PASSWORD: $MARIADB_PASSWORD
+  #    MARIADB_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+  #  volumes:
+  #    - "./mounts/mariadb:/var/lib/mysql:Z"
+  #  networks:
+  #    - visp-net
+  
+  #phpMyAdmin:
+  #  image: phpmyadmin/phpmyadmin
+  #  ports:
+  #    - 8083:80
+  #  environment:
+  #    PMA_HOST: mariadb
+  #  networks:
+  #    - visp-net
 
 networks:
   visp-net:

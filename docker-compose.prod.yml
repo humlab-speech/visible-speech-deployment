@@ -1,7 +1,7 @@
 version: '3'
 services:
   traefik:
-    image: traefik:v2.5.2
+    image: traefik:v2.5.7
     restart: always
     volumes:
       - "./mounts/traefik/conf:/etc/traefik:Z"
@@ -75,7 +75,6 @@ services:
       EMUDB_INTEGRATION_ENABLED: $EMUDB_INTEGRATION_ENABLED
       LOG_LEVEL: "debug"
     volumes:
-      - "./mounts/apache/apache/uploads:/mounts/apache/apache/uploads:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/session-manager.log:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
@@ -171,7 +170,7 @@ services:
       - visp-net
 
   mongo:
-    image: mongo:4.4.10
+    image: mongo:4.4.12
     restart: always
     ports:
       - 27017:27017
@@ -182,18 +181,6 @@ services:
       - "./mounts/mongo/data:/data/db:Z"
       - "./mounts/mongo/logs:/var/log/mongodb:Z"
     command: ['--logpath', '/var/log/mongodb/mongodb.log'
-    networks:
-      - visp-net
-
-  vscode:
-    image: linuxserver/code-server:version-v3.11.1
-    environment:
-      PUID: 1000
-      PGID: 1000
-      TZ: Europe/Stockholm
-      PROXY_DOMAIN: vscode.$BASE_DOMAIN
-    volumes:
-      - "./mounts/vscode/config:/config"
     networks:
       - visp-net
 
