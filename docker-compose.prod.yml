@@ -63,6 +63,7 @@ services:
     build: "./docker/session-manager"
     restart: always
     environment:
+      COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
