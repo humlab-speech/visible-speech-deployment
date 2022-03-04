@@ -77,7 +77,7 @@ services:
       LOG_LEVEL: "debug"
     volumes:
       - "./mounts/apache/apache/uploads:/mounts/apache/apache/uploads:Z"
-      - "./mounts/session-manager/session-manager.log:/session-manager/session-manager.log:Z"
+      - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
       - visp-net
@@ -183,6 +183,29 @@ services:
       - "./mounts/mongo/data:/data/db:Z"
       - "./mounts/mongo/logs:/var/log/mongodb:Z"
     command: ['--logpath', '/var/log/mongodb/mongodb.log']
+    networks:
+      - visp-net
+
+  elastic-agent:
+    image: elastic/elastic-agent:7.16.2
+    hostname: $ELASTIC_AGENT_REPORTED_HOSTNAME
+    restart: unless-stopped
+    user: root
+    environment:
+      - FLEET_ENROLLMENT_TOKEN=$ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN
+      - FLEET_ENROLL=1
+      - FLEET_URL=$ELASTIC_AGENT_FLEET_URL
+    volumes:
+      - "/var/log/auth.log:/var/log/auth.log:ro"
+      - "./mounts/session-manager/session-manager.log:/logs/session-manager.log:ro"
+      - "./mounts/apache/apache/logs/apache2:/logs/apache2:ro"
+      - "./mounts/apache/apache/logs/shibboleth:/logs/shibboleth:ro"
+      - "./mounts/gitlab/apache-logs:/logs/gitlab-apache:ro"
+      - "./mounts/gitlab/shibboleth-logs:/logs/gitlab-shibboleth:ro"
+      - "./mounts/traefik/log:/logs/traefik:ro"
+      - "./mounts/webapi/logs:/logs/webapi:ro"
+      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
       - visp-net
 
