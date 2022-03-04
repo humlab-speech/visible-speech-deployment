@@ -202,6 +202,7 @@ services:
       - "./mounts/apache/apache/logs/shibboleth:/logs/shibboleth:ro"
       - "./mounts/gitlab/apache-logs:/logs/gitlab-apache:ro"
       - "./mounts/gitlab/shibboleth-logs:/logs/gitlab-shibboleth:ro"
+      - "./mounts/gitlab/logs:/logs/gitlab:ro"
       - "./mounts/traefik/log:/logs/traefik:ro"
       - "./mounts/webapi/logs:/logs/webapi:ro"
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
