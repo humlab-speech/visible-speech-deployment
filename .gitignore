@@ -51,3 +51,5 @@ mounts/gitlab/config/ssh_host_rsa_key.pub
 kc-realm-export.json
 #docker/session-manager/scripts/container-agent/main.js
 mounts/mongo/data/
+mounts/mongo/logs/
+mounts/matomo/config
