@@ -259,7 +259,7 @@ services:
     networks:
       - visp-net
       
-  matomo_db:
+  matomo-db:
     image: mariadb:10.3
     restart: unless-stopped
     networks:
@@ -277,7 +277,7 @@ services:
     image: matomo:4.8.0
     restart: unless-stopped
     depends_on:
-      - matomo_db
+      - matomo-db
     networks:
       - visp-net
     volumes:
