@@ -259,9 +259,9 @@ services:
     networks:
       - visp-net
       
-  matomo-db:
+  matomo_db:
     image: mariadb:10.3
-    restart: always
+    restart: unless-stopped
     networks:
       - visp-net
     volumes:
@@ -275,11 +275,11 @@ services:
 
   matomo:
     image: matomo:4.8.0
-    restart: always    
-    links:
-      - matomo-db
+    restart: unless-stopped
+    depends_on:
+      - matomo_db
     networks:
-       - visp-net
+      - visp-net
     volumes:
       # To allow you to view/edit Matomo configuration files:
       - ./mounts/matomo/config:/var/www/html/config:rw
