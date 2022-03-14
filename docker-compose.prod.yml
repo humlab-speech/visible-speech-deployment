@@ -212,7 +212,7 @@ services:
 
   matomo-db:
     image: mariadb:10.3
-    restart: always
+    restart: unless-stopped
     networks:
       - visp-net
     volumes:
@@ -221,16 +221,15 @@ services:
       MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MATOMO_DB_NAME}
       MYSQL_USER: ${MATOMO_DB_USER}
-      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}      
-       
+      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
 
   matomo:
     image: matomo:4.8.0
-    restart: always    
-    links:
+    restart: unless-stopped    
+    depends_on:
       - matomo-db
     networks:
-       - visp-net
+      - visp-net
     volumes:
       # To allow you to view/edit Matomo configuration files:
       - ./mounts/matomo/config:/var/www/html/config:rw
@@ -238,11 +237,7 @@ services:
       - ./mounts/matomo/logs:/var/www/html/logs
       # To allow matomo access to apache logs for imports
       - ./mounts/apache/apache/logs/apache2:/external_logs
-
-
-volumes:
-  vol-matomo-db:
-        
+      
 
 networks:
   visp-net:
