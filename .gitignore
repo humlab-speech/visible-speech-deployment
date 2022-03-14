@@ -36,7 +36,7 @@ mounts/rstudio-router/docker-images
 webclient
 webapi
 mounts/gitlab/data
-mounts/gitlab/gitlab-logs
+mounts/gitlab/logs
 mounts/apache/apache/logs
 mounts/apache/apache/vhosts-disabled
 mounts/gitlab/apache-logs
