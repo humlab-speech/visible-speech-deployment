@@ -6,12 +6,12 @@ http:
         permanent: true
   routers:
     hirdRouterHttp:
-      rule: "Host(`localtest.me`) || Host(`gitlab.localtest.me`) || Host(`idp.localtest.me`) || Host(`app.localtest.me`) || Host(`labjs.localtest.me`) || Host(`octra.localtest.me`) || Host(`emu-webapp.localtest.me`)"
+      rule: "Host(`localtest.me`) || Host(`gitlab.localtest.me`) || Host(`idp.localtest.me`) || Host(`app.localtest.me`) || Host(`labjs.localtest.me`) || Host(`octra.localtest.me`) || Host(`emu-webapp.localtest.me`) || Host(`matomo.localtest.me`)"
       middlewares:
       - hirdRedirectSchemeMiddleware
       service: hirdService
     hirdRouterHttps:
-      rule: "Host(`localtest.me`) || Host(`gitlab.localtest.me`) || Host(`idp.localtest.me`) || Host(`app.localtest.me`) || Host(`labjs.localtest.me`) || Host(`octra.localtest.me`) || Host(`emu-webapp.localtest.me`)"
+      rule: "Host(`localtest.me`) || Host(`gitlab.localtest.me`) || Host(`idp.localtest.me`) || Host(`app.localtest.me`) || Host(`labjs.localtest.me`) || Host(`octra.localtest.me`) || Host(`emu-webapp.localtest.me`) || Host(`matomo.localtest.me`)"
       service: hirdService
       tls:
         certResolver: cr1
@@ -21,3 +21,4 @@ http:
         passHostHeader: true
         servers:
           - url: "http://apache:80"
+          

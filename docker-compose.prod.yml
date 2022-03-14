@@ -210,6 +210,40 @@ services:
     networks:
       - visp-net
 
+  matomo-db:
+    image: mariadb:10.3
+    restart: always
+    networks:
+      - visp-net
+    volumes:
+      - /mounts/matomo-db/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MATOMO_DB_NAME}
+      MYSQL_USER: ${MATOMO_DB_USER}
+      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}      
+       
+
+  matomo:
+    image: matomo:4.8.0
+    restart: always    
+    links:
+      - matomo-db
+    networks:
+       - visp-net
+    volumes:
+      # To allow you to view/edit Matomo configuration files:
+      - ./mounts/matomo/config:/var/www/html/config:rw
+      # To allow you to easily view Matomo log files:
+      - ./mounts/matomo/logs:/var/www/html/logs
+      # To allow matomo access to apache logs for imports
+      - ./mounts/apache/apache/logs/apache2:/external_logs
+
+
+volumes:
+  vol-matomo-db:
+        
+
 networks:
   visp-net:
 

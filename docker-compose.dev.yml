@@ -258,41 +258,38 @@ services:
       - "./mounts/vscode/config:/config"
     networks:
       - visp-net
+      
+  matomo-db:
+    image: mariadb:10.3
+    restart: always
+    networks:
+      - visp-net
+    volumes:
+      - /mounts/matomo-db/mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MATOMO_DB_NAME}
+      MYSQL_USER: ${MATOMO_DB_USER}
+      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}      
+      
 
-  #matomo:
-  #  image: matomo:4.5.0-apache
-  #  environment:
-  #    MATOMO_DATABASE_HOST: mariadb
-  #    MATOMO_DATABASE_USERNAME: $MARIADB_USER
-  #    MATOMO_DATABASE_PASSWORD: $MARIADB_PASSWORD
-  #    MATOMO_DATABASE_DBNAME: matomo
-  #  ports:
-  #    - 8082:80
-  #  volumes:
-  #    - "./mounts/matomo:/var/www/html:Z"
-  #  networks:
-  #    - visp-net
+  matomo:
+    image: matomo:4.8.0
+    restart: always    
+    links:
+      - matomo-db
+    networks:
+       - visp-net
+    volumes:
+      # To allow you to view/edit Matomo configuration files:
+      - ./mounts/matomo/config:/var/www/html/config:rw
+      # To allow you to easily view Matomo log files:
+      - ./mounts/matomo/logs:/var/www/html/logs
+      # To allow matomo access to apache logs for imports
+      - ./mounts/apache/apache/logs/apache2:/external_logs
 
-  #mariadb:
-  #  image: mariadb:10.7.1
-  #  environment:
-  #    MARIADB_USER: $MARIADB_USER
-  #    MARIADB_PASSWORD: $MARIADB_PASSWORD
-  #    MARIADB_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
-  #  volumes:
-  #    - "./mounts/mariadb:/var/lib/mysql:Z"
-  #  networks:
-  #    - visp-net
-  
-  #phpMyAdmin:
-  #  image: phpmyadmin/phpmyadmin
-  #  ports:
-  #    - 8083:80
-  #  environment:
-  #    PMA_HOST: mariadb
-  #  networks:
-  #    - visp-net
 
 networks:
   visp-net:
 
+  
