@@ -35,7 +35,7 @@ If you're feeling brave you can try running install.sh which will automate some 
 1. Generate some local certificates. These would not be used in production, but we assume a local development installation here. `openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650`
 1. Grab latest webclient `git clone https://github.com/humlab-speech/webclient`
 1. Grab latest webapi `git clone https://github.com/humlab-speech/webapi`
-1. Grab latest container-agent `https://github.com/humlab-speech/container-agent`
+1. Grab latest container-agent `git clone https://github.com/humlab-speech/container-agent`
 1. Install & build container-agent `cd container-agent && npm install && npm run build && cd ..`
 1. Install & build webclient `cd webclient && npm install && npm run build && cd ..`
 1. Install Session-Manager `git clone https://github.com/humlab-speech/session-manager`
