@@ -55,11 +55,14 @@ RUN rm matlab_runtime_install.zip
 RUN ./install -mode silent -agreeToLicense yes
 RUN rm -rf /matlab_install/*
 
-COPY ./matlab-scripts/voice_analysisstandaloneApplication.zip .
-RUN unzip voice_analysisstandaloneApplication.zip
+COPY ./matlab-scripts/*.zip ./
+RUN unzip '*.zip'
 RUN chmod +x ./voice_analysisstandaloneApplication/run_voice_analysis.sh
 RUN chmod +x ./voice_analysisstandaloneApplication/voice_analysis
-ENV PATH="/matlab_install/voice_analysisstandaloneApplication/:${PATH}"
+RUN chmod +x ./voice_analysis_directorystandaloneApplication/run_voice_analysis_directory.sh
+RUN chmod +x ./voice_analysis_directorystandaloneApplication/voice_analysis_directory
+
+ENV PATH="/matlab_install/voice_analysisstandaloneApplication/:/matlab_install/voice_analysis_directorystandaloneApplication/:${PATH}"
 
 WORKDIR /home/jovyan
 
