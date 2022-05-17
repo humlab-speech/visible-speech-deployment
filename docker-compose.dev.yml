@@ -9,6 +9,8 @@ services:
       - "./mounts/traefik/acme:/acme:Z"
       - "./mounts/traefik/log:/var/log:Z"
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     ports:
       - $HTTP_PORT:80
       - $HTTPS_PORT:443
@@ -66,6 +68,8 @@ services:
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/apache/apache/php.ini:/etc/php/7.4/apache2/php.ini:Z"
       - "./mounts/wsrng-server-content:/var/www/html/wsr-api:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
   session-manager:
     image: hs-session-manager-dev
@@ -133,6 +137,8 @@ services:
       - "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
       - "./mounts/gitlab/logs:/var/log/gitlab:Z"
       - "./certs:/etc/certs:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
   emu-webapp:
     image: hs-emu-webapp
@@ -140,6 +146,9 @@ services:
     restart: unless-stopped
     ports:
       - 9000:9000
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
 
@@ -150,6 +159,8 @@ services:
     volumes:
       - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
 
@@ -175,6 +186,9 @@ services:
     image: hs-labjs
     build: "./docker/labjs"
     restart: unless-stopped
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"      
     networks:
       - visp-net
 
@@ -197,6 +211,8 @@ services:
       PROXY_ADDRESS_FORWARDING: "true"
     volumes:
       - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
 
@@ -210,6 +226,8 @@ services:
       PGDATA: '/pgdata/data'
     volumes:
       - "./mounts/postgresql/data:/pgdata:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
 
@@ -224,6 +242,8 @@ services:
     volumes:
       - "./mounts/mongo/data:/data/db:Z"
       - "./mounts/mongo/logs:/var/log/mongodb:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     command: ['--logpath', '/var/log/mongodb/mongodb.log']
     networks:
       - visp-net
@@ -261,6 +281,8 @@ services:
       - "./mounts/webapi/logs:/logs/webapi:ro"
       - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"      
     networks:
       - visp-net
 
@@ -273,9 +295,11 @@ services:
       PROXY_DOMAIN: vscode.$BASE_DOMAIN
     volumes:
       - "./mounts/vscode/config:/config"
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
-      
+
   matomo-db:
     image: mariadb:10.3
     restart: unless-stopped
@@ -283,6 +307,8 @@ services:
       - visp-net
     volumes:
       - /mounts/matomo-db/mysql:/var/lib/mysql
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
     environment:
       MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MATOMO_DB_NAME}
@@ -303,6 +329,8 @@ services:
       - ./mounts/matomo/logs:/var/www/html/logs
       # To allow matomo access to apache logs for imports
       - ./mounts/apache/apache/logs/apache2:/external_logs
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
 
 networks:
