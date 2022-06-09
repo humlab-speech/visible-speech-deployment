@@ -33,6 +33,36 @@ RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R
 RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R
 RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
 
+RUN apt install -y python3-pip libsndfile1
+RUN pip install --upgrade pip
+RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install https://github.com/pyannote/pyannote-audio/archive/develop.zip
+RUN pip install speechbrain
+
+RUN mkdir /matlab_install
+
+WORKDIR /matlab_install
+
+# Note: If we change MATLAB runtime version, we will also need to change the directory.
+RUN wget -O matlab_runtime_install.zip https://ssd.mathworks.com/supportfiles/downloads/R2022a/Release/0/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2022a_glnxa64.zip
+ENV MATLAB_RUNTIME_DIRECTORY=/usr/local/MATLAB/MATLAB_Runtime/v912/
+
+RUN unzip matlab_runtime_install.zip
+RUN rm matlab_runtime_install.zip
+RUN ./install -mode silent -agreeToLicense yes
+RUN rm -rf /matlab_install/*
+
+COPY ./matlab-scripts/*.zip ./
+RUN unzip '*.zip'
+RUN chmod +x ./voice_analysisstandaloneApplication/run_voice_analysis.sh
+RUN chmod +x ./voice_analysisstandaloneApplication/voice_analysis
+RUN chmod +x ./voice_analysis_directorystandaloneApplication/run_voice_analysis_directory.sh
+RUN chmod +x ./voice_analysis_directorystandaloneApplication/voice_analysis_directory
+
+ENV PATH="/matlab_install/voice_analysisstandaloneApplication/:/matlab_install/voice_analysis_directorystandaloneApplication/:${PATH}"
+
+WORKDIR /
+
 #Always force the next cmds, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
