@@ -10,11 +10,11 @@ http:
       middlewares:
       - vispRedirectSchemeMiddleware
       service: vispService
-    vispRouterHttps:
-      rule: "Host(`visp.humlab.umu.se`) || Host(`gitlab.visp.humlab.umu.se`) || Host(`idp.visp.humlab.umu.se`) || Host(`app.visp.humlab.umu.se`) || Host(`labjs.visp.humlab.umu.se`) || Host(`octra.visp.humlab.umu.se`) || Host(`emu-webapp.visp.humlab.umu.se`) || Host(`matomo.visp.humlab.umu.se`)"
-      service: vispService
-      tls:
-        certResolver: cr1
+    #vispRouterHttps:
+    #  rule: "Host(`visp.humlab.umu.se`) || Host(`gitlab.visp.humlab.umu.se`) || Host(`idp.visp.humlab.umu.se`) || Host(`app.visp.humlab.umu.se`) || Host(`labjs.visp.humlab.umu.se`) || Host(`octra.visp.humlab.umu.se`) || Host(`emu-webapp.visp.humlab.umu.se`) || Host(`matomo.visp.humlab.umu.se`)"
+    #  service: vispService
+    #  tls:
+    #    certResolver: cr1
   services:
     vispService:
       loadBalancer:
