@@ -53,8 +53,12 @@
             <!-- SAML and local-only logout. -->
 
             <Logout>SAML2 Local</Logout>
-
-
+            <!--
+            <LogoutInitiator type="SAML2">
+              <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="/SLO/Redirect" />
+              <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="/SLO/POST" />
+            </LogoutInitiator>
+            -->
         <!--
 	<SessionInitiator type="Chaining" Location="/DS/Login" id="samltest" relayState="cookie" entityID="https://samltest.id/saml/idp">
 	   <SessionInitiator type="SAML2" defaultACSIndex="1" acsByIndex="false" template="bindingTemplate.html"/>
@@ -119,17 +123,23 @@
          -->
 
             <!-- LogoutInitiators enable SP-initiated local or global/single logout of sessions. Uncomment and edit if used -->
-          <!--
           
+          
+            <!--
             <LogoutInitiator type="Chaining" Location="/Logout" relayState="cookie">
                 No single logout: Solving "IdP doesn't support single logout protocol over a compatible binding" problem
-                <LogoutInitiator type="SAML2" template="/opt/ladok3/gui-httpd/libexec/shibboleth/etc/shibboleth/bindingTemplate.html"/>
+                <LogoutInitiator type="SAML2" Location="/auth/realms/visp/protocol/saml"/>
                 <LogoutInitiator type="Local"/>
             </LogoutInitiator>
-           -->
+            -->
+
+            <!--
+            <md:SingleLogoutService Location="/SLO/Redirect" encryption="false" Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"/>
+            <md:SingleLogoutService Location="/SLO/POST" encryption="false" Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"/>
+            -->
 
             <!-- md:SingleLogoutService locations handle single logout (SLO) protocol messages.
-        
+
             <md:SingleLogoutService Location="/SLO/SOAP"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
             <md:SingleLogoutService Location="/SLO/Redirect" conf:template="/opt/ladok3/gui-httpd/libexec/shibboleth/etc/shibboleth/bindingTemplate.html"
@@ -176,14 +186,15 @@
        
         <!-- SWAMID Metadata -->
         
+        <!--
         <MetadataProvider 
                 type="XML" 
                 url="http://keycloak:8080/auth/realms/visp/protocol/saml/descriptor"
                 backingFilePath="keycloak-idp-metadata.xml" reloadInterval="300">
-
-                <!--<MetadataFilter type="Signature" certificate="swamid-metadata-signer.crt" verifyBackup="false"/>-->
-             <!--<SignatureMetadataFilter certificate="swamid-metadata-signer.crt"/>-->
         </MetadataProvider>
+        -->
+
+        <MetadataProvider type="XML" path="/etc/shibboleth/keycloak-idp-metadata.xml"/>
         
 
         <!--
