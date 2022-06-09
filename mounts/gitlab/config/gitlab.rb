@@ -551,6 +551,9 @@ gitlab_rails['omniauth_providers'] = [
              assertion_consumer_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/callback',
              idp_cert_fingerprint: ENV["KEYCLOAK_SIGNING_CERT_FINGERPRINT"],
              idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/'+ENV["HS_AUTH_REALM"]+'/protocol/saml',
+             idp_slo_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/spslo',
+             single_logout_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/auth/saml/slo',
+             #single_logout_service_url: 'http://gitlab/auth/saml/slo',
              issuer: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"],
              name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
              attribute_statements: { first_name: ['urn:oid:2.5.4.42'], last_name: ['urn:oid:2.5.4.4'], nickname: ['eppn_replaced'], email: ['urn:oid:1.2.840.113549.1.9.1'] }
