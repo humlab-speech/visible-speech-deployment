@@ -40,17 +40,17 @@ services:
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       #Shibboleth config for SWAMID
-      #- "./mounts/edge-router/saml/swamid/apache-shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      #- "./mounts/edge-router/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
-      #- "./mounts/edge-router/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      #- "./mounts/edge-router/saml/certs/swamid-metadata-signer.crt:/etc/shibboleth/swamid-metadata-signer.crt:Z"
-      #- "./private/certs/sp-cert/hird.humlab.umu.se-cert.pem:/etc/shibboleth/sp-cert.pem:Z"
-      #- "./private/certs/sp-cert/hird.humlab.umu.se-key.pem:/etc/shibboleth/sp-key.pem:Z"
+      - "./mounts/apache/saml/swamid/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/apache/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
+      #- "./certs/sp-cert/cert.pem:/etc/certs/sp-cert/cert.pem:Z"
+      #- "./certs/sp-cert/key.pem:/etc/certs/sp-cert/key.pem:Z"
       #Shibboleth config for KEYCLOAK
-      - "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      - "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
-      - "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      #- "./mounts/apache/saml/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/apache/saml/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      #- "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
       #GENERAL
       - "./mounts/webapi/logs:/var/log/api:Z"
       - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
@@ -192,44 +192,44 @@ services:
     networks:
       - visp-net
 
-  keycloak:
-    image: hs-keycloak
-    build: "./docker/keycloak"
-    restart: unless-stopped
-    depends_on:
-      - database
-    environment:
-      KEYCLOAK_USER: $KEYCLOAK_USER
-      KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
-      KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
-      DB_VENDOR: "postgres"
-      DB_ADDR: "database"
-      DB_USER: "keycloak"
-      DB_PASSWORD: $POSTGRES_PASSWORD
-      KEYCLOAK_LOGLEVEL: "INFO"
-      ROOT_LOGLEVEL: "INFO"
-      PROXY_ADDRESS_FORWARDING: "true"
-    volumes:
-      - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+  #keycloak:
+  #  image: hs-keycloak
+  #  build: "./docker/keycloak"
+  #  restart: unless-stopped
+  #  depends_on:
+  #    - database
+  #  environment:
+  #    KEYCLOAK_USER: $KEYCLOAK_USER
+  #    KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
+  #    KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
+  #    DB_VENDOR: "postgres"
+  #    DB_ADDR: "database"
+  #    DB_USER: "keycloak"
+  #    DB_PASSWORD: $POSTGRES_PASSWORD
+  #    KEYCLOAK_LOGLEVEL: "INFO"
+  #    ROOT_LOGLEVEL: "INFO"
+  #    PROXY_ADDRESS_FORWARDING: "true"
+  #  volumes:
+  #    - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  networks:
+  #    - visp-net
 
-  database:
-    image: postgres:12.5
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRES_DB: keycloak
-      PGDATA: '/pgdata/data'
-    volumes:
-      - "./mounts/postgresql/data:/pgdata:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+  #database:
+  #  image: postgres:12.5
+  #  restart: unless-stopped
+  #  environment:
+  #    POSTGRES_USER: keycloak
+  #    POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  #    POSTGRES_DB: keycloak
+  #    PGDATA: '/pgdata/data'
+  #  volumes:
+  #    - "./mounts/postgresql/data:/pgdata:Z"
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  networks:
+  #    - visp-net
 
   mongo:
     image: mongo:4.4
