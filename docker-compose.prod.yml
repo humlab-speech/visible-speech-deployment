@@ -1,29 +1,13 @@
 version: '3'
 services:
-  traefik:
-    image: traefik:v2.5.7
-    restart: always
-    volumes:
-      - "./mounts/traefik/conf:/etc/traefik:Z"
-      - "./mounts/traefik/acme:/acme:Z"
-      - "./mounts/traefik/log:/var/log:Z"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    ports:
-      - $HTTP_PORT:80
-      - $HTTPS_PORT:443
-    environment:
-      HS_DOMAIN_NAME: $BASE_DOMAIN
-    networks:
-      - visp-net
-
   apache:
     image: visp-apache
     build: "./docker/apache"
     restart: always
-    depends_on:
-      - keycloak
+    ports:
+      - $HTTP_PORT:80
+    #depends_on:
+    #  - keycloak
     networks:
       - visp-net
     environment:
@@ -33,16 +17,21 @@ services:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
       KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
-      HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
+      HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       #Shibboleth config for KEYCLOAK
-      - "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      - "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
-      - "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      #- "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      #- "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      #- "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
+      #- "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
+      #SWAMID
+      - "./mounts/apache/saml/swamid/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/apache/saml/swamid/swamid-idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
+      - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #GENERAL
       - "./mounts/webapi/logs:/var/log/api:Z"
       - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
@@ -68,7 +57,7 @@ services:
     restart: always
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
-      HS_API_ACCESS_TOKEN: $HS_API_ACCESS_TOKEN
+      HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
@@ -149,44 +138,46 @@ services:
     networks:
       - visp-net
 
-  keycloak:
-    image: hs-keycloak
-    build: "./docker/keycloak"
-    restart: always
-    depends_on:
-      - database
-    environment:
-      KEYCLOAK_USER: $KEYCLOAK_USER
-      KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
-      KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
-      DB_VENDOR: "postgres"
-      DB_ADDR: "database"
-      DB_USER: "keycloak"
-      DB_PASSWORD: $POSTGRES_PASSWORD
-      KEYCLOAK_LOGLEVEL: "INFO"
-      ROOT_LOGLEVEL: "INFO"
-      PROXY_ADDRESS_FORWARDING: "true"
-    volumes:
-      - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+  #keycloak:
+  #  image: hs-keycloak
+  #  build: "./docker/keycloak"
+  #  restart: always
+  #  depends_on:
+  #    - database
+  #  environment:
+  #    KEYCLOAK_USER: $KEYCLOAK_USER
+  #    KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
+  #    KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
+  #    DB_VENDOR: "postgres"
+  #    DB_ADDR: "database"
+  #    DB_USER: "keycloak"
+  #    DB_PASSWORD: $POSTGRES_PASSWORD
+  #    KEYCLOAK_LOGLEVEL: "INFO"
+  #    ROOT_LOGLEVEL: "INFO"
+  #    PROXY_ADDRESS_FORWARDING: "true"
+  #  volumes:
+  #    - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  networks:
+  #    - visp-net
 
-  database:
-    image: postgres:12.5
-    restart: always
-    environment:
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-      POSTGRES_DB: keycloak
-      PGDATA: '/pgdata/data'
-    volumes:
-      - "./mounts/postgresql/data:/pgdata:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+  #database:
+  #  image: postgres:12.5
+  #  restart: always
+  #  environment:
+  #    POSTGRES_USER: keycloak
+  #    POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+  #    POSTGRES_DB: keycloak
+  #    PGDATA: '/pgdata/data'
+  #  ports:
+  #    - 5432:5432
+  #  volumes:
+  #    - "./mounts/postgresql/data:/pgdata:Z"
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  networks:
+  #    - visp-net
 
   mongo:
     image: mongo:4.4.12
@@ -231,37 +222,37 @@ services:
     networks:
       - visp-net
 
-  matomo-db:
-    image: mariadb:10.3
-    restart: unless-stopped
-    networks:
-      - visp-net
-    volumes:
-      - /mounts/matomo-db/mysql:/var/lib/mysql
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MATOMO_DB_NAME}
-      MYSQL_USER: ${MATOMO_DB_USER}
-      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
+  #matomo-db:
+  #  image: mariadb:10.3
+  #  restart: unless-stopped
+  #  networks:
+  #    - visp-net
+  #  volumes:
+  #    - /mounts/matomo-db/mysql:/var/lib/mysql
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  environment:
+  #    MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+  #    MYSQL_DATABASE: ${MATOMO_DB_NAME}
+  #    MYSQL_USER: ${MATOMO_DB_USER}
+  #    MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
 
-  matomo:
-    image: matomo:4.8.0
-    restart: unless-stopped    
-    depends_on:
-      - matomo-db
-    networks:
-      - visp-net
-    volumes:
-      # To allow you to view/edit Matomo configuration files:
-      - ./mounts/matomo/config:/var/www/html/config:rw
-      # To allow you to easily view Matomo log files:
-      - ./mounts/matomo/logs:/var/www/html/logs
-      # To allow matomo access to apache logs for imports
-      - ./mounts/apache/apache/logs/apache2:/external_logs
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
+  #matomo:
+  #  image: matomo:4.8.0
+  #  restart: unless-stopped    
+  #  depends_on:
+  #    - matomo-db
+  #  networks:
+  #    - visp-net
+  #  volumes:
+  #    # To allow you to view/edit Matomo configuration files:
+  #    - ./mounts/matomo/config:/var/www/html/config:rw
+  #    # To allow you to easily view Matomo log files:
+  #    - ./mounts/matomo/logs:/var/www/html/logs
+  #    # To allow matomo access to apache logs for imports
+  #    - ./mounts/apache/apache/logs/apache2:/external_logs
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
       
 
 networks:

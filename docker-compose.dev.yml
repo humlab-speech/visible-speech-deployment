@@ -23,8 +23,8 @@ services:
     image: visp-apache
     build: "./docker/apache"
     restart: unless-stopped
-    depends_on:
-      - keycloak
+    #depends_on:
+    #  - keycloak
     networks:
       - visp-net
     environment:
@@ -67,7 +67,7 @@ services:
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/apache/apache/php.ini:/etc/php/7.4/apache2/php.ini:Z"
-      - "./mounts/wsrng-server-content:/var/www/html/wsr-api:Z"
+      #- "./mounts/wsrng-server-content:/var/www/html/wsr-api:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
 
@@ -94,20 +94,20 @@ services:
     networks:
       - visp-net
 
-  wsrng-server:
-    build: "./docker/wsrng-server/dev"
-    restart: unless-stopped
-    ports:
-      - 3101:3101
-    environment:
-      VISP_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
-      MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
-      ACCESS_LIST_ENABLED: $ACCESS_LIST_ENABLED
-    volumes:
-      - "./visp-wsrng-server:/wsrng-server:Z"
-      - "./mounts/wsrng-server/logs:/wsrng-server/logs:Z"
-    networks:
-      - visp-net
+  #wsrng-server:
+  #  build: "./docker/wsrng-server/dev"
+  #  restart: unless-stopped
+  #  ports:
+  #    - 3101:3101
+  #  environment:
+  #    VISP_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
+  #    MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+  #    ACCESS_LIST_ENABLED: $ACCESS_LIST_ENABLED
+  #  volumes:
+  #    - "./visp-wsrng-server:/wsrng-server:Z"
+  #    - "./mounts/wsrng-server/logs:/wsrng-server/logs:Z"
+  #  networks:
+  #    - visp-net
 
   gitlab:
     image: hs-gitlab
