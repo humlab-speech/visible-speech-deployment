@@ -37,7 +37,7 @@ RUN apt install -y python3-pip libsndfile1
 RUN pip install --upgrade pip
 RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
 RUN pip install https://github.com/pyannote/pyannote-audio/archive/develop.zip
-RUN pip install speechbrain
+RUN pip install speechbrain pyreaper pysptk
 
 RUN mkdir /matlab_install
 

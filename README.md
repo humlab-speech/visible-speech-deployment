@@ -53,7 +53,7 @@ If you're feeling brave you can try running install.sh which will automate some 
   * Go to Keycloak at https://idp.localtest.me
   * Sign-in with the keycloak admin credentials you specified in .env
   * Create a realm called `hird` and import the keycloak-config.json file in the same step.
-  * Run the included script `idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file like `KEYCLOAK_SIGNING_CERT_FINGERPRINT=42:31:C4:AF...`.  
+  * Run `docker-compose exec apache bash idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file like `KEYCLOAK_SIGNING_CERT_FINGERPRINT=42:31:C4:AF...`.  
 1. Run `docker-compose down && docker-compose up -d` to let various services read in new data.
 
 Everything should now be setup for using the system with Keycloak as the local identity provider. A user for testing has been created for you in Keycloak, you need to login to Keycloak as admin to set a password for it.
