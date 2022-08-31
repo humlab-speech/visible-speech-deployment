@@ -50,6 +50,11 @@ services:
       - "./mounts/apache/apache/php.ini:/etc/php/7.4/apache2/php.ini:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
+      #SimpleSamlPHP
+      - "./mounts/simplesamlphp/simplesamlphp:/var/simplesamlphp:Z"
+      - "./certs/sp-cert/cert.pem:/var/simplesamlphp/cert/server.crt"
+      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.pem"
+      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.key"
 
   session-manager:
     image: hs-session-manager

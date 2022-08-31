@@ -38,10 +38,11 @@ services:
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      TEST_USER_LOGIN_KEY: $TEST_USER_LOGIN_KEY
     volumes:
-      #Shibboleth config for SWAMID
-      - "./mounts/apache/saml/swamid/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/apache/saml/swamid/idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      #SWAMID
+      - "./mounts/apache/saml/swamid/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
+      - "./mounts/apache/saml/swamid/swamid-idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
       - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
       - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #- "./certs/sp-cert/cert.pem:/etc/certs/sp-cert/cert.pem:Z"
@@ -70,6 +71,11 @@ services:
       #- "./mounts/wsrng-server-content:/var/www/html/wsr-api:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
+      #SimpleSamlPHP
+      - "./mounts/simplesamlphp/simplesamlphp:/var/simplesamlphp:Z"
+      - "./certs/sp-cert/cert.pem:/var/simplesamlphp/cert/server.crt"
+      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.pem"
+      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.key"
 
   session-manager:
     image: hs-session-manager-dev
