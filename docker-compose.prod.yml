@@ -21,6 +21,8 @@ services:
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      SSP_SALT: $SSP_SALT
+      SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
     volumes:
       #Shibboleth config for KEYCLOAK
       #- "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
@@ -52,9 +54,9 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
       #SimpleSamlPHP
       - "./mounts/simplesamlphp/simplesamlphp:/var/simplesamlphp:Z"
-      - "./certs/sp-cert/cert.pem:/var/simplesamlphp/cert/server.crt"
-      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.pem"
-      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.key"
+      - "./certs/ssp-idp-cert/cert.pem:/var/simplesamlphp/cert/server.crt"
+      - "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.pem"
+      - "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.key"
 
   session-manager:
     image: hs-session-manager
