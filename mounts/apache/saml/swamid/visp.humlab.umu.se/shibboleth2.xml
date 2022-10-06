@@ -36,13 +36,15 @@
             helpLocation="/about.html"
             styleSheet="/shibboleth-sp/main.css"/>
  
+        
         <!--
-        <MetadataProvider type="XML" path="swamid-idp-transitive.xml"/>
+        <MetadataProvider type="XML" path="/etc/shibboleth/swamid-idp-transitive.xml"/>
         -->
+        
         <MetadataProvider
                 type="XML"
-                url="https://mds.swamid.se/md/swamid-idp-transitive.xml"
-                backingFilePath="swamid-idp-transitive.xml" reloadInterval="14400">
+                url="https://mds.swamid.se/md/swamid-idp.xml"
+                backingFilePath="/etc/shibboleth/swamid-idp.xml" reloadInterval="14400">
              <MetadataFilter type="Signature" certificate="/etc/shibboleth/md-signer2.crt"/>
         </MetadataProvider>
         
