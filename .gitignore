@@ -1,3 +1,4 @@
+mounts/apache/saml/swamid/swamid-idp-transitive.xml
 mounts/traefik/log/*
 mounts/apache/apache/logs/*
 docker-compose.dev.central-logging.yml
