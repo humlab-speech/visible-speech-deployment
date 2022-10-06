@@ -25,7 +25,7 @@ COPY ./wait-for-it.sh /wait-for-it.sh
 COPY ./idpFp.sh /idpFp.sh
 
 #CMD bash -c "/wait-for-it.sh -t 60 keycloak:8080 -- /etc/init.d/shibd start" && /usr/sbin/apache2 -DFOREGROUND
-CMD bash -c "/etc/init.d/shibd start && /usr/sbin/apache2 -DFOREGROUND"
+CMD bash -c "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"
 
 EXPOSE 80
 EXPOSE 443
