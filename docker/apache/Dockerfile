@@ -6,7 +6,7 @@ LABEL description="A debian based installation of apache with shibboleth, acting
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
 #docker.io is for being able to manipulate containers in the outside cluster - for rstudio session containers initially
-RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php-mbstring php-mongodb php-zip --no-install-recommends -y
+RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php-mbstring php-mongodb php-zip php-xml php-pgsql --no-install-recommends -y
 
 RUN a2enmod proxy proxy_http ssl headers php7.4 rewrite proxy_wstunnel
 
@@ -24,7 +24,8 @@ COPY ./wait-for-it.sh /wait-for-it.sh
 
 COPY ./idpFp.sh /idpFp.sh
 
-CMD bash -c "/wait-for-it.sh -t 60 keycloak:8080 -- /etc/init.d/shibd start" && /usr/sbin/apache2 -DFOREGROUND
+#CMD bash -c "/wait-for-it.sh -t 60 keycloak:8080 -- /etc/init.d/shibd start" && /usr/sbin/apache2 -DFOREGROUND
+CMD bash -c "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"
 
 EXPOSE 80
 EXPOSE 443

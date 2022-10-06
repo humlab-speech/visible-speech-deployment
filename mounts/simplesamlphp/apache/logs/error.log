@@ -1,0 +1,98 @@
+[Tue Aug 30 09:23:46.827297 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.129.8. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:23:46.867462 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:23:46.882868 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:23:46.882915 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:26:06.395223 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.130.8. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:26:06.474693 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:26:06.478726 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:26:06.478753 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:28:30.648893 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.130.8. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:28:30.675842 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:28:30.676244 2022] [core:warn] [pid 7] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Tue Aug 30 09:28:30.679599 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:28:30.679631 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:33:08.927370 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.7. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:33:08.964420 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:33:08.969752 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:33:08.969785 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:35:49.479327 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.129.4. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:35:49.550869 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:35:49.560091 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:35:49.560133 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:40:20.790962 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.129.4. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:40:20.827777 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:40:20.828236 2022] [core:warn] [pid 7] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Tue Aug 30 09:40:20.831415 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:40:20.831443 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:43:50.512759 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.130.7. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:43:50.609365 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:43:50.617262 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:43:50.617307 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:47:38.190724 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.7. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:47:38.245405 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:47:38.250906 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:47:38.250960 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:51:30.214448 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.7. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:51:30.238494 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:51:30.238729 2022] [core:warn] [pid 7] AH00098: pid file /var/run/apache2/apache2.pid overwritten -- Unclean shutdown of previous Apache run?
+[Tue Aug 30 09:51:30.241040 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:51:30.241068 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 09:57:55.747280 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.7. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 09:57:55.780968 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 09:57:55.784945 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 09:57:55.784971 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 10:05:09.038612 2022] [ssl:warn] [pid 6] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.129.5. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 10:05:09.072074 2022] [ssl:warn] [pid 6] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 10:05:09.074900 2022] [mpm_prefork:notice] [pid 6] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 10:05:09.074928 2022] [core:notice] [pid 6] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 10:52:06.010671 2022] [ssl:warn] [pid 6] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.130.7. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 10:52:06.059242 2022] [ssl:warn] [pid 6] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 10:52:06.062872 2022] [mpm_prefork:notice] [pid 6] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 10:52:06.062897 2022] [core:notice] [pid 6] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 11:16:22.667187 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.4. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 11:16:22.708606 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 11:16:22.712262 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 11:16:22.712301 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 11:19:26.469003 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.129.6. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 11:19:26.534256 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 11:19:26.541377 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 11:19:26.541413 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 11:20:47.802431 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.130.3. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 11:20:47.875939 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 11:20:47.879772 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 11:20:47.879805 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 11:28:40.432854 2022] [ssl:warn] [pid 6] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.10. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 11:28:40.508434 2022] [ssl:warn] [pid 6] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 11:28:40.513796 2022] [mpm_prefork:notice] [pid 6] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 11:28:40.513854 2022] [core:notice] [pid 6] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 11:31:44.434564 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.129.10. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 11:31:44.475926 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 11:31:44.480607 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 11:31:44.480652 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 12:38:50.511323 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.130.3. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 12:38:50.569654 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 12:38:50.577523 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 12:38:50.577574 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'
+[Tue Aug 30 12:43:17.504849 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+AH00558: apache2: Could not reliably determine the server's fully qualified domain name, using 192.168.131.8. Set the 'ServerName' directive globally to suppress this message
+[Tue Aug 30 12:43:17.548594 2022] [ssl:warn] [pid 7] AH01882: Init: this version of mod_ssl was compiled against a newer library (OpenSSL 1.1.1n  15 Mar 2022, version currently loaded is OpenSSL 1.1.1k  25 Mar 2021) - may result in undefined or erroneous behavior
+[Tue Aug 30 12:43:17.552760 2022] [mpm_prefork:notice] [pid 7] AH00163: Apache/2.4.54 (Debian) OpenSSL/1.1.1k configured -- resuming normal operations
+[Tue Aug 30 12:43:17.552795 2022] [core:notice] [pid 7] AH00094: Command line: '/usr/sbin/apache2 -D FOREGROUND'

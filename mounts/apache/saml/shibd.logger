@@ -1,5 +1,5 @@
 # set overall behavior
-log4j.rootCategory=DEBUG, shibd_log, warn_log
+log4j.rootCategory=INFO, shibd_log, warn_log
 
 # fairly verbose for DEBUG, so generally leave at DEBUG
 log4j.category.XMLTooling.XMLObject=DEBUG
@@ -8,7 +8,7 @@ log4j.category.Shibboleth.IPRange=DEBUG
 log4j.category.Shibboleth.PropertySet=DEBUG
 
 # raise for low-level tracing of SOAP client HTTP/SSL behavior
-log4j.category.XMLTooling.libcurl=DEBUG
+log4j.category.XMLTooling.libcurl=INFO
 
 # useful categories to tune independently:
 #
@@ -27,7 +27,7 @@ log4j.category.XMLTooling.libcurl=DEBUG
 #log4j.category.XMLTooling.StorageService=DEBUG
 
 # logs XML being signed or verified if set to DEBUG
-log4j.category.XMLTooling.Signature.Debugger=DEBUG, sig_log
+log4j.category.XMLTooling.Signature.Debugger=INFO, sig_log
 log4j.additivity.XMLTooling.Signature.Debugger=false
 log4j.ownAppenders.XMLTooling.Signature.Debugger=true
 

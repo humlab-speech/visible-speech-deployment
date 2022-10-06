@@ -546,19 +546,37 @@ gitlab_rails['omniauth_auto_link_saml_user'] = true
 gitlab_rails['omniauth_providers'] = [
 {
   name: 'saml',
-  label: 'Keycloak',
+  label: 'Single Sign-On',
   args: {
+             name: 'saml',
              assertion_consumer_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/callback',
              idp_cert_fingerprint: ENV["KEYCLOAK_SIGNING_CERT_FINGERPRINT"],
-             idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/'+ENV["HS_AUTH_REALM"]+'/protocol/saml',
+             idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/saml2/idp/SSOService.php',
              idp_slo_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/spslo',
              single_logout_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/auth/saml/slo',
              #single_logout_service_url: 'http://gitlab/auth/saml/slo',
              issuer: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"],
              name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
-             attribute_statements: { first_name: ['urn:oid:2.5.4.42'], last_name: ['urn:oid:2.5.4.4'], nickname: ['eppn_replaced'], email: ['urn:oid:1.2.840.113549.1.9.1'] }
+             attribute_statements: { first_name: ['firstName'], last_name: ['lastName'], nickname: ['username'], email: ['email'] }
            }
 }]
+
+#gitlab_rails['omniauth_providers'] = [
+#{
+#  name: 'saml',
+#  label: 'Keycloak',
+#  args: {
+#             assertion_consumer_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/callback',
+#             idp_cert_fingerprint: ENV["KEYCLOAK_SIGNING_CERT_FINGERPRINT"],
+#             idp_sso_target_url: 'https://idp.'+ENV["HS_DOMAIN_NAME"]+'/auth/realms/'+ENV["HS_AUTH_REALM"]+'/protocol/saml',
+#             idp_slo_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/users/auth/saml/spslo',
+#             single_logout_service_url: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"]+'/auth/saml/slo',
+#             #single_logout_service_url: 'http://gitlab/auth/saml/slo',
+#             issuer: 'https://gitlab.'+ENV["HS_DOMAIN_NAME"],
+#             name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+#             attribute_statements: { first_name: ['urn:oid:2.5.4.42'], last_name: ['urn:oid:2.5.4.4'], nickname: ['eppn_replaced'], email: ['urn:oid:1.2.840.113549.1.9.1'] }
+#           }
+#}]
 
 ### FortiAuthenticator authentication settings
 # gitlab_rails['forti_authenticator_enabled'] = false
@@ -1068,9 +1086,9 @@ gitlab_workhorse['listen_addr'] = "127.0.0.1:8181"
 
 # gitlab_shell['audit_usernames'] = false
 gitlab_shell['log_level'] = 'WARN'
-# gitlab_shell['log_format'] = 'json'
+gitlab_shell['log_format'] = 'json'
 # gitlab_shell['http_settings'] = { user: 'username', password: 'password', ca_file: '/etc/ssl/cert.pem', ca_path: '/etc/pki/tls/certs', self_signed_cert: false}
-# gitlab_shell['log_directory'] = "/var/log/gitlab/gitlab-shell/"
+gitlab_shell['log_directory'] = "/var/log/gitlab/gitlab-shell/"
 
 # gitlab_shell['auth_file'] = "/var/opt/gitlab/.ssh/authorized_keys"
 
@@ -1338,7 +1356,7 @@ gitlab_shell['log_level'] = 'WARN'
 
 ##! When bundled nginx is disabled we need to add the external webserver user to
 ##! the GitLab webserver group.
-web_server['external_users'] = ['www-data']
+#web_server['external_users'] = ['www-data']
 # web_server['username'] = 'gitlab-www'
 # web_server['group'] = 'gitlab-www'
 # web_server['uid'] = nil
@@ -1351,9 +1369,9 @@ web_server['external_users'] = ['www-data']
 ##! Docs: https://docs.gitlab.com/omnibus/settings/nginx.html
 ################################################################################
 
-nginx['enable'] = false
+nginx['enable'] = true
 # nginx['client_max_body_size'] = '250m'
-# nginx['redirect_http_to_https'] = false
+nginx['redirect_http_to_https'] = false
 # nginx['redirect_http_to_https_port'] = 80
 
 ##! Most root CA's are included by default
@@ -1399,25 +1417,25 @@ nginx['enable'] = false
 
 ##! **Override only if you use a reverse proxy**
 ##! Docs: https://docs.gitlab.com/omnibus/settings/nginx.html#setting-the-nginx-listen-port
-# nginx['listen_port'] = nil
+nginx['listen_port'] = 80
 
 ##! **Override only if your reverse proxy internally communicates over HTTP**
 ##! Docs: https://docs.gitlab.com/omnibus/settings/nginx.html#supporting-proxied-ssl
-# nginx['listen_https'] = nil
+nginx['listen_https'] = false
 
 # nginx['custom_gitlab_server_config'] = "location ^~ /foo-namespace/bar-project/raw/ {\n deny all;\n}\n"
 # nginx['custom_nginx_config'] = "include /etc/nginx/conf.d/example.conf;"
-# nginx['proxy_read_timeout'] = 3600
-# nginx['proxy_connect_timeout'] = 300
-# nginx['proxy_set_headers'] = {
-#  "Host" => "$http_host_with_default",
-#  "X-Real-IP" => "$remote_addr",
-#  "X-Forwarded-For" => "$proxy_add_x_forwarded_for",
-#  "X-Forwarded-Proto" => "https",
-#  "X-Forwarded-Ssl" => "on",
-#  "Upgrade" => "$http_upgrade",
-#  "Connection" => "$connection_upgrade"
-# }
+nginx['proxy_read_timeout'] = 3600
+nginx['proxy_connect_timeout'] = 300
+ nginx['proxy_set_headers'] = {
+  "Host" => "$http_host_with_default",
+  "X-Real-IP" => "$remote_addr",
+  "X-Forwarded-For" => "$proxy_add_x_forwarded_for",
+  "X-Forwarded-Proto" => "https",
+  "X-Forwarded-Ssl" => "on",
+  "Upgrade" => "$http_upgrade",
+  "Connection" => "$connection_upgrade"
+ }
 # nginx['proxy_cache_path'] = 'proxy_cache keys_zone=gitlab:10m max_size=1g levels=1:2'
 # nginx['proxy_cache'] = 'gitlab'
 # nginx['http2_enabled'] = true
