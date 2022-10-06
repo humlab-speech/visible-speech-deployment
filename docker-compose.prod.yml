@@ -85,8 +85,8 @@ services:
       - visp-net
 
   gitlab:
-    image: hs-gitlab
-    build: "./docker/gitlab"
+    image: gitlab/gitlab-ce:15.4.0-ce.0
+    #build: "./docker/gitlab"
     networks:
       - visp-net
     hostname: gitlab.$BASE_DOMAIN
@@ -104,12 +104,13 @@ services:
     volumes:
       - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
       - "$GITLAB_HOME/config:/etc/gitlab:Z"
-      - "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
-      - "$GITLAB_HOME/apache2.conf:/etc/apache2/apache2.conf:Z"
-      - "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
-      - "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
+      #- "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
+      - "$GITLAB_HOME/gitlab-logs:/var/log/gitlab:Z"
+      #- "$GITLAB_HOME/apache2.conf:/etc/apache2/apache2.conf:Z"
+      #- "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
+      #- "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
       - "$GITLAB_HOME/public:/opt/gitlab/public:Z"
-      - "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
+      #- "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
       - "./certs:/etc/certs:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
@@ -229,37 +230,37 @@ services:
     networks:
       - visp-net
 
-  #matomo-db:
-  #  image: mariadb:10.3
-  #  restart: unless-stopped
-  #  networks:
-  #    - visp-net
-  #  volumes:
-  #    - /mounts/matomo-db/mysql:/var/lib/mysql
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"
-  #  environment:
-  #    MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
-  #    MYSQL_DATABASE: ${MATOMO_DB_NAME}
-  #    MYSQL_USER: ${MATOMO_DB_USER}
-  #    MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
+  matomo-db:
+    image: mariadb:10.3
+    restart: unless-stopped
+    networks:
+      - visp-net
+    volumes:
+      - /mounts/matomo-db/mysql:/var/lib/mysql
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MATOMO_DB_NAME}
+      MYSQL_USER: ${MATOMO_DB_USER}
+      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
 
-  #matomo:
-  #  image: matomo:4.8.0
-  #  restart: unless-stopped    
-  #  depends_on:
-  #    - matomo-db
-  #  networks:
-  #    - visp-net
-  #  volumes:
-  #    # To allow you to view/edit Matomo configuration files:
-  #    - ./mounts/matomo/config:/var/www/html/config:rw
-  #    # To allow you to easily view Matomo log files:
-  #    - ./mounts/matomo/logs:/var/www/html/logs
-  #    # To allow matomo access to apache logs for imports
-  #    - ./mounts/apache/apache/logs/apache2:/external_logs
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"
+  matomo:
+    image: matomo:4.8.0
+    restart: unless-stopped    
+    depends_on:
+      - matomo-db
+    networks:
+      - visp-net
+    volumes:
+      # To allow you to view/edit Matomo configuration files:
+      - ./mounts/matomo/config:/var/www/html/config:rw
+      # To allow you to easily view Matomo log files:
+      - ./mounts/matomo/logs:/var/www/html/logs
+      # To allow matomo access to apache logs for imports
+      - ./mounts/apache/apache/logs/apache2:/external_logs
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
       
 
 networks:
