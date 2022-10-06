@@ -1,3 +1,4 @@
+mounts/apache/saml/swamid/swamid-idp-transitive.xml
 mounts/traefik/log/*
 mounts/apache/apache/logs/*
 docker-compose.dev.central-logging.yml
@@ -27,7 +28,6 @@ certs/*
 private/*
 node_modules
 mounts/apache/saml/certs
-mounts/apache/saml/swamid
 mounts/postgresql/data
 rstudio-router/node_modules
 gitlab/sp-cert/*
