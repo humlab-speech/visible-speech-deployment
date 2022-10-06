@@ -73,7 +73,7 @@ $config = [
      * also as the technical contact in generated metadata.
      */
     'technicalcontact_name' => 'Administrator',
-    'technicalcontact_email' => 'support@humlab.umu.se',
+    'technicalcontact_email' => getenv('ADMIN_EMAIL'),
 
     /*
      * (Optional) The method by which email is delivered.  Defaults to mail which utilizes the

@@ -38,11 +38,14 @@ services:
       GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      SSP_SALT: $SSP_SALT
+      SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
       TEST_USER_LOGIN_KEY: $TEST_USER_LOGIN_KEY
+      ADMIN_EMAIL: $ADMIN_EMAIL
     volumes:
       #SWAMID
       - "./mounts/apache/saml/swamid/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/apache/saml/swamid/swamid-idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      #- "./mounts/apache/saml/swamid/swamid-idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
       - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
       - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #- "./certs/sp-cert/cert.pem:/etc/certs/sp-cert/cert.pem:Z"
@@ -73,9 +76,9 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
       #SimpleSamlPHP
       - "./mounts/simplesamlphp/simplesamlphp:/var/simplesamlphp:Z"
-      - "./certs/sp-cert/cert.pem:/var/simplesamlphp/cert/server.crt"
-      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.pem"
-      - "./certs/sp-cert/key.pem:/var/simplesamlphp/cert/server.key"
+      - "./certs/ssp-idp-cert/cert.pem:/var/simplesamlphp/cert/server.crt:Z"
+      - "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.pem:Z"
+      #- "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.key"
 
   session-manager:
     image: hs-session-manager-dev
@@ -96,6 +99,7 @@ services:
       LOG_LEVEL: "debug"
     volumes:
       - "./session-manager:/session-manager:Z"
+      - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
       - visp-net
@@ -124,9 +128,8 @@ services:
     hostname: gitlab.$BASE_DOMAIN
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
-      HS_DOMAIN_NAME: $BASE_DOMAIN
-      HS_AUTH_REALM: $AUTH_REALM
-      KEYCLOAK_SIGNING_CERT_FINGERPRINT: $KEYCLOAK_SIGNING_CERT_FINGERPRINT
+      DOMAIN_NAME: $BASE_DOMAIN
+      IDP_SIGNING_CERT_FINGERPRINT: $IDP_SIGNING_CERT_FINGERPRINT
       GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
       GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER: $GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER
       GITLAB_OMNIBUS_CONFIG: |

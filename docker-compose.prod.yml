@@ -23,6 +23,7 @@ services:
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       SSP_SALT: $SSP_SALT
       SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
+      ADMIN_EMAIL: $ADMIN_EMAIL
     volumes:
       #Shibboleth config for KEYCLOAK
       #- "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
@@ -93,9 +94,8 @@ services:
     restart: always
     environment:
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
-      HS_DOMAIN_NAME: $BASE_DOMAIN
-      HS_AUTH_REALM: $AUTH_REALM
-      KEYCLOAK_SIGNING_CERT_FINGERPRINT: $KEYCLOAK_SIGNING_CERT_FINGERPRINT
+      DOMAIN_NAME: $BASE_DOMAIN
+      IDP_SIGNING_CERT_FINGERPRINT: IDP_SIGNING_CERT_FINGERPRINT
       GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
       GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER: $GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER
       GITLAB_OMNIBUS_CONFIG: |
@@ -145,47 +145,6 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
-
-  #keycloak:
-  #  image: hs-keycloak
-  #  build: "./docker/keycloak"
-  #  restart: always
-  #  depends_on:
-  #    - database
-  #  environment:
-  #    KEYCLOAK_USER: $KEYCLOAK_USER
-  #    KEYCLOAK_PASSWORD: $KEYCLOAK_PASSWORD
-  #    KEYCLOAK_FRONTEND_URL: "https://idp.$BASE_DOMAIN/auth/"
-  #    DB_VENDOR: "postgres"
-  #    DB_ADDR: "database"
-  #    DB_USER: "keycloak"
-  #    DB_PASSWORD: $POSTGRES_PASSWORD
-  #    KEYCLOAK_LOGLEVEL: "INFO"
-  #    ROOT_LOGLEVEL: "INFO"
-  #    PROXY_ADDRESS_FORWARDING: "true"
-  #  volumes:
-  #    - "./mounts/keycloak/themes/visp:/opt/jboss/keycloak/themes/visp:Z"
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"
-  #  networks:
-  #    - visp-net
-
-  #database:
-  #  image: postgres:12.5
-  #  restart: always
-  #  environment:
-  #    POSTGRES_USER: keycloak
-  #    POSTGRES_PASSWORD: $POSTGRES_PASSWORD
-  #    POSTGRES_DB: keycloak
-  #    PGDATA: '/pgdata/data'
-  #  ports:
-  #    - 5432:5432
-  #  volumes:
-  #    - "./mounts/postgresql/data:/pgdata:Z"
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"
-  #  networks:
-  #    - visp-net
 
   mongo:
     image: mongo:4.4.12

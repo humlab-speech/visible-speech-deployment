@@ -1,37 +1,20 @@
-if ! command -v docker &> /dev/null
-then
-    echo "Docker could not be found. Please install docker.io"
-    exit
-fi
-if ! command -v php &> /dev/null
-then
-    echo "PHP could not be found. Please install PHP-CLI 7.x"
-    exit
-fi
-
-if ! command -v npm &> /dev/null
-then
-    echo "NPM could not be found. Please install a recent version of nodejs npm."
-    exit
-fi
-
-if ! command -v git &> /dev/null
-then
-    echo "Git could not be found. Please install Git."
-    exit
-fi
-
-if ! command -v openssl &> /dev/null
-then
-    echo "OpenSSL could not be found. Please install OpenSSL."
-    exit
-fi
+echo "Setting up nodejs repo and installing dependencies"
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \ &&
+apt install -y nodejs git openssl docker.io docker-compose
 
 echo "Copy .env-example to .env"
 cp .env-example .env
 
-echo "Generating local self-signed certificate"
-openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650
+echo "Fetching SWAMID metadata signing cert"
+curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
+
+echo "Generating local self-signed certificate for TLS"
+mkdir certs/localtest.me
+openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=localtest.me"
+
+echo "Generating local self-signed certificate for internal IdP"
+mkdir certs/ssp-idp-cert
+openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem -out certs/ssp-idp-cert/cert.pem -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=localtest.me"
 
 echo "Grab latest webclient"
 git clone https://github.com/humlab-speech/webclient
@@ -52,7 +35,11 @@ echo "Install Session-Manager"
 git clone https://github.com/humlab-speech/session-manager
 cd session-manager && npm install && cd ..
 
-echo "Skipping PHP WebApi install"
+echo "Installing SimpleSamlPhp"
+curl -L https://github.com/simplesamlphp/simplesamlphp/releases/download/v1.19.6/simplesamlphp-1.19.6.tar.gz --output simplesamlphp.tar.gz
+tar xzf simplesamlphp.tar.gz && rm simplesamlphp.tar.gz
+mv simplesamlphp-* simplesamlphp
+mv simplesamlphp ./mounts/simplesamlphp/
+cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 
 echo "You should now fill out .env as best you can and then do the rest of the install manually."
-
