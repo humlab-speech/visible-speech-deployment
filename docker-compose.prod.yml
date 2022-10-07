@@ -104,13 +104,8 @@ services:
     volumes:
       - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
       - "$GITLAB_HOME/config:/etc/gitlab:Z"
-      #- "$GITLAB_HOME/apache-logs:/var/log/apache2:Z"
       - "$GITLAB_HOME/gitlab-logs:/var/log/gitlab:Z"
-      #- "$GITLAB_HOME/apache2.conf:/etc/apache2/apache2.conf:Z"
-      #- "$GITLAB_HOME/gitlab-apache24.conf:/etc/apache2/sites-enabled/gitlab-apache24.conf:Z"
-      #- "$GITLAB_HOME/gitlab-apache24-ssl.conf:/etc/apache2/sites-enabled/gitlab-apache24-ssl.conf:Z"
       - "$GITLAB_HOME/public:/opt/gitlab/public:Z"
-      #- "$GITLAB_HOME/envvars:/etc/apache2/envvars:Z"
       - "./certs:/etc/certs:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
