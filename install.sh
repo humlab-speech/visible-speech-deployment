@@ -1,9 +1,11 @@
 echo "Setting up nodejs repo and installing dependencies"
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \ &&
+curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
 apt install -y nodejs git openssl docker.io docker-compose
 
 echo "Copy .env-example to .env"
 cp .env-example .env
+
+mkdir certs
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
@@ -38,8 +40,7 @@ cd session-manager && npm install && cd ..
 echo "Installing SimpleSamlPhp"
 curl -L https://github.com/simplesamlphp/simplesamlphp/releases/download/v1.19.6/simplesamlphp-1.19.6.tar.gz --output simplesamlphp.tar.gz
 tar xzf simplesamlphp.tar.gz && rm simplesamlphp.tar.gz
-mv simplesamlphp-* simplesamlphp
-mv simplesamlphp ./mounts/simplesamlphp/
+mv simplesamlphp-1.19.6 ./mounts/simplesamlphp/
 cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 
 echo "You should now fill out .env as best you can and then do the rest of the install manually."

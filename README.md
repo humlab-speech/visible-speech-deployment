@@ -34,15 +34,7 @@ If you're feeling brave you can try running `sudo ./install.sh` which will autom
 
 ### Steps
 1. Enter into visible-speech-deployment directory. The instructions will assume this is where you are currently standing from now on.
-1. Copy .env-example to .env and fill it out with appropriate information.
-1. Generate some local certificates. These would not be used in production, but we assume a local development installation here. `openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650`
-1. Grab latest webclient `git clone https://github.com/humlab-speech/webclient`
-1. Grab latest webapi `git clone https://github.com/humlab-speech/webapi`
-1. Grab latest container-agent `git clone https://github.com/humlab-speech/container-agent`
-1. Install & build container-agent `cd container-agent && npm install && npm run build && cd ..`
-1. Install & build webclient `cd webclient && npm install && npm run build && cd ..`
-1. Install Session-Manager `git clone https://github.com/humlab-speech/session-manager`
-1. Fill out your `.env` file with the appropriate information, if you haven't already.
+1. Fill out your `.env` file with the appropriate information.
 1. Go to docker/session-manager and run `build-session-images.sh`. This will take some time and it's fine if this isn't completed before you proceed, so you might want to do this in a separate terminal.
 1. Run `docker-compose up -d`
 1. Got to the control panel for MongoDB at http://localhost:8081 and create a new database called `visp` with a collection called `personal_access_tokens`
@@ -71,3 +63,13 @@ For a production setup you might want to add your organization as an identity pr
 
 ## TROUBLESHOOTING
 * For errors about proxy timeouts when visiting gitlab, just wait a few minutes, gitlab takes a while to start.
+
+## Manual installation
+These are the steps performed by the install script:
+1. Copy .env-example to .env and fill it out with appropriate information.
+1. Generate some local certificates. These would not be used in production, but we assume a local development installation here. `openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/c>1. Grab latest webclient `git clone https://github.com/humlab-speech/webclient`
+1. Grab latest webapi `git clone https://github.com/humlab-speech/webapi`
+1. Grab latest container-agent `git clone https://github.com/humlab-speech/container-agent`
+1. Install & build container-agent `cd container-agent && npm install && npm run build && cd ..`
+1. Install & build webclient `cd webclient && npm install && npm run build && cd ..`
+1. Install Session-Manager `git clone https://github.com/humlab-speech/session-manager`
