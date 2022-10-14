@@ -43,4 +43,7 @@ tar xzf simplesamlphp.tar.gz && rm simplesamlphp.tar.gz
 mv simplesamlphp-1.19.6 ./mounts/simplesamlphp/
 cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 
+echo "Setting directory permissions"
+./set_permissions.sh
+
 echo "You should now fill out .env as best you can and then do the rest of the install manually."
