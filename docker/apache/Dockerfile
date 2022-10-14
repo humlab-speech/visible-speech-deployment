@@ -23,6 +23,7 @@ RUN mkdir -p /var/log/api && chmod 0644 /var/log/api && chown www-data /var/log/
 COPY ./wait-for-it.sh /wait-for-it.sh
 
 COPY ./idpFp.sh /idpFp.sh
+RUN chmod +x /idpFp.sh
 
 #CMD bash -c "/wait-for-it.sh -t 60 keycloak:8080 -- /etc/init.d/shibd start" && /usr/sbin/apache2 -DFOREGROUND
 CMD bash -c "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"
