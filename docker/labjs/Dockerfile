@@ -1,6 +1,12 @@
 FROM httpd:2.4
 
-RUN apt-get update && apt-get install -y curl nano git yarnpkg
+RUN apt-get update && apt-get install -y curl nano git
+
+RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
+
+RUN apt-get install -y nodejs
+
+RUN apt-get install -y yarnpkg
 
 RUN mkdir /build
 
