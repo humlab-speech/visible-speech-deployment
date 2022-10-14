@@ -185,15 +185,15 @@ services:
   #  networks:
   #    - visp-net
 
-  labjs:
-    image: hs-labjs
-    build: "./docker/labjs"
-    restart: unless-stopped
-    volumes:
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"      
-    networks:
-      - visp-net
+  #labjs:
+  #  image: hs-labjs
+  #  build: "./docker/labjs"
+  #  restart: unless-stopped
+  #  volumes:
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"      
+  #  networks:
+  #    - visp-net
 
   #keycloak:
   #  image: hs-keycloak
