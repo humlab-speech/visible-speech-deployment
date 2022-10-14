@@ -29,11 +29,9 @@ A Linux environment based on Debian or Ubuntu.
 
 If you are using WSL2, you will run into issues if you put this project inside an NTFS mount, such as `/mnt/c`, use a location inside the WSL2 container instead, such as `~/`. Note that you need to have docker and docker-compose available.
 
-## Quickstart
-If you're feeling brave you can try running `sudo ./install.sh` which will automate some of the below steps. You may then skip to step 10 (filling out the .env file).
-
 ### Steps
 1. Enter into visible-speech-deployment directory. The instructions will assume this is where you are currently standing from now on.
+1. RUN `sudo install.sh`
 1. Fill out your `.env` file with the appropriate information.
 1. Go to docker/session-manager and run `build-session-images.sh`. This will take some time and it's fine if this isn't completed before you proceed, so you might want to do this in a separate terminal.
 1. Run `docker-compose up -d`
@@ -44,6 +42,7 @@ If you're feeling brave you can try running `sudo ./install.sh` which will autom
   * Go to `Access Tokens`.
   * Create an access token with `api` access. Name doesn't matter. Enter this access token into your .env 
   * Edit .env and set `GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER=saml` (revert this if you need to login as root at some future point)
+1. RUN `docker-compose exec apache bash /idpFp.sh` to get your internal IdP fingerprint and use this to fill in `IDP_SIGNING_CERT_FINGERPRINT` in .env.
 1. Keycloak setup
   * Go to Keycloak at https://idp.localtest.me
   * Sign-in with the keycloak admin credentials you specified in .env
