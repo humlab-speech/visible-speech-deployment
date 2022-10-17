@@ -5,6 +5,12 @@ apt install -y nodejs git openssl docker.io docker-compose
 echo "Copy .env-example to .env"
 cp .env-example .env
 
+echo "Creating session-manager log"
+touch  mounts/session-manager/session-manager.log
+#session-manager is run inside a container based on node and the node user id is 1000
+chown 1000 mounts/session-manager/session-manager.log
+chmod 0644  mounts/session-manager/session-manager.log
+
 mkdir certs
 
 echo "Fetching SWAMID metadata signing cert"
