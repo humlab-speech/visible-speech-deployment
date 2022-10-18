@@ -55,7 +55,13 @@
  
         <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
  
-        <CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem"/>
+        <!--<CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem"/>-->
+
+        <CredentialResolver type="Chaining">
+          <CredentialResolver type="File" key="/etc/certs/sp-cert/signing-cert.key" certificate="/etc/certs/sp-cert/signing-cert.crt" use="signing"/>
+          <CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem" use="encryption"/>
+        </CredentialResolver>
+
     </ApplicationDefaults>
     <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
  
