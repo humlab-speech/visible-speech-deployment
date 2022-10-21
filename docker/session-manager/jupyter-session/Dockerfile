@@ -1,4 +1,4 @@
-FROM jupyter/datascience-notebook:r-4.1.3
+FROM jupyter/datascience-notebook:r-4.2.1
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="The Jupyter session image, which is instantiated when a new Jupyter session is spawned in the VISP interface"
@@ -8,7 +8,7 @@ USER root
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
 RUN apt-get update
-RUN apt-get install -y zlib1g-dev nano curl libnode64 libnode-dev r-cran-v8
+RUN apt-get install -y zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8
 
 #Not sure why I have to manually link in libv8 like this, but ld fails otherwise when trying to build V8 (which is a dep of emuR)
 WORKDIR /opt/conda/lib
@@ -38,9 +38,21 @@ RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependenci
 RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
 
 RUN pip install --upgrade pip
-RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-RUN pip install https://github.com/pyannote/pyannote-audio/archive/develop.zip
-RUN pip install speechbrain pyreaper pysptk
+RUN pip install --prefer-binary numpy
+RUN pip install --prefer-binary torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --prefer-binary https://github.com/pyannote/pyannote-audio/archive/develop.zip
+RUN pip install --prefer-binary speechbrain 
+RUN pip install --prefer-binary opensmile
+RUN pip install --prefer-binary librosa torchcrepe
+RUN pip install --prefer-binary pyworld
+RUN pip install --prefer-binary amfm_decompy
+
+# Special solution due to submodule in project, consider another approach down the line
+RUN git clone --recursive https://github.com/r9y9/pyreaper
+RUN pip install ./pyreaper/ && rm -rf pyreaper
+RUN git clone --recursive https://github.com/r9y9/pysptk
+RUN pip install ./pysptk/ && rm -rf pysptk
+
 
 RUN mkdir /matlab_install
 
