@@ -11,7 +11,11 @@ touch  mounts/session-manager/session-manager.log
 chown 1000 mounts/session-manager/session-manager.log
 chmod 0644  mounts/session-manager/session-manager.log
 
+mkdir mounts/webapi
+mkdir mounts/apache/apache/uploads
+mkdir mounts/mongo
 mkdir certs
+mkdir mounts/session-manager
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
