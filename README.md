@@ -31,7 +31,7 @@ If you are using WSL2, you will run into issues if you put this project inside a
 
 ### Steps
 1. Enter into visible-speech-deployment directory. The instructions will assume this is where you are currently standing from now on.
-1. RUN `sudo install.sh`
+1. RUN `sudo ./install.sh`
 1. Fill out your `.env` file with the appropriate information.
 1. Go to docker/session-manager and run `build-session-images.sh`. This will take some time and it's fine if this isn't completed before you proceed, so you might want to do this in a separate terminal.
 1. Run `docker-compose up -d`
