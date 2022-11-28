@@ -46,13 +46,14 @@ RUN pip install --prefer-binary opensmile
 RUN pip install --prefer-binary librosa torchcrepe
 RUN pip install --prefer-binary pyworld
 RUN pip install --prefer-binary amfm_decompy
+RUN pip install --prefer-binary tensorflow
+RUN pip install --prefer-binary tensorflow_hub
 
 # Special solution due to submodule in project, consider another approach down the line
 RUN git clone --recursive https://github.com/r9y9/pyreaper
 RUN pip install ./pyreaper/ && rm -rf pyreaper
 RUN git clone --recursive https://github.com/r9y9/pysptk
 RUN pip install ./pysptk/ && rm -rf pysptk
-
 
 RUN mkdir /matlab_install
 
