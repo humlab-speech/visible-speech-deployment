@@ -549,13 +549,13 @@ gitlab_rails['omniauth_providers'] = [
   label: 'Single Sign-On',
   args: {
              name: 'saml',
-             assertion_consumer_service_url: 'https://gitlab.'+ENV["DOMAIN_NAME"]+'/users/auth/saml/callback',
+             assertion_consumer_service_url: ENV["HTTP_PROTOCOL"]+'://gitlab.'+ENV["DOMAIN_NAME"]+'/users/auth/saml/callback',
              idp_cert_fingerprint: ENV["IDP_SIGNING_CERT_FINGERPRINT"],
-             idp_sso_target_url: 'https://idp.'+ENV["DOMAIN_NAME"]+'/saml2/idp/SSOService.php',
-             idp_slo_service_url: 'https://gitlab.'+ENV["DOMAIN_NAME"]+'/users/auth/saml/spslo',
-             single_logout_service_url: 'https://gitlab.'+ENV["DOMAIN_NAME"]+'/auth/saml/slo',
+             idp_sso_target_url: ENV["HTTP_PROTOCOL"]+'://idp.'+ENV["DOMAIN_NAME"]+'/saml2/idp/SSOService.php',
+             #idp_slo_service_url: 'https://idp.'+ENV["DOMAIN_NAME"]+'/',
+             single_logout_service_url: ENV["HTTP_PROTOCOL"]+'://gitlab.'+ENV["DOMAIN_NAME"]+'/auth/saml/slo',
              #single_logout_service_url: 'http://gitlab/auth/saml/slo',
-             issuer: 'https://gitlab.'+ENV["DOMAIN_NAME"],
+             issuer: ENV["HTTP_PROTOCOL"]+'://gitlab.'+ENV["DOMAIN_NAME"],
              name_identifier_format: 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
              attribute_statements: { first_name: ['firstName'], last_name: ['lastName'], nickname: ['username'], email: ['email'] }
            }
@@ -1431,7 +1431,7 @@ nginx['proxy_connect_timeout'] = 300
   "Host" => "$http_host_with_default",
   "X-Real-IP" => "$remote_addr",
   "X-Forwarded-For" => "$proxy_add_x_forwarded_for",
-  "X-Forwarded-Proto" => "https",
+  "X-Forwarded-Proto" => ENV["HTTP_PROTOCOL"],
   "X-Forwarded-Ssl" => "on",
   "Upgrade" => "$http_upgrade",
   "Connection" => "$connection_upgrade"

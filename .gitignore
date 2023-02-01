@@ -54,3 +54,10 @@ kc-realm-export.json
 mounts/mongo/data/
 mounts/mongo/logs/
 mounts/matomo/config
+mounts/simplesamlphp
+mounts/session-manager
+session-manager
+mounts/gitlab/gitlab-logs
+restart-wsrng-server.sh
+run_git_clone_in_container.sh
+wsrng-server

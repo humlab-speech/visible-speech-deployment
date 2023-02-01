@@ -8,7 +8,7 @@
     <ApplicationDefaults entityID="https://visp-demo.humlab.umu.se" REMOTE_USER="eppn persistent-id targeted-id" metadataAttributePrefix="Meta-">
  
         <Sessions lifetime="28800" timeout="3600" relayState="ss:mem"
-                  checkAddress="false" handlerSSL="true" cookieProps="https">
+                  checkAddress="false" handlerSSL="true" cookieProps="https" redirectLimit="exact">
  
            <Logout asynchronous="false">SAML2 Local</Logout>
  

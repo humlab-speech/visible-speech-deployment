@@ -1,0 +1,11 @@
+tls:
+  certificates:
+    - certFile: "/certs/visp.local/cert.crt"
+      keyFile: "/certs/visp.local/cert.key"
+      stores:
+        - default
+  stores:
+    default:
+      defaultCertificate:
+        certFile: "/certs/visp.local/cert.crt"
+        keyFile: "/certs/visp.local/cert.key"

@@ -27,7 +27,7 @@ $config = [
      * external url, no matter where you come from (direct access or via the
      * reverse proxy).
      */
-    'baseurlpath' => 'https://idp.'.getenv('HS_DOMAIN_NAME').'/',
+    'baseurlpath' => getenv('HTTP_PROTOCOL').'://idp.'.getenv('HS_DOMAIN_NAME').'/',
 
     /*
      * The 'application' configuration array groups a set configuration options
@@ -199,7 +199,7 @@ $config = [
      * https://idp.example.org/ssp/, then
      * http://idp.example.org/ssp/module.php/core/postredirect.php must be accessible.
      */
-    'enable.http_post' => false,
+    'enable.http_post' => getenv('HTTP_PROTOCOL') == "http" ? true : false,
 
     /*
      * Set the allowed clock skew between encrypting/decrypting assertions
@@ -568,7 +568,7 @@ $config = [
      * through https. If the user can access the service through
      * both http and https, this must be set to FALSE.
      */
-    'session.cookie.secure' => true,
+    'session.cookie.secure' => getenv('HTTP_PROTOCOL') == "https" ? true : false,
 
     /*
      * Set the SameSite attribute in the cookie.
@@ -587,7 +587,7 @@ $config = [
      * Example:
      *  'session.cookie.samesite' => 'None',
      */
-    'session.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? 'None' : null,
+    'session.cookie.samesite' => \SimpleSAML\Utils\HTTP::canSetSameSiteNone() ? null : null, //used to be: 'None' : null
 
     /*
      * Options to override the default settings for php sessions.

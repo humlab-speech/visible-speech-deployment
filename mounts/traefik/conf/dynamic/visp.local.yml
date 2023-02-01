@@ -1,0 +1,28 @@
+http:
+  middlewares:
+    hirdRedirectSchemeMiddleware:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    hirdRouterHttp:
+      rule: "Host(`visp.local`) || Host(`gitlab.visp.local`) || Host(`idp.visp.local`) || Host(`app.visp.local`) || Host(`labjs.visp.local`) || Host(`octra.visp.local`) || Host(`emu-webapp.visp.local`) || Host(`matomo.visp.local`)"
+      #middlewares:
+      #- humlabRedirectSchemeMiddleware
+      service: hirdService
+    hirdRouterHttps:
+      rule: "Host(`visp.local`) || Host(`gitlab.visp.local`) || Host(`idp.visp.local`) || Host(`app.visp.local`) || Host(`labjs.visp.local`) || Host(`octra.visp.local`) || Host(`emu-webapp.visp.local`) || Host(`matomo.visp.local`)"
+      service: hirdService
+      tls: {}
+      #tls:
+      #  cert: /certs/visp.local/cert.crt
+      #  key: /certs/visp.local/cert.key
+      #  insecureSkipVerify: true
+      #  #certResolver: cr1
+  services:
+    hirdService:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://apache:80"
+          

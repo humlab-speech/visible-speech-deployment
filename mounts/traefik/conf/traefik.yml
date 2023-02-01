@@ -34,7 +34,7 @@ entryPoints:
 providers:
   file:
     directory: "/etc/traefik/dynamic"
-
+    watch: true
 
 http:
   middlewares:
@@ -46,3 +46,15 @@ http:
     api:
       rule: "PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
       service: api@internal
+
+#tls:
+#  certificates:
+#    - certFile: "/certs/visp.local/cert.crt"
+#      keyFile: "/certs/visp.local/cert.key"
+#      stores:
+#        - default
+#  stores:
+#    default:
+#      defaultCertificate:
+#        certFile: "/certs/visp.local/cert.crt"
+#        keyFile: "/certs/visp.local/cert.key"

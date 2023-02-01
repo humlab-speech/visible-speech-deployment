@@ -1,0 +1,24 @@
+http:
+  middlewares:
+    hirdRedirectSchemeMiddleware:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    hirdRouterHttp:
+      rule: "Host(`localhost`) || Host(`localtest.me`) || Host(`gitlab.localtest.me`) || Host(`idp.localtest.me`) || Host(`app.localtest.me`) || Host(`labjs.localtest.me`) || Host(`octra.localtest.me`) || Host(`emu-webapp.localtest.me`) || Host(`matomo.localtest.me`)"
+      middlewares:
+      - hirdRedirectSchemeMiddleware
+      service: hirdService
+    hirdRouterHttps:
+      rule: "Host(`localhost`) || Host(`localtest.me`) || Host(`gitlab.localtest.me`) || Host(`idp.localtest.me`) || Host(`app.localtest.me`) || Host(`labjs.localtest.me`) || Host(`octra.localtest.me`) || Host(`emu-webapp.localtest.me`) || Host(`matomo.localtest.me`)"
+      service: hirdService
+      tls:
+        certResolver: cr1
+  services:
+    hirdService:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://apache:80"
+          

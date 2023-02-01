@@ -11,6 +11,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
+      - "./certs:/certs:ro"
     ports:
       - $HTTP_PORT:80
       - $HTTPS_PORT:443
@@ -25,9 +26,13 @@ services:
     restart: unless-stopped
     #depends_on:
     #  - keycloak
+    #ports:
+    #  - $HTTP_PORT:80
+    #  - $HTTPS_PORT:443
     networks:
       - visp-net
     environment:
+      HTTP_PROTOCOL: $HTTP_PROTOCOL
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
       HS_DOMAIN_NAME: $BASE_DOMAIN
@@ -126,13 +131,14 @@ services:
       - visp-net
     hostname: gitlab.$BASE_DOMAIN
     environment:
+      HTTP_PROTOCOL: $HTTP_PROTOCOL
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       DOMAIN_NAME: $BASE_DOMAIN
       IDP_SIGNING_CERT_FINGERPRINT: $IDP_SIGNING_CERT_FINGERPRINT
       GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
       GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER: $GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'https://gitlab.$BASE_DOMAIN'
+        external_url '$HTTP_PROTOCOL://gitlab.$BASE_DOMAIN'
         gitlab_rails['initial_root_password'] = '$GITLAB_ROOT_PASSWORD'
     volumes:
       - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
@@ -177,13 +183,13 @@ services:
   #  networks:
   #    - visp-net
 
-  #wsr-server:
-  #  image: hs-wsr-server
-  #  build: "./docker/hs-wsr-server"
-  #  volumes:
-  #    - "./hs-wsr-server:/hs-wsr-server:Z"
-  #  networks:
-  #    - visp-net
+  wsrng-server:
+    #image: wsrng-server
+    build: "./docker/wsrng-server"
+    volumes:
+      - "./wsrng-server:/wsrng-server:Z"
+    networks:
+      - visp-net
 
   #labjs:
   #  image: hs-labjs
@@ -263,77 +269,77 @@ services:
     networks:
       - visp-net
 
-  elastic-agent:
-    image: elastic/elastic-agent:7.16.2
-    hostname: $ELASTIC_AGENT_REPORTED_HOSTNAME
-    restart: unless-stopped
-    user: root
-    environment:
-      - FLEET_ENROLLMENT_TOKEN=$ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN
-      - FLEET_ENROLL=1
-      - FLEET_URL=$ELASTIC_AGENT_FLEET_URL
-    volumes:
-      - "/var/log/auth.log:/var/log/auth.log:ro"
-      - "./mounts/session-manager/session-manager.log:/logs/session-manager.log:ro"
-      - "./mounts/apache/apache/logs/apache2:/logs/apache2:ro"
-      - "./mounts/apache/apache/logs/shibboleth:/logs/shibboleth:ro"
-      - "./mounts/gitlab/apache-logs:/logs/gitlab-apache:ro"
-      - "./mounts/gitlab/shibboleth-logs:/logs/gitlab-shibboleth:ro"
-      - "./mounts/gitlab/logs:/logs/gitlab:ro"
-      - "./mounts/traefik/log:/logs/traefik:ro"
-      - "./mounts/webapi/logs:/logs/webapi:ro"
-      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
-      - "/var/run/docker.sock:/var/run/docker.sock:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"      
-    networks:
-      - visp-net
+#  elastic-agent:
+#    image: elastic/elastic-agent:7.16.2
+#    hostname: $ELASTIC_AGENT_REPORTED_HOSTNAME
+#    restart: unless-stopped
+#    user: root
+#    environment:
+#      - FLEET_ENROLLMENT_TOKEN=$ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN
+#      - FLEET_ENROLL=1
+#      - FLEET_URL=$ELASTIC_AGENT_FLEET_URL
+#    volumes:
+#      - "/var/log/auth.log:/var/log/auth.log:ro"
+#      - "./mounts/session-manager/session-manager.log:/logs/session-manager.log:ro"
+#      - "./mounts/apache/apache/logs/apache2:/logs/apache2:ro"
+#      - "./mounts/apache/apache/logs/shibboleth:/logs/shibboleth:ro"
+#      - "./mounts/gitlab/apache-logs:/logs/gitlab-apache:ro"
+#      - "./mounts/gitlab/shibboleth-logs:/logs/gitlab-shibboleth:ro"
+#      - "./mounts/gitlab/logs:/logs/gitlab:ro"
+#      - "./mounts/traefik/log:/logs/traefik:ro"
+#      - "./mounts/webapi/logs:/logs/webapi:ro"
+#      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+#      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+#      - "/etc/timezone:/etc/timezone:ro"
+#      - "/etc/localtime:/etc/localtime:ro"      
+#    networks:
+#      - visp-net
 
-  vscode:
-    image: linuxserver/code-server:version-v3.11.1
-    environment:
-      PUID: 1000
-      PGID: 1000
-      TZ: Europe/Stockholm
-      PROXY_DOMAIN: vscode.$BASE_DOMAIN
-    volumes:
-      - "./mounts/vscode/config:/config"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+#  vscode:
+#    image: linuxserver/code-server:version-v3.11.1
+#    environment:
+#      PUID: 1000
+#      PGID: 1000
+#      TZ: Europe/Stockholm
+#      PROXY_DOMAIN: vscode.$BASE_DOMAIN
+#    volumes:
+#      - "./mounts/vscode/config:/config"
+#      - "/etc/timezone:/etc/timezone:ro"
+#      - "/etc/localtime:/etc/localtime:ro"
+#    networks:
+#      - visp-net
 
-  matomo-db:
-    image: mariadb:10.3
-    restart: unless-stopped
-    networks:
-      - visp-net
-    volumes:
-      - /mounts/matomo-db/mysql:/var/lib/mysql
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MATOMO_DB_NAME}
-      MYSQL_USER: ${MATOMO_DB_USER}
-      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}    
+#  matomo-db:
+#    image: mariadb:10.3
+#    restart: unless-stopped
+#    networks:
+#      - visp-net
+#    volumes:
+#      - /mounts/matomo-db/mysql:/var/lib/mysql
+#      - "/etc/timezone:/etc/timezone:ro"
+#      - "/etc/localtime:/etc/localtime:ro"
+#    environment:
+#      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+#      MYSQL_DATABASE: ${MATOMO_DB_NAME}
+#      MYSQL_USER: ${MATOMO_DB_USER}
+#      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}    
 
-  matomo:
-    image: matomo:4.8.0
-    restart: unless-stopped
-    depends_on:
-      - matomo-db
-    networks:
-      - visp-net
-    volumes:
-      # To allow you to view/edit Matomo configuration files:
-      - ./mounts/matomo/config:/var/www/html/config:rw
-      # To allow you to easily view Matomo log files:
-      - ./mounts/matomo/logs:/var/www/html/logs
-      # To allow matomo access to apache logs for imports
-      - ./mounts/apache/apache/logs/apache2:/external_logs
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
+#  matomo:
+#    image: matomo:4.8.0
+#    restart: unless-stopped
+#    depends_on:
+#      - matomo-db
+#    networks:
+#      - visp-net
+#    volumes:
+#      # To allow you to view/edit Matomo configuration files:
+#      - ./mounts/matomo/config:/var/www/html/config:rw
+#      # To allow you to easily view Matomo log files:
+#      - ./mounts/matomo/logs:/var/www/html/logs
+#      # To allow matomo access to apache logs for imports
+#      - ./mounts/apache/apache/logs/apache2:/external_logs
+#      - "/etc/timezone:/etc/timezone:ro"
+#      - "/etc/localtime:/etc/localtime:ro"
 
 
 networks:

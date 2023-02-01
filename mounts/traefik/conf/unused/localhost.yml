@@ -1,0 +1,24 @@
+http:
+  middlewares:
+    hirdRedirectSchemeMiddleware:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    hirdRouterHttp:
+      rule: "Host(`localhost`) || Host(`gitlab.localhost`) || Host(`idp.localhost`) || Host(`app.localhost`) || Host(`labjs.localhost`) || Host(`octra.localhost`) || Host(`emu-webapp.localhost`) || Host(`matomo.localhost`)"
+      middlewares:
+      - hirdRedirectSchemeMiddleware
+      service: hirdService
+    hirdRouterHttps:
+      rule: "Host(`localhost`) || Host(`gitlab.localhost`) || Host(`idp.localhost`) || Host(`app.localhost`) || Host(`labjs.localhost`) || Host(`octra.localhost`) || Host(`emu-webapp.localhost`) || Host(`matomo.localhost`)"
+      service: hirdService
+      tls:
+        certResolver: cr1
+  services:
+    hirdService:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://apache:80"
+          

@@ -27,7 +27,7 @@ $config = [
      * external url, no matter where you come from (direct access or via the
      * reverse proxy).
      */
-    'baseurlpath' => 'https://idp.'.getenv('HS_DOMAIN_NAME').'/',
+    'baseurlpath' => getenv('HTTP_PROTOCOL').'://idp.'.getenv('HS_DOMAIN_NAME').'/',
 
     /*
      * The 'application' configuration array groups a set configuration options

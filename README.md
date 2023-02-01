@@ -30,6 +30,7 @@ A Linux environment based on Debian or Ubuntu.
 If you are using WSL2, you will run into issues if you put this project inside an NTFS mount, such as `/mnt/c`, use a location inside the WSL2 container instead, such as `~/`. Note that you need to have docker and docker-compose available.
 
 ### Steps
+1. If you are running this locally (which is assumed here), you need to add this line to the windows hosts file (C:\Windows\System32\drivers\etc\hosts): `127.0.0.1			visp.local gitlab.visp.local idp.visp.local app.visp.local emu-webapp.visp.local octra.visp.local`
 1. Enter into visible-speech-deployment directory. The instructions will assume this is where you are currently standing from now on.
 1. RUN `sudo ./install.sh`
 1. Fill out your `.env` file with the appropriate information.
