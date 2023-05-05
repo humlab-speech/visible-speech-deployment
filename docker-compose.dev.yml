@@ -105,6 +105,7 @@ services:
     volumes:
       - "./session-manager:/session-manager:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
+      - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
     networks:
       - visp-net
@@ -186,6 +187,8 @@ services:
   wsrng-server:
     #image: wsrng-server
     build: "./docker/wsrng-server"
+    environment:
+      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
     volumes:
       - "./wsrng-server:/wsrng-server:Z"
     networks:

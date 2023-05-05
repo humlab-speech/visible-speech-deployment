@@ -79,6 +79,7 @@ services:
     volumes:
       - "./mounts/apache/apache/uploads:/mounts/apache/apache/uploads:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
+      - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"

@@ -5,11 +5,11 @@ http:
         scheme: https
         permanent: true
   routers:
-    hirdRouterHttp:
-      rule: "Host(`visp.local`) || Host(`gitlab.visp.local`) || Host(`idp.visp.local`) || Host(`app.visp.local`) || Host(`labjs.visp.local`) || Host(`octra.visp.local`) || Host(`emu-webapp.visp.local`) || Host(`matomo.visp.local`)"
-      #middlewares:
-      #- humlabRedirectSchemeMiddleware
-      service: hirdService
+    #hirdRouterHttp:
+    #  rule: "Host(`visp.local`) || Host(`gitlab.visp.local`) || Host(`idp.visp.local`) || Host(`app.visp.local`) || Host(`labjs.visp.local`) || Host(`octra.visp.local`) || Host(`emu-webapp.visp.local`) || Host(`matomo.visp.local`)"
+    #  middlewares:
+    #  - humlabRedirectSchemeMiddleware
+    #  #service: hirdService
     hirdRouterHttps:
       rule: "Host(`visp.local`) || Host(`gitlab.visp.local`) || Host(`idp.visp.local`) || Host(`app.visp.local`) || Host(`labjs.visp.local`) || Host(`octra.visp.local`) || Host(`emu-webapp.visp.local`) || Host(`matomo.visp.local`)"
       service: hirdService
