@@ -94,6 +94,7 @@ services:
     hostname: gitlab.$BASE_DOMAIN
     restart: always
     environment:
+      HTTP_PROTOCOL: $HTTP_PROTOCOL
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       DOMAIN_NAME: $BASE_DOMAIN
       IDP_SIGNING_CERT_FINGERPRINT: $IDP_SIGNING_CERT_FINGERPRINT
