@@ -1,6 +1,6 @@
 #!/bin/bash
 
-read -p "This will install the VISP system, assuming a production setup. The installation will seriously mess up any existing install. Do you wish to continue? (Y/N): " answer
+read -p "This will install the VISP system, assuming a development setup. The installation will seriously mess up any existing install. Do you wish to continue? (Y/N): " answer
 
 if [[ $answer == [Yy] ]]; then
     echo "Very well."
@@ -15,9 +15,9 @@ set -e
 
 sleep 2
 
-echo "Installing dependencies"
+echo "Setting up nodejs repo and installing dependencies"
 #curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-apt install -y git openssl docker.io docker-compose
+apt install -y nodejs git openssl docker.io docker-compose
 
 echo "Copy .env-example to .env"
 cp .env-example .env
@@ -39,11 +39,11 @@ curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
 
 echo "Generating local self-signed certificate for TLS"
 mkdir certs/localtest.me
-openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"
+openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=localtest.me"
 
 echo "Generating local self-signed certificate for internal IdP"
 mkdir certs/ssp-idp-cert
-openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem -out certs/ssp-idp-cert/cert.pem -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"
+openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem -out certs/ssp-idp-cert/cert.pem -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=localtest.me"
 
 echo "Grabbing latest webclient"
 git clone https://github.com/humlab-speech/webclient

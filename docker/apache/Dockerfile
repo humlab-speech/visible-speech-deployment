@@ -1,12 +1,20 @@
 FROM debian:bullseye
 
-LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
+ENV WEBCLIENT_BUILD=visp-build
 
-LABEL description="A debian based installation of apache with shibboleth, acting as the Humlab Speech edge-router and authentication layer"
+LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
+LABEL description="A debian based installation of apache with shibboleth, acting as the VISP webserver, router and authentication layer"
+
+#add nodejs repo
+RUN apt-get update
+RUN apt-get install -y ca-certificates curl gnupg
+RUN mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+ENV NODE_MAJOR=20
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
-#docker.io is for being able to manipulate containers in the outside cluster - for rstudio session containers initially
-RUN apt-get update && apt-get install apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php docker.io nano curl php-mbstring php-mongodb php-zip php-xml php-pgsql --no-install-recommends -y
+RUN apt-get update && apt-get install git nodejs apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php nano curl php-mbstring php-mongodb php-zip php-xml php-pgsql --no-install-recommends -y
 
 RUN a2enmod proxy proxy_http ssl headers php7.4 rewrite proxy_wstunnel
 
@@ -20,12 +28,15 @@ ENV LANG=C
 
 RUN mkdir -p /var/log/api && chmod 0644 /var/log/api && chown www-data /var/log/api
 
-COPY ./wait-for-it.sh /wait-for-it.sh
-
 COPY ./idpFp.sh /idpFp.sh
 RUN chmod +x /idpFp.sh
 
-#CMD bash -c "/wait-for-it.sh -t 60 keycloak:8080 -- /etc/init.d/shibd start" && /usr/sbin/apache2 -DFOREGROUND
+WORKDIR /
+RUN git clone https://github.com/humlab-speech/webclient
+RUN cd webclient && npm install
+RUN npm run $WEBCLIENT_BUILD
+RUN mv webclient/dist /var/www/html
+
 CMD bash -c "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"
 
 EXPOSE 80

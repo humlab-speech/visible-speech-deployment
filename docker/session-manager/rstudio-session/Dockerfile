@@ -1,88 +1,104 @@
-FROM rocker/rstudio:4.0.5
+
+# Stage 1: Base
+FROM rocker/rstudio:4 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
-LABEL description="The RStudio session image, which is instantiated when a new RStudio session is spawned in the VISP interface"
+LABEL description="The Rstudio session image, which is instantiated when a new Jupyter session is spawned in the VISP interface"
 
-RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
+USER root
 
-RUN apt-get update && apt-get install -y curl
+COPY Miniconda3-latest-Linux-x86_64.sh ./
+RUN bash ./Miniconda3-latest-Linux-x86_64.sh -b
+RUN /root/miniconda3/bin/conda install mamba -n base -c conda-forge
 
-#Get nodejs so we can run the git-agent
-RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
-RUN apt-get update
+RUN rm /etc/localtime && \
+    ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
+    apt-get update && \
+    apt-get install -y zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8 libavfilter-dev libfontconfig1-dev libxml2-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev cmake python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    /root/miniconda3/bin/mamba install -y -c conda-forge r-av && \
+    /root/miniconda3/bin/conda clean -a -y
 
-RUN apt-get install -y zlib1g-dev nano docker.io r-cran-git2r libgit2-28 nodejs
+WORKDIR /opt/conda/lib
+RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
+    ln -s /usr/lib/x86_64-linux-gnu/libv8_libplatform.so ./
 
-RUN echo 'install.packages("emuR")' | R
-RUN echo 'install.packages("openxlsx")' | R
-RUN echo 'install.packages("ggpubr")' | R
-RUN echo 'install.packages("gt")' | R
-RUN echo 'install.packages("tidyverse")' | R
-RUN echo 'install.packages("tidymodels")' | R
-RUN echo 'install.packages("devtools")' | R
-RUN echo 'install.packages("rPraat")' | R
+WORKDIR /home/rstudio
 
-#RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R
-#RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R
-#RUN echo 'library(devtools); install_github("humlab-speech/reindeer",dependencies = "Imports")' | R
-##RUN echo 'library(devtools); install_github("humlab-speech/eloquent.researcher",dependencies = "Imports")' | R
-#RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
+# Stage 2: R packages
+FROM base AS r_packages
 
-RUN echo 'library(devtools); install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R
-RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R
-RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R
-RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
+RUN echo 'chooseCRANmirror(graphics=FALSE, ind=62);install.packages(c("git2r", "openxlsx", "ggpubr", "gt", "tidyverse", "tidymodels", "devtools"), Ncpus = 6)' | R --save && \
+    echo 'devtools::install_github("IPS-LMU/emuR",dependencies = "Imports")' | R --save && \
+    echo 'devtools::install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R --save && \
+    echo 'devtools::install_github("tjmahr/tjm.praat")' | R --save && \
+    echo 'devtools::install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save && \
+    echo 'devtools::install_github("humlab-speech/reindeer", dependencies = TRUE)' | R --save && \
+    echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
 
-RUN apt install -y python3-pip libsndfile1
-RUN pip install --upgrade pip
-RUN pip install --prefer-binary numpy 
-RUN pip install --prefer-binary torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-RUN pip install --prefer-binary https://github.com/pyannote/pyannote-audio/archive/develop.zip
-RUN pip install --prefer-binary speechbrain 
-RUN pip install --prefer-binary opensmile
-RUN pip install --prefer-binary librosa torchcrepe
-RUN pip install --prefer-binary pyworld
-RUN pip install --prefer-binary amfm_decompy
-RUN pip install --prefer-binary tensorflow
-RUN pip install --prefer-binary tensorflow_hub
+# Stage 3: Python packages
+FROM r_packages AS python_packages
 
-# Special solution due to submodule in project, consider another approach down the line
-RUN git clone --recursive https://github.com/r9y9/pyreaper
-RUN pip install ./pyreaper/ && rm -rf pyreaper
-RUN git clone --recursive https://github.com/r9y9/pysptk
-RUN pip install ./pysptk/ && rm -rf pysptk
+RUN pip install --upgrade pip && \
+    pip install --prefer-binary numpy && \
+    pip install --prefer-binary torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu && \
+    pip install --prefer-binary https://github.com/pyannote/pyannote-audio/archive/develop.zip && \
+    pip install --prefer-binary speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub && \
+    git clone --recursive https://github.com/r9y9/pyreaper && \
+    pip install ./pyreaper/ && rm -rf pyreaper && \
+    git clone --recursive https://github.com/r9y9/pysptk && \
+    pip install ./pysptk/ && rm -rf pysptk
+
+# Stage 4: Matlab
+FROM python_packages AS matlab
 
 RUN mkdir /matlab_install
 
-WORKDIR /matlab_install
+# Copy the local matlab_runtime_install.zip file to the Docker image
+COPY ./matlab_runtime_installer/current_matlab_install /matlab_install/matlab_runtime_install.zip
 
-# Note: If we change MATLAB runtime version, we will also need to change the directory.
-RUN wget -O matlab_runtime_install.zip https://ssd.mathworks.com/supportfiles/downloads/R2022a/Release/0/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2022a_glnxa64.zip
-ENV MATLAB_RUNTIME_DIRECTORY=/usr/local/MATLAB/MATLAB_Runtime/v912/
+RUN export MATLAB_RUNTIME_DIRECTORY=/usr/local/MATLAB/MATLAB_Runtime/v913/ && \
+    unzip /matlab_install/matlab_runtime_install.zip -d /matlab_install/ && \
+    rm /matlab_install/matlab_runtime_install.zip && \
+    /matlab_install/install -mode silent -agreeToLicense yes && \
+    rm -rf /matlab_install
 
-RUN unzip matlab_runtime_install.zip
-RUN rm matlab_runtime_install.zip
-RUN ./install -mode silent -agreeToLicense yes
-RUN rm -rf /matlab_install/*
+RUN mkdir /matlab-scripts
+# Copy the matlab scripts 
+COPY ./matlab-scripts/*.zip /matlab-scripts/	
+COPY ./matlab-scripts/*.sh /matlab-scripts/
+WORKDIR /matlab-scripts
+RUN chmod +x unzip_and_setup.sh && \
+    chmod +x configure_matlab_env.sh && \
+    ./configure_matlab_env.sh set
 
-COPY ./matlab-scripts/*.zip ./
-RUN unzip '*.zip'
-RUN chmod +x ./voice_analysisstandaloneApplication/run_voice_analysis.sh
-RUN chmod +x ./voice_analysisstandaloneApplication/voice_analysis
-RUN chmod +x ./voice_analysis_directorystandaloneApplication/run_voice_analysis_directory.sh
-RUN chmod +x ./voice_analysis_directorystandaloneApplication/voice_analysis_directory
+# NOTE: The unzip_and_setup scripts creates the setenv script automatically.
+RUN /matlab-scripts/unzip_and_setup.sh /matlab-scripts/
+RUN /bin/bash -c "source /matlab-scripts/setenv.sh"
 
-ENV PATH="/matlab_install/voice_analysisstandaloneApplication/:/matlab_install/voice_analysis_directorystandaloneApplication/:${PATH}"
+WORKDIR /home/rstudio
+
+# Stage 5: Final
+FROM matlab AS final
+
+RUN echo 'devtools::install_github("humlab-speech/reindeer", dependencies = TRUE)' | R --save
 
 WORKDIR /
 
-#Always force the next cmds, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-
-RUN echo 'library(devtools); install_github("humlab-speech/reindeer", dependencies = TRUE)' | R
-
 COPY ./praat/praat.tgz /praat.tgz
-RUN tar xzf praat.tgz && mv praat_nogui /usr/bin/praat_nogui && ln -s /usr/bin/praat_nogui /usr/bin/praat
+RUN tar xzf praat.tgz && \
+    mv praat_nogui /usr/bin/praat_nogui && \
+    ln -s /usr/bin/praat_nogui /usr/bin/praat
 
-COPY ./container-agent /container-agent
-COPY ./files/rsession.conf /etc/rstudio/rsession.conf
+
+RUN git clone https://github.com/humlab-speech/container-agent
+RUN apt install -y nodejs npm
+RUN cd container-agent && npm install && npm run build && cp -R ./dist /container-agent
+
+#COPY ./container-agent /container-agent
+COPY ./files/jupyter_notebook_config.py /home/rstudio/.jupyter/jupyter_notebook_config.py
+
+RUN /root/miniconda3/bin/conda clean -a -y -q
+
+RUN mkdir /home/rstudio/project

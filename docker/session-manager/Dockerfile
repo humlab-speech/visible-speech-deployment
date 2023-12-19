@@ -1,4 +1,4 @@
-FROM node
+FROM node:lts-bookworm
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
@@ -7,16 +7,19 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
     gnupg-agent \
-    software-properties-common
+    software-properties-common \
+    zlib1g-dev nano r-cran-git2r libgit2-1.1 libgit2-dev
 
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+#RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 
-RUN add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/debian \
-   $(lsb_release -cs) \
-   stable"
+#RUN add-apt-repository \
+#   "deb [arch=amd64] https://download.docker.com/linux/debian \
+#   $(lsb_release -cs) \
+#   stable"
 
-RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
+#RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
+
+RUN apt-get update && apt-get install -y docker.io
 
 WORKDIR /
 RUN git clone https://github.com/humlab-speech/session-manager

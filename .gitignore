@@ -60,4 +60,11 @@ session-manager
 mounts/gitlab/gitlab-logs
 restart-wsrng-server.sh
 run_git_clone_in_container.sh
+./wsrng-server
+.vscode
+mounts/gitlab
+visp-server
 wsrng-server
+mounts/repositories
+emu-webapp-server
+docker/emu-webapp/EMU-webApp

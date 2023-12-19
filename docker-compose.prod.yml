@@ -13,7 +13,7 @@ services:
     environment:
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
-      HS_DOMAIN_NAME: $BASE_DOMAIN
+      BASE_DOMAIN: $BASE_DOMAIN
       GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
       KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
@@ -24,12 +24,8 @@ services:
       SSP_SALT: $SSP_SALT
       SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
       ADMIN_EMAIL: $ADMIN_EMAIL
+      HTTP_PROTOCOL: $HTTP_PROTOCOL
     volumes:
-      #Shibboleth config for KEYCLOAK
-      #- "./mounts/apache/saml/keycloak/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      #- "./mounts/apache/saml/keycloak/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
-      #- "./mounts/apache/saml/certs/keycloak-metadata-signer.crt:/etc/shibboleth/metadata-signer.crt:Z"
-      #- "./mounts/apache/saml/keycloak/keycloak-idp-metadata.xml:/etc/shibboleth/keycloak-idp-metadata.xml:Z"
       #SWAMID
       - "./mounts/apache/saml/swamid/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
       - "./mounts/apache/saml/swamid/swamid-idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
@@ -133,15 +129,15 @@ services:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
 
-  labjs:
-    image: hs-labjs
-    build: "./docker/labjs"
-    restart: always
-    volumes:
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+  #labjs:
+  #  image: hs-labjs
+  #  build: "./docker/labjs"
+  #  restart: always
+  #  volumes:
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  networks:
+  #    - visp-net
 
   mongo:
     image: mongo:4.4.12

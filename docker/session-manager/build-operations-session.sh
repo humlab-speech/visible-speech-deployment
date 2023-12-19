@@ -1,3 +1,4 @@
+#!/bin/bash
 cd ../../container-agent && npm run build && cd ../docker/session-manager && cp -Rvp ../../container-agent/dist ./container-agent
 
 #echo "Building Operations session image"
