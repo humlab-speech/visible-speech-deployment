@@ -17,32 +17,32 @@ sleep 2
 
 echo "Installing dependencies"
 #curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-apt install -y git openssl docker.io docker-compose
+apt install -y git openssl docker-compose
 
 echo "Copy .env-example to .env"
 cp .env-example .env
 
 echo "Creating session-manager log"
+mkdir -p mounts/session-manager
 touch  mounts/session-manager/session-manager.log
 #session-manager is run inside a container based on node and the node user id is 1000
 chown 1000 mounts/session-manager/session-manager.log
 chmod 0644  mounts/session-manager/session-manager.log
 
-mkdir mounts/webapi
-mkdir mounts/apache/apache/uploads
-mkdir mounts/mongo
-mkdir certs
-mkdir mounts/session-manager
+mkdir -p mounts/webapi
+mkdir -p mounts/apache/apache/uploads
+mkdir -p mounts/mongo
+mkdir -p certs
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
 
 echo "Generating local self-signed certificate for TLS"
-mkdir certs/localtest.me
+mkdir -p certs/localtest.me
 openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"
 
 echo "Generating local self-signed certificate for internal IdP"
-mkdir certs/ssp-idp-cert
+mkdir -p certs/ssp-idp-cert
 openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem -out certs/ssp-idp-cert/cert.pem -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"
 
 echo "Grabbing latest webclient"
