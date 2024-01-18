@@ -64,6 +64,14 @@ echo "Install Session-Manager"
 git clone https://github.com/humlab-speech/session-manager
 cd session-manager && npm install && cd ..
 
+echo "Install emu-webapp-server"
+git clone https://github.com/humlab-speech/emu-webapp-server
+cd emu-webapp-server && npm install && cd ..
+
+cd docker/emu-webapp
+git clone https://github.com/IPS-LMU/EMU-webApp
+cd ../..
+
 echo "Installing SimpleSamlPhp"
 curl -L https://github.com/simplesamlphp/simplesamlphp/releases/download/v1.19.6/simplesamlphp-1.19.6.tar.gz --output simplesamlphp.tar.gz
 tar xzf simplesamlphp.tar.gz && rm simplesamlphp.tar.gz

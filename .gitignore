@@ -66,5 +66,5 @@ mounts/gitlab
 visp-server
 wsrng-server
 mounts/repositories
-emu-webapp-server
+./emu-webapp-server/
 docker/emu-webapp/EMU-webApp

@@ -3,7 +3,7 @@
 FROM rocker/rstudio:4 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
-LABEL description="The Rstudio session image, which is instantiated when a new Jupyter session is spawned in the VISP interface"
+LABEL description="The Rstudio session image, which is instantiated when a new Rstudio session is spawned in the VISP interface"
 
 USER root
 
