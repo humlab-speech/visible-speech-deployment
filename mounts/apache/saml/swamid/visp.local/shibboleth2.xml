@@ -37,7 +37,7 @@
             styleSheet="/shibboleth-sp/main.css"/>
  
         
-        <MetadataProvider type="XML" path="swamid-idp-transitive.xml"/>
+        <MetadataProvider type="XML" path="swamid-idp.xml"/>
         <!--
         <MetadataProvider
                 type="XML"
