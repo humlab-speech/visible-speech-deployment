@@ -1,5 +1,4 @@
 #!/bin/bash
-cd ../../container-agent && npm run build && cd ../docker/session-manager && cp -Rvp ../../container-agent/dist ./container-agent
 
 if  [! -f ./matlab_runtime/matlab_runtime_install.zip] 
 then
@@ -10,4 +9,3 @@ fi
 #echo "Building RStudio session image"
 docker build -t visp-rstudio-session -f rstudio-session/Dockerfile .
 
-rm -R ./container-agent
