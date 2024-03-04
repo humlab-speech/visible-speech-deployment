@@ -23,12 +23,13 @@ services:
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       SSP_SALT: $SSP_SALT
       SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
+      TEST_USER_LOGIN_KEY: $TEST_USER_LOGIN_KEY
       ADMIN_EMAIL: $ADMIN_EMAIL
       HTTP_PROTOCOL: $HTTP_PROTOCOL
     volumes:
       #SWAMID
       - "./mounts/apache/saml/swamid/$BASE_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z"
-      - "./mounts/apache/saml/swamid/swamid-idp-transitive.xml:/etc/shibboleth/swamid-idp-transitive.xml:Z"
+      - "./mounts/apache/saml/swamid/swamid-idp.xml:/etc/shibboleth/swamid-idp.xml:Z"
       - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
       - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #GENERAL
@@ -73,40 +74,16 @@ services:
       EMUDB_INTEGRATION_ENABLED: $EMUDB_INTEGRATION_ENABLED
       LOG_LEVEL: "debug"
     volumes:
-      - "./mounts/apache/apache/uploads:/mounts/apache/apache/uploads:Z"
+      - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
+      - "./mounts/repositories:/repositories:Z"
+      - "./mounts/repository-template:/repository-template:Z"
     networks:
       - visp-net
-
-  gitlab:
-    image: gitlab/gitlab-ce:15.4.0-ce.0
-    #build: "./docker/gitlab"
-    networks:
-      - visp-net
-    hostname: gitlab.$BASE_DOMAIN
-    restart: always
-    environment:
-      HTTP_PROTOCOL: $HTTP_PROTOCOL
-      GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
-      DOMAIN_NAME: $BASE_DOMAIN
-      IDP_SIGNING_CERT_FINGERPRINT: $IDP_SIGNING_CERT_FINGERPRINT
-      GITLAB_ROOT_PASSWORD: $GITLAB_ROOT_PASSWORD
-      GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER: $GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url 'https://gitlab.$BASE_DOMAIN'
-        gitlab_rails['initial_root_password'] = '$GITLAB_ROOT_PASSWORD'
-    volumes:
-      - "$GITLAB_HOME/data:/var/opt/gitlab:Z"
-      - "$GITLAB_HOME/config:/etc/gitlab:Z"
-      - "$GITLAB_HOME/gitlab-logs:/var/log/gitlab:Z"
-      - "$GITLAB_HOME/public:/opt/gitlab/public:Z"
-      - "./certs:/etc/certs:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
 
   emu-webapp:
     image: hs-emu-webapp
@@ -114,6 +91,22 @@ services:
     restart: always
     ports:
       - 9000:9000
+    networks:
+      - visp-net
+
+  emu-webapp-server:
+    image: emu-webapp-server
+    build: "./docker/emu-webapp-server"
+    restart: unless-stopped
+    ports:
+      - 17890:17890
+    volumes:
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+      - "./mounts/repositories:/repositories:Z"
+      - "./mounts/emu-webapp-server/logs:/emu-webapp-server/logs:Z"
+    env_file:
+      - ./mounts/emu-webapp-server/.env
     networks:
       - visp-net
 
@@ -156,64 +149,77 @@ services:
     networks:
       - visp-net
 
-  elastic-agent:
-    image: elastic/elastic-agent:7.16.2
-    hostname: $ELASTIC_AGENT_REPORTED_HOSTNAME
-    restart: unless-stopped
-    user: root
-    environment:
-      - FLEET_ENROLLMENT_TOKEN=$ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN
-      - FLEET_ENROLL=1
-      - FLEET_URL=$ELASTIC_AGENT_FLEET_URL
-    volumes:
-      - "/var/log/auth.log:/var/log/auth.log:ro"
-      - "./mounts/session-manager/session-manager.log:/logs/session-manager.log:ro"
-      - "./mounts/apache/apache/logs/apache2:/logs/apache2:ro"
-      - "./mounts/apache/apache/logs/shibboleth:/logs/shibboleth:ro"
-      - "./mounts/gitlab/apache-logs:/logs/gitlab-apache:ro"
-      - "./mounts/gitlab/shibboleth-logs:/logs/gitlab-shibboleth:ro"
-      - "./mounts/gitlab/logs:/logs/gitlab:ro"
-      - "./mounts/traefik/log:/logs/traefik:ro"
-      - "./mounts/webapi/logs:/logs/webapi:ro"
-      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
-      - "/var/run/docker.sock:/var/run/docker.sock:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
+  #elastic-agent:
+  #  image: elastic/elastic-agent:7.16.2
+  #  hostname: $ELASTIC_AGENT_REPORTED_HOSTNAME
+  #  restart: unless-stopped
+  #  user: root
+  #  environment:
+  #    - FLEET_ENROLLMENT_TOKEN=$ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN
+  #    - FLEET_ENROLL=1
+  #    - FLEET_URL=$ELASTIC_AGENT_FLEET_URL
+  #  volumes:
+  #    - "/var/log/auth.log:/var/log/auth.log:ro"
+  #    - "./mounts/session-manager/session-manager.log:/logs/session-manager.log:ro"
+  #    - "./mounts/apache/apache/logs/apache2:/logs/apache2:ro"
+  #    - "./mounts/apache/apache/logs/shibboleth:/logs/shibboleth:ro"
+  #    - "./mounts/gitlab/apache-logs:/logs/gitlab-apache:ro"
+  #    - "./mounts/gitlab/shibboleth-logs:/logs/gitlab-shibboleth:ro"
+  #    - "./mounts/gitlab/logs:/logs/gitlab:ro"
+  #    - "./mounts/traefik/log:/logs/traefik:ro"
+  #    - "./mounts/webapi/logs:/logs/webapi:ro"
+  #    - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+  #    - "/var/run/docker.sock:/var/run/docker.sock:Z"
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  networks:
+  #    - visp-net
 
-  matomo-db:
-    image: mariadb:10.3
-    restart: unless-stopped
-    networks:
-      - visp-net
-    volumes:
-      - /mounts/matomo-db/mysql:/var/lib/mysql
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MATOMO_DB_NAME}
-      MYSQL_USER: ${MATOMO_DB_USER}
-      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
+  #matomo-db:
+  #  image: mariadb:10.3
+  #  restart: unless-stopped
+  #  networks:
+  #    - visp-net
+  #  volumes:
+  #    - /mounts/matomo-db/mysql:/var/lib/mysql
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+  #  environment:
+  #    MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+  #    MYSQL_DATABASE: ${MATOMO_DB_NAME}
+  #    MYSQL_USER: ${MATOMO_DB_USER}
+  #    MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
 
-  matomo:
-    image: matomo:4.8.0
-    restart: unless-stopped    
-    depends_on:
-      - matomo-db
+  #matomo:
+  #  image: matomo:4.8.0
+  #  restart: unless-stopped    
+  #  depends_on:
+  #    - matomo-db
+  #  networks:
+  #    - visp-net
+  #  volumes:
+  #    # To allow you to view/edit Matomo configuration files:
+  #    - ./mounts/matomo/config:/var/www/html/config:rw
+  #    # To allow you to easily view Matomo log files:
+  #    - ./mounts/matomo/logs:/var/www/html/logs
+  #    # To allow matomo access to apache logs for imports
+  #    - ./mounts/apache/apache/logs/apache2:/external_logs
+  #    - "/etc/timezone:/etc/timezone:ro"
+  #    - "/etc/localtime:/etc/localtime:ro"
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    ports:
+      - 28084:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: $MONGO_ROOT_PASSWORD
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_BASICAUTH_USERNAME: mongo
+      ME_CONFIG_BASICAUTH_PASSWORD: $MONGO_EXPRESS_PASSWORD
     networks:
-      - visp-net
-    volumes:
-      # To allow you to view/edit Matomo configuration files:
-      - ./mounts/matomo/config:/var/www/html/config:rw
-      # To allow you to easily view Matomo log files:
-      - ./mounts/matomo/logs:/var/www/html/logs
-      # To allow matomo access to apache logs for imports
-      - ./mounts/apache/apache/logs/apache2:/external_logs
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-      
+      - visp-net      
 
 networks:
   visp-net:
