@@ -27,7 +27,7 @@ $config = [
      * external url, no matter where you come from (direct access or via the
      * reverse proxy).
      */
-    'baseurlpath' => getenv('HTTP_PROTOCOL').'://idp.'.getenv('HS_DOMAIN_NAME').'/',
+    'baseurlpath' => getenv('HTTP_PROTOCOL').'://idp.'.getenv('BASE_DOMAIN').'/',
 
     /*
      * The 'application' configuration array groups a set configuration options
@@ -559,7 +559,7 @@ $config = [
      * Example:
      *  'session.cookie.domain' => '.example.org',
      */
-    'session.cookie.domain' => '.'.getenv('HS_DOMAIN_NAME'),
+    'session.cookie.domain' => '.'.getenv('BASE_DOMAIN'),
 
     /*
      * Set the secure flag in the cookie.
