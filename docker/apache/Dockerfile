@@ -1,6 +1,8 @@
 FROM debian:bullseye
 
-ENV WEBCLIENT_BUILD=visp-build
+ENV WEBCLIENT_BUILD=$WEBCLIENT_BUILD
+
+RUN echo "Running a $WEBCLIENT_BUILD build"
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="A debian based installation of apache with shibboleth, acting as the VISP webserver, router and authentication layer"
@@ -10,7 +12,7 @@ RUN apt-get update
 RUN apt-get install -y ca-certificates curl gnupg
 RUN mkdir -p /etc/apt/keyrings
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-ENV NODE_MAJOR=20
+ENV NODE_MAJOR=18
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
@@ -32,11 +34,25 @@ COPY ./idpFp.sh /idpFp.sh
 RUN chmod +x /idpFp.sh
 
 WORKDIR /
+
+#anti-cache line
+ADD "https://api.github.com/repos/humlab-speech/webclient/commits?per_page=1" latest_commit
+
 RUN git clone https://github.com/humlab-speech/webclient
 WORKDIR /webclient
 RUN npm install
 RUN npm run $WEBCLIENT_BUILD
 RUN mv dist /var/www/html
+
+RUN mkdir /init_mongodb
+ADD ./init_mongodb.js /init_mongodb/
+ADD ./package.json /init_mongodb/
+WORKDIR /init_mongodb
+RUN npm install
+
+WORKDIR /var/www/html
+
+USER root
 
 CMD bash -c "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"
 
