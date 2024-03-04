@@ -15,10 +15,6 @@ set -e
 
 sleep 2
 
-echo "Installing dependencies"
-#curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-apt install -y git openssl docker-compose
-
 echo "Copy .env-example to .env"
 cp .env-example .env
 
