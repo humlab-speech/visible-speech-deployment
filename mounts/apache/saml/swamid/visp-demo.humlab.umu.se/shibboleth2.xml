@@ -12,7 +12,7 @@
  
            <Logout asynchronous="false">SAML2 Local</Logout>
  
-           <SessionInitiator type="Chaining" Location="/DS/Login" target="https://visp-demo.humlab.umu.se/DS/Login" id="swamid-ds-default" relayState="cookie">
+           <SessionInitiator type="Chaining" target="https://visp-demo.humlab.umu.se/DS/Login" Location="/DS/Login" id="swamid-ds-default" relayState="cookie">
              <SessionInitiator type="SAML2" defaultACSIndex="1" acsByIndex="false" template="bindingTemplate.html"/>
              <SessionInitiator type="Shib1" defaultACSIndex="5"/>
              <SessionInitiator type="SAMLDS" URL="https://service.seamlessaccess.org/ds/"/>
@@ -27,8 +27,8 @@
             <Handler type="Session" Location="/Session" showAttributeValues="false"/>
             <Handler type="DiscoveryFeed" Location="/DiscoFeed"/>
  
-            <md:ArtifactResolutionService Location="/Artifact/SOAP" index="1"
-                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>
+            <!--<md:ArtifactResolutionService Location="/Artifact/SOAP" index="1"
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>-->
  
         </Sessions>
  
@@ -37,15 +37,17 @@
             styleSheet="/shibboleth-sp/main.css"/>
  
         
-        <MetadataProvider type="XML" path="swamid-idp-transitive.xml"/>
         <!--
+        <MetadataProvider type="XML" path="/etc/shibboleth/swamid-idp-transitive.xml"/>
+        -->
+        
         <MetadataProvider
                 type="XML"
-                url="https://mds.swamid.se/md/swamid-idp-transitive.xml"
-                backingFilePath="swamid-idp-transitive.xml" reloadInterval="14400">
+                url="https://mds.swamid.se/md/swamid-idp.xml"
+                backingFilePath="/etc/shibboleth/swamid-idp.xml" reloadInterval="14400">
              <MetadataFilter type="Signature" certificate="/etc/shibboleth/md-signer2.crt"/>
         </MetadataProvider>
-        -->
+        
 
         <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml"/>
  
@@ -53,7 +55,13 @@
  
         <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
  
-        <CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem"/>
+        <!--<CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem"/>-->
+
+        <CredentialResolver type="Chaining">
+          <CredentialResolver type="File" key="/etc/certs/sp-cert/signing-cert.key" certificate="/etc/certs/sp-cert/signing-cert.crt" use="signing"/>
+          <CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem" use="encryption"/>
+        </CredentialResolver>
+
     </ApplicationDefaults>
     <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
  
