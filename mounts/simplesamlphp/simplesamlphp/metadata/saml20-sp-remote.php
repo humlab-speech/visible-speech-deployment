@@ -41,7 +41,3 @@ $metadata['https://legacy.example.edu'] = [
     //'signature.algorithm' => 'http://www.w3.org/2000/09/xmldsig#rsa-sha1',
 ];
 
-$metadata[getenv('HTTP_PROTOCOL').'://gitlab.'.getenv('HS_DOMAIN_NAME')] = [
-    'AssertionConsumerService' => getenv('HTTP_PROTOCOL').'://gitlab.'.getenv('HS_DOMAIN_NAME').'/users/auth/saml/callback',
-    'SingleLogoutService' => getenv('HTTP_PROTOCOL').'://gitlab.'.getenv('HS_DOMAIN_NAME').'/auth/saml/slo',
-];
