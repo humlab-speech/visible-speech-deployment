@@ -181,7 +181,7 @@ class External extends \SimpleSAML\Auth\Source
          * the absolute URL of the login page for the site.
          */
         //$authPage = Module::getModuleURL('vispauth/authpage.php');
-        $authPage = "https://".getenv("HS_BASE_DOMAIN")."/DS/Login";
+        $authPage = "https://".getenv("BASE_DOMAIN")."/DS/Login";
 
         /*
          * The redirect to the authentication page.
