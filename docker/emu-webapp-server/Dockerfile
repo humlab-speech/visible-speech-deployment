@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y nodejs git nano wget procps
 RUN useradd -m visp
 
 WORKDIR /
+
+#anti-cache line
+#ADD "https://api.github.com/repos/humlab-speech/emu-webapp-server/commits?per_page=1" latest_commit
+
 RUN git clone https://github.com/humlab-speech/emu-webapp-server
 WORKDIR /emu-webapp-server
 RUN npm install
