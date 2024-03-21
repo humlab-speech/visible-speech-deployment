@@ -104,6 +104,8 @@ RUN tar xzf praat.tgz && \
 
 
 WORKDIR /home/rstudio
+
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 RUN git clone https://github.com/humlab-speech/container-agent
 RUN cd container-agent && npm install && npm run build && cp -R ./dist /container-agent
 
