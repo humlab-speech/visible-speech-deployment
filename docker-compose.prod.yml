@@ -221,6 +221,26 @@ services:
     networks:
       - visp-net      
 
+  wsrng-server:
+    build: "./docker/wsrng-server"
+    environment:
+      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+      MONGO_USER: root
+      MONGO_PASSWORD: $MONGO_ROOT_PASSWORD
+      MONGO_HOST: mongo
+      MONGO_PORT: 27017
+      MONGO_DATABASE: wsrng
+      SERVER_PORT: 8080
+      AUDIO_FILE_STORAGE_PATH: /repositories
+      ENABLED_MODULES: '["visp"]'
+      LOG_PATH: logs/wsrng-server.log
+      RESOURCES_PATH: resources
+    volumes:
+      - "./mounts/wsrng-server/logs:/wsrng-server/logs:Z"
+      - "./mounts/repositories:/repositories:Z"
+    networks:
+      - visp-net
+
 networks:
   visp-net:
 
