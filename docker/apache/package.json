@@ -1,0 +1,12 @@
+{
+  "name": "mongo-insert-script",
+  "version": "1.0.0",
+  "description": "Node.js script to insert a user object into a MongoDB collection",
+  "main": "init_mongodb.js",
+  "scripts": {
+    "start": "node init_mongodb.js"
+  },
+  "dependencies": {
+    "mongodb": "^4.3.6"
+  }
+}
