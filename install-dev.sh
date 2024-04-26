@@ -72,4 +72,19 @@ cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 echo "Setting directory permissions"
 ./set_permissions.sh
 
-echo "You should now fill out .env as best you can and then do the rest of the install manually."
+echo "You should now fill out .env. Meanwhile I will build the session-manager container images, which will take a while. Press enter to continue."
+read -p "Press enter to continue."
+
+
+echo "Building Operations session image"
+docker build -t visp-operations-session -f ./docker/session-manager/operations-session/Dockerfile ./docker/session-manager/operations-session
+
+echo "Building RStudio session image"
+docker build -t visp-rstudio-session -f ./docker/session-manager/rstudio-session/Dockerfile ./docker/session-manager/rstudio-session
+
+#echo "Building Jupyter session image"
+docker build -t visp-jupyter-session -f ./docker/session-manager/jupyter-session/Dockerfile ./docker/session-manager/jupyter-session
+
+docker-compose build
+
+echo "Development install complete. If everything above looks ok, you should now be able to run the project with 'docker-compose up -d'"
