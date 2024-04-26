@@ -28,10 +28,11 @@ touch  mounts/session-manager/session-manager.log
 #session-manager is run inside a container based on node and the node user id is 1000
 chown 1000 mounts/session-manager/session-manager.log
 chmod 0644  mounts/session-manager/session-manager.log
-mkdir mounts/webapi
+mkdir -p mounts/webapi
 mkdir -p mounts/apache/apache/uploads
-mkdir mounts/mongo
-mkdir certs
+mkdir -p mounts/mongo
+mkdir -p certs
+mkdir -p mounts/emu-webapp-server/logs
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
