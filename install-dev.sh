@@ -32,7 +32,6 @@ mkdir -p mounts/webapi
 mkdir -p mounts/apache/apache/uploads
 mkdir -p mounts/mongo
 mkdir -p certs
-mkdir -p mounts/emu-webapp-server/logs
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
@@ -54,6 +53,10 @@ git clone https://github.com/humlab-speech/webapi
 echo "Grabbing latest container-agent"
 git clone https://github.com/humlab-speech/container-agent
 
+echo "Grabbing emu-webapp-server .env file"
+mkdir -p mounts/emu-webapp-server/logs
+curl -L https://raw.githubusercontent.com/humlab-speech/emu-webapp-server/main/.env-example -o ./mounts/emu-webapp-server/.env
+
 echo "Install & build container-agent"
 cd container-agent && npm install && npm run build && cd ..
 
@@ -73,8 +76,11 @@ cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 echo "Setting directory permissions"
 ./set_permissions.sh
 
-echo "You should now fill out .env. Meanwhile I will build the session-manager container images, which will take a while. Press enter to continue."
-read -p "Press enter to continue."
+echo 
+echo "You should now fill out .env."
+echo "Also fill out the separate emu-webapp-server .env file at: mounts/emu-webapp-server/.env."
+echo "Meanwhile I will build the session-manager container images, which will take a while."
+read -p "Press enter to continue: "
 
 
 echo "Building Operations session image"
