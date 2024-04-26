@@ -15,24 +15,23 @@ set -e
 
 sleep 2
 
-echo "Setting up nodejs repo and installing dependencies"
+echo "Installing dependencies"
 #curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-apt install -y nodejs git openssl docker.io docker-compose
+apt update && apt install -y nodejs npm git openssl docker.io docker-compose curl
 
-echo "Copy .env-example to .env"
+echo "Copying .env-example to .env"
 cp .env-example .env
 
-echo "Creating session-manager log"
+echo "Creating files and directories log"
+mkdir -p mounts/session-manager
 touch  mounts/session-manager/session-manager.log
 #session-manager is run inside a container based on node and the node user id is 1000
 chown 1000 mounts/session-manager/session-manager.log
 chmod 0644  mounts/session-manager/session-manager.log
-
 mkdir mounts/webapi
-mkdir mounts/apache/apache/uploads
+mkdir -p mounts/apache/apache/uploads
 mkdir mounts/mongo
 mkdir certs
-mkdir mounts/session-manager
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
