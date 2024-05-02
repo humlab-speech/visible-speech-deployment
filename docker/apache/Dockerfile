@@ -1,8 +1,8 @@
 FROM debian:bullseye
 
-ENV WEBCLIENT_BUILD=$WEBCLIENT_BUILD
+ENV WEBCLIENT_BUILD=visp-build
 
-RUN echo "Running a $WEBCLIENT_BUILD build"
+RUN echo "WEBCLIENT_BUILD is set to ${WEBCLIENT_BUILD}"
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="A debian based installation of apache with shibboleth, acting as the VISP webserver, router and authentication layer"
