@@ -18,7 +18,7 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesourc
 RUN apt-get update
 RUN apt-get install nodejs -y
 
-COPY Miniconda3-latest-Linux-x86_64.sh ./
+RUN curl -o Miniconda3-latest-Linux-x86_64.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN bash ./Miniconda3-latest-Linux-x86_64.sh -b
 RUN /root/miniconda3/bin/conda install mamba -n base -c conda-forge
 
@@ -63,30 +63,7 @@ RUN pip install --upgrade pip && \
 
 # Stage 4: Matlab
 FROM python_packages AS matlab
-
-RUN mkdir /matlab_install
-
-# Copy the local matlab_runtime_install.zip file to the Docker image
-COPY ./matlab_runtime_installer/current_matlab_install /matlab_install/matlab_runtime_install.zip
-
-RUN export MATLAB_RUNTIME_DIRECTORY=/usr/local/MATLAB/MATLAB_Runtime/v913/ && \
-    unzip /matlab_install/matlab_runtime_install.zip -d /matlab_install/ && \
-    rm /matlab_install/matlab_runtime_install.zip && \
-    /matlab_install/install -mode silent -agreeToLicense yes && \
-    rm -rf /matlab_install
-
-RUN mkdir /matlab-scripts
-# Copy the matlab scripts 
-COPY ./matlab-scripts/*.zip /matlab-scripts/	
-COPY ./matlab-scripts/*.sh /matlab-scripts/
-WORKDIR /matlab-scripts
-RUN chmod +x unzip_and_setup.sh && \
-    chmod +x configure_matlab_env.sh && \
-    ./configure_matlab_env.sh set
-
-# NOTE: The unzip_and_setup scripts creates the setenv script automatically.
-RUN /matlab-scripts/unzip_and_setup.sh /matlab-scripts/
-RUN /bin/bash -c "source /matlab-scripts/setenv.sh"
+# skipping matlab install since it's not needed for this image
 
 WORKDIR /home/rstudio
 
