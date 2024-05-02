@@ -11,16 +11,16 @@ RUN apt-get update && apt-get install -y nodejs git nano wget procps
 
 RUN useradd -m visp
 
-WORKDIR /
+WORKDIR /home/visp
+
+USER visp
 
 #anti-cache line
 #ADD "https://api.github.com/repos/humlab-speech/emu-webapp-server/commits?per_page=1" latest_commit
 
 RUN git clone https://github.com/humlab-speech/emu-webapp-server
-WORKDIR /emu-webapp-server
+RUN mv emu-webapp-server app
+WORKDIR /home/visp/app
 RUN npm install
 
-USER visp
-
-CMD ["node", "src/main.js"]
-
+CMD ["node", "/home/visp/app/src/main.js"]
