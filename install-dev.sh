@@ -16,8 +16,9 @@ set -e
 sleep 2
 
 echo "Installing dependencies"
-#curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
-apt update && apt install -y nodejs npm git openssl docker.io docker-compose curl
+apt update && apt install -y curl
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash
+apt update && apt install -y nodejs git openssl docker.io docker-compose curl
 
 echo "Copying .env-example to .env"
 cp .env-example .env
@@ -76,8 +77,48 @@ cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 echo "Setting directory permissions"
 ./set_permissions.sh
 
+
+# Fill out .env to the extent that we can, with randomly generated passwords
+#!/bin/bash
+
+# Path to the .env file
+env_file=".env"
+
+# List of variables to fill automatically
+declare -a keys_to_fill=("POSTGRES_PASSWORD" "TEST_USER_LOGIN_KEY" "VISP_API_ACCESS_TOKEN" "RSTUDIO_PASSWORD" "MONGO_ROOT_PASSWORD" "ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN" "MATOMO_DB_PASSWORD")
+
+# Function to generate a random alphanumeric string of a given length
+generate_random_string() {
+  local len=$1
+  # Generate random alphanumeric string (adjust the length as needed)
+  tr -dc 'A-Za-z0-9' </dev/urandom | head -c ${len} || true
+}
+
+# Check if the .env file exists
+if [[ ! -f "$env_file" ]]; then
+  echo "Error: .env file does not exist!"
+  exit 1
+fi
+
+# Read each line from the .env file
+while IFS= read -r line; do
+  # Extract the key name from the line
+  key=$(echo $line | cut -d '=' -f 1)
+  
+  # Check if the key is in the array of keys to fill
+  if [[ " ${keys_to_fill[@]} " =~ " ${key} " && "$line" =~ =$ ]]; then
+    # Generate a random alphanumeric string for the value (e.g., 16 characters long)
+    random_value=$(generate_random_string 16)
+    # Append the random value to the line
+    new_line="${key}=${random_value}"
+    # Replace the line in the file
+    sed -i "s|${line}|${new_line}|g" "$env_file"
+  fi
+done < "$env_file"
+
+
 echo 
-echo "You should now fill out .env."
+echo "The .env file has been filled out with randomly generated passwords where possible. You should now look through and fill out the rest of it."
 echo "Also fill out the separate emu-webapp-server .env file at: mounts/emu-webapp-server/.env."
 echo "Meanwhile I will build the session-manager container images, which will take a while."
 read -p "Press enter to continue: "
