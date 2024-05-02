@@ -33,11 +33,11 @@ services:
       RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
       KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
-      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+      #GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
-      SSP_SALT: $SSP_SALT
-      SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
+      #SSP_SALT: $SSP_SALT
+      #SSP_ADMIN_PASSWORD: $SSP_ADMIN_PASSWORD
       TEST_USER_LOGIN_KEY: $TEST_USER_LOGIN_KEY
       ADMIN_EMAIL: $ADMIN_EMAIL
       HTTP_PROTOCOL: $HTTP_PROTOCOL
@@ -73,7 +73,7 @@ services:
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
-      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+      #GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
       RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
@@ -116,9 +116,9 @@ services:
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
-      - "./emu-webapp-server:/app"
+      #- "./emu-webapp-server:/home/visp/app"
+      - "./mounts/emu-webapp-server/logs:/home/visp/app/logs:Z"
       - "./mounts/repositories:/repositories:Z"
-    command: ["node", "/app/src/main.js"]
     env_file:
       - ./mounts/emu-webapp-server/.env
     networks:
@@ -139,8 +139,8 @@ services:
   wsrng-server:
     #image: wsrng-server
     build: "./docker/wsrng-server"
-    environment:
-      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+    #environment:
+      #GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
     volumes:
       - "./wsrng-server:/wsrng-server:Z"
       - "./mounts/repositories:/repositories:Z"
