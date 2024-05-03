@@ -58,6 +58,10 @@ echo "Grabbing emu-webapp-server .env file"
 mkdir -p mounts/emu-webapp-server/logs
 curl -L https://raw.githubusercontent.com/humlab-speech/emu-webapp-server/main/.env-example -o ./mounts/emu-webapp-server/.env
 
+echo "Installing Web Speech Recorder NG server"
+git clone https://github.com/humlab-speech/wsrng-server
+cd wsrng-server && npm install && cd ..
+
 echo "Install & build container-agent"
 cd container-agent && npm install && npm run build && cd ..
 
