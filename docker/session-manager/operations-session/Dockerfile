@@ -40,13 +40,7 @@ WORKDIR /home/rstudio
 # Stage 2: R packages
 FROM base AS r_packages
 
-RUN echo 'chooseCRANmirror(graphics=FALSE, ind=62);install.packages(c("git2r", "openxlsx", "ggpubr", "gt", "tidyverse", "tidymodels", "devtools"), Ncpus = 6)' | R --save && \
-    echo 'devtools::install_github("IPS-LMU/emuR",dependencies = "Imports")' | R --save && \
-    echo 'devtools::install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R --save && \
-    echo 'devtools::install_github("tjmahr/tjm.praat")' | R --save && \
-    echo 'devtools::install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save && \
-    echo 'devtools::install_github("humlab-speech/reindeer", dependencies = TRUE)' | R --save && \
-    echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
+RUN Rscript -e 'install.packages(c("git2r", "openxlsx", "ggpubr", "gt", "tidyverse", "tidymodels","emuR","reticulate","remotes","emuR","wrassp"), repos = c("https://ftp.acc.umu.se/mirror/CRAN/","https://cloud.r-project.org"), dependencies = TRUE, Ncpus = 6)'
 
 # Stage 3: Python packages
 FROM r_packages AS python_packages
