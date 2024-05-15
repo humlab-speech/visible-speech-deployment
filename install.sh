@@ -32,6 +32,7 @@ chmod 0644  mounts/session-manager/session-manager.log
 mkdir -p mounts/webapi
 mkdir -p mounts/apache/apache/uploads
 mkdir -p mounts/mongo
+touch mounts/mongo/logs/mongodb.log
 mkdir -p certs
 
 echo "Fetching SWAMID metadata signing cert"
