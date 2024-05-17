@@ -61,7 +61,7 @@ curl -L https://raw.githubusercontent.com/humlab-speech/emu-webapp-server/main/.
 
 echo "Installing Web Speech Recorder NG server"
 git clone https://github.com/humlab-speech/wsrng-server
-cd wsrng-server && npm install && cd ..
+cd wsrng-server && npm install && mkdir logs && touch logs/wsrng-server.log && cd .. 
 
 echo "Install & build container-agent"
 cd container-agent && npm install && npm run build && cd ..
