@@ -31,7 +31,7 @@ chown 1000 mounts/session-manager/session-manager.log
 chmod 0644  mounts/session-manager/session-manager.log
 mkdir -p mounts/webapi
 mkdir -p mounts/apache/apache/uploads
-mkdir -p mounts/mongo
+mkdir -p mounts/mongo/logs
 touch mounts/mongo/logs/mongodb.log
 mkdir -p certs
 
