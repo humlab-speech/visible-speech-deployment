@@ -39,12 +39,12 @@ echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
 
 echo "Generating local self-signed certificate for TLS"
-mkdir certs/localtest.me
-openssl req -x509 -newkey rsa:4096 -keyout certs/localtest.me/cert.key -out certs/localtest.me/cert.crt -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=localtest.me"
+mkdir certs/visp.local
+openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/cert.key -out certs/visp.local/cert.crt -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"
 
 echo "Generating local self-signed certificate for internal IdP"
 mkdir certs/ssp-idp-cert
-openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem -out certs/ssp-idp-cert/cert.pem -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=localtest.me"
+openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem -out certs/ssp-idp-cert/cert.pem -nodes -days 3650 -subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"
 
 echo "Grabbing latest webclient"
 git clone https://github.com/humlab-speech/webclient
