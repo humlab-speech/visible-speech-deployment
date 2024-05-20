@@ -82,6 +82,13 @@ cp -Rv simplesamlphp-visp/* ./mounts/simplesamlphp/simplesamlphp/
 echo "Setting directory permissions"
 ./set_permissions.sh
 
+chown -R 1000:1000 webclient
+chown -R 1000:1000 certs
+chown -R 1000:1000 container-agent
+chown -R 1000:1000 emu-webapp-server
+chown -R 1000:1000 webapi
+chown -R 1000:1000 wsrng-server
+chown -R 1000:1000 session-manager
 
 # Fill out .env to the extent that we can, with randomly generated passwords
 #!/bin/bash
