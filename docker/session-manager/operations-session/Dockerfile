@@ -1,4 +1,3 @@
-
 # Stage 1: Base
 FROM rocker/rstudio:4 AS base
 
@@ -7,82 +6,120 @@ LABEL description="This image is used for background operations in the VISP syst
 
 USER root
 
+# Update the package list and change the package source to a Swedish mirror
 RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
-
-#Nodejs installation
-RUN apt-get update && apt-get install -y curl ca-certificates gnupg
-RUN mkdir -p /etc/apt/keyrings
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-ENV NODE_MAJOR=20
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-RUN apt-get update
-RUN apt-get install nodejs -y
-
-RUN curl -o Miniconda3-latest-Linux-x86_64.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash ./Miniconda3-latest-Linux-x86_64.sh -b
-RUN /root/miniconda3/bin/conda install mamba -n base -c conda-forge
-
-RUN rm /etc/localtime && \
-    ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
-    apt-get update && \
-    apt-get install -y zlib1g-dev nano curl r-cran-v8 libavfilter-dev libfontconfig1-dev libxml2-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev cmake python3-pip && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    /root/miniconda3/bin/mamba install -y -c conda-forge r-av && \
-    /root/miniconda3/bin/conda clean -a -y
 
 WORKDIR /opt/conda/lib
 RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
     ln -s /usr/lib/x86_64-linux-gnu/libv8_libplatform.so ./
 
+# Timezone fixes and base software installation
+RUN rm /etc/localtime && \
+    ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
+    apt-get update && \
+    apt-get install -y zlib1g-dev nano curl libxml2-dev libnode-dev r-cran-v8 libavfilter-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev cmake  && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Miniconda installation, with Mamba
+RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    sh miniconda.sh -b -p $HOME/miniconda && \
+    rm miniconda.sh && \
+    export PATH="$HOME/miniconda/bin:$PATH" && \
+    conda install -y -c conda-forge mamba
+
+ENV R_HOME="/root/miniconda/lib/R" \
+    PATH="/root/miniconda/lib/R/bin:/root/miniconda/bin:$PATH"
+
+# Install r-av package for R audio handling
+RUN mamba install -y -c conda-forge r-av && \
+    conda clean -a -y
+
 WORKDIR /home/rstudio
 
 # Stage 2: R packages
-FROM base AS r_packages
+FROM r-base:4.3.3 AS r_packages
+# NOTE THAT R VERSION SHOULD MATCH THE SAME AS THE BASE IMAGE
 
-RUN Rscript -e 'install.packages(c("git2r", "openxlsx", "ggpubr", "gt", "tidyverse", "tidymodels","emuR","reticulate","remotes","emuR","wrassp"), repos = c("https://ftp.acc.umu.se/mirror/CRAN/","https://cloud.r-project.org"), dependencies = TRUE, Ncpus = 6)'
+# In case the build fails, turn off format security to make it possible to compile some older C code. Consider the implications of this!
+RUN echo $(R RHOME) && \
+    sed -i 's/-Werror=format-security//g' $(R RHOME)/etc/Makeconf && \
+    sed -i 's/-Werror=implicit-function-declaration//g' $(R RHOME)/etc/Makeconf
 
-# Stage 3: Python packages
-FROM r_packages AS python_packages
+ENV CRAN_MIRROR="https://cran.uib.no/"
 
-RUN pip install --upgrade pip && \
-    pip install --prefer-binary numpy && \
-    pip install --prefer-binary torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu && \
-    pip install --prefer-binary https://github.com/pyannote/pyannote-audio/archive/develop.zip && \
-    pip install --prefer-binary speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub && \
-    git clone --recursive https://github.com/r9y9/pyreaper && \
-    pip install ./pyreaper/ && rm -rf pyreaper && \
-    git clone --recursive https://github.com/r9y9/pysptk && \
-    pip install ./pysptk/ && rm -rf pysptk
+RUN rm /etc/localtime && \
+    ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
+    apt-get update && \
+    apt-get install -y git libcurl4-openssl-dev curl libxml2-dev libnode-dev r-cran-v8 libavfilter-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev cmake  && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Stage 4: Matlab
-FROM python_packages AS matlab
-# skipping matlab install since it's not needed for this image
+RUN R -e "install.packages(c('curl', 'git2r', 'openxlsx', 'gt', 'tidyverse', 'tidymodels', 'remotes'), repos='${CRAN_MIRROR}')"
+
+RUN R -e "options(repos = c(CRAN = '${CRAN_MIRROR}'));  \
+    remotes::install_github('IPS-LMU/emuR', dependencies = 'Imports'); \
+    remotes::install_github('IPS-LMU/wrassp', dependencies = 'Imports');"
+    # 2024-05-20 Removed these packages for now after discussion. 
+    # remotes::install_github('tjmahr/tjm.praat'); \
+    # remotes::install_github('humlab-speech/superassp', dependencies = 'Imports'); \
+    # remotes::install_github('johanvonboer/eloquent.researcher', dependencies = 'Imports'); \
+    # remotes::install_github('humlab-speech/reindeer', dependencies = 'Imports')"
+
+# Stage 3: Final
+FROM base AS final
+
+# Copy the R packages from the R packages stage
+# Verify that this command is correct by starting the target image and executing "Rscript -e '.libPaths()'" in the terminal
+COPY --from=r_packages /usr/local/lib/R/site-library /root/miniconda/lib/R/library
+
+# PRAAT installation
+WORKDIR /    
+
+# Depricated praat installation 2024-05-20
+# COPY ./praat/praat.tgz /praat.tgz
+# RUN tar xzf praat.tgz && \
+#     mv praat_nogui /usr/bin/praat_nogui && \
+#     ln -s /usr/bin/praat_nogui /usr/bin/praat && \
+#     rm /praat.tgz
+
+#Node.js installation using node version manager
+ENV NVM_DIR="/root/.nvm"
+
+RUN mkdir /node_install && \
+    cd /node_install && \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash && \
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" && \
+    nvm install 20 && nvm alias default 20 && \
+    ln -s $(which node) /usr/local/bin/node && \
+    ln -s $(which npm) /usr/local/bin/npm
 
 WORKDIR /home/rstudio
 
-# Stage 5: Final
-FROM matlab AS final
+ENV CRAN_MIRROR="https://cran.uib.no/"
+# These packages are for some reason still missing from the R packages stage, and must be installed here.
+# If we get R packages to install correctly in the base image, we can remove this stage.
+RUN R -e "install.packages(c('jsonlite', 'stringi'), repos='${CRAN_MIRROR}')"
 
-RUN echo 'devtools::install_github("humlab-speech/reindeer", dependencies = TRUE)' | R --save
-
-WORKDIR /
-
-COPY ./praat/praat.tgz /praat.tgz
-RUN tar xzf praat.tgz && \
-    mv praat_nogui /usr/bin/praat_nogui && \
-    ln -s /usr/bin/praat_nogui /usr/bin/praat
-
-
-WORKDIR /home/rstudio
-
+# Container agent install
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-RUN git clone https://github.com/humlab-speech/container-agent
-RUN cd container-agent && npm install && npm run build && cp -R ./dist /container-agent
+WORKDIR /tmp
+RUN git clone https://github.com/humlab-speech/container-agent && \
+    cd container-agent && \
+    npm install && \ 
+    npm run build && \
+    cp -R ./dist /container-agent
 
-#COPY ./container-agent /container-agent
-COPY ./files/jupyter_notebook_config.py /home/rstudio/.jupyter/jupyter_notebook_config.py
+# Cleanup
+RUN conda clean -a -y -q && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/* && \
+    rm -rf /var/tmp/*
 
-RUN /root/miniconda3/bin/conda clean -a -y -q
+# Create a project directory and set permissions
+RUN mkdir /home/rstudio/project && \
+    chown rstudio:rstudio /home/rstudio/project && \
+    chmod 755 /home/rstudio/project
 
-RUN mkdir /home/rstudio/project
+WORKDIR /home/rstudio/project

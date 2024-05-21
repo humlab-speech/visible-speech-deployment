@@ -1,122 +1,97 @@
-#FROM jupyter/datascience-notebook:r-4.2.1
-FROM jupyter/datascience-notebook:x86_64-ubuntu-22.04
+# Stage 1: Base
+FROM quay.io/jupyter/datascience-notebook:r-4.3.3 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="The Jupyter session image, which is instantiated when a new Jupyter session is spawned in the VISP interface"
 
 USER root
 
-RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
-
-#Switch to using swedish ubuntu archive, since it sometimes fails to download from the universal archive, for unknown reasons
+# Update the package list and change the package source to a Swedish mirror
 RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
 
-RUN apt-get update
-#RUN apt-get install -y zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8 gpg
-RUN apt-get install -y zlib1g-dev nano curl r-cran-v8 gpg
-
-#Not sure why I have to manually link in libv8 like this, but ld fails otherwise when trying to build V8 (which is a dep of emuR)
 WORKDIR /opt/conda/lib
-RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./
-RUN ln -s /usr/lib/x86_64-linux-gnu/libv8_libplatform.so ./
+RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
+    ln -s /usr/lib/x86_64-linux-gnu/libv8_libplatform.so ./
+
+# Timezone fixes and base software installation
+RUN rm /etc/localtime && \
+    ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
+    apt-get update && \
+    apt-get install -y zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8 libavfilter-dev cmake && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install r-av package for R audio handling
+RUN mamba install -y -c conda-forge r-av && \
+conda clean -a -y
 
 WORKDIR /home/jovyan
 
-#Nodejs installation
-RUN mkdir -p /etc/apt/keyrings
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-ENV NODE_MAJOR=20
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-RUN apt-get update
-RUN apt-get install nodejs -y
+# Stage 2: Python packages
+FROM base AS python_packages
 
-RUN apt-get update
-RUN apt-get install -y r-cran-git2r
-RUN apt-get install -y r-cran-jsonlite
-RUN apt-get install -y r-cran-base64enc
+RUN pip install --upgrade pip && \
+    pip install --prefer-binary numpy \
+                               torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu \
+                               https://github.com/pyannote/pyannote-audio/archive/develop.zip \
+                               speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub \
+                               json_tricks && \
+    git clone --recursive https://github.com/r9y9/pyreaper && \
+    pip install ./pyreaper/ && rm -rf pyreaper && \
+    git clone --recursive https://github.com/r9y9/pysptk && \
+    pip install ./pysptk/ && rm -rf pysptk
 
-RUN echo 'install.packages("devtools", repos="http://cran.r-project.org")' | R --save
-RUN echo 'library(devtools); install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R --save
-RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R --save
 
-#libavfilter-dev is needed for superassp
-RUN apt-get install -y libavfilter-dev libavcodec-dev libavformat-dev libavutil-dev
-RUN echo 'install.packages("av", repos="http://cran.r-project.org")' | R --save
-#RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save
-RUN echo 'library(devtools); install_github("IPS-LMU/emuR")' | R --save
-#RUN echo 'library(devtools); install_github("humlab-speech/reindeer", dependencies = TRUE)' | R --save
+# Stage 4: Copy MATLAB runtime from Rstudio session image to a clean image
+FROM python_packages AS matlab
 
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("git2r")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("openxlsx")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("ggpubr")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("gt")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("tidyverse")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("tidymodels")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("devtools")' | R --save
-#RUN echo 'chooseCRANmirror(graphics=FALSE, ind=61);install.packages("emuR")' | R --save
+# We copy the installation from the Rstudio session image, to avoid doing it twice
+COPY --from=visp-rstudio-session /usr/local/MATLAB /usr/local/MATLAB
 
-#RUN echo 'library(devtools); install_github("IPS-LMU/wrassp",dependencies = "Imports")' | R --save
-#RUN echo 'library(devtools); install_github("tjmahr/tjm.praat")' | R --save
-#RUN echo 'library(devtools); install_github("humlab-speech/superassp",dependencies = "Imports")' | R --save
-#RUN echo 'devtools::install_github("johanvonboer/eloquent.researcher",dependencies = "Imports")' | R --save
+# Copy the matlab scripts
+RUN mkdir /matlab-scripts
+COPY ./matlab-scripts/*.zip ./matlab-scripts/*.sh /matlab-scripts/
+WORKDIR /matlab-scripts
 
-#RUN pip install --upgrade pip
-#RUN pip install --prefer-binary numpy
-#RUN pip install --prefer-binary torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-#RUN pip install --prefer-binary https://github.com/pyannote/pyannote-audio/archive/develop.zip
-#RUN pip install --prefer-binary speechbrain 
-#RUN pip install --prefer-binary opensmile
-#RUN pip install --prefer-binary librosa torchcrepe
-#RUN pip install --prefer-binary pyworld
-#RUN pip install --prefer-binary amfm_decompy
-#RUN pip install --prefer-binary tensorflow
-#RUN pip install --prefer-binary tensorflow_hub
+# Note: The configure matlab env script will set variables for the jovyan user.
+# This will hopefully persist after the container has been created!
+RUN chmod +x unzip_and_setup.sh && \
+    chmod +x configure_matlab_env.sh && \
+    ./configure_matlab_env.sh set
+# Add python_wrappers subdirectory to system path
+ENV PATH="/matlab-scripts/python_wrappers:${PATH}"
 
-# Special solution due to submodule in project, consider another approach down the line
-#RUN git clone --recursive https://github.com/r9y9/pyreaper
-#RUN pip install ./pyreaper/ && rm -rf pyreaper
-#RUN git clone --recursive https://github.com/r9y9/pysptk
-#RUN pip install ./pysptk/ && rm -rf pysptk
+# NOTE: The unzip_and_setup scripts creates the setenv script automatically.
+RUN /matlab-scripts/unzip_and_setup.sh /matlab-scripts/
 
-#RUN mkdir /matlab_install
+WORKDIR /home/jovyan
 
-#WORKDIR /matlab_install
+# Stage 5: Final
+FROM matlab AS final
 
-# Note: If we change MATLAB runtime version, we will also need to change the directory.
-#RUN wget -O matlab_runtime_install.zip https://ssd.mathworks.com/supportfiles/downloads/R2022a/Release/0/deployment_files/installer/complete/glnxa64/MATLAB_Runtime_R2022a_glnxa64.zip
-#ENV MATLAB_RUNTIME_DIRECTORY=/usr/local/MATLAB/MATLAB_Runtime/v912/
-
-#RUN unzip matlab_runtime_install.zip
-#RUN rm matlab_runtime_install.zip
-#RUN ./install -mode silent -agreeToLicense yes
-#RUN rm -rf /matlab_install/*
-
-#COPY ./matlab-scripts/*.zip ./
-#RUN unzip '*.zip'
-#RUN chmod +x ./voice_analysisstandaloneApplication/run_voice_analysis.sh
-#RUN chmod +x ./voice_analysisstandaloneApplication/voice_analysis
-#RUN chmod +x ./voice_analysis_directorystandaloneApplication/run_voice_analysis_directory.sh
-#RUN chmod +x ./voice_analysis_directorystandaloneApplication/voice_analysis_directory
-
-#ENV PATH="/matlab_install/voice_analysisstandaloneApplication/:/matlab_install/voice_analysis_directorystandaloneApplication/:${PATH}"
-
-#WORKDIR /home/jovyan
-
-#Always force the next cmds, stolen from https://stackoverflow.com/questions/35134713/disable-cache-for-specific-run-commands
-#ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-
-#RUN echo 'library(devtools); install_github("humlab-speech/reindeer", dependencies = TRUE)' | R --save
-
-WORKDIR /
+# Grab the compiled R from the visp_operations_session image, avoiding building them twice
+# NOTE: If the operations session image is updated, this image must be rebuilt
+COPY --from=visp-operations-session /root/miniconda/lib/R/library /opt/conda/lib/R/library
 
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+WORKDIR /tmp
+RUN git clone https://github.com/humlab-speech/container-agent && \
+    cd container-agent && \
+    npm install && \ 
+    npm run build && \
+    cp -R ./dist /container-agent
 
-COPY ./praat/praat.tgz /praat.tgz
-RUN tar xzf praat.tgz && mv praat_nogui /usr/bin/praat_nogui && ln -s /usr/bin/praat_nogui /usr/bin/praat
+COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
 
-COPY ./operations-session/wavs /tmp/wavs
-COPY ./container-agent /container-agent
+# Cleanup
+RUN conda clean -a -y -q && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /tmp/* && \
+    rm -rf /var/tmp/*    
 
-#COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
+RUN mkdir /home/jovyan/project && \
+    chown jovyan /home/jovyan/project && \
+    chmod 755 /home/jovyan/project
 
-RUN mkdir /home/jovyan/project
+WORKDIR /home/jovyan/project
