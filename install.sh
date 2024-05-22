@@ -54,6 +54,7 @@ git clone https://github.com/humlab-speech/webapi
 
 echo "Grabbing latest container-agent"
 git clone https://github.com/humlab-speech/container-agent
+cd container-agent && npm install && npm run build && cd ..
 
 echo "Grabbing emu-webapp-server .env file"
 mkdir -p mounts/emu-webapp-server/logs
