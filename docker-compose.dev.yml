@@ -84,6 +84,7 @@ services:
       EMUDB_INTEGRATION_ENABLED: $EMUDB_INTEGRATION_ENABLED
       GITLAB_ACTIVATED: 1
       LOG_LEVEL: "debug"
+      DEVELOPMENT_MODE: "true"
     volumes:
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./session-manager:/session-manager:Z"
