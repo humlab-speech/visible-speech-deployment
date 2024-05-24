@@ -6,6 +6,15 @@ LABEL description="The Rstudio session image, which is instantiated when a new R
 
 USER root
 
+# Miniconda installation, with Mamba
+WORKDIR /root
+RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+    sh miniconda.sh -b -p /opt/miniconda && \
+    rm miniconda.sh && \
+    /opt/miniconda/bin/conda install -y -c conda-forge mamba
+   
+ENV PATH="/opt/miniconda/bin:$PATH"    
+
 # Stage 2: Python packages
 FROM base AS python_packages
 
@@ -15,10 +24,13 @@ RUN pip install --upgrade pip && \
                                https://github.com/pyannote/pyannote-audio/archive/develop.zip \
                                speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub \
                                json_tricks && \
+    cd /tmp && \
     git clone --recursive https://github.com/r9y9/pyreaper && \
     pip install ./pyreaper/ && rm -rf pyreaper && \
     git clone --recursive https://github.com/r9y9/pysptk && \
-    pip install ./pysptk/ && rm -rf pysptk
+    pip install ./pysptk/ && rm -rf pysptk && \
+    cd / && \
+    rm -rf /tmp/*
 
 # Stage 3: Matlab
 FROM base AS matlab_builder
