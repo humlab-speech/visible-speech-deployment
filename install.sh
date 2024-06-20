@@ -86,7 +86,7 @@ echo "Setting directory permissions"
 chown -R 1000:1000 webclient
 chown -R 1000:1000 certs
 chown -R 1000:1000 container-agent
-chown -R 1000:1000 emu-webapp-server
+#chown -R 1000:1000 emu-webapp-server
 chown -R 1000:1000 webapi
 chown -R 1000:1000 wsrng-server
 chown -R 1000:1000 session-manager
