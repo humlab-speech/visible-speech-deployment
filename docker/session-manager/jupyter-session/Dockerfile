@@ -17,13 +17,9 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
 RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
     apt-get update && \
-    apt-get install -y zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8 libavfilter-dev cmake && \
+    apt-get install -y ffmpeg zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8 libavfilter-dev cmake && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-# Install r-av package for R audio handling
-RUN mamba install -y -c conda-forge r-av && \
-conda clean -a -y
 
 WORKDIR /home/jovyan
 
@@ -71,12 +67,13 @@ FROM matlab AS final
 
 # Grab the compiled R from the visp_operations_session image, avoiding building them twice
 # NOTE: If the operations session image is updated, this image must be rebuilt
-COPY --from=visp-operations-session /root/miniconda/lib/R/library /opt/conda/lib/R/library
+COPY --from=visp-operations-session /usr/local/lib/R/site-library /opt/conda/lib/R/library
 
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+# ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 WORKDIR /tmp
-RUN git clone https://github.com/humlab-speech/container-agent && \
-    cd container-agent && \
+# Move .container-agent to /container-agent:
+ADD --chown=root:root ./files/container-agent /container-agent-install
+RUN cd /container-agent-install && \
     npm install && \ 
     npm run build && \
     cp -R ./dist /container-agent
@@ -91,7 +88,7 @@ RUN conda clean -a -y -q && \
     rm -rf /var/tmp/*    
 
 RUN mkdir /home/jovyan/project && \
-    chown jovyan /home/jovyan/project && \
-    chmod 755 /home/jovyan/project
+    chown -R jovyan:users /home/jovyan/project && \
+    chmod -R 755 /home/jovyan/project
 
 WORKDIR /home/jovyan/project
