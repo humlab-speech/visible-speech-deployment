@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ENV WEBCLIENT_BUILD=visp-build
 
@@ -12,13 +12,13 @@ RUN apt-get update
 RUN apt-get install -y ca-certificates curl gnupg iputils-ping
 RUN mkdir -p /etc/apt/keyrings
 RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-ENV NODE_MAJOR=18
+ENV NODE_MAJOR=22
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
 RUN apt-get update && apt-get install git nodejs apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php nano curl php-mbstring php-mongodb php-zip php-xml php-pgsql --no-install-recommends -y
 
-RUN a2enmod proxy proxy_http ssl headers php7.4 rewrite proxy_wstunnel
+RUN a2enmod proxy proxy_http ssl headers php8.2 rewrite proxy_wstunnel
 
 ENV APACHE_RUN_USER=www-data
 ENV APACHE_RUN_GROUP=www-data
