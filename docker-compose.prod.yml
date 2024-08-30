@@ -38,8 +38,8 @@ services:
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
-      - "./webclient/dist:/var/www/html:Z"
-      - "./webapi:/var/www/html/api:Z"
+      #- "./webclient/dist:/var/www/html:Z"
+      #- "./webapi:/var/www/html/api:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
@@ -57,8 +57,8 @@ services:
       - "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.key"
 
   session-manager:
-    image: hs-session-manager
-    build: "./docker/session-manager"
+    image: visp-session-manager
+    #build: "./docker/session-manager"
     restart: always
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
@@ -106,8 +106,14 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
       - "./mounts/emu-webapp-server/logs:/emu-webapp-server/logs:Z"
-    env_file:
-      - ./mounts/emu-webapp-server/.env
+    environment:
+      WS_SERVER_PORT: 17890
+      MONGO_URI: mongodb://root:${MONGO_ROOT_PASSWORD}@mongo:27017
+      MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      MONGO_DB_NAME: visp
+      REPOSITORIES_PATH: /repositories
+      MEDIA_FILE_BASE_URL: https://emu-webapp.${BASE_DOMAIN}
+      LOG_LEVEL: INFO
     networks:
       - visp-net
 
@@ -176,37 +182,37 @@ services:
   #  networks:
   #    - visp-net
 
-  #matomo-db:
-  #  image: mariadb:10.3
-  #  restart: unless-stopped
-  #  networks:
-  #    - visp-net
-  #  volumes:
-  #    - /mounts/matomo-db/mysql:/var/lib/mysql
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"
-  #  environment:
-  #    MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
-  #    MYSQL_DATABASE: ${MATOMO_DB_NAME}
-  #    MYSQL_USER: ${MATOMO_DB_USER}
-  #    MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
+  matomo-db:
+    image: mariadb:10.3
+    restart: unless-stopped
+    networks:
+      - visp-net
+    volumes:
+      - /mounts/matomo-db/mysql:/var/lib/mysql
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MATOMO_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MATOMO_DB_NAME}
+      MYSQL_USER: ${MATOMO_DB_USER}
+      MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
 
-  #matomo:
-  #  image: matomo:4.8.0
-  #  restart: unless-stopped    
-  #  depends_on:
-  #    - matomo-db
-  #  networks:
-  #    - visp-net
-  #  volumes:
-  #    # To allow you to view/edit Matomo configuration files:
-  #    - ./mounts/matomo/config:/var/www/html/config:rw
-  #    # To allow you to easily view Matomo log files:
-  #    - ./mounts/matomo/logs:/var/www/html/logs
-  #    # To allow matomo access to apache logs for imports
-  #    - ./mounts/apache/apache/logs/apache2:/external_logs
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"
+  matomo:
+    image: matomo:4.8.0
+    restart: unless-stopped    
+    depends_on:
+      - matomo-db
+    networks:
+      - visp-net
+    volumes:
+      # To allow you to view/edit Matomo configuration files:
+      - ./mounts/matomo/config:/var/www/html/config:rw
+      # To allow you to easily view Matomo log files:
+      - ./mounts/matomo/logs:/var/www/html/logs
+      # To allow matomo access to apache logs for imports
+      - ./mounts/apache/apache/logs/apache2:/external_logs
+      - "/etc/timezone:/etc/timezone:ro"
+      - "/etc/localtime:/etc/localtime:ro"
 
   mongo-express:
     image: mongo-express
