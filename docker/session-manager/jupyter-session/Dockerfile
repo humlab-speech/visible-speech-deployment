@@ -17,7 +17,7 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
 RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
     apt-get update && \
-    apt-get install -y ffmpeg zlib1g-dev nano curl libnode72 libnode-dev r-cran-v8 libavfilter-dev cmake && \
+    apt-get install -y ffmpeg zlib1g-dev nano curl nodejs libnode-dev r-cran-v8 libavfilter-dev cmake && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
