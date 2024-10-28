@@ -105,7 +105,7 @@ services:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
-      - "./mounts/emu-webapp-server/logs:/emu-webapp-server/logs:Z"
+      - "./mounts/emu-webapp-server/logs:/home/visp/app/logs:Z"
     environment:
       WS_SERVER_PORT: 17890
       MONGO_URI: mongodb://root:${MONGO_ROOT_PASSWORD}@mongo:27017
