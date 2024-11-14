@@ -140,7 +140,7 @@ services:
   #    - visp-net
 
   mongo:
-    image: mongo:4.4.12
+    image: mongo:noble
     restart: always
     ports:
       - 27017:27017
@@ -198,7 +198,7 @@ services:
       MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}             
 
   matomo:
-    image: matomo:4.8.0
+    image: matomo:5.1.2
     restart: unless-stopped    
     depends_on:
       - matomo-db

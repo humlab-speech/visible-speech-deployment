@@ -1,4 +1,3 @@
-#FROM nginx:1.19
 FROM httpd:2.4
 
 # COPY ./public-html/ /usr/local/apache2/htdocs/
@@ -15,7 +14,6 @@ WORKDIR /
 RUN curl -k -OL https://github.com/IPS-LMU/octra/releases/download/v1.4.3/octra-v1-4-3.zip
 
 RUN apt-get update && apt-get -y install unzip
-#RUN apt-get update && apt-get -y install nodejs unzip
 
 RUN unzip octra-v1-4-3.zip -d /
 

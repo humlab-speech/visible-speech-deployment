@@ -1,6 +1,6 @@
-FROM node:lts-buster
+FROM node:23-bookworm-slim
 
-RUN apt-get install -y git curl
+RUN apt update && apt install -y git curl
 
 WORKDIR /
 

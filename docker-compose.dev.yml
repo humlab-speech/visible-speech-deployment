@@ -1,7 +1,6 @@
-version: '3'
 services:
   traefik:
-    image: traefik:v2.5.7
+    image: traefik:v3.2
     restart: always
     volumes:
       - "./mounts/traefik/conf:/etc/traefik:Z"
@@ -118,7 +117,7 @@ services:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       #- "./emu-webapp-server:/home/visp/app"
-      - "./mounts/emu-webapp-server/logs:/home/visp/app/logs:Z"
+      - "./mounts/emu-webapp-server/logs:/app/logs:Z"
       - "./mounts/repositories:/repositories:Z"
     env_file:
       - ./mounts/emu-webapp-server/.env
@@ -148,18 +147,8 @@ services:
     networks:
       - visp-net
 
-  #labjs:
-  #  image: hs-labjs
-  #  build: "./docker/labjs"
-  #  restart: unless-stopped
-  #  volumes:
-  #    - "/etc/timezone:/etc/timezone:ro"
-  #    - "/etc/localtime:/etc/localtime:ro"      
-  #  networks:
-  #    - visp-net
-
   mongo:
-    image: mongo:4.4
+    image: mongo:noble
     restart: unless-stopped
     ports:
       - 27017:27017
@@ -176,7 +165,7 @@ services:
       - visp-net
     
   mongo-express:
-    image: mongo-express
+    image: mongo-express:1.0-20-alpine3.19
     restart: unless-stopped
     ports:
       - 8081:8081
@@ -188,20 +177,6 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: bongo
     networks:
       - visp-net
-
-#  vscode:
-#    image: linuxserver/code-server:version-v3.11.1
-#    environment:
-#      PUID: 1000
-#      PGID: 1000
-#      TZ: Europe/Stockholm
-#      PROXY_DOMAIN: vscode.$BASE_DOMAIN
-#    volumes:
-#      - "./mounts/vscode/config:/config"
-#      - "/etc/timezone:/etc/timezone:ro"
-#      - "/etc/localtime:/etc/localtime:ro"
-#    networks:
-#      - visp-net
 
 networks:
   visp-net:
