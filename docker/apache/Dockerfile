@@ -41,6 +41,7 @@ ADD "https://api.github.com/repos/humlab-speech/webclient/commits?per_page=1" la
 RUN git clone https://github.com/humlab-speech/webclient
 WORKDIR /webclient
 RUN npm install -legacy-peer-deps
+RUN npm update --legacy-peer-deps
 RUN npm run $WEBCLIENT_BUILD
 RUN mv dist/* /var/www/html/
 
@@ -53,6 +54,7 @@ ADD ./init_mongodb.js /init_mongodb/
 ADD ./package.json /init_mongodb/
 WORKDIR /init_mongodb
 RUN npm install -legacy-peer-deps
+RUN npm update --legacy-peer-deps
 
 WORKDIR /var/www/html
 

@@ -1,8 +1,8 @@
-FROM node:23-bullseye-slim
+FROM node:22-bookworm
 
 # Install non-npm related packages
 RUN apt-get update && \
-    apt-get install -y curl ca-certificates gnupg git nano wget rubygems ruby-dev build-essential xsel 
+    apt-get install -y curl ca-certificates gnupg git nano wget rubygems ruby-dev build-essential xsel
 
 WORKDIR /app
 
@@ -16,5 +16,4 @@ WORKDIR /app/EMU-webApp
 
 RUN npm install --legacy-peer-deps
 
-CMD ["/usr/bin/npm", "run", "build-start"]
-
+CMD ["/usr/local/bin/npm", "run", "build-start"]

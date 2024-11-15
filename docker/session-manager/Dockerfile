@@ -2,13 +2,11 @@ FROM node:23-bookworm
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 
-RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
-
 RUN apt-get update && apt-get install -y \
     apt-transport-https \
     gnupg-agent \
     software-properties-common \
-    zlib1g-dev nano r-cran-git2r libgit2-1.1 libgit2-dev docker.io
+    zlib1g-dev nano r-cran-git2r libgit2-dev docker.io
 
 WORKDIR /
 RUN git clone https://github.com/humlab-speech/session-manager
