@@ -1,4 +1,4 @@
-FROM node:22-bookworm
+FROM node:18-bookworm
 
 # Install non-npm related packages
 RUN apt-get update && \
@@ -15,5 +15,6 @@ RUN git clone https://github.com/humlab-speech/EMU-webApp
 WORKDIR /app/EMU-webApp
 
 RUN npm install --legacy-peer-deps
+RUN npm update --legacy-peer-deps
 
 CMD ["/usr/local/bin/npm", "run", "build-start"]
