@@ -68,7 +68,7 @@ services:
 
   session-manager:
     image: hs-session-manager-dev
-    build: "./docker/session-manager/dev"
+    build: "./docker/session-manager/build-context" 
     restart: unless-stopped
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
@@ -159,7 +159,7 @@ services:
   #    - visp-net
 
   mongo:
-    image: mongo:4.4
+    image: mongo:6.0.14
     restart: unless-stopped
     ports:
       - 27017:27017
@@ -176,7 +176,7 @@ services:
       - visp-net
     
   mongo-express:
-    image: mongo-express
+    image: mongo-express:latest
     restart: unless-stopped
     ports:
       - 8081:8081

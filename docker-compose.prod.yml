@@ -140,7 +140,7 @@ services:
   #    - visp-net
 
   mongo:
-    image: mongo:4.4.12
+    image: mongo:6.0.14
     restart: always
     ports:
       - 27017:27017
