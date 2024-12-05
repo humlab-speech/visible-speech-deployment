@@ -57,8 +57,9 @@ services:
 
   session-manager:
     image: visp-session-manager
-    
-    build: "./docker/session-manager"
+    build:
+      context: ./docker/session-manager/build-context
+      dockerfile: Dockerfile
     restart: always
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
@@ -191,6 +192,7 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: $MONGO_EXPRESS_PASSWORD
     networks:
       - visp-net
+
   wsrng-server:
     build: "./docker/wsrng-server"
     environment:
@@ -208,6 +210,18 @@ services:
     volumes:
       - "./mounts/wsrng-server/logs:/wsrng-server/logs:Z"
       - "./mounts/repositories:/repositories:Z"
+    networks:
+      - visp-net
+
+  whisper:
+    build:
+      context: ./docker/whisper
+      dockerfile: Dockerfile
+    image: whisper-webui:latest
+    command: --server_name 0.0.0.0 --server_port 7860
+    volumes:
+      - ./mounts/whisper/models:/Whisper-WebUI/models
+      - ./mounts/whisper/outputs:/Whisper-WebUI/outputs
     networks:
       - visp-net
 
