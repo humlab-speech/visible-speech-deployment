@@ -34,6 +34,7 @@ mkdir -p mounts/apache/apache/uploads
 mkdir -p mounts/mongo/logs
 touch mounts/mongo/logs/mongodb.log
 mkdir -p certs
+mkdir -p mounts/transcription-queued
 
 echo "Fetching SWAMID metadata signing cert"
 curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt
