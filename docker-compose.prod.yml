@@ -87,6 +87,8 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
       - "./mounts/repository-template:/repository-template:Z"
+    depends_on:
+      - whisper
     networks:
       - visp-net
 

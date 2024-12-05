@@ -101,6 +101,8 @@ services:
       - "./mounts/repositories:/repositories:Z"
       - "./mounts/repository-template:/repository-template:Z"
       - "./mounts/transcription-queued:/transcription-queued:Z"
+    depends_on:
+      - whisper
     networks:
       - visp-net
 
