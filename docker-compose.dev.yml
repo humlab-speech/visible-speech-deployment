@@ -66,9 +66,13 @@ services:
       - "./mounts/repositories:/repositories:Z"
 
   session-manager:
-    image: hs-session-manager-dev
-    build: "./docker/session-manager/build-context"
+    image: visp-session-manager-dev
+    build:
+      context: ./docker/session-manager/build-context
+      dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - 8020:8020
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
@@ -84,14 +88,19 @@ services:
       GITLAB_ACTIVATED: 1
       LOG_LEVEL: "debug"
       DEVELOPMENT_MODE: "true"
+      GRADIO_WHISPERX_ENDPOINT: "http://whisper:7860"
+      BASIC_AUTH_USERNAME: "whisperuser"
+      BASIC_AUTH_PASSWORD: "whisperpass"
     volumes:
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./session-manager:/session-manager:Z"
-      - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
+      #- "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
+      - "./mounts/session-manager/logs:/session-manager/logs:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
       - "./mounts/repositories:/repositories:Z"
       - "./mounts/repository-template:/repository-template:Z"
+      - "./mounts/transcription-queued:/transcription-queued:Z"
     networks:
       - visp-net
 
@@ -177,6 +186,20 @@ services:
       ME_CONFIG_BASICAUTH_PASSWORD: bongo
     networks:
       - visp-net
+
+  whisper:
+    build:
+      context: ./docker/whisper
+      dockerfile: Dockerfile
+    image: whisper-webui:latest
+    command: --server_name 0.0.0.0 --server_port 7860
+    volumes:
+      - ./mounts/whisper/models:/Whisper-WebUI/models
+      - ./mounts/whisper/outputs:/Whisper-WebUI/outputs
+    networks:
+      - visp-net
+    ports:
+      - "127.0.0.1:7860:7860"
 
 networks:
   visp-net:

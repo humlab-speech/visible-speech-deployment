@@ -7,7 +7,7 @@ LABEL description="This image is used for background operations in the VISP syst
 USER root
 
 # Update the package list and change the package source to a Swedish mirror
-RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
+#RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
 
 WORKDIR /opt/conda/lib
 RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
@@ -17,7 +17,7 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
 RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
     apt-get update && \
-    apt-get install -y rsync ffmpeg zlib1g-dev nano curl libxml2-dev libnode-dev r-cran-v8 libavfilter-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev cmake  && \
+    apt-get install -y rsync ffmpeg zlib1g-dev nano curl libxml2-dev libnode-dev r-cran-v8 libavfilter-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev cmake libcurl4-openssl-dev  && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -33,6 +33,10 @@ RUN echo $(R RHOME) && \
     sed -i 's/-Werror=implicit-function-declaration//g' $(R RHOME)/etc/Makeconf
 
 ENV CRAN_MIRROR="https://cran.uib.no/"
+
+RUN R -e "install.packages('pak', repos='${CRAN_MIRROR}'); \
+          if (!requireNamespace('pak', quietly = TRUE)) stop('pak installation failed')"
+
 ENV PKG_CRAN_MIRROR=${CRAN_MIRROR}
 RUN R -e "install.packages(c('pak'), repos='${CRAN_MIRROR}')"
 RUN R -e "options(repos = c(CRAN = '${CRAN_MIRROR}')); \
@@ -59,7 +63,7 @@ RUN mkdir /node_install && \
 WORKDIR /home/rstudio
 
 # Container agent install
-# ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 WORKDIR /tmp
 # Move .container-agent to /container-agent:
 ADD --chown=root:root ./files/container-agent /container-agent-install

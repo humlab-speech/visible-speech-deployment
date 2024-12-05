@@ -1,5 +1,5 @@
 #!/bin/bash
 
 #echo "Building Operations session image"
-docker build -t visp-operations-session -f operations-session/Dockerfile .
+docker build -t visp-operations-session --network=host -f operations-session/Dockerfile .
 

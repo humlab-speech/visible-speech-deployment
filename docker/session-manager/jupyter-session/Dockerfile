@@ -7,7 +7,7 @@ LABEL description="The Jupyter session image, which is instantiated when a new J
 USER root
 
 # Update the package list and change the package source to a Swedish mirror
-RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
+#RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
 
 WORKDIR /opt/conda/lib
 RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \

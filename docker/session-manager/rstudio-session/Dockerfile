@@ -8,10 +8,17 @@ USER root
 
 # Miniconda installation, with Mamba
 WORKDIR /root
-RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
-    sh miniconda.sh -b -p /opt/miniconda && \
-    rm miniconda.sh && \
-    /opt/miniconda/bin/conda install -y -c conda-forge mamba
+
+RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN sh miniconda.sh -b -p /opt/miniconda
+RUN rm miniconda.sh
+RUN /opt/miniconda/bin/conda install -y -c conda-forge mamba
+
+
+#RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+#    sh miniconda.sh -b -p /opt/miniconda && \
+#    rm miniconda.sh && \
+#    /opt/miniconda/bin/conda install -y -c conda-forge mamba
    
 ENV PATH="/opt/miniconda/bin:$PATH"    
 
@@ -35,10 +42,10 @@ RUN pip install --upgrade pip && \
 # Stage 3: Matlab
 FROM base AS matlab_builder
 
-WORKDIR /matlab_install
+WORKDIR /matlab_runtime
 
 # Copy the local matlab_runtime_install.zip file to the Docker image
-COPY ./matlab_runtime_installer/current_matlab_install /matlab_install/matlab_runtime_install.zip
+COPY ./matlab_runtime/matlab_runtime_install.zip /matlab_install/matlab_runtime_install.zip
 
 RUN apt-get update && apt-get install -y unzip && \
     unzip /matlab_install/matlab_runtime_install.zip -d /matlab_install/ && \
