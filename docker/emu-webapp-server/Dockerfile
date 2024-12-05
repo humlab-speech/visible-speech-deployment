@@ -13,5 +13,5 @@ RUN git clone https://github.com/humlab-speech/emu-webapp-server
 RUN mv emu-webapp-server app
 WORKDIR /home/visp/app
 RUN npm install
-
+RUN mkdir logs
 CMD ["node", "/home/visp/app/src/main.js"]
