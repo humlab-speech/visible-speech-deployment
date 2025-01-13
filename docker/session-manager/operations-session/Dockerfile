@@ -65,8 +65,10 @@ WORKDIR /home/rstudio
 # Container agent install
 ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 WORKDIR /tmp
+
 # Move .container-agent to /container-agent:
-ADD --chown=root:root ./files/container-agent /container-agent-install
+RUN git clone https://github.com/humlab-speech/container-agent /container-agent-install
+#ADD --chown=root:root ./files/container-agent /container-agent-install
 RUN cd /container-agent-install && \
     npm install && \ 
     npm run build && \
