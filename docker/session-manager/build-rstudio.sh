@@ -6,5 +6,6 @@ if [ ! -f ./matlab_runtime_installer/current_matlab_install ]; then
 fi
 
 #echo "Building RStudio session image"
+cp -Rp ../../container-agent/* ./files/container-agent/
 docker build -t visp-rstudio-session --network=host -f rstudio-session/Dockerfile .
 
