@@ -128,8 +128,9 @@ services:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       #- "./emu-webapp-server:/home/visp/app"
-      - "./mounts/emu-webapp-server/logs:/home/visp/app/logs:Z"
+      #- "./mounts/emu-webapp-server/logs:/home/visp/app/logs:Z"
       - "./mounts/repositories:/repositories:Z"
+      - "./emu-webapp-server:/home/visp/app:Z"
     env_file:
       - ./mounts/emu-webapp-server/.env
     networks:
