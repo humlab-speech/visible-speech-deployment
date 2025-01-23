@@ -105,6 +105,7 @@ services:
       - whisper
     networks:
       - visp-net
+      - whisper-net
 
   emu-webapp:
     image: visp-emu-webapp
@@ -195,15 +196,15 @@ services:
       context: ./docker/whisper
       dockerfile: Dockerfile
     image: whisper-webui:latest
-    command: --server_name 0.0.0.0 --server_port 7860
     volumes:
       - ./mounts/whisper/models:/Whisper-WebUI/models
       - ./mounts/whisper/outputs:/Whisper-WebUI/outputs
     networks:
-      - visp-net
-    ports:
-      - "127.0.0.1:7860:7860"
+      - whisper-net
+
 
 networks:
   visp-net:
+  whisper-net:  # Whisper network, without internet access
+    internal: true    
 
