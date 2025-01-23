@@ -223,7 +223,7 @@ services:
     build:
       context: ./docker/whisper
       dockerfile: Dockerfile
-    image: whisper-webui:latest
+    image: visp-whisper
     volumes:
       - ./mounts/whisper/models:/Whisper-WebUI/models
       - ./mounts/whisper/outputs:/Whisper-WebUI/outputs
