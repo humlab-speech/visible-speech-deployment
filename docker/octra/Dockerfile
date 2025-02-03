@@ -1,28 +1,26 @@
+# Stage 1: Build the project
+FROM node:20 AS build
+
+# Set the working directory
+WORKDIR /app
+
+# Install Git (in case it's not included in the Node.js image)
+RUN apt-get update && apt-get install -y git && apt-get clean
+
+# Clone the repository and checkout a specific tag
+RUN git clone --branch utilities-1.0.2 https://github.com/IPS-LMU/octra.git .
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Run the build command
+RUN npm run build:release
+
+# Stage 2: Serve the built files with httpd
 FROM httpd:2.4
 
-# COPY ./public-html/ /usr/local/apache2/htdocs/
+# Copy the built files from the build stage to the httpd document root
+COPY --from=build /app/dist/apps/octra /usr/local/apache2/htdocs/
 
-
-RUN apt-get update && apt-get -y install nginx curl
-
-COPY cacert.pem /etc/ssl/certs/cacert.pem
-
+# Copy additional files (e.g., demo_file.wav)
 COPY demo_file.wav /usr/local/apache2/htdocs/media/demo_file.wav
-
-WORKDIR /
-
-RUN curl -k -OL https://github.com/IPS-LMU/octra/releases/download/v1.4.3/octra-v1-4-3.zip
-
-RUN apt-get update && apt-get -y install unzip
-
-RUN unzip octra-v1-4-3.zip -d /
-
-# Files in the zip file are in an /octra dir, so no need to create it...
-WORKDIR /octra/
-
-#RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-
-RUN cp -R ./* /usr/local/apache2/htdocs/
-
-
-

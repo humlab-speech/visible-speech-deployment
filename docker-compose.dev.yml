@@ -138,7 +138,7 @@ services:
       - visp-net
 
   octra:
-    image: hs-octra
+    image: visp-octra
     build: "./docker/octra"
     restart: unless-stopped
     volumes:

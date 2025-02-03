@@ -1,5 +1,9 @@
 {
-  "version": "1.2.5",
+  "version": "2.0.0",
+  "api": {
+    "url": "",
+    "appToken":""
+  },
   "audio_server": {
     "url": ""
   },
@@ -10,22 +14,13 @@
     "login": {
       "enabled": false
     },
+    "supportEmail": "support@humlab.umu.se",
     "showdetails": false,
     "responsive": {
       "enabled": true,
       "fixedwidth": 1200
     },
-    "bugreport": {
-      "enabled": false,
-      "name": "Email",
-      "auth_token": "",
-      "url": ""
-    },
-    "plugins": {
-      "asr": {
-        "enabled": false
-		}
-	},
+    "plugins": {},
     "allowed_browsers": [],
     "allowed_projects": [],
     "languages": [
@@ -34,18 +29,14 @@
     ],
     "audioExamples": [
       {
-        "language" : "en",
+        "language": "en",
         "url": "./media/demo_file.wav",
         "description": "Demo media file"
       }
     ],
-
-    "tracking": {
-      "active": "",
-      "matomo": {
-        "host": "",
-        "siteID": 0
-      }
+    "maintenanceNotification": {
+      "active": "inactive",
+      "apiURL": ""
     }
   }
 }
