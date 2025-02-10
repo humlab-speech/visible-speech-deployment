@@ -70,3 +70,4 @@ wsrng-server
 mounts/repositories
 ./emu-webapp-server/
 docker/emu-webapp/EMU-webApp
+mounts/whisper
