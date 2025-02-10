@@ -127,10 +127,8 @@ services:
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
-      #- "./emu-webapp-server:/home/visp/app"
-      #- "./mounts/emu-webapp-server/logs:/home/visp/app/logs:Z"
       - "./mounts/repositories:/repositories:Z"
-      - "./emu-webapp-server:/home/visp/app:Z"
+      - "./emu-webapp-server:/home/node/app:Z"
     env_file:
       - ./mounts/emu-webapp-server/.env
     networks:
@@ -177,7 +175,7 @@ services:
       - visp-net
 
   mongo-express:
-    image: mongo-express:latest
+    image: mongo-express:1.0.2-20-alpine3.19
     restart: unless-stopped
     ports:
       - 8081:8081
