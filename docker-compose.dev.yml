@@ -105,6 +105,7 @@ services:
       - whisper
     networks:
       - visp-net
+      - whisper-net
 
   emu-webapp:
     image: visp-emu-webapp
@@ -135,7 +136,7 @@ services:
       - visp-net
 
   octra:
-    image: hs-octra
+    image: visp-octra
     build: "./docker/octra"
     restart: unless-stopped
     volumes:
@@ -192,16 +193,16 @@ services:
     build:
       context: ./docker/whisper
       dockerfile: Dockerfile
-    image: whisper-webui:latest
-    command: --server_name 0.0.0.0 --server_port 7860
+    image: visp-whisper
     volumes:
       - ./mounts/whisper/models:/Whisper-WebUI/models
       - ./mounts/whisper/outputs:/Whisper-WebUI/outputs
     networks:
-      - visp-net
-    ports:
-      - "127.0.0.1:7860:7860"
+      - whisper-net
+
 
 networks:
   visp-net:
+  whisper-net:  # Whisper network, without internet access
+    internal: true    
 

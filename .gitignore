@@ -49,6 +49,8 @@ mounts/gitlab/config/ssh_host_ed25519_key
 mounts/gitlab/config/ssh_host_ed25519_key.pub
 mounts/gitlab/config/ssh_host_rsa_key
 mounts/gitlab/config/ssh_host_rsa_key.pub
+mounts/whisper/models/*
+mounts/transcription-queued/*
 kc-realm-export.json
 #docker/session-manager/scripts/container-agent/main.js
 mounts/mongo/data/
