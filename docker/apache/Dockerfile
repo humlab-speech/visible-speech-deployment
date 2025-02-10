@@ -59,7 +59,8 @@ WORKDIR /var/www/html
 
 USER root
 
-CMD bash -c "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"
+CMD ["bash", "-c", "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"]
+
 
 EXPOSE 80
 EXPOSE 443
