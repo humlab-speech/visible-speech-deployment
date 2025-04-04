@@ -52,7 +52,7 @@ RUN mkdir /init_mongodb
 ADD ./init_mongodb.js /init_mongodb/
 ADD ./package.json /init_mongodb/
 WORKDIR /init_mongodb
-RUN npm install -legacy-peer-deps
+RUN npm install --legacy-peer-deps
 RUN npm update --legacy-peer-deps
 
 WORKDIR /var/www/html
