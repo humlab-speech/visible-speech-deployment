@@ -28,7 +28,7 @@ FROM base AS python_packages
 RUN pip install --upgrade pip && \
     pip install --prefer-binary numpy \
                                torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu \
-                               https://github.com/pyannote/pyannote-audio/archive/develop.zip \
+                               pyannote.audio \
                                speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub \
                                json_tricks && \
     cd /tmp && \

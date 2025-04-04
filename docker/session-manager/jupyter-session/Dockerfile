@@ -6,8 +6,6 @@ LABEL description="The Jupyter session image, which is instantiated when a new J
 
 USER root
 
-# Update the package list and change the package source to a Swedish mirror
-#RUN sed -i 's/archive.ubuntu.com/se.archive.ubuntu.com/g' /etc/apt/sources.list
 
 WORKDIR /opt/conda/lib
 RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
@@ -16,9 +14,9 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
 # Timezone fixes and base software installation
 RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
-    apt-get update && \
-    apt-get install -y ffmpeg zlib1g-dev nano curl nodejs libnode-dev r-cran-v8 libavfilter-dev cmake && \
-    apt-get clean && \
+    apt update && apt upgrade -y && \
+    apt install -y ffmpeg zlib1g-dev nano npm curl nodejs libnode-dev r-cran-v8 libavfilter-dev cmake && \
+    apt clean && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/jovyan
@@ -27,15 +25,18 @@ WORKDIR /home/jovyan
 FROM base AS python_packages
 
 RUN pip install --upgrade pip && \
-    pip install --prefer-binary numpy \
-                               torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu \
-                               https://github.com/pyannote/pyannote-audio/archive/develop.zip \
-                               speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub \
-                               json_tricks && \
+    pip install uv && \
+    uv pip install --system numpy \
+                   torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu \
+                   pyannote.audio \
+                   speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub \
+                   json_tricks && \
     git clone --recursive https://github.com/r9y9/pyreaper && \
-    pip install ./pyreaper/ && rm -rf pyreaper && \
+    uv pip install --system ./pyreaper/ && rm -rf pyreaper && \
     git clone --recursive https://github.com/r9y9/pysptk && \
-    pip install ./pysptk/ && rm -rf pysptk
+    uv pip install --system ./pysptk/ && rm -rf pysptk && \
+    uv pip install --system whisperx
+
 
 
 # Stage 4: Copy MATLAB runtime from Rstudio session image to a clean image
@@ -82,7 +83,7 @@ COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_c
 
 # Cleanup
 RUN conda clean -a -y -q && \
-    apt-get clean && \
+    apt clean && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/* && \
     rm -rf /var/tmp/*    
@@ -92,3 +93,19 @@ RUN mkdir /home/jovyan/project && \
     chmod -R 755 /home/jovyan/project
 
 WORKDIR /home/jovyan/project
+
+# This part is to create a cache directory for the whisperx model, which is then mounted.
+# We do not want users to download the model every time they start a new session.
+RUN mkdir /hf_cache && \
+    chmod -R 777 /hf_cache
+ENV HF_HOME="/hf_cache"    
+
+# Copy whisper model link script
+COPY ./files/whisperx_link_script.sh /usr/local/bin/whisperx_link_script.sh
+RUN chmod +x /usr/local/bin/whisperx_link_script.sh
+
+# Add cron job for jovyan user to run the script at reboot
+RUN echo "@reboot jovyan /usr/local/bin/whisperx_link_script.sh" >> /etc/crontab
+
+# Switch back to jovyan user
+USER jovyan
