@@ -52,7 +52,7 @@ services:
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
       - "./webclient/dist:/var/www/html:Z"
-      - "./webapi:/var/www/html/api:Z"
+      - "./webapi:/var/www/webapi:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
