@@ -51,6 +51,13 @@ WORKDIR /init_mongodb
 RUN npm install --legacy-peer-deps
 RUN npm update --legacy-peer-deps
 
+WORKDIR /var/www/html/api
+
+# install php dependencies via composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer install --no-dev --optimize-autoloader
+RUN composer dump-autoload --optimize
+
 WORKDIR /var/www/html
 
 USER root
