@@ -44,10 +44,6 @@ RUN npm install --legacy-peer-deps
 RUN npm run $WEBCLIENT_BUILD
 RUN mv dist/* /var/www/html/
 
-RUN git clone https://github.com/humlab-speech/webapi
-RUN mkdir /var/www/html/api
-RUN mv webapi/* /var/www/html/api
-
 RUN mkdir /init_mongodb
 ADD ./init_mongodb.js /init_mongodb/
 ADD ./package.json /init_mongodb/
