@@ -94,6 +94,8 @@ RUN mkdir /home/jovyan/project && \
 
 WORKDIR /home/jovyan/project
 
+COPY files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
+
 # This part is to create a cache directory for the whisperx model, which is then mounted.
 # We do not want users to download the model every time they start a new session.
 RUN mkdir /hf_cache && \
