@@ -36,7 +36,7 @@
     ],
     "maintenanceNotification": {
       "active": "inactive",
-      "apiURL": ""
+      "apiURL": "https://octra.visp.humlab.umu.se/"
     }
   }
 }

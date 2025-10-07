@@ -98,7 +98,7 @@ services:
     build: "./docker/emu-webapp"
     restart: always
     ports:
-      - 9000:9000
+      - 127.0.0.1:9000:9000
     networks:
       - visp-net
 
@@ -107,7 +107,7 @@ services:
     build: "./docker/emu-webapp-server"
     restart: unless-stopped
     ports:
-      - 17890:17890
+      - 127.0.0.1:17890:17890
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
@@ -140,7 +140,7 @@ services:
     image: mongo:6.0.14
     restart: always
     ports:
-      - 27017:27017
+      - 127.0.0.1:27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
@@ -235,5 +235,7 @@ networks:
   visp-net:
   whisper-net:  # Whisper network, without internet access
     internal: true    
+  octra-net:  # Octra network, without internet access
+    internal: true        
 
 

@@ -71,3 +71,5 @@ mounts/repositories
 ./emu-webapp-server/
 docker/emu-webapp/EMU-webApp
 mounts/whisper
+docker/session-manager/matlab_runtime_installer/
+session-manager/

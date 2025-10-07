@@ -24,6 +24,7 @@ services:
     restart: unless-stopped
     networks:
       - visp-net
+      - octra-net
     environment:
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
@@ -112,7 +113,7 @@ services:
     build: "./docker/emu-webapp"
     restart: unless-stopped
     ports:
-      - 9000:9000
+      - 127.0.0.1:9000:9000
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
@@ -124,7 +125,7 @@ services:
     build: "./docker/emu-webapp-server"
     restart: unless-stopped
     ports:
-      - 17890:17890
+      - 127.0.0.1:17890:17890
     volumes:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
@@ -140,12 +141,12 @@ services:
     build: "./docker/octra"
     restart: unless-stopped
     volumes:
-      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
-      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z"
+      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
     networks:
-      - visp-net
+      - octra-net
 
   wsrng-server:
     #image: wsrng-server
@@ -162,7 +163,7 @@ services:
     image: mongo:6.0.14
     restart: unless-stopped
     ports:
-      - 27017:27017
+      - 127.0.0.1:27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
@@ -179,7 +180,7 @@ services:
     image: mongo-express:1.0.2-20-alpine3.19
     restart: unless-stopped
     ports:
-      - 8081:8081
+      - 127.0.0.1:8081:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: $MONGO_ROOT_PASSWORD
@@ -205,4 +206,6 @@ networks:
   visp-net:
   whisper-net:  # Whisper network, without internet access
     internal: true    
+  octra-net:  # Octra network, without internet access
+    internal: true        
 
