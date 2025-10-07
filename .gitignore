@@ -29,6 +29,8 @@ certs/*
 private/*
 node_modules
 mounts/apache/saml/certs
+mounts/apache/saml/keycloak/
+mounts/keycloak/
 mounts/postgresql/data
 rstudio-router/node_modules
 gitlab/sp-cert/*
