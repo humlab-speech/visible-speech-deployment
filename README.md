@@ -1,7 +1,20 @@
 
 # Visible Speech
 
-This is a cluster of services in the form of docker containers, which as a whole makes out the Visible Speech (VISP) system.
+This is a cl### Automated Demo Installation
+For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
+
+1. Enter into visible-speech-deployment directory.
+1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
+1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
+1. Once complete, run `docker-compose up -d`
+1. Follow the remaining manual steps for setup (MongoDB, Gitlab, Keycloak, etc.)
+
+### Update System
+To update the system components:
+
+1. RUN `python3 visp_deploy.py update`
+1. This will update all repositories, rebuild components using Node.js containers, and check Docker images.ces in the form of docker containers, which as a whole makes out the Visible Speech (VISP) system.
 
 Included services:
 * Traefik
@@ -29,32 +42,20 @@ A Linux environment based on Debian or Ubuntu.
 
 If you are using WSL2, you will run into issues if you put this project inside an NTFS mount, such as `/mnt/c`, use a location inside the WSL2 container instead, such as `~/`. Note that you need to have docker and docker-compose available.
 
-### Steps
-1. If you are running this locally (which is assumed here), you need to add this line to the windows hosts file (C:\Windows\System32\drivers\etc\hosts): `127.0.0.1			visp.local gitlab.visp.local idp.visp.local app.visp.local emu-webapp.visp.local octra.visp.local`
-1. Enter into visible-speech-deployment directory. The instructions will assume this is where you are currently standing from now on.
-1. RUN `sudo ./install.sh`
-1. Fill out your `.env` file with the appropriate information.
-1. Go to docker/session-manager and run `build-session-images.sh`. This will take some time and it's fine if this isn't completed before you proceed, so you might want to do this in a separate terminal.
-1. Run `docker-compose up -d`
-1. Got to the control panel for MongoDB at http://localhost:8081 and create a new database called `visp` with a collection called `personal_access_tokens`
-1. Gitlab setup
-  * Sign-in to Gitlab (at https://gitlab.visp.local) with the root account.
-  * Go to `preferences` in your avatar menu.
-  * Go to `Access Tokens`.
-  * Create an access token with `api` access. Name doesn't matter. Enter this access token into your .env 
-  * Edit .env and set `GITLAB_OMNIAUTH_AUTO_SIGN_IN_WITH_PROVIDER=saml` (revert this if you need to login as root at some future point)
-1. RUN `docker-compose exec apache bash /idpFp.sh` to get your internal IdP fingerprint and use this to fill in `IDP_SIGNING_CERT_FINGERPRINT` in .env.
-1. Keycloak setup
-  * Go to Keycloak at https://idp.visp.local
-  * Sign-in with the keycloak admin credentials you specified in .env
-  * Create a realm called `hird` and import the keycloak-config.json file in the same step.
-  * Run `docker-compose exec apache bash idpFp.sh`, this should print out your Keycloak IdP fingerprint. Enter this into your .env file like `KEYCLOAK_SIGNING_CERT_FINGERPRINT=42:31:C4:AF...`.  
-1. Run `docker-compose down && docker-compose up -d` to let various services read in new data.
+### Automated Demo Installation
+For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings:
 
-Everything should now be setup for using the system with Keycloak as the local identity provider. A user for testing has been created for you in Keycloak, you need to login to Keycloak as admin to set a password for it.
-If you wish to add more test users, you can just do so in Keycloak, the minimum requirements are an email as well as the eppn_keycloak attribute, which can be the same as the email.
+1. Enter into visible-speech-deployment directory.
+1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
+1. The script will install dependencies, clone repositories, build components, auto-generate passwords, and build Docker images in the background.
+1. Once complete, run `docker-compose up -d`
+1. Follow the remaining manual steps for setup (MongoDB, Gitlab, Keycloak, etc.)
 
-For a production setup you might want to add your organization as an identity provider in Keycloak.
+### Update System
+To update the system components:
+
+1. RUN `python3 visp_deploy.py update`
+1. This will update all repositories, rebuild components, and check Docker images.
 
 ## Extras
 * You might want to go to https://gitlab.visp.local/admin/application_settings/general#js-signup-settings and uncheck 'Sign-up enabled' to prevent the creation of local GitLab accounts.
