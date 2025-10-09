@@ -15,8 +15,7 @@ repos:
         files: \.py$
         exclude: |
           (?x)^(
-            docker/session-manager/files/jupyter_notebook_config\.py|
-            mounts/simplesamlphp/simplesamlphp/docs/conf\.py
+            docker/session-manager/files/jupyter_notebook_config\.py
           )$
 
   # JavaScript/TypeScript linting and formatting via containers
@@ -51,20 +50,8 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: |
-          (?x)^(
-            mounts/simplesamlphp/
-          )$
       - id: end-of-file-fixer
-        exclude: |
-          (?x)^(
-            mounts/simplesamlphp/
-          )$
       - id: check-yaml
-        exclude: |
-          (?x)^(
-            mounts/simplesamlphp/
-          )$
       - id: check-added-large-files
       - id: check-merge-conflict
       - id: debug-statements

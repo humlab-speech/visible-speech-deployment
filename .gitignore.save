@@ -53,7 +53,6 @@ kc-realm-export.json
 mounts/mongo/data/
 mounts/mongo/logs/
 mounts/matomo/config
-wsrng-server/mounts/simplesamlphp
 mounts/session-manager
 session-manager
 mounts/gitlab/gitlab-logs

@@ -88,24 +88,28 @@ This document outlines the refactoring tasks needed to modernize the visible-spe
 - **visp_deploy.py**: Remove GitLab repository handling
 - **update.py**: Remove GitLab-related update logic
 
-## SimpleSAMLphp Removal
+## SimpleSAMLphp Removal ✅ COMPLETED
 
 Since SimpleSAMLphp is only used as an identity provider for GitLab authentication, it can be completely removed:
 
-### Files to Remove
-- **`simplesamlphp-visp/`** directory (entire configuration directory)
-- **`mounts/simplesamlphp/`** directory (runtime installation)
+### Files Removed ✅
+- **`simplesamlphp-visp/`** directory (entire configuration directory) - deleted
+- **`mounts/simplesamlphp/`** directory (runtime installation) - deleted
 
-### Code References to Remove
-- **install.sh**: Remove SimpleSAMLphp download and installation steps
-- **visp_deploy.py**: Remove SimpleSAMLphp installation logic
-- **docker-compose.prod.yml**: Remove SimpleSAMLphp volume mounts
-- **.gitignore**: Remove `mounts/simplesamlphp` entry
-- **.pre-commit-config.yaml**: Remove SimpleSAMLphp-related exclusions
+### Code References Removed ✅
+- **install.sh**: Remove SimpleSAMLphp download and installation steps - removed
+- **visp_deploy.py**: Remove SimpleSAMLphp installation logic - removed
+- **docker-compose.prod.yml**: Remove SimpleSAMLphp volume mounts - removed
+- **.gitignore**: Remove `mounts/simplesamlphp` entry - removed
+- **.pre-commit-config.yaml**: Remove SimpleSAMLphp-related exclusions - removed
+- **README.md**: Remove SimpleSAMLphp service description - removed
+- **docker/apache/Dockerfile**: Remove idpFp.sh script copy - removed
+- **docker/apache/idpFp.sh**: Delete script file - deleted
+- **.gitignore.save**: Remove wsrng-server/mounts/simplesamlphp entry - removed
 
-### Configuration Cleanup
-- Remove any SimpleSAMLphp-related environment variables
-- Clean up deployment scripts that reference SimpleSAMLphp
+### Configuration Cleanup ✅
+- Removed any SimpleSAMLphp-related environment variables
+- Cleaned up deployment scripts that reference SimpleSAMLphp
 
 **Note**: Shibboleth remains in use for main authentication flow (Shibboleth SP → SWAMID IdP), so do not remove Shibboleth components.
 
@@ -191,7 +195,7 @@ If GitLab integration was the primary purpose, consider:
 
 1. Create backup branch before cleanup
 2. Remove GitLab references systematically
-3. Remove SimpleSAMLphp components
+3. ✅ Remove SimpleSAMLphp components
 4. Research containerization approaches for Node.js services
 5. Implement containerization of cloned repositories
 6. Test authentication and session launching still work
@@ -247,24 +251,28 @@ If GitLab integration was the primary purpose, consider:
 - **visp_deploy.py**: Remove GitLab repository handling
 - **update.py**: Remove GitLab-related update logic
 
-## SimpleSAMLphp Removal
+## SimpleSAMLphp Removal ✅ COMPLETED
 
 Since SimpleSAMLphp is only used as an identity provider for GitLab authentication, it can be completely removed:
 
-### Files to Remove
-- **`simplesamlphp-visp/`** directory (entire configuration directory)
-- **`mounts/simplesamlphp/`** directory (runtime installation)
+### Files Removed ✅
+- **`simplesamlphp-visp/`** directory (entire configuration directory) - deleted
+- **`mounts/simplesamlphp/`** directory (runtime installation) - deleted
 
-### Code References to Remove
-- **install.sh**: Remove SimpleSAMLphp download and installation steps
-- **visp_deploy.py**: Remove SimpleSAMLphp installation logic
-- **docker-compose.prod.yml**: Remove SimpleSAMLphp volume mounts
-- **.gitignore**: Remove `mounts/simplesamlphp` entry
-- **.pre-commit-config.yaml**: Remove SimpleSAMLphp-related exclusions
+### Code References Removed ✅
+- **install.sh**: Remove SimpleSAMLphp download and installation steps - removed
+- **visp_deploy.py**: Remove SimpleSAMLphp installation logic - removed
+- **docker-compose.prod.yml**: Remove SimpleSAMLphp volume mounts - removed
+- **.gitignore**: Remove `mounts/simplesamlphp` entry - removed
+- **.pre-commit-config.yaml**: Remove SimpleSAMLphp-related exclusions - removed
+- **README.md**: Remove SimpleSAMLphp service description - removed
+- **docker/apache/Dockerfile**: Remove idpFp.sh script copy - removed
+- **docker/apache/idpFp.sh**: Delete script file - deleted
+- **.gitignore.save**: Remove wsrng-server/mounts/simplesamlphp entry - removed
 
-### Configuration Cleanup
-- Remove any SimpleSAMLphp-related environment variables
-- Clean up deployment scripts that reference SimpleSAMLphp
+### Configuration Cleanup ✅
+- Removed any SimpleSAMLphp-related environment variables
+- Cleaned up deployment scripts that reference SimpleSAMLphp
 
 **Note**: Shibboleth remains in use for main authentication flow (Shibboleth SP → SWAMID IdP), so do not remove Shibboleth components.
 

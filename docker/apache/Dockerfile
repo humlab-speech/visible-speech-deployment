@@ -30,9 +30,6 @@ ENV LANG=C
 
 RUN mkdir -p /var/log/api && chmod 0644 /var/log/api && chown www-data /var/log/api
 
-COPY ./idpFp.sh /idpFp.sh
-RUN chmod +x /idpFp.sh
-
 WORKDIR /
 
 #anti-cache line

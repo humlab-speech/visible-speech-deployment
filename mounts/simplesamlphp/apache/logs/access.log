@@ -1,6 +1,0 @@
-192.168.130.10 - - [30/Aug/2022:09:44:31 +0000] "GET / HTTP/1.1" 200 3380 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36"
-192.168.130.10 - - [30/Aug/2022:09:44:31 +0000] "GET /icons/openlogo-75.png HTTP/1.1" 200 6040 "https://idp.visp.humlab.umu.se/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36"
-192.168.130.10 - - [30/Aug/2022:09:44:40 +0000] "GET /simplesaml HTTP/1.1" 404 501 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36"
-192.168.130.10 - - [30/Aug/2022:09:44:44 +0000] "GET /simplesamlphp HTTP/1.1" 404 500 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36"
-192.168.130.10 - - [30/Aug/2022:09:44:58 +0000] "GET / HTTP/1.1" 200 3380 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36"
-192.168.130.10 - - [30/Aug/2022:09:44:58 +0000] "GET /icons/openlogo-75.png HTTP/1.1" 200 6040 "https://idp.visp.humlab.umu.se/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36"

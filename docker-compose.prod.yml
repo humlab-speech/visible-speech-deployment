@@ -44,11 +44,6 @@ services:
       - "./mounts/apache/apache/php.ini:/etc/php/8.2/apache2/php.ini:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
-      #SimpleSamlPHP
-      - "./mounts/simplesamlphp/simplesamlphp:/var/simplesamlphp:Z"
-      - "./certs/ssp-idp-cert/cert.pem:/var/simplesamlphp/cert/server.crt"
-      - "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.pem"
-      - "./certs/ssp-idp-cert/key.pem:/var/simplesamlphp/cert/server.key"
 
   session-manager:
     image: visp-session-manager

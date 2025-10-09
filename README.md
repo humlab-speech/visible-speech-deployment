@@ -26,8 +26,6 @@ Included services:
 - Webserver
   - Apache + Shibboleth - Serves the main portal page and handles authentication via SWAMID
 
-- SimpleSamlPhp - Acts as an identity provider for internal authentication. Currently only used by gitlab.
-
 - Session Manager - Spawns and manages session containers (such as RStudio and Jupyter) on request. Also handles dynamic routing of network traffic into these containers.
 
 - EMU-webApp - Web-based annotation tool

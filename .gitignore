@@ -42,7 +42,6 @@ kc-realm-export.json
 mounts/mongo/data/
 mounts/mongo/logs/
 mounts/matomo/config
-mounts/simplesamlphp
 mounts/session-manager
 ./session-manager/
 restart-wsrng-server.sh

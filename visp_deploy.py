@@ -230,27 +230,6 @@ def install_system():
         "Fetching emu-webapp-server .env",
     )
 
-    # Install SimpleSamlPhp
-    run_command(
-        "curl -L https://github.com/simplesamlphp/simplesamlphp/releases/download/v1.19.6/simplesamlphp-1.19.6.tar.gz "
-        "--output simplesamlphp.tar.gz",
-        "Downloading SimpleSamlPhp",
-    )
-    run_command("tar xzf simplesamlphp.tar.gz", "Extracting SimpleSamlPhp")
-    os.rename("simplesamlphp-1.19.6", "mounts/simplesamlphp")
-    run_command("rm simplesamlphp.tar.gz", "Cleaning up tar file")
-
-    # Copy simplesamlphp config
-    if os.path.exists("simplesamlphp-visp"):
-        for root, _, files in os.walk("simplesamlphp-visp"):
-            for file in files:
-                src = os.path.join(root, file)
-                dst = src.replace(
-                    "simplesamlphp-visp/", "mounts/simplesamlphp/simplesamlphp/"
-                )
-                os.makedirs(os.path.dirname(dst), exist_ok=True)
-                shutil.copy2(src, dst)
-
     # Build components using Node.js container
     components = [
         ("container-agent", ["npm install", "npm run build"]),
