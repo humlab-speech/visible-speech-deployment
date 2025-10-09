@@ -13,11 +13,9 @@ services:
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
       BASE_DOMAIN: $BASE_DOMAIN
-      GITLAB_DOMAIN_NAME: gitlab.$BASE_DOMAIN
       RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
       KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
-      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       SSP_SALT: $SSP_SALT
@@ -64,12 +62,10 @@ services:
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
-      GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
       RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
       JUPYTER_IMAGE_NAME: "visp-jupyter-session"
-      GITLAB_ADDRESS: "http://gitlab:80"
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       ACCESS_LIST_ENABLED: $ACCESS_LIST_ENABLED
       EMUDB_INTEGRATION_ENABLED: $EMUDB_INTEGRATION_ENABLED
@@ -91,7 +87,7 @@ services:
       - whisper
     networks:
       - visp-net
-      - whisper-net      
+      - whisper-net
 
   emu-webapp:
     image: visp-emu-webapp
@@ -234,8 +230,6 @@ services:
 networks:
   visp-net:
   whisper-net:  # Whisper network, without internet access
-    internal: true    
+    internal: true
   octra-net:  # Octra network, without internet access
-    internal: true        
-
-
+    internal: true

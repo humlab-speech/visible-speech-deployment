@@ -1,60 +1,60 @@
 <SPConfig xmlns="urn:mace:shibboleth:3.0:native:sp:config"
     xmlns:conf="urn:mace:shibboleth:3.0:native:sp:config"
     xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
-    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"   
+    xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"
     xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
     clockSkew="180">
 
     <ApplicationDefaults entityID="https://visp-demo.humlab.umu.se" REMOTE_USER="eppn persistent-id targeted-id" metadataAttributePrefix="Meta-">
- 
+
         <Sessions lifetime="28800" timeout="3600" relayState="ss:mem"
                   checkAddress="false" handlerSSL="true" cookieProps="https" redirectLimit="exact">
- 
+
            <Logout asynchronous="false">SAML2 Local</Logout>
- 
+
            <SessionInitiator type="Chaining" target="https://visp-demo.humlab.umu.se/DS/Login" Location="/DS/Login" id="swamid-ds-default" relayState="cookie">
              <SessionInitiator type="SAML2" defaultACSIndex="1" acsByIndex="false" template="bindingTemplate.html"/>
              <SessionInitiator type="Shib1" defaultACSIndex="5"/>
              <SessionInitiator type="SAMLDS" URL="https://service.seamlessaccess.org/ds/"/>
            </SessionInitiator>
- 
+
             <md:AssertionConsumerService Location="/SAML2/POST" index="1"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
                 conf:ignoreNoPassive="true"/>
- 
+
             <Handler type="MetadataGenerator" Location="/Metadata" signing="false"/>
             <Handler type="Status" Location="/Status" acl="127.0.0.1 ::1"/>
             <Handler type="Session" Location="/Session" showAttributeValues="false"/>
             <Handler type="DiscoveryFeed" Location="/DiscoFeed"/>
- 
+
             <!--<md:ArtifactResolutionService Location="/Artifact/SOAP" index="1"
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP"/>-->
- 
+
         </Sessions>
- 
+
         <Errors supportContact="support@humlab.umu.se"
             helpLocation="/about.html"
             styleSheet="/shibboleth-sp/main.css"/>
- 
-        
+
+
         <!--
         <MetadataProvider type="XML" path="/etc/shibboleth/swamid-idp-transitive.xml"/>
         -->
-        
+
         <MetadataProvider
                 type="XML"
                 url="https://mds.swamid.se/md/swamid-idp.xml"
                 backingFilePath="/etc/shibboleth/swamid-idp.xml" reloadInterval="14400">
              <MetadataFilter type="Signature" certificate="/etc/shibboleth/md-signer2.crt"/>
         </MetadataProvider>
-        
+
 
         <AttributeExtractor type="XML" validate="true" reloadChanges="false" path="attribute-map.xml"/>
- 
+
         <AttributeResolver type="Query" subjectMatch="true"/>
- 
+
         <AttributeFilter type="XML" validate="true" path="attribute-policy.xml"/>
- 
+
         <!--<CredentialResolver type="File" key="/etc/certs/sp-cert/key.pem" certificate="/etc/certs/sp-cert/cert.pem"/>-->
 
         <CredentialResolver type="Chaining">
@@ -64,7 +64,7 @@
 
     </ApplicationDefaults>
     <SecurityPolicyProvider type="XML" validate="true" path="security-policy.xml"/>
- 
+
     <ProtocolProvider type="XML" validate="true" reloadChanges="false" path="protocols.xml"/>
- 
+
 </SPConfig>

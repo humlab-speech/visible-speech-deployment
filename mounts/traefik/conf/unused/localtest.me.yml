@@ -21,4 +21,3 @@ http:
         passHostHeader: true
         servers:
           - url: "http://apache:80"
-          

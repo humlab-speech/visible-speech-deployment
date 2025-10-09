@@ -47,7 +47,7 @@ RUN R -e "options(repos = c(CRAN = '${CRAN_MIRROR}')); \
 # Stage 3: Final
 FROM r_packages AS final
 
-WORKDIR /    
+WORKDIR /
 
 #Node.js installation using node version manager
 ENV NVM_DIR="/root/.nvm"
@@ -70,7 +70,7 @@ WORKDIR /tmp
 RUN git clone https://github.com/humlab-speech/container-agent /container-agent-install
 #ADD --chown=root:root ./files/container-agent /container-agent-install
 RUN cd /container-agent-install && \
-    npm install && \ 
+    npm install && \
     npm run build && \
     cp -R ./dist /container-agent && \
     rm -rf /container-agent-install

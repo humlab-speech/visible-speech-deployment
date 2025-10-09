@@ -72,7 +72,7 @@ class External extends \SimpleSAML\Auth\Source
 	session_destroy();
 	session_name("PHPSESSID");
 	session_start();
-	
+
 
 	/*
         if (!session_id()) {

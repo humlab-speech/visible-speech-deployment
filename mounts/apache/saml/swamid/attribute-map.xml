@@ -95,7 +95,7 @@
     <Attribute name="urn:oid:1.2.752.104.3.1.1" id="swamiBillingIdentifier"/>
     <!-- Identifying a recipient of a monetary transfer within a single financials system -->
     <Attribute name="urn:oid:1.2.752.104.3.1.2" id="swamiCostCenterIdentifier"/>
-    
+
     <!-- Attribute to extract SWAMID Assurance Profiles -->
     <Attribute name="urn:oasis:names:tc:SAML:attribute:assurance-certification" id="Assurance-Certification"/>
 
@@ -131,4 +131,3 @@
     <Attribute name="urn:oid:2.5.4.6" id="countryName"/>
 
 </Attributes>
-

@@ -37,4 +37,3 @@ ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 #RUN curl --output praat.tgz https://www.fon.hum.uva.nl/praat/praat6152_linux64nogui.tar.gz && tar xzf praat.tgz && mv praat_nogui /usr/bin/praat_nogui && ln -s /usr/bin/praat_nogui /usr/bin/praat
 
 COPY ./container-agent /container-agent
-

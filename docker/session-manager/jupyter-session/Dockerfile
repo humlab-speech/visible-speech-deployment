@@ -75,7 +75,7 @@ WORKDIR /tmp
 # Move .container-agent to /container-agent:
 ADD --chown=root:root ./files/container-agent /container-agent-install
 RUN cd /container-agent-install && \
-    npm install && \ 
+    npm install && \
     npm run build && \
     cp -R ./dist /container-agent
 
@@ -86,7 +86,7 @@ RUN conda clean -a -y -q && \
     apt clean && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/* && \
-    rm -rf /var/tmp/*    
+    rm -rf /var/tmp/*
 
 RUN mkdir /home/jovyan/project && \
     chown -R jovyan:users /home/jovyan/project && \
@@ -100,7 +100,7 @@ COPY files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_con
 # We do not want users to download the model every time they start a new session.
 RUN mkdir /hf_cache && \
     chmod -R 777 /hf_cache
-ENV HF_HOME="/hf_cache"    
+ENV HF_HOME="/hf_cache"
 
 # Copy whisper model link script
 COPY ./files/whisperx_link_script.sh /usr/local/bin/whisperx_link_script.sh

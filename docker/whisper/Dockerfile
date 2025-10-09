@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim 
+FROM debian:bookworm-slim
 
 RUN apt-get update && \
     apt-get install -y curl git python3 python3-pip python3-venv && \

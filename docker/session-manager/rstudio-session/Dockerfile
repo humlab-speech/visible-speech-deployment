@@ -19,8 +19,8 @@ RUN /opt/miniconda/bin/conda install -y -c conda-forge mamba
 #    sh miniconda.sh -b -p /opt/miniconda && \
 #    rm miniconda.sh && \
 #    /opt/miniconda/bin/conda install -y -c conda-forge mamba
-   
-ENV PATH="/opt/miniconda/bin:$PATH"    
+
+ENV PATH="/opt/miniconda/bin:$PATH"
 
 # Stage 2: Python packages
 FROM base AS python_packages
@@ -83,6 +83,6 @@ RUN conda clean -a -y -q && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/* && \
-    rm -rf /var/tmp/*    
+    rm -rf /var/tmp/*
 
 WORKDIR /home/rstudio/project

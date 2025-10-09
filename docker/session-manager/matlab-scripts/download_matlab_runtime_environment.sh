@@ -60,7 +60,7 @@ if [ -f "$dir/$version/$filename" ]; then
     # Check if the script was run with the 'overwrite' argument
     if [ "$1" != "overwrite" ]; then
         echo "To overwrite the existing file, run the script with the 'overwrite' argument."
-        exit 1
+        # Still create the symlink if file exists
     fi
 else
     # Create the directory if it doesn't exist

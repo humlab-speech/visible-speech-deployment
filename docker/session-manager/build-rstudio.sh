@@ -7,4 +7,3 @@ fi
 
 #echo "Building RStudio session image"
 docker build -t visp-rstudio-session --network=host -f rstudio-session/Dockerfile .
-
