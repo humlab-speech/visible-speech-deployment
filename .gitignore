@@ -18,7 +18,6 @@ container-agent
 archive
 WebSpeechRecorderNg
 mounts/apache/apache/uploads/*
-keycloak-config-with-idps.json
 ./session-manager
 ./mounts/session-manager
 install.sh
@@ -28,8 +27,6 @@ certs/*
 private/*
 node_modules
 mounts/apache/saml/certs
-mounts/apache/saml/keycloak/
-mounts/keycloak/
 mounts/postgresql/data
 rstudio-router/node_modules
 webclient/node_modules

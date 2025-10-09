@@ -5,8 +5,6 @@ services:
     restart: always
     ports:
       - $HTTP_PORT:80
-    #depends_on:
-    #  - keycloak
     networks:
       - visp-net
     environment:
@@ -14,7 +12,6 @@ services:
       LOG_LEVEL: debug
       BASE_DOMAIN: $BASE_DOMAIN
       RSTUDIO_DOMAIN_NAME: rstudio.$BASE_DOMAIN
-      KEYCLOAK_DOMAIN_NAME: idp.$BASE_DOMAIN
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD

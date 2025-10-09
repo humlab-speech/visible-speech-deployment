@@ -9,7 +9,7 @@ For demo deployments, run the automated installer which will set up everything w
 1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
 1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
 1. Once complete, run `docker-compose up -d`
-1. Follow the remaining manual steps for setup (MongoDB, Keycloak, etc.)
+1. Follow the remaining manual steps for setup (MongoDB, etc.)
 
 ### Update System
 
@@ -24,7 +24,7 @@ Included services:
   - Edge router
 
 - Webserver
-  - Apache + Shibboleth - Serves the main portal page and handles authentication towards Keycloak
+  - Apache + Shibboleth - Serves the main portal page and handles authentication via SWAMID
 
 - SimpleSamlPhp - Acts as an identity provider for internal authentication. Currently only used by gitlab.
 
@@ -52,7 +52,7 @@ For demo deployments, run the automated installer which will set up everything w
 1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
 1. The script will install dependencies, clone repositories, build components, auto-generate passwords, and build Docker images in the background.
 1. Once complete, run `docker-compose up -d`
-1. Follow the remaining manual steps for setup (MongoDB, Keycloak, etc.)
+1. Follow the remaining manual steps for setup (MongoDB, etc.)
 
 ### Update System
 

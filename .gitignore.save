@@ -19,7 +19,6 @@ mounts/gitlab/postgresql.conf
 archive
 WebSpeechRecorderNg
 mounts/apache/apache/uploads/*
-keycloak-config-with-idps.json
 ./session-manager
 ./mounts/session-manager
 install.sh

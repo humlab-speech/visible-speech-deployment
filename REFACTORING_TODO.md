@@ -109,36 +109,18 @@ Since SimpleSAMLphp is only used as an identity provider for GitLab authenticati
 
 **Note**: Shibboleth remains in use for main authentication flow (Shibboleth SP → SWAMID IdP), so do not remove Shibboleth components.
 
-## Keycloak References Cleanup
+## ✅ COMPLETED: Keycloak References Cleanup
 
-**Note**: Keycloak is NOT currently active in the system. The authentication system uses **Shibboleth SP → SWAMID IdP** federation. Keycloak references are configuration remnants from a planned integration that was never implemented.
+**Keycloak references have been removed.** The system uses Shibboleth SP → SWAMID IdP for authentication. Keycloak was never actually implemented - it was just configuration remnants.
 
-**Authentication Flow (confirmed by dev)**: User data comes from SWAMID IdP directly into Apache/Shibboleth and is stored as a PHP session. This PHP session is then used as the source of user information within VISP. There is no use for Keycloak.
+**Completed tasks:**
+- ✅ Removed `KEYCLOAK_DOMAIN_NAME` environment variables from all docker-compose files
+- ✅ Deleted `idp.vhost.conf` (proxied to non-existent Keycloak service)
+- ✅ Cleaned up `.gitignore` entries for Keycloak files
+- ✅ Updated README.md to clarify Shibboleth + SWAMID authentication
+- ✅ Removed Keycloak references from documentation
 
-**Goal**: Remove all Keycloak configuration remnants since the system already works perfectly with Shibboleth + SWAMID.
-
-Remove remaining Keycloak references from configuration and documentation:
-
-### Code References to Remove
-- **Environment variables**: Remove `KEYCLOAK_DOMAIN_NAME` from docker-compose files
-- **Apache virtual hosts**: Remove or repurpose `idp.vhost.conf` (currently proxies to non-existent Keycloak service)
-
-### Configuration References to Remove
-- **docker-compose.yml**: Remove `KEYCLOAK_DOMAIN_NAME` environment variable
-- **docker-compose.dev.yml**: Remove `KEYCLOAK_DOMAIN_NAME` environment variable
-- **docker-compose.prod.yml**: Remove `KEYCLOAK_DOMAIN_NAME` environment variable
-- **Traefik routing**: Remove `idp` domain from routing rules (if not needed for other purposes)
-
-### Files to Remove
-- **`mounts/apache/apache/vhosts-https/idp.vhost.conf`** (proxies to non-existent service)
-- **`.gitignore` entries**: Remove `keycloak-config-with-idps.json`, `mounts/apache/saml/keycloak/`, `mounts/keycloak/`
-
-### Documentation Updates
-- **README.md**: Update authentication description to clarify Shibboleth + SWAMID usage
-- **Environment files**: Remove Keycloak configuration examples
-- **REFACTORING_TODO.md**: Remove this section once cleanup is complete
-
-**Current Authentication**: Shibboleth Service Provider → SWAMID Identity Federation (Swedish academic federation)
+## Containerization of Cloned Git Repositories**Current Authentication**: Shibboleth Service Provider → SWAMID Identity Federation (Swedish academic federation)
 
 ## Containerization of Cloned Git Repositories
 
