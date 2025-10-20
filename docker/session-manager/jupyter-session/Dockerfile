@@ -40,31 +40,8 @@ RUN pip install --upgrade pip && \
 
 
 # Stage 4: Copy MATLAB runtime from Rstudio session image to a clean image
-FROM python_packages AS matlab
-
-# We copy the installation from the Rstudio session image, to avoid doing it twice
-COPY --from=visp-rstudio-session /usr/local/MATLAB /usr/local/MATLAB
-
-# Copy the matlab scripts
-RUN mkdir /matlab-scripts
-COPY ./matlab-scripts/*.zip ./matlab-scripts/*.sh /matlab-scripts/
-WORKDIR /matlab-scripts
-
-# Note: The configure matlab env script will set variables for the jovyan user.
-# This will hopefully persist after the container has been created!
-RUN chmod +x unzip_and_setup.sh && \
-    chmod +x configure_matlab_env.sh && \
-    ./configure_matlab_env.sh set
-# Add python_wrappers subdirectory to system path
-ENV PATH="/matlab-scripts/python_wrappers:${PATH}"
-
-# NOTE: The unzip_and_setup scripts creates the setenv script automatically.
-RUN /matlab-scripts/unzip_and_setup.sh /matlab-scripts/
-
-WORKDIR /home/jovyan
-
-# Stage 5: Final
-FROM matlab AS final
+# Stage 3: Final
+FROM python_packages AS final
 
 # Grab the compiled R from the visp_operations_session image, avoiding building them twice
 # NOTE: If the operations session image is updated, this image must be rebuilt

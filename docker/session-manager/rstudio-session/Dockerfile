@@ -39,44 +39,8 @@ RUN pip install --upgrade pip && \
     cd / && \
     rm -rf /tmp/*
 
-# Stage 3: Matlab
-FROM base AS matlab_builder
-
-WORKDIR /matlab_runtime
-
-# Copy the local matlab_runtime_install.zip file to the Docker image
-COPY ./matlab_runtime/matlab_runtime_install.zip /matlab_install/matlab_runtime_install.zip
-
-RUN apt-get update && apt-get install -y unzip && \
-    unzip /matlab_install/matlab_runtime_install.zip -d /matlab_install/ && \
-    rm /matlab_install/matlab_runtime_install.zip && \
-    /matlab_install/install -mode silent -agreeToLicense yes
-
-# Stage 4: Copy MATLAB runtime to a clean image
-FROM python_packages AS matlab
-
-COPY --from=matlab_builder /usr/local/MATLAB /usr/local/MATLAB
-
-# Copy the matlab scripts
-RUN mkdir /matlab-scripts
-COPY ./matlab-scripts/*.zip ./matlab-scripts/*.sh /matlab-scripts/
-WORKDIR /matlab-scripts
-
-# Note: The configure matlab env script will set variables for the jovyan user.
-# This will hopefully persist after the container has been created!
-RUN chmod +x unzip_and_setup.sh && \
-    chmod +x configure_matlab_env.sh && \
-    ./configure_matlab_env.sh set
-# Add python_wrappers subdirectory to system path
-ENV PATH="/matlab-scripts/python_wrappers:${PATH}"
-
-# NOTE: The unzip_and_setup scripts creates the setenv script automatically.
-RUN /matlab-scripts/unzip_and_setup.sh /matlab-scripts/
-
-WORKDIR /home/jovyan
-
-# Stage 5: Final
-FROM matlab AS final
+# Stage 3: Final
+FROM python_packages AS final
 
 # Cleanup
 RUN conda clean -a -y -q && \
