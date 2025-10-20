@@ -1,0 +1,31 @@
+# WhisperX API Container Requirements
+# This file documents the dependencies installed in the container
+# (automatically installed via pip install whisperx)
+
+# Core WhisperX dependencies (from pyproject.toml)
+ctranslate2>=4.5.0
+faster-whisper>=1.1.1
+nltk>=3.9.1
+
+# PyTorch ecosystem
+torch~=2.8.0
+torchaudio~=2.8.0
+transformers>=4.48.0
+
+# Audio processing
+pyannote-audio>=3.3.2,<4.0.0
+
+# Additional runtime dependencies
+ruamel.yaml==0.18.6
+pytubefix
+av<16.0.0
+
+# Web framework (added for API)
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Development/testing (not in container)
+# pytest
+# requests
+# jq (for testing)

@@ -1,0 +1,36 @@
+# WhisperX API Service Configuration
+# Add this to your main docker-compose.yml
+
+whisperx:
+  build: ./docker/whisperx
+  container_name: visp-whisperx
+  volumes:
+    # Mount model cache for persistence and performance
+    - ./mounts/whisperx/models:/app/models
+    # Optional: mount outputs if you want to persist transcription results
+    - ./mounts/whisperx/outputs:/app/outputs
+  environment:
+    # Required for speaker diarization (pyannote-audio)
+    # Get token from: https://huggingface.co/settings/tokens
+    - HF_TOKEN=${HF_TOKEN}
+  networks:
+    # Use internal network for security
+    - internal-net
+  ports:
+    # Expose API port (consider removing for production security)
+    - "8000:8000"
+  deploy:
+    resources:
+      reservations:
+        devices:
+          # GPU access for acceleration
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 40s

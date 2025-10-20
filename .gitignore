@@ -81,3 +81,13 @@ coverage.xml
 .pytest_cache
 .hypothesis
 mounts/vscode/
+
+*.WAV
+*.wav
+
+# WhisperX model cache and outputs (host mounts)
+mounts/whisperx/models/*
+mounts/whisperx/outputs/*
+
+# Local test scripts for the whisperx image (not intended for repo)
+docker/whisperx/*.sh
