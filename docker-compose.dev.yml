@@ -51,6 +51,14 @@ services:
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
       - "./webclient/dist:/var/www/html:Z"
       - "./webapi:/var/www/webapi:Z"
+      # The application expects composer autoload at /var/www/html/api/vendor.
+      # In development the host mount of ./webclient/dist onto /var/www/html hides any
+      # vendor files the image build may have put under /var/www/html/api/vendor, and
+      # the repo now keeps composer packages under ./webapi/vendor. Mount the host
+      # vendor folder into the webroot so PHP can always require 'api/vendor/autoload.php'.
+      # This mirrors the runtime layout and avoids needing to create a symlink inside
+      # the running container as a temporary hotfix.
+      - "./webapi/vendor:/var/www/html/api/vendor:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
