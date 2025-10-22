@@ -17,6 +17,59 @@ except ImportError:
     print("tabulate library not found. Install with: pip install tabulate")
 
 
+# Configuration constants
+DEFAULT_VERSIONS_CONFIG = {
+    "webclient": {
+        "version": "latest",
+        "url": None,
+        "npm_install": True,
+        "npm_build": True,
+    },
+    "container-agent": {
+        "version": "latest",
+        "url": None,
+        "npm_install": True,
+        "npm_build": False,
+    },
+    "webapi": {
+        "version": "latest",
+        "url": None,
+        "npm_install": False,
+        "npm_build": False,
+    },
+    "wsrng-server": {
+        "version": "latest",
+        "url": None,
+        "npm_install": True,
+        "npm_build": False,
+    },
+    "session-manager": {
+        "version": "latest",
+        "url": None,
+        "npm_install": True,
+        "npm_build": False,
+    },
+    "EMU-webApp": {
+        "version": "latest",
+        "url": "https://github.com/humlab-speech/EMU-webApp.git",
+        "npm_install": True,
+        "npm_build": True,
+    },
+}
+
+COMPONENTS_WITH_PERMISSIONS = [
+    "webclient",
+    "certs",
+    "container-agent",
+    "webapi",
+    "wsrng-server",
+    "session-manager",
+]
+
+TARGET_UID = 1000
+TARGET_GID = 1000
+
+
 def chown_recursive(path, uid, gid):
     try:
         os.chown(path, uid, gid)
@@ -34,18 +87,19 @@ def generate_random_string(length=16):
 
 
 def load_versions_config():
-    """Load version configuration from versions.json"""
+    """Load version configuration from versions.json or use defaults"""
     config_file = "versions.json"
     if not os.path.exists(config_file):
-        print(f"Warning: {config_file} not found, using default latest versions")
-        return {}
+        print(f"Warning: {config_file} not found, using default component versions")
+        return DEFAULT_VERSIONS_CONFIG
 
     try:
         with open(config_file, "r", encoding="utf-8") as f:
-            return json.load(f).get("components", {})
+            loaded_config = json.load(f).get("components", {})
+            return loaded_config if loaded_config else DEFAULT_VERSIONS_CONFIG
     except (json.JSONDecodeError, IOError) as e:
-        print(f"Warning: Failed to load {config_file}: {e}")
-        return {}
+        print(f"Warning: Failed to load {config_file}: {e}. Using defaults.")
+        return DEFAULT_VERSIONS_CONFIG
 
 
 def check_uncommitted_changes(repo_path):
@@ -151,8 +205,12 @@ def check_env_file():
             "and fill in the required values as per the README."
         )
         return
+
+    # Read file once
     with open(".env", "r", encoding="utf-8") as f:
-        lines = f.readlines()
+        content = f.read()
+
+    lines = content.splitlines()
     env_vars = {}
     for line in lines:
         if "=" in line and not line.strip().startswith("#"):
@@ -179,18 +237,18 @@ def check_env_file():
             f"Warning: The following required environment variables are not set in .env: {', '.join(missing)}"
         )
         print("Auto-generating random values for demo deployment...")
+
+        # Generate all missing values and update content in memory
         for var in missing:
             random_value = generate_random_string()
-            # Find the line and replace
-            with open(".env", "r", encoding="utf-8") as f:
-                content = f.read()
             if f"{var}=" in content:
                 content = content.replace(f"{var}=", f"{var}={random_value}")
             else:
-                # Append if not present
                 content += f"\n{var}={random_value}"
-            with open(".env", "w", encoding="utf-8") as f:
-                f.write(content)
+
+        # Write file once
+        with open(".env", "w", encoding="utf-8") as f:
+            f.write(content)
         print("Environment variables auto-filled.")
     else:
         print("Environment file check passed.")
@@ -268,34 +326,6 @@ def install_system():
 
     # Clone repos
     versions_config = load_versions_config()
-    if not versions_config:
-        # Fallback to hardcoded config if versions.json fails to load
-        versions_config = {
-            "webclient": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/webclient",
-            },
-            "webapi": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/webapi",
-            },
-            "container-agent": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/container-agent",
-            },
-            "wsrng-server": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/wsrng-server",
-            },
-            "session-manager": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/session-manager",
-            },
-            "EMU-webApp": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/EMU-webApp",
-            },
-        }
 
     for name, config in versions_config.items():
         if not os.path.exists(name):
@@ -481,46 +511,6 @@ def update_repositories(basedir, force=False):
     """Update all repositories and return status results"""
     status_results = []
     versions_config = load_versions_config()
-    if not versions_config:
-        # Fallback to hardcoded config if versions.json fails to load
-        versions_config = {
-            "webclient": {
-                "version": "latest",
-                "url": None,
-                "npm_install": True,
-                "npm_build": True,
-            },
-            "container-agent": {
-                "version": "latest",
-                "url": None,
-                "npm_install": True,
-                "npm_build": False,
-            },
-            "webapi": {
-                "version": "latest",
-                "url": None,
-                "npm_install": False,
-                "npm_build": False,
-            },
-            "wsrng-server": {
-                "version": "latest",
-                "url": None,
-                "npm_install": True,
-                "npm_build": False,
-            },
-            "session-manager": {
-                "version": "latest",
-                "url": None,
-                "npm_install": True,
-                "npm_build": False,
-            },
-            "EMU-webApp": {
-                "version": "latest",
-                "url": "https://github.com/humlab-speech/EMU-webApp.git",
-                "npm_install": True,
-                "npm_build": True,
-            },
-        }
 
     for repo_name, config in versions_config.items():
         try:
@@ -569,26 +559,18 @@ def check_environment():
         }
 
 
-def set_initial_permissions():
-    """Set initial file permissions and return status result"""
+def set_permissions():
+    """Set file permissions for all components and return status result"""
     try:
-        chown_recursive("webclient", 1000, 1000)
-        chown_recursive("certs", 1000, 1000)
-        chown_recursive("container-agent", 1000, 1000)
-        chown_recursive("webapi", 1000, 1000)
-        chown_recursive("wsrng-server", 1000, 1000)
-        chown_recursive("session-manager", 1000, 1000)
+        for component in COMPONENTS_WITH_PERMISSIONS:
+            chown_recursive(component, TARGET_UID, TARGET_GID)
         return {
-            "Component": "Initial Permissions",
+            "Component": "Permissions",
             "Status": "✓ PASS",
-            "Details": "Ownership set",
+            "Details": "Ownership set for all components",
         }
     except OSError as e:
-        return {
-            "Component": "Initial Permissions",
-            "Status": "✗ FAIL",
-            "Details": str(e),
-        }
+        return {"Component": "Permissions", "Status": "✗ FAIL", "Details": str(e)}
 
 
 def check_and_rebuild_images():
@@ -633,24 +615,6 @@ def check_and_rebuild_images():
         }
 
 
-def set_final_permissions():
-    """Set final file permissions and return status result"""
-    try:
-        chown_recursive("webclient", 1000, 1000)
-        chown_recursive("certs", 1000, 1000)
-        chown_recursive("container-agent", 1000, 1000)
-        chown_recursive("webapi", 1000, 1000)
-        chown_recursive("wsrng-server", 1000, 1000)
-        chown_recursive("session-manager", 1000, 1000)
-        return {
-            "Component": "Final Permissions",
-            "Status": "✓ PASS",
-            "Details": "Ownership set",
-        }
-    except OSError as e:
-        return {"Component": "Final Permissions", "Status": "✗ FAIL", "Details": str(e)}
-
-
 def print_update_summary(status_results):
     """Print the update summary table with counters"""
     print("\n" + "=" * 80)
@@ -692,7 +656,7 @@ def update_system(force=False):
 
     # Set initial permissions
     print("🔒 Setting initial permissions...")
-    perm_result = set_initial_permissions()
+    perm_result = set_permissions()
     status_results.append(perm_result)
 
     # Check and rebuild images
@@ -702,11 +666,220 @@ def update_system(force=False):
 
     # Set final permissions
     print("🔒 Setting final permissions...")
-    final_perm_result = set_final_permissions()
+    final_perm_result = set_permissions()
     status_results.append(final_perm_result)
 
     # Print summary with counters
     print_update_summary(status_results)
+
+
+def check_repositories_status(fetch=True):
+    """Check status of all repositories and report uncommitted changes"""
+    print("🔍 Checking repository status...")
+
+    if fetch:
+        print("📡 Fetching latest remote information...")
+
+    # Save original directory
+    original_cwd = os.getcwd()
+
+    versions_config = load_versions_config()
+
+    status_results = []
+    repos_with_changes = []
+    repos_ahead = []
+    repos_behind = []
+
+    for repo_name, config in versions_config.items():
+        repo_path = os.path.join(original_cwd, repo_name)
+
+        if not os.path.exists(repo_path):
+            status_results.append(
+                {
+                    "Repository": repo_name,
+                    "Status": "❌ MISSING",
+                    "Local Changes": "Repository not cloned",
+                    "Sync Status": "N/A",
+                }
+            )
+            continue
+
+        if not os.path.exists(os.path.join(repo_path, ".git")):
+            status_results.append(
+                {
+                    "Repository": repo_name,
+                    "Status": "❌ NOT GIT",
+                    "Local Changes": "Not a git repository",
+                    "Sync Status": "N/A",
+                }
+            )
+            continue
+
+        try:
+            os.chdir(repo_path)
+
+            # Fetch latest remote information if requested
+            if fetch:
+                try:
+                    subprocess.run(
+                        ["git", "fetch", "--quiet", "origin"],
+                        capture_output=True,
+                        check=True,
+                    )
+                except subprocess.CalledProcessError:
+                    # Fetch failed, continue with cached data
+                    pass
+
+            # Check for uncommitted changes
+            has_changes = check_uncommitted_changes(repo_path)
+
+            # Check sync status with remote
+            sync_status = "✅ SYNCED"
+            sync_details = []
+
+            try:
+                # Get current branch
+                branch_result = subprocess.run(
+                    ["git", "branch", "--show-current"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                current_branch = branch_result.stdout.strip()
+
+                if not current_branch:
+                    current_branch = "main"  # fallback
+
+                # Check if remote exists
+                remote_result = subprocess.run(
+                    ["git", "remote", "get-url", "origin"],
+                    capture_output=True,
+                    text=True,
+                )
+
+                if remote_result.returncode == 0:
+                    # Check commits ahead/behind
+                    status_result = subprocess.run(
+                        [
+                            "git",
+                            "rev-list",
+                            "--count",
+                            "--left-right",
+                            f"origin/{current_branch}...HEAD",
+                        ],
+                        capture_output=True,
+                        text=True,
+                    )
+
+                    if status_result.returncode == 0:
+                        ahead_behind = status_result.stdout.strip().split()
+                        if len(ahead_behind) == 2:
+                            behind_count = int(ahead_behind[0])  # commits behind remote
+                            ahead_count = int(
+                                ahead_behind[1]
+                            )  # commits ahead of remote
+
+                            if ahead_count > 0:
+                                repos_ahead.append(repo_name)
+                                sync_details.append(f"🚀 {ahead_count} ahead")
+                                sync_status = "🚀 AHEAD"
+
+                            if behind_count > 0:
+                                repos_behind.append(repo_name)
+                                sync_details.append(f"⬇️ {behind_count} behind")
+                                sync_status = (
+                                    "⬇️ BEHIND"
+                                    if sync_status == "✅ SYNCED"
+                                    else "🔄 DIVERGED"
+                                )
+                        else:
+                            sync_details.append("Remote branch not found")
+                            sync_status = "❓ NO REMOTE BRANCH"
+                    else:
+                        sync_details.append("Cannot check remote status")
+                        sync_status = "❓ UNKNOWN"
+                else:
+                    sync_details.append("No remote configured")
+                    sync_status = "🏠 LOCAL ONLY"
+
+            except subprocess.CalledProcessError:
+                sync_details.append("Error checking remote")
+                sync_status = "❌ ERROR"
+
+            os.chdir(os.getcwd())  # Go back to original directory
+
+            # Determine overall status
+            if has_changes:
+                repos_with_changes.append(repo_name)
+                overall_status = "⚠️  HAS CHANGES"
+                changes_desc = "Uncommitted changes present"
+            else:
+                overall_status = "✅ CLEAN"
+                changes_desc = "No uncommitted changes"
+
+            # Combine sync details
+            sync_desc = ", ".join(sync_details) if sync_details else "Up to date"
+
+            status_results.append(
+                {
+                    "Repository": repo_name,
+                    "Status": overall_status,
+                    "Local Changes": changes_desc,
+                    "Sync Status": f"{sync_status} - {sync_desc}",
+                }
+            )
+
+        except Exception as e:
+            os.chdir(original_cwd)  # Make sure we return to original directory
+            status_results.append(
+                {
+                    "Repository": repo_name,
+                    "Status": "❌ ERROR",
+                    "Local Changes": f"Error checking status: {str(e)}",
+                    "Sync Status": "N/A",
+                }
+            )
+
+    # Print results
+    print("\n" + "=" * 100)
+    print("REPOSITORY STATUS CHECK")
+    print("=" * 100)
+    print(tabulate(status_results, headers="keys", tablefmt="grid"))
+    print("=" * 100)
+
+    # Summary
+    summary_lines = []
+    if repos_with_changes:
+        summary_lines.append(
+            f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}"
+        )
+        summary_lines.append(
+            f"   Total: {len(repos_with_changes)} repo(s) have local changes"
+        )
+
+    if repos_ahead:
+        summary_lines.append(
+            f"🚀 Repositories ahead of remote: {', '.join(repos_ahead)}"
+        )
+        summary_lines.append(f"   Total: {len(repos_ahead)} repo(s) need to push")
+
+    if repos_behind:
+        summary_lines.append(
+            f"⬇️  Repositories behind remote: {', '.join(repos_behind)}"
+        )
+        summary_lines.append(f"   Total: {len(repos_behind)} repo(s) need to pull")
+
+    if not repos_with_changes and not repos_ahead and not repos_behind:
+        summary_lines.append("✅ All repositories are clean and synced!")
+    else:
+        summary_lines.append("   Use 'git status' in each repo for details")
+        summary_lines.append(
+            "   Run update with --force to stash local changes before updating"
+        )
+
+    for line in summary_lines:
+        print(line)
+    print("=" * 100)
 
 
 def main():
@@ -742,12 +915,24 @@ def main():
         help="Force update even with uncommitted changes",
     )
 
+    # Status command
+    status_parser = subparsers.add_parser(
+        "status", help="Check status of all repositories for uncommitted changes"
+    )
+    status_parser.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="Skip fetching from remotes (use cached remote state)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "install":
         install_system()
     elif args.command == "update":
         update_system(force=getattr(args, "force", False))
+    elif args.command == "status":
+        check_repositories_status(fetch=not getattr(args, "no_fetch", False))
     else:
         parser.print_help()
 
