@@ -9,6 +9,7 @@ from datetime import datetime
 import string
 import random
 import getpass
+import json
 
 try:
     from tabulate import tabulate
@@ -30,6 +31,62 @@ def chown_recursive(path, uid, gid):
 
 def generate_random_string(length=16):
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
+def load_versions_config():
+    """Load version configuration from versions.json"""
+    config_file = "versions.json"
+    if not os.path.exists(config_file):
+        print(f"Warning: {config_file} not found, using default latest versions")
+        return {}
+
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            return json.load(f).get("components", {})
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Warning: Failed to load {config_file}: {e}")
+        return {}
+
+
+def check_uncommitted_changes(repo_path):
+    """Check if repository has uncommitted changes"""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return bool(result.stdout.strip())
+    except subprocess.CalledProcessError:
+        return False
+
+
+def handle_uncommitted_changes(repo_path, name, force=False):
+    """Handle uncommitted changes in repository"""
+    if not check_uncommitted_changes(repo_path):
+        return True  # No changes, proceed
+
+    if force:
+        print(f"⚠️  Force mode: Stashing uncommitted changes in {name}")
+        try:
+            subprocess.run(
+                ["git", "stash", "push", "-m", f"Auto-stash before update: {name}"],
+                cwd=repo_path,
+                check=True,
+            )
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to stash changes in {name}: {e}")
+            return False
+    else:
+        print(f"⚠️  WARNING: {name} has uncommitted changes!")
+        print("   Options:")
+        print("   1. Commit or stash your changes first")
+        print("   2. Run update with --force to stash changes automatically")
+        print("   3. Skip this repository")
+        return False
 
 
 def setup_env_file(auto_passwords=True, interactive=False):
@@ -210,17 +267,49 @@ def install_system():
     )
 
     # Clone repos
-    repos = [
-        ("webclient", "https://github.com/humlab-speech/webclient"),
-        ("webapi", "https://github.com/humlab-speech/webapi"),
-        ("container-agent", "https://github.com/humlab-speech/container-agent"),
-        ("wsrng-server", "https://github.com/humlab-speech/wsrng-server"),
-        ("session-manager", "https://github.com/humlab-speech/session-manager"),
-    ]
+    versions_config = load_versions_config()
+    if not versions_config:
+        # Fallback to hardcoded config if versions.json fails to load
+        versions_config = {
+            "webclient": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/webclient",
+            },
+            "webapi": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/webapi",
+            },
+            "container-agent": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/container-agent",
+            },
+            "wsrng-server": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/wsrng-server",
+            },
+            "session-manager": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/session-manager",
+            },
+            "EMU-webApp": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/EMU-webApp",
+            },
+        }
 
-    for name, url in repos:
+    for name, config in versions_config.items():
         if not os.path.exists(name):
-            run_command(f"git clone {url}", f"Cloning {name}")
+            url = config.get("url", f"https://github.com/humlab-speech/{name}")
+            run_command(f"git clone {url} {name}", f"Cloning {name}")
+
+            # Checkout specific version if not "latest"
+            version = config.get("version", "latest")
+            if version != "latest":
+                os.chdir(name)
+                run_command(
+                    f"git checkout {version}", f"Checking out {version} for {name}"
+                )
+                os.chdir(BASEDIR)
 
     # Setup emu-webapp-server .env
     os.makedirs("mounts/emu-webapp-server/logs", exist_ok=True)
@@ -257,16 +346,52 @@ def install_system():
     print("Installation complete. Run 'docker compose up -d' to start services.")
 
 
-def update_repo(basedir, name, npm_install=False, npm_build=False):
+def update_repo(
+    basedir,
+    name,
+    npm_install=False,
+    npm_build=False,
+    repo_url=None,
+    version="latest",
+    force=False,
+):
     print(f"Update {name}...")
     repo_path = os.path.join(basedir, name)
-    os.chdir(repo_path)
+
+    # Clone repository if it doesn't exist
+    if not os.path.exists(repo_path):
+        if not repo_url:
+            # Try to infer the repo URL from the name
+            repo_url = f"https://github.com/humlab-speech/{name}.git"
+        print(f"Repository {name} not found, cloning from {repo_url}...")
+        os.chdir(basedir)
+        try:
+            subprocess.run(["git", "clone", repo_url, name], check=True)
+            os.chdir(repo_path)
+        except subprocess.CalledProcessError as e:
+            print(f"Git clone of {name} failed: {e}")
+            sys.exit(1)
+    else:
+        os.chdir(repo_path)
+
+        # Check for uncommitted changes before proceeding
+        if not handle_uncommitted_changes(repo_path, name, force):
+            print(f"Skipping {name} due to uncommitted changes")
+            return
+
     try:
         subprocess.run(["git", "fetch", "--all"], check=True)
-        try:
-            subprocess.run(["git", "reset", "--hard", "origin/main"], check=True)
-        except subprocess.CalledProcessError:
-            subprocess.run(["git", "reset", "--hard", "origin/master"], check=True)
+
+        # Handle version checkout
+        if version and version != "latest":
+            print(f"Checking out version {version} for {name}")
+            subprocess.run(["git", "checkout", version], check=True)
+        else:
+            # Use latest (main/master branch)
+            try:
+                subprocess.run(["git", "reset", "--hard", "origin/main"], check=True)
+            except subprocess.CalledProcessError:
+                subprocess.run(["git", "reset", "--hard", "origin/master"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Git update of {name} failed: {e}")
         sys.exit(1)
@@ -352,30 +477,100 @@ def rebuild_images():
         os.chdir(original_cwd)
 
 
-def update_system():
-    BASEDIR = os.getcwd()
+def update_repositories(basedir, force=False):
+    """Update all repositories and return status results"""
     status_results = []
+    versions_config = load_versions_config()
+    if not versions_config:
+        # Fallback to hardcoded config if versions.json fails to load
+        versions_config = {
+            "webclient": {
+                "version": "latest",
+                "url": None,
+                "npm_install": True,
+                "npm_build": True,
+            },
+            "container-agent": {
+                "version": "latest",
+                "url": None,
+                "npm_install": True,
+                "npm_build": False,
+            },
+            "webapi": {
+                "version": "latest",
+                "url": None,
+                "npm_install": False,
+                "npm_build": False,
+            },
+            "wsrng-server": {
+                "version": "latest",
+                "url": None,
+                "npm_install": True,
+                "npm_build": False,
+            },
+            "session-manager": {
+                "version": "latest",
+                "url": None,
+                "npm_install": True,
+                "npm_build": False,
+            },
+            "EMU-webApp": {
+                "version": "latest",
+                "url": "https://github.com/humlab-speech/EMU-webApp.git",
+                "npm_install": True,
+                "npm_build": True,
+            },
+        }
 
-    # Check .env file
+    for repo_name, config in versions_config.items():
+        try:
+            update_repo(
+                basedir,
+                repo_name,
+                config.get("npm_install", False),
+                config.get("npm_build", False),
+                config.get("url"),
+                config.get("version", "latest"),
+                force,
+            )
+            status_results.append(
+                {
+                    "Component": f"Update {repo_name}",
+                    "Status": "✓ PASS",
+                    "Details": f"Updated to {config.get('version', 'latest')}",
+                }
+            )
+        except SystemExit:
+            status_results.append(
+                {
+                    "Component": f"Update {repo_name}",
+                    "Status": "✗ FAIL",
+                    "Details": "Update failed",
+                }
+            )
+
+    return status_results
+
+
+def check_environment():
+    """Check environment file and return status result"""
     try:
         check_env_file()
-        status_results.append(
-            {
-                "Component": "Environment Check",
-                "Status": "✓ PASS",
-                "Details": ".env file verified",
-            }
-        )
+        return {
+            "Component": "Environment Check",
+            "Status": "✓ PASS",
+            "Details": ".env file verified",
+        }
     except SystemExit:
-        status_results.append(
-            {
-                "Component": "Environment Check",
-                "Status": "✗ FAIL",
-                "Details": ".env file issues",
-            }
-        )
+        return {
+            "Component": "Environment Check",
+            "Status": "✗ FAIL",
+            "Details": ".env file issues",
+        }
 
-    # Initial ownership
+
+def set_initial_permissions():
+    """Set initial file permissions and return status result"""
     try:
         chown_recursive("webclient", 1000, 1000)
         chown_recursive("certs", 1000, 1000)
@@ -383,46 +578,21 @@ def update_system():
         chown_recursive("webapi", 1000, 1000)
         chown_recursive("wsrng-server", 1000, 1000)
         chown_recursive("session-manager", 1000, 1000)
-        status_results.append(
-            {
-                "Component": "Initial Permissions",
-                "Status": "✓ PASS",
-                "Details": "Ownership set",
-            }
-        )
+        return {
+            "Component": "Initial Permissions",
+            "Status": "✓ PASS",
+            "Details": "Ownership set",
+        }
     except OSError as e:
-        status_results.append(
-            {"Component": "Initial Permissions", "Status": "✗ FAIL", "Details": str(e)}
-        )
+        return {
+            "Component": "Initial Permissions",
+            "Status": "✗ FAIL",
+            "Details": str(e),
+        }
 
-    # Update repositories
-    repos = [
-        ("webclient", True, True),
-        ("container-agent", True, False),
-        ("webapi", False, False),
-        ("wsrng-server", True, False),
-        ("session-manager", True, False),
-    ]
-    for repo, npm_inst, npm_build in repos:
-        try:
-            update_repo(BASEDIR, repo, npm_inst, npm_build)
-            status_results.append(
-                {
-                    "Component": f"Update {repo}",
-                    "Status": "✓ PASS",
-                    "Details": "Updated successfully",
-                }
-            )
-        except SystemExit:
-            status_results.append(
-                {
-                    "Component": f"Update {repo}",
-                    "Status": "✗ FAIL",
-                    "Details": "Update failed",
-                }
-            )
 
-    # Check container image ages (Docker is primary)
+def check_and_rebuild_images():
+    """Check container image ages and rebuild if needed, return status result"""
     images_to_check = [
         ("visp-operations-session", "docker/session-manager/operations-session"),
         ("visp-rstudio-session", "docker/session-manager/rstudio-session"),
@@ -444,31 +614,27 @@ def update_system():
     if old_images:
         try:
             rebuild_images()
-            status_results.append(
-                {
-                    "Component": "Docker Images",
-                    "Status": "✓ REBUILT",
-                    "Details": f"Rebuilt: {', '.join(old_images)}",
-                }
-            )
-        except SystemExit:
-            status_results.append(
-                {
-                    "Component": "Docker Images",
-                    "Status": "✗ FAIL",
-                    "Details": f"Rebuild failed for: {', '.join(old_images)}",
-                }
-            )
-    else:
-        status_results.append(
-            {
+            return {
                 "Component": "Docker Images",
-                "Status": "✓ UP TO DATE",
-                "Details": "All images current",
+                "Status": "✓ REBUILT",
+                "Details": f"Rebuilt: {', '.join(old_images)}",
             }
-        )
+        except SystemExit:
+            return {
+                "Component": "Docker Images",
+                "Status": "✗ FAIL",
+                "Details": f"Rebuild failed for: {', '.join(old_images)}",
+            }
+    else:
+        return {
+            "Component": "Docker Images",
+            "Status": "✓ UP TO DATE",
+            "Details": "All images current",
+        }
 
-    # Final ownership
+
+def set_final_permissions():
+    """Set final file permissions and return status result"""
     try:
         chown_recursive("webclient", 1000, 1000)
         chown_recursive("certs", 1000, 1000)
@@ -476,24 +642,71 @@ def update_system():
         chown_recursive("webapi", 1000, 1000)
         chown_recursive("wsrng-server", 1000, 1000)
         chown_recursive("session-manager", 1000, 1000)
-        status_results.append(
-            {
-                "Component": "Final Permissions",
-                "Status": "✓ PASS",
-                "Details": "Ownership set",
-            }
-        )
+        return {
+            "Component": "Final Permissions",
+            "Status": "✓ PASS",
+            "Details": "Ownership set",
+        }
     except OSError as e:
-        status_results.append(
-            {"Component": "Final Permissions", "Status": "✗ FAIL", "Details": str(e)}
-        )
+        return {"Component": "Final Permissions", "Status": "✗ FAIL", "Details": str(e)}
 
-    # Print status table
+
+def print_update_summary(status_results):
+    """Print the update summary table with counters"""
     print("\n" + "=" * 80)
     print("VISIBLE SPEECH DEPLOYMENT UPDATE SUMMARY")
     print("=" * 80)
     print(tabulate(status_results, headers="keys", tablefmt="grid"))
+
+    # Count results
+    total = len(status_results)
+    passed = sum(
+        1
+        for r in status_results
+        if "PASS" in r["Status"]
+        or "REBUILT" in r["Status"]
+        or "UP TO DATE" in r["Status"]
+    )
+    failed = total - passed
+
     print("=" * 80)
+    print(f"Summary: {passed}/{total} components successful")
+    if failed > 0:
+        print(f"Failed: {failed} component(s)")
+    print("=" * 80)
+
+
+def update_system(force=False):
+    BASEDIR = os.getcwd()
+    status_results = []
+
+    # Update repositories first (as requested)
+    print("🔄 Updating repositories...")
+    repo_results = update_repositories(BASEDIR, force)
+    status_results.extend(repo_results)
+
+    # Check environment
+    print("🔍 Checking environment...")
+    env_result = check_environment()
+    status_results.append(env_result)
+
+    # Set initial permissions
+    print("🔒 Setting initial permissions...")
+    perm_result = set_initial_permissions()
+    status_results.append(perm_result)
+
+    # Check and rebuild images
+    print("🐳 Checking Docker images...")
+    image_result = check_and_rebuild_images()
+    status_results.append(image_result)
+
+    # Set final permissions
+    print("🔒 Setting final permissions...")
+    final_perm_result = set_final_permissions()
+    status_results.append(final_perm_result)
+
+    # Print summary with counters
+    print_update_summary(status_results)
 
 
 def main():
@@ -523,13 +736,18 @@ def main():
         action="store_true",
         help="Rebuild Docker images if outdated",
     )
+    update_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force update even with uncommitted changes",
+    )
 
     args = parser.parse_args()
 
     if args.command == "install":
         install_system()
     elif args.command == "update":
-        update_system()
+        update_system(force=getattr(args, "force", False))
     else:
         parser.print_help()
 

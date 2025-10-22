@@ -1,0 +1,40 @@
+{
+  "components": {
+    "webclient": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/webclient",
+      "npm_install": true,
+      "npm_build": true
+    },
+    "webapi": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/webapi",
+      "npm_install": false,
+      "npm_build": false
+    },
+    "container-agent": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/container-agent",
+      "npm_install": true,
+      "npm_build": false
+    },
+    "wsrng-server": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/wsrng-server",
+      "npm_install": true,
+      "npm_build": false
+    },
+    "session-manager": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/session-manager",
+      "npm_install": true,
+      "npm_build": false
+    },
+    "EMU-webApp": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/EMU-webApp",
+      "npm_install": true,
+      "npm_build": true
+    }
+  }
+}
