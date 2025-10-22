@@ -23,7 +23,7 @@ When deploying this container, you **MUST** implement the following security mea
 
 #### Container Hardening
 ```bash
-podman run \
+docker run \
   --read-only \
   --security-opt=no-new-privileges \
   --cap-drop=ALL \
@@ -35,7 +35,7 @@ podman run \
 
 #### Required Security Layers
 
-1. **Rootless container**: Run with Podman in rootless mode
+1. **Rootless container**: Prefer running Docker without root or with a controlled user; ensure container runtime is configured securely
 2. **Read-only filesystem**: `--read-only` flag prevents file modifications
 3. **No privilege escalation**: `--security-opt=no-new-privileges`
 4. **Minimal capabilities**: `--cap-drop=ALL`
@@ -143,7 +143,7 @@ docker logs -f emu-webapp
 
 - [EMU-webApp Repository](https://github.com/IPS-LMU/EMU-webApp)
 - [npx serve Documentation](https://github.com/vercel/serve)
-- [Podman Security Best Practices](https://docs.podman.io/en/latest/markdown/podman-run.1.html#security-options)
+- [Docker Security Best Practices](https://docs.docker.com/engine/security/security/)
 
 ## License
 

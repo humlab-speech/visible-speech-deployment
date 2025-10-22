@@ -88,3 +88,13 @@ RUN echo "@reboot jovyan /usr/local/bin/whisperx_link_script.sh" >> /etc/crontab
 
 # Switch back to jovyan user
 USER jovyan
+
+#########################################################
+# Ensure Jupyter runtime and local dirs exist and are owned
+# This prevents permission errors when the notebook server
+# tries to create /home/jovyan/.local/share/jupyter/runtime
+USER root
+RUN mkdir -p /home/jovyan/.local/share/jupyter/runtime && \
+    chown -R jovyan:users /home/jovyan/.local && \
+    chmod -R 700 /home/jovyan/.local
+USER jovyan

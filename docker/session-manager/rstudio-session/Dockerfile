@@ -12,7 +12,10 @@ WORKDIR /root
 RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 RUN sh miniconda.sh -b -p /opt/miniconda
 RUN rm miniconda.sh
-RUN /opt/miniconda/bin/conda install -y -c conda-forge mamba
+# Accept Anaconda repository Terms of Service to allow non-interactive installs
+RUN /opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main || true && \
+    /opt/miniconda/bin/conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r || true && \
+    /opt/miniconda/bin/conda install -y -c conda-forge mamba
 
 
 #RUN curl -Lo miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \

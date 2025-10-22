@@ -164,7 +164,7 @@ def install_system():
     # Install dependencies (excluding Node.js since we'll use containers)
     run_command("apt update", "Updating package list")
     run_command(
-        "apt install -y curl git openssl podman podman-compose",
+        "apt install -y curl git openssl docker.io docker-compose",
         "Installing dependencies",
     )
 
@@ -246,14 +246,15 @@ def install_system():
         user_flag = ""
         for cmd in cmds:
             # Use Node.js container for builds instead of host Node.js
+            # Use Docker so images are created/managed by Docker in developer environments
             run_command(
-                f"podman run{user_flag} --rm -v {comp_path}:/app -w /app node:20 {cmd}",
+                f"docker run{user_flag} --rm -v {comp_path}:/app -w /app node:20 {cmd}",
                 f"Building {comp}: {cmd}",
             )
 
     # Permissions are already correct for rootless execution
 
-    print("Installation complete. Run 'podman-compose up -d' to start services.")
+    print("Installation complete. Run 'docker compose up -d' to start services.")
 
 
 def update_repo(basedir, name, npm_install=False, npm_build=False):
@@ -272,23 +273,23 @@ def update_repo(basedir, name, npm_install=False, npm_build=False):
     user_flag = ""
     if npm_install:
         if os.path.exists("node_modules"):
-            # Remove existing node_modules using Podman to handle permissions
+            # Remove existing node_modules using Docker to handle permissions
             run_command(
-                f"podman run --rm -v {repo_path}:/app -w /app alpine sh -c 'rm -rf node_modules'",
+                f"docker run --rm -v {repo_path}:/app -w /app alpine sh -c 'rm -rf node_modules'",
                 f"Removing old node_modules for {name}",
             )
         run_command(
-            f"podman run{user_flag} --rm -v {repo_path}:/app -w /app node:20 npm install --legacy-peer-deps",
+            f"docker run{user_flag} --rm -v {repo_path}:/app -w /app node:20 npm install --legacy-peer-deps",
             f"Installing npm dependencies for {name}",
         )
     if npm_build:
-        # Clean dist directory using Podman
+        # Clean dist directory using Docker
         run_command(
-            f"podman run --rm -v {repo_path}:/app -w /app alpine sh -c 'rm -rf dist'",
+            f"docker run --rm -v {repo_path}:/app -w /app alpine sh -c 'rm -rf dist'",
             f"Cleaning dist for {name}",
         )
         run_command(
-            f"podman run{user_flag} --rm -v {repo_path}:/app -w /app node:20 npm run build",
+            f"docker run{user_flag} --rm -v {repo_path}:/app -w /app node:20 npm run build",
             f"Building {name}",
         )
     os.chdir(basedir)
@@ -299,7 +300,7 @@ def check_image_age(image_name, source_path):
         return False  # If source doesn't exist, don't rebuild
     try:
         result = subprocess.run(
-            ["podman", "inspect", "-f", "{{.Created}}", image_name],
+            ["docker", "inspect", "-f", "{{.Created}}", image_name],
             capture_output=True,
             text=True,
             check=True,
@@ -318,20 +319,34 @@ def check_image_age(image_name, source_path):
 
 def rebuild_images():
     script_dir = "docker/session-manager"
-    script_path = os.path.join(script_dir, "build-session-images.sh")
-    if not os.path.exists(script_path):
-        print(f"Build script {script_path} not found, skipping rebuild.")
+    # Prefer a Docker-based build script when possible so images are available to Docker
+    docker_script = os.path.join(script_dir, "build-session-images-no-cache.sh")
+    legacy_script = os.path.join(script_dir, "build-session-images.sh")
+
+    # select which script to run (prefer Docker script)
+    if shutil.which("docker") and os.path.exists(docker_script):
+        script_path = docker_script
+        print("Rebuilding images using Docker (no-cache script)...")
+    elif os.path.exists(legacy_script):
+        # Fallback: older legacy script present
+        script_path = legacy_script
+        print("Rebuilding images using legacy build script (fallback)...")
+    else:
+        print(f"No build script found in {script_dir}, skipping rebuild.")
         return
-    print("Rebuilding Podman images...")
     original_cwd = os.getcwd()
     try:
+        original_cwd = os.getcwd()
         os.chdir(script_dir)
-        result = subprocess.run(["./build-session-images.sh"], check=False)
+        # Run the selected script with bash to ensure it executes correctly
+        result = subprocess.run(
+            ["/bin/bash", os.path.basename(script_path)], check=False
+        )
         if result.returncode == 0:
-            print("Podman images rebuilt successfully.")
+            print("Images rebuilt successfully.")
         else:
-            print("Podman image rebuild failed, but continuing with update.")
-    except Exception as e:
+            print("Image rebuild failed, but continuing with update.")
+    except (OSError, subprocess.SubprocessError) as e:
         print(f"Error running rebuild script: {e}, continuing with update.")
     finally:
         os.chdir(original_cwd)
@@ -407,7 +422,7 @@ def update_system():
                 }
             )
 
-    # Check Podman image ages
+    # Check container image ages (Docker is primary)
     images_to_check = [
         ("visp-operations-session", "docker/session-manager/operations-session"),
         ("visp-rstudio-session", "docker/session-manager/rstudio-session"),
