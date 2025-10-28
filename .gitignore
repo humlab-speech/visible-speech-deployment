@@ -25,6 +25,7 @@ install.sh
 dist
 certs/*
 private/*
+dev-notes/
 node_modules
 mounts/apache/saml/certs
 mounts/postgresql/data

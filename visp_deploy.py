@@ -163,6 +163,11 @@ def setup_env_file(auto_passwords=True, interactive=False):
         else:
             content += f"\n{key}={value}"
 
+    # Check if MongoDB data already exists
+    mongo_data_exists = os.path.exists("./mounts/mongo/data") and os.listdir(
+        "./mounts/mongo/data"
+    )
+
     # Password variables to handle
     password_vars = {
         "POSTGRES_PASSWORD": "local",
@@ -177,6 +182,36 @@ def setup_env_file(auto_passwords=True, interactive=False):
     }
 
     for var, ptype in password_vars.items():
+        # Special handling for MongoDB password if data already exists
+        if var == "MONGO_ROOT_PASSWORD" and mongo_data_exists:
+            current_value = ""
+            if f"{var}=" in content:
+                current_value = content.split(f"{var}=")[1].split("\n")[0].strip()
+
+            if current_value:
+                # Password exists and MongoDB data exists - don't change it
+                print("⚠️  MongoDB database already exists with data.")
+                print(
+                    "   Keeping existing MONGO_ROOT_PASSWORD to avoid authentication issues."
+                )
+                continue
+            else:
+                # No password set but data exists - warn user
+                print(
+                    "⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env!"
+                )
+                if (
+                    interactive
+                    or input("   Set MongoDB password now? (y/n): ").lower() == "y"
+                ):
+                    password = getpass.getpass(f"   Enter {var}: ")
+                    content = (
+                        content.replace(f"{var}=", f"{var}={password}")
+                        if f"{var}=" in content
+                        else content + f"\n{var}={password}"
+                    )
+                continue
+
         if auto_passwords or ptype == "local":
             random_value = generate_random_string()
             if f"{var}=" in content:
@@ -272,16 +307,46 @@ def run_command(cmd, description="", check=True):
         raise
 
 
+def check_dependencies():
+    """Check if required system dependencies are available"""
+    dependencies = {
+        "docker": "Docker engine",
+        "git": "Git version control",
+        "curl": "curl command-line tool",
+        "openssl": "OpenSSL for certificate generation",
+    }
+
+    missing = []
+    for cmd, name in dependencies.items():
+        result = subprocess.run(["which", cmd], capture_output=True, text=True)
+        if result.returncode != 0:
+            missing.append(f"  - {name} ({cmd})")
+
+    if missing:
+        print("\n⚠️  WARNING: Missing required dependencies:")
+        for dep in missing:
+            print(dep)
+        print("\nPlease install these dependencies before continuing.")
+        print(
+            "On Debian/Ubuntu: sudo apt install -y curl git openssl docker.io docker-compose"
+        )
+        print(
+            "\nNote: You can run this script without root access if dependencies are already installed."
+        )
+        response = input("\nContinue anyway? (y/N): ")
+        if response.lower() != "y":
+            print("Installation cancelled.")
+            sys.exit(1)
+    else:
+        print("✓ All required dependencies found")
+
+
 def install_system():
     print("Starting VISP installation...")
     BASEDIR = os.getcwd()
 
-    # Install dependencies (excluding Node.js since we'll use containers)
-    run_command("apt update", "Updating package list")
-    run_command(
-        "apt install -y curl git openssl docker.io docker-compose",
-        "Installing dependencies",
-    )
+    # Check for dependencies (non-root, just checks)
+    check_dependencies()
 
     # Setup .env
     setup_env_file(auto_passwords=True)
@@ -324,7 +389,8 @@ def install_system():
         "Generating IdP cert",
     )
 
-    # Clone repos
+    # Clone all repos
+    # Note: Even "containerized" components need source code for development mode
     versions_config = load_versions_config()
 
     for name, config in versions_config.items():
@@ -349,31 +415,42 @@ def install_system():
         "Fetching emu-webapp-server .env",
     )
 
-    # Build components using Node.js container
+    # Build all components using temporary Node.js containers
+    # This works for both development (with source mounts) and production (baked into images)
     components = [
-        ("container-agent", ["npm install", "npm run build"]),
-        (
-            "wsrng-server",
-            ["npm install", "mkdir -p logs", "touch logs/wsrng-server.log"],
-        ),
-        ("webclient", ["npm install", "npm run build"]),
         ("session-manager", ["npm install"]),
+        ("wsrng-server", ["npm install"]),
+        ("container-agent", ["npm install", "npm run build"]),
+        ("webclient", ["npm install --legacy-peer-deps", "npm run build"]),
     ]
 
+    print("\nBuilding components using temporary Node.js containers...")
     for comp, cmds in components:
         comp_path = os.path.join(BASEDIR, comp)
         user_flag = ""
         for cmd in cmds:
-            # Use Node.js container for builds instead of host Node.js
-            # Use Docker so images are created/managed by Docker in developer environments
+            # Use temporary node:20 container for builds instead of host Node.js
+            # This ensures clean host and consistent versioning (works with both Docker and Podman)
             run_command(
                 f"docker run{user_flag} --rm -v {comp_path}:/app -w /app node:20 {cmd}",
                 f"Building {comp}: {cmd}",
             )
 
+    print("\nNote: session-manager and wsrng-server dependencies are installed.")
+    print(
+        "In development mode (docker-compose.dev.yml), source code is mounted for hot-reload."
+    )
+    print(
+        "In production mode (docker-compose.prod.yml), run 'docker compose build' to bake code into images."
+    )
+
     # Permissions are already correct for rootless execution
 
-    print("Installation complete. Run 'docker compose up -d' to start services.")
+    print("\nInstallation complete.")
+    print("Next steps:")
+    print("  1. Review .env file and configure as needed")
+    print("  2. Run 'docker compose build' to build containerized services")
+    print("  3. Run 'docker compose up -d' to start all services")
 
 
 def update_repo(

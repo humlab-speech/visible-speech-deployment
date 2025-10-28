@@ -4,37 +4,49 @@
       "version": "latest",
       "url": "https://github.com/humlab-speech/webclient",
       "npm_install": true,
-      "npm_build": true
+      "npm_build": true,
+      "containerized": false,
+      "note": "Angular app built on host, dist/ mounted to Apache"
     },
     "webapi": {
       "version": "latest",
       "url": "https://github.com/humlab-speech/webapi",
       "npm_install": false,
-      "npm_build": false
+      "npm_build": false,
+      "containerized": false,
+      "note": "STALE/DEPRECATED - not actively used"
     },
     "container-agent": {
       "version": "latest",
       "url": "https://github.com/humlab-speech/container-agent",
       "npm_install": true,
-      "npm_build": false
+      "npm_build": false,
+      "containerized": false,
+      "note": "Built on host, bundled into session images"
     },
     "wsrng-server": {
       "version": "latest",
       "url": "https://github.com/humlab-speech/wsrng-server",
-      "npm_install": true,
-      "npm_build": false
+      "npm_install": false,
+      "npm_build": false,
+      "containerized": true,
+      "note": "Fully containerized with multi-stage build"
     },
     "session-manager": {
       "version": "latest",
       "url": "https://github.com/humlab-speech/session-manager",
-      "npm_install": true,
-      "npm_build": false
+      "npm_install": false,
+      "npm_build": false,
+      "containerized": true,
+      "note": "Fully containerized with multi-stage build"
     },
     "EMU-webApp": {
       "version": "latest",
       "url": "https://github.com/humlab-speech/EMU-webApp",
       "npm_install": true,
-      "npm_build": true
+      "npm_build": true,
+      "containerized": false,
+      "note": "Built on host, bundled into emu-webapp image"
     }
   }
 }

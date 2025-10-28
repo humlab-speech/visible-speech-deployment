@@ -72,9 +72,9 @@ services:
       - "./mounts/repositories:/repositories:Z"
 
   session-manager:
-    image: visp-session-manager-dev
+    image: visp-session-manager
     build:
-      context: ./docker/session-manager/build-context
+      context: ./session-manager
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
@@ -82,7 +82,6 @@ services:
     environment:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
-      #GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
       RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
       RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
@@ -97,9 +96,10 @@ services:
       BASIC_AUTH_USERNAME: "whisperuser"
       BASIC_AUTH_PASSWORD: "whisperpass"
     volumes:
-      - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
+      # Source code mount for development hot-reload
       - "./session-manager:/session-manager:Z"
-      #- "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
+      # Data volumes
+      - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/logs:/session-manager/logs:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
       - "/var/run/docker.sock:/var/run/docker.sock:Z"
@@ -153,12 +153,17 @@ services:
       - octra-net
 
   wsrng-server:
-    #image: wsrng-server
-    build: "./docker/wsrng-server"
-    #environment:
-      #GIT_API_ACCESS_TOKEN: $GIT_API_ACCESS_TOKEN
+    image: visp-wsrng-server
+    build:
+      context: ./wsrng-server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./wsrng-server/.env
     volumes:
+      # Source code mount for development hot-reload
       - "./wsrng-server:/wsrng-server:Z"
+      # Data volumes
       - "./mounts/repositories:/repositories:Z"
     networks:
       - visp-net
