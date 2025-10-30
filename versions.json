@@ -40,6 +40,14 @@
       "containerized": true,
       "note": "Fully containerized with multi-stage build"
     },
+    "emu-webapp-server": {
+      "version": "latest",
+      "url": "https://github.com/humlab-speech/emu-webapp-server",
+      "npm_install": true,
+      "npm_build": false,
+      "containerized": true,
+      "note": "Fully containerized with multi-stage build"
+    },
     "EMU-webApp": {
       "version": "latest",
       "url": "https://github.com/humlab-speech/EMU-webApp",

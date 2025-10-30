@@ -20,6 +20,7 @@ WebSpeechRecorderNg
 mounts/apache/apache/uploads/*
 ./session-manager
 ./mounts/session-manager
+./emu-webapp-server
 install.sh
 .env
 dist
@@ -52,7 +53,6 @@ run_git_clone_in_container.sh
 visp-server
 wsrng-server
 mounts/repositories
-./emu-webapp-server/
 docker/emu-webapp/EMU-webApp
 mounts/whisper
 docker/session-manager/matlab_runtime_installer/

@@ -1,6 +1,42 @@
 # Visible Speech
 
-This is a collection of docker containers, which as a whole makes out the Visible Speech (VISP) system.
+This is a collection of do### Automated Demo Installation
+
+For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
+
+1. Enter into visible-speech-deployment directory.
+1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
+1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
+1. Once complete, run `docker-compose up -d`
+1. Follow the remaining manual steps for setup (MongoDB, etc.)
+
+### Permission Requirements
+
+The deployment script can run in two modes:
+
+**Production Mode (Recommended):**
+```bash
+sudo python3 visp_deploy.py install
+```
+- Sets proper file ownership (matches current user's uid/gid)
+- Full permissions for all operations
+- Required for production deployments
+
+**Development/Demo Mode:**
+```bash
+python3 visp_deploy.py install
+```
+- Runs as regular user
+- Skips file ownership changes (shows warnings)
+- Suitable for development, testing, and demo deployments
+- Docker containers work fine without root-level file permissions
+
+### Update System
+
+To update the system components:
+
+1. RUN `python3 visp_deploy.py update`
+1. This will update all repositories, rebuild components using Node.js containers, and check Docker images. which as a whole makes out the Visible Speech (VISP) system.
 
 ### Automated Demo Installation
 For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
@@ -83,6 +119,52 @@ All Node.js components (webclient, container-agent, session-manager, wsrng-serve
 ### Python Environment
 
 The deployment script (`visp_deploy.py`) is written in Python 3 and handles all installation and update operations.
+
+## TROUBLESHOOTING
+
+### Permission Errors
+
+**Error:** `PermissionError: [Errno 1] Operation not permitted`
+
+**Cause:** Script trying to set file ownership to match current user's UID/GID.
+
+**Solutions:**
+- **Production deployments:** Run with `sudo python3 visp_deploy.py install`
+- **Development/demo:** Run without sudo - script shows warnings but continues successfully
+- **Why:** Script sets proper file ownership to match the current user for Docker container access
+
+### Missing Dependencies
+
+**Error:** `WARNING: Missing required dependencies`
+
+**Solution:**
+```bash
+sudo apt install -y curl git openssl docker.io docker-compose
+```
+
+### Python Library Errors
+
+**Error:** `tabulate library not found`
+
+**Solution:**
+```bash
+pip3 install tabulate
+# Or for user-only installation:
+pip3 install --user tabulate
+```
+
+### Docker Permission Issues
+
+**Error:** `docker: permission denied`
+
+**Solutions:**
+```bash
+# Add user to docker group (logout/login required):
+sudo usermod -aG docker $USER
+
+# Or run with sudo (not recommended for development):
+sudo python3 visp_deploy.py install
+```
 
 ## Manual installation
 

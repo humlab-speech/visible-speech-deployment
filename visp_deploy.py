@@ -49,6 +49,12 @@ DEFAULT_VERSIONS_CONFIG = {
         "npm_install": True,
         "npm_build": False,
     },
+    "emu-webapp-server": {
+        "version": "latest",
+        "url": None,
+        "npm_install": True,
+        "npm_build": False,
+    },
     "EMU-webApp": {
         "version": "latest",
         "url": "https://github.com/humlab-speech/EMU-webApp.git",
@@ -64,10 +70,21 @@ COMPONENTS_WITH_PERMISSIONS = [
     "webapi",
     "wsrng-server",
     "session-manager",
+    "emu-webapp-server",
 ]
 
-TARGET_UID = 1000
-TARGET_GID = 1000
+TARGET_UID = os.getuid()  # Use current user's UID instead of hardcoded 1000
+TARGET_GID = os.getgid()  # Use current user's GID instead of hardcoded 1000
+
+COMPONENTS_WITH_PERMISSIONS = [
+    "webclient",
+    "certs",
+    "container-agent",
+    "webapi",
+    "wsrng-server",
+    "session-manager",
+    "emu-webapp-server",
+]
 
 
 def chown_recursive(path, uid, gid):
@@ -341,12 +358,29 @@ def check_dependencies():
         print("✓ All required dependencies found")
 
 
+def check_root_permissions():
+    """Check if running as root and provide guidance"""
+    import os
+
+    if os.geteuid() == 0:
+        print("✓ Running as root - full permissions available")
+        return True
+    else:
+        print("⚠️  Running as regular user - some operations may be skipped")
+        print("   This is fine for development/demo deployments")
+        print("   For production, consider running with: sudo python3 visp_deploy.py")
+        return False
+
+
 def install_system():
     print("Starting VISP installation...")
     BASEDIR = os.getcwd()
 
     # Check for dependencies (non-root, just checks)
     check_dependencies()
+
+    # Check permissions early
+    check_root_permissions()
 
     # Setup .env
     setup_env_file(auto_passwords=True)
@@ -355,8 +389,14 @@ def install_system():
     os.makedirs("mounts/session-manager", exist_ok=True)
     with open("mounts/session-manager/session-manager.log", "w", encoding="utf-8"):
         pass
-    os.chown("mounts/session-manager/session-manager.log", 1000, 1000)
-    os.chmod("mounts/session-manager/session-manager.log", 0o644)
+    try:
+        os.chown("mounts/session-manager/session-manager.log", TARGET_UID, TARGET_GID)
+        os.chmod("mounts/session-manager/session-manager.log", 0o644)
+    except OSError as e:
+        print(f"⚠️  Could not set ownership on session-manager log: {e}")
+        print("   → For production: run with 'sudo python3 visp_deploy.py install'")
+        print("   → For development: this warning is OK, continuing...")
+        print()
 
     os.makedirs("mounts/webapi", exist_ok=True)
     os.makedirs("mounts/apache/apache/uploads", exist_ok=True)
@@ -647,7 +687,11 @@ def set_permissions():
             "Details": "Ownership set for all components",
         }
     except OSError as e:
-        return {"Component": "Permissions", "Status": "✗ FAIL", "Details": str(e)}
+        return {
+            "Component": "Permissions",
+            "Status": "⚠️  SKIP",
+            "Details": f"Permission denied (run as root for proper ownership): {e}",
+        }
 
 
 def check_and_rebuild_images():
