@@ -1,0 +1,6 @@
+# Exclude everything by default
+*
+
+# Only include what's needed for emu-webapp build
+!EMU-webApp/**
+!docker/emu-webapp/**
