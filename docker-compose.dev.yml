@@ -114,15 +114,12 @@ services:
 
   emu-webapp:
     image: visp-emu-webapp
-    build: "./docker/emu-webapp"
+    build:
+      context: .
+      dockerfile: ./docker/emu-webapp/Dockerfile
     restart: unless-stopped
     ports:
       - 127.0.0.1:9000:9000
-    volumes:
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-    networks:
-      - visp-net
 
   emu-webapp-server:
     image: visp-emu-webapp-server
