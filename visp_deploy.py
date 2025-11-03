@@ -372,7 +372,7 @@ def check_root_permissions():
         return False
 
 
-def install_system():
+def install_system(mode="dev"):
     print("Starting VISP installation...")
     BASEDIR = os.getcwd()
 
@@ -384,6 +384,37 @@ def install_system():
 
     # Setup .env
     setup_env_file(auto_passwords=True)
+
+    # Setup docker-compose mode
+    compose_file = "docker-compose.yml"
+    target_file = f"docker-compose.{mode}.yml"
+
+    if os.path.islink(compose_file):
+        # Already a symlink, check what it points to
+        current_target = os.readlink(compose_file)
+        if current_target == target_file:
+            print(f"✓ Docker Compose is already configured for {mode} mode")
+        else:
+            print(f"⚠️  Docker Compose is already linked to {current_target}")
+            print(
+                "   Keeping existing configuration. To change mode, manually update the symlink."
+            )
+    elif os.path.exists(compose_file):
+        # Regular file exists, don't overwrite
+        print(f"⚠️  {compose_file} already exists as a regular file")
+        print(
+            f"   Keeping existing file. To use mode-based configuration, manually create symlink to {target_file}"
+        )
+    else:
+        # Create symlink
+        try:
+            os.symlink(target_file, compose_file)
+            print(
+                f"✓ Created docker-compose.yml symlink pointing to {target_file} ({mode} mode)"
+            )
+        except OSError as e:
+            print(f"⚠️  Could not create symlink: {e}")
+            print(f"   You can manually create: ln -s {target_file} {compose_file}")
 
     # Create directories
     os.makedirs("mounts/session-manager", exist_ok=True)
@@ -1046,6 +1077,13 @@ def main():
         action="store_true",
         help="Prompt for passwords interactively",
     )
+    install_parser.add_argument(
+        "--mode",
+        choices=["dev", "prod"],
+        default="dev",
+        help="Installation mode: dev (development with source mounts) "
+        "or prod (production with baked images). Default: dev",
+    )
 
     # Update command
     update_parser = subparsers.add_parser(
@@ -1075,7 +1113,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "install":
-        install_system()
+        install_system(mode=getattr(args, "mode", "dev"))
     elif args.command == "update":
         update_system(force=getattr(args, "force", False))
     elif args.command == "status":
