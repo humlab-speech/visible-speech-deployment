@@ -455,6 +455,32 @@ def install_system():
         "Fetching emu-webapp-server .env",
     )
 
+    # Setup wsrng-server .env (copy from .env-example and fill in MongoDB password)
+    if os.path.exists("wsrng-server/.env-example"):
+        if not os.path.exists("wsrng-server/.env"):
+            shutil.copy("wsrng-server/.env-example", "wsrng-server/.env")
+            print("Created wsrng-server/.env from .env-example")
+
+            # Read the main .env to get MongoDB password
+            mongo_password = ""
+            if os.path.exists(".env"):
+                with open(".env", "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.startswith("MONGO_ROOT_PASSWORD="):
+                            mongo_password = line.split("=", 1)[1].strip()
+                            break
+
+            # Update wsrng-server/.env with MongoDB password
+            if mongo_password:
+                with open("wsrng-server/.env", "r", encoding="utf-8") as f:
+                    content = f.read()
+                content = content.replace(
+                    "MONGO_PASSWORD=", f"MONGO_PASSWORD={mongo_password}"
+                )
+                with open("wsrng-server/.env", "w", encoding="utf-8") as f:
+                    f.write(content)
+                print("Configured wsrng-server/.env with MongoDB credentials")
+
     # Build all components using temporary Node.js containers
     # This works for both development (with source mounts) and production (baked into images)
     components = [
