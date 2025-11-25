@@ -722,19 +722,26 @@ def fix_repository_permissions():
                     if ".git" in root:
                         continue
 
-                    # Set directory permissions to 755
+                    # Set directory permissions - logs dirs need to be writable
                     for dir_name in dirs:
                         dir_path = os.path.join(root, dir_name)
                         try:
-                            os.chmod(dir_path, 0o755)
+                            # logs directories need to be writable by containers
+                            if dir_name == "logs":
+                                os.chmod(dir_path, 0o777)
+                            else:
+                                os.chmod(dir_path, 0o755)
                         except OSError:
                             pass  # Skip if permission denied
 
-                    # Set file permissions to 644
+                    # Set file permissions to 644, log files to 666
                     for file_name in files:
                         file_path = os.path.join(root, file_name)
                         try:
-                            os.chmod(file_path, 0o644)
+                            if file_name.endswith(".log"):
+                                os.chmod(file_path, 0o666)
+                            else:
+                                os.chmod(file_path, 0o644)
                         except OSError:
                             pass  # Skip if permission denied
 
@@ -749,7 +756,11 @@ def fix_repository_permissions():
                 for dir_name in dirs:
                     dir_path = os.path.join(root, dir_name)
                     try:
-                        os.chmod(dir_path, 0o755)
+                        # logs directories need full write access
+                        if dir_name == "logs" or "log" in dir_name:
+                            os.chmod(dir_path, 0o777)
+                        else:
+                            os.chmod(dir_path, 0o755)
                     except OSError:
                         pass
 
