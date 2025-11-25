@@ -76,25 +76,16 @@ COMPONENTS_WITH_PERMISSIONS = [
 TARGET_UID = os.getuid()  # Use current user's UID instead of hardcoded 1000
 TARGET_GID = os.getgid()  # Use current user's GID instead of hardcoded 1000
 
-COMPONENTS_WITH_PERMISSIONS = [
-    "webclient",
-    "certs",
-    "container-agent",
-    "webapi",
-    "wsrng-server",
-    "session-manager",
-    "emu-webapp-server",
-]
-
 
 def chown_recursive(path, uid, gid):
+    """Recursively change ownership of path using system chown command for speed"""
     try:
-        os.chown(path, uid, gid)
-        for root, dirs, files in os.walk(path):
-            for d in dirs:
-                os.chown(os.path.join(root, d), uid, gid)
-            for f in files:
-                os.chown(os.path.join(root, f), uid, gid)
+        # Using subprocess is 10-100x faster than os.walk for large directories like node_modules
+        subprocess.run(
+            ["chown", "-R", f"{uid}:{gid}", path], check=True, capture_output=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to chown {path}: {e}")
     except OSError as e:
         print(f"Failed to chown {path}: {e}")
 
@@ -117,6 +108,14 @@ def load_versions_config():
     except (json.JSONDecodeError, IOError) as e:
         print(f"Warning: Failed to load {config_file}: {e}. Using defaults.")
         return DEFAULT_VERSIONS_CONFIG
+
+
+def get_repo_url(name, config):
+    """Get repository URL from config or generate default GitHub URL"""
+    url = config.get("url")
+    if url:
+        return url
+    return f"https://github.com/humlab-speech/{name}.git"
 
 
 def check_uncommitted_changes(repo_path):
@@ -160,6 +159,37 @@ def handle_uncommitted_changes(repo_path, name, force=False):
         return False
 
 
+def update_env_var(content, key, value):
+    """Safely update or add an environment variable in .env content
+
+    This function properly handles:
+    - Exact key matching (won't confuse API_KEY with GOOGLE_API_KEY)
+    - Values containing = signs
+    - Adding new variables if they don't exist
+    """
+    lines = content.split("\n")
+    updated = False
+
+    for i, line in enumerate(lines):
+        # Skip comments and empty lines
+        if not line.strip() or line.strip().startswith("#"):
+            continue
+
+        # Check if this line defines the variable we're looking for
+        if "=" in line:
+            line_key = line.split("=", 1)[0].strip()
+            if line_key == key:
+                lines[i] = f"{key}={value}"
+                updated = True
+                break
+
+    # If variable wasn't found, add it at the end
+    if not updated:
+        lines.append(f"{key}={value}")
+
+    return "\n".join(lines)
+
+
 def setup_env_file(auto_passwords=True, interactive=False):
     if not os.path.exists(".env"):
         if os.path.exists(".env-example"):
@@ -168,17 +198,14 @@ def setup_env_file(auto_passwords=True, interactive=False):
             print("Error: .env-example not found")
             return
 
-    # Set defaults
-    env_updates = {"ABS_ROOT_PATH": os.getcwd(), "ADMIN_EMAIL": "admin@visp.local"}
-
+    # Read current content
     with open(".env", "r", encoding="utf-8") as f:
         content = f.read()
 
+    # Set defaults using safe update function
+    env_updates = {"ABS_ROOT_PATH": os.getcwd(), "ADMIN_EMAIL": "admin@visp.local"}
     for key, value in env_updates.items():
-        if f"{key}=" in content:
-            content = content.replace(f"{key}=", f"{key}={value}")
-        else:
-            content += f"\n{key}={value}"
+        content = update_env_var(content, key, value)
 
     # Check if MongoDB data already exists
     mongo_data_exists = os.path.exists("./mounts/mongo/data") and os.listdir(
@@ -201,9 +228,12 @@ def setup_env_file(auto_passwords=True, interactive=False):
     for var, ptype in password_vars.items():
         # Special handling for MongoDB password if data already exists
         if var == "MONGO_ROOT_PASSWORD" and mongo_data_exists:
+            # Parse current value safely
             current_value = ""
-            if f"{var}=" in content:
-                current_value = content.split(f"{var}=")[1].split("\n")[0].strip()
+            for line in content.split("\n"):
+                if line.strip().startswith(f"{var}="):
+                    current_value = line.split("=", 1)[1] if "=" in line else ""
+                    break
 
             if current_value:
                 # Password exists and MongoDB data exists - don't change it
@@ -222,29 +252,24 @@ def setup_env_file(auto_passwords=True, interactive=False):
                     or input("   Set MongoDB password now? (y/n): ").lower() == "y"
                 ):
                     password = getpass.getpass(f"   Enter {var}: ")
-                    content = (
-                        content.replace(f"{var}=", f"{var}={password}")
-                        if f"{var}=" in content
-                        else content + f"\n{var}={password}"
-                    )
+                    content = update_env_var(content, var, password)
                 continue
 
         if auto_passwords or ptype == "local":
             random_value = generate_random_string()
-            if f"{var}=" in content:
-                content = content.replace(f"{var}=", f"{var}={random_value}")
-            else:
-                content += f"\n{var}={random_value}"
+            content = update_env_var(content, var, random_value)
         elif interactive:
-            if (
-                f"{var}=" not in content
-                or content.split(f"{var}=")[1].split("\n")[0].strip() == ""
-            ):
+            # Check if variable exists and has a value
+            has_value = False
+            for line in content.split("\n"):
+                if line.strip().startswith(f"{var}="):
+                    value_part = line.split("=", 1)[1] if "=" in line else ""
+                    has_value = bool(value_part.strip())
+                    break
+
+            if not has_value:
                 password = getpass.getpass(f"Enter {var}: ")
-                if f"{var}=" in content:
-                    content = content.replace(f"{var}=", f"{var}={password}")
-                else:
-                    content += f"\n{var}={password}"
+                content = update_env_var(content, var, password)
 
     with open(".env", "w", encoding="utf-8") as f:
         f.write(content)
@@ -290,13 +315,10 @@ def check_env_file():
         )
         print("Auto-generating random values for demo deployment...")
 
-        # Generate all missing values and update content in memory
+        # Generate all missing values using safe update function
         for var in missing:
             random_value = generate_random_string()
-            if f"{var}=" in content:
-                content = content.replace(f"{var}=", f"{var}={random_value}")
-            else:
-                content += f"\n{var}={random_value}"
+            content = update_env_var(content, var, random_value)
 
         # Write file once
         with open(".env", "w", encoding="utf-8") as f:
@@ -372,25 +394,12 @@ def check_root_permissions():
         return False
 
 
-def install_system(mode="dev"):
-    print("Starting VISP installation...")
-    BASEDIR = os.getcwd()
-
-    # Check for dependencies (non-root, just checks)
-    check_dependencies()
-
-    # Check permissions early
-    check_root_permissions()
-
-    # Setup .env
-    setup_env_file(auto_passwords=True)
-
-    # Setup docker-compose mode
+def setup_docker_compose_mode(mode="dev"):
+    """Setup docker-compose.yml symlink for the specified mode"""
     compose_file = "docker-compose.yml"
     target_file = f"docker-compose.{mode}.yml"
 
     if os.path.islink(compose_file):
-        # Already a symlink, check what it points to
         current_target = os.readlink(compose_file)
         if current_target == target_file:
             print(f"✓ Docker Compose is already configured for {mode} mode")
@@ -400,13 +409,11 @@ def install_system(mode="dev"):
                 "   Keeping existing configuration. To change mode, manually update the symlink."
             )
     elif os.path.exists(compose_file):
-        # Regular file exists, don't overwrite
         print(f"⚠️  {compose_file} already exists as a regular file")
         print(
             f"   Keeping existing file. To use mode-based configuration, manually create symlink to {target_file}"
         )
     else:
-        # Create symlink
         try:
             os.symlink(target_file, compose_file)
             print(
@@ -416,7 +423,9 @@ def install_system(mode="dev"):
             print(f"⚠️  Could not create symlink: {e}")
             print(f"   You can manually create: ln -s {target_file} {compose_file}")
 
-    # Create directories
+
+def create_required_directories():
+    """Create required directories and log files for VISP"""
     os.makedirs("mounts/session-manager", exist_ok=True)
     with open("mounts/session-manager/session-manager.log", "w", encoding="utf-8"):
         pass
@@ -437,13 +446,22 @@ def install_system(mode="dev"):
     os.makedirs("certs", exist_ok=True)
     os.makedirs("mounts/transcription-queued", exist_ok=True)
 
-    # Fetch cert
-    run_command(
-        "curl http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt",
-        "Fetching SWAMID cert",
-    )
 
-    # Generate certs
+def generate_ssl_certificates():
+    """Generate SSL certificates for VISP"""
+    # Fetch SWAMID cert - this is optional, warn if it fails
+    try:
+        run_command(
+            "curl -f http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt",
+            "Fetching SWAMID cert",
+        )
+    except subprocess.CalledProcessError as e:
+        print("⚠️  Warning: Could not fetch SWAMID certificate from mds.swamid.se")
+        print(f"   Error: {e}")
+        print("   SWAMID authentication may not work properly.")
+        print("   You can manually download it later if needed.")
+
+    # Generate self-signed certs for local development
     os.makedirs("certs/visp.local", exist_ok=True)
     run_command(
         "openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/cert.key "
@@ -460,26 +478,248 @@ def install_system(mode="dev"):
         "Generating IdP cert",
     )
 
-    # Clone all repos
-    # Note: Even "containerized" components need source code for development mode
+
+def verify_repository_content(repo_path, name):
+    """Verify that a cloned repository has actual content"""
+    print(f"Verifying clone of {name}...")
+    try:
+        status_result = subprocess.run(
+            ["git", "status", "--short"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        log_result = subprocess.run(
+            ["git", "log", "-1", "--oneline"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        file_count_result = subprocess.run(
+            ["find", ".", "-type", "f", "-not", "-path", "./.git/*"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        file_count = len([f for f in file_count_result.stdout.strip().split("\n") if f])
+
+        print("  Repository state:")
+        print(f"    Path: {repo_path}")
+        print(f"    Latest commit: {log_result.stdout.strip()}")
+        print(f"    File count: {file_count}")
+        if status_result.stdout.strip():
+            print(f"    Git status: {status_result.stdout.strip()}")
+        else:
+            print("    Git status: clean working tree")
+
+        # Sanity check: repository should have at least some files
+        if file_count == 0:
+            print(f"✗ Warning: {name} appears to be empty (0 files)")
+            return False
+
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"✗ Failed to verify {name}: {e}")
+        return False
+
+
+def clone_repositories(basedir):
+    """Clone all required repositories from versions.json"""
     versions_config = load_versions_config()
 
+    print("\n📦 Cloning repositories...")
+    print(f"Working directory: {os.getcwd()}")
+    failed_repos = []
+
     for name, config in versions_config.items():
-        if not os.path.exists(name):
-            url = config.get("url", f"https://github.com/humlab-speech/{name}")
-            run_command(f"git clone {url} {name}", f"Cloning {name}")
+        repo_path = os.path.join(basedir, name)
 
-            # Checkout specific version if not "latest"
-            version = config.get("version", "latest")
-            if version != "latest":
-                os.chdir(name)
-                run_command(
-                    f"git checkout {version}", f"Checking out {version} for {name}"
+        # Check if directory exists and whether it's a valid git repo
+        needs_clone = False
+        if os.path.exists(repo_path):
+            # Directory exists - check if it's a valid git repository with content
+            if not os.path.exists(os.path.join(repo_path, ".git")):
+                print(
+                    f"⚠️  {name} exists but is not a git repository - will remove and re-clone"
                 )
-                os.chdir(BASEDIR)
+                needs_clone = True
+                try:
+                    shutil.rmtree(repo_path)
+                except OSError as e:
+                    print(f"✗ Failed to remove invalid directory {repo_path}: {e}")
+                    failed_repos.append(name)
+                    continue
+            else:
+                # It's a git repo - verify it has files
+                try:
+                    file_count_result = subprocess.run(
+                        ["find", ".", "-type", "f", "-not", "-path", "./.git/*"],
+                        cwd=repo_path,
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    file_count = len(
+                        [f for f in file_count_result.stdout.strip().split("\n") if f]
+                    )
 
+                    if file_count == 0:
+                        print(
+                            f"⚠️  {name} appears to be empty (0 files) - will remove and re-clone"
+                        )
+                        needs_clone = True
+                        try:
+                            shutil.rmtree(repo_path)
+                        except OSError as e:
+                            print(
+                                f"✗ Failed to remove empty repository {repo_path}: {e}"
+                            )
+                            failed_repos.append(name)
+                            continue
+                    else:
+                        # Repository exists - pull latest updates
+                        print(
+                            f"⊙ Repository {name} already exists at {repo_path} ({file_count} files), updating..."
+                        )
+                        try:
+                            subprocess.run(
+                                ["git", "fetch", "--all"],
+                                cwd=repo_path,
+                                check=True,
+                                capture_output=True,
+                            )
+
+                            # Get current branch
+                            branch_result = subprocess.run(
+                                ["git", "branch", "--show-current"],
+                                cwd=repo_path,
+                                capture_output=True,
+                                text=True,
+                                check=True,
+                            )
+                            current_branch = branch_result.stdout.strip()
+                            if not current_branch:
+                                current_branch = "main"
+
+                            # Pull latest changes (try main first, then master)
+                            try:
+                                subprocess.run(
+                                    [
+                                        "git",
+                                        "pull",
+                                        "--ff-only",
+                                        "origin",
+                                        current_branch,
+                                    ],
+                                    cwd=repo_path,
+                                    capture_output=True,
+                                    text=True,
+                                    check=True,
+                                )
+                                print(f"  ✓ Updated {name} from remote")
+                            except subprocess.CalledProcessError:
+                                # Try master if main doesn't work
+                                try:
+                                    subprocess.run(
+                                        [
+                                            "git",
+                                            "pull",
+                                            "--ff-only",
+                                            "origin",
+                                            "master",
+                                        ],
+                                        cwd=repo_path,
+                                        capture_output=True,
+                                        text=True,
+                                        check=True,
+                                    )
+                                    print(
+                                        f"  ✓ Updated {name} from remote (master branch)"
+                                    )
+                                except subprocess.CalledProcessError as e:
+                                    print(
+                                        f"  ⚠️  Could not pull updates for {name}: {e}"
+                                    )
+                                    print(
+                                        "     Repository may have uncommitted changes or diverged from remote"
+                                    )
+                        except subprocess.CalledProcessError as e:
+                            print(f"  ⚠️  Failed to fetch updates for {name}: {e}")
+                        continue
+                except subprocess.CalledProcessError as e:
+                    print(f"✗ Failed to verify {name}: {e}")
+                    failed_repos.append(name)
+                    continue
+        else:
+            needs_clone = True
+
+        # Clone the repository
+        if needs_clone:
+            url = get_repo_url(name, config)
+            try:
+                print(f"Cloning {name} from {url}...")
+                run_command(f"git clone {url} {name}", f"Cloning {name}")
+
+                # Verify the clone succeeded
+                if not os.path.exists(repo_path):
+                    print(
+                        f"✗ Failed to clone {name} - directory not created at {repo_path}"
+                    )
+                    failed_repos.append(name)
+                    continue
+
+                # Verify repository content
+                if not verify_repository_content(repo_path, name):
+                    failed_repos.append(name)
+                    continue
+
+                # Checkout specific version if not "latest"
+                version = config.get("version", "latest")
+                if version != "latest":
+                    os.chdir(repo_path)
+                    run_command(
+                        f"git checkout {version}",
+                        f"Checking out {version} for {name}",
+                    )
+                    os.chdir(basedir)
+                print(f"✓ Successfully cloned {name} to {repo_path}")
+            except subprocess.CalledProcessError as e:
+                print(f"✗ Failed to clone {name}: {e}")
+                failed_repos.append(name)
+
+    # Check if any critical repositories failed
+    if failed_repos:
+        print(f"\n⚠️  WARNING: Failed to clone {len(failed_repos)} repository(ies):")
+        for repo in failed_repos:
+            print(f"  - {repo}")
+        print("\nInstallation incomplete. Please resolve the issues above.")
+        print("You may need to:")
+        print("  1. Check your internet connection")
+        print("  2. Verify git is installed")
+        print("  3. Check repository URLs in versions.json")
+        print("  4. Manually clone missing repositories")
+        sys.exit(1)
+
+    print(f"✓ All {len(versions_config)} repositories ready")
+
+
+def setup_service_env_files():
+    """Setup environment files for individual services"""
     # Setup emu-webapp-server .env
     os.makedirs("mounts/emu-webapp-server/logs", exist_ok=True)
+
+    # Ensure logs directory exists in the source repo for dev mode (required due to volume mount)
+    if os.path.exists("emu-webapp-server"):
+        os.makedirs("emu-webapp-server/logs", exist_ok=True)
+        # Set permissions for the logs directory to ensure container can write to it
+        try:
+            os.chmod("emu-webapp-server/logs", 0o777)
+        except OSError:
+            pass
+
     run_command(
         "curl -L https://raw.githubusercontent.com/humlab-speech/emu-webapp-server/main/.env-example "
         "-o ./mounts/emu-webapp-server/.env",
@@ -512,34 +752,91 @@ def install_system(mode="dev"):
                     f.write(content)
                 print("Configured wsrng-server/.env with MongoDB credentials")
 
-    # Build all components using temporary Node.js containers
-    # This works for both development (with source mounts) and production (baked into images)
-    components = [
-        ("session-manager", ["npm install"]),
-        ("wsrng-server", ["npm install"]),
-        ("container-agent", ["npm install", "npm run build"]),
-        ("webclient", ["npm install --legacy-peer-deps", "npm run build"]),
-    ]
+
+def build_components(basedir):
+    """Build all components using temporary Node.js containers based on versions.json config"""
+    versions_config = load_versions_config()
 
     print("\nBuilding components using temporary Node.js containers...")
-    for comp, cmds in components:
-        comp_path = os.path.join(BASEDIR, comp)
-        user_flag = ""
-        for cmd in cmds:
-            # Use temporary node:20 container for builds instead of host Node.js
-            # This ensures clean host and consistent versioning (works with both Docker and Podman)
-            run_command(
-                f"docker run{user_flag} --rm -v {comp_path}:/app -w /app node:20 {cmd}",
-                f"Building {comp}: {cmd}",
-            )
+    for name, config in versions_config.items():
+        comp_path = os.path.join(basedir, name)
 
-    print("\nNote: session-manager and wsrng-server dependencies are installed.")
+        # Skip if component doesn't exist
+        if not os.path.exists(comp_path):
+            continue
+
+        commands = []
+
+        # Build npm install command based on config
+        if config.get("npm_install", False):
+            # Special case for webclient which needs legacy-peer-deps
+            if name == "webclient":
+                commands.append("npm install --legacy-peer-deps")
+            else:
+                commands.append("npm install")
+
+        # Build npm build command based on config
+        if config.get("npm_build", False):
+            commands.append("npm run build")
+
+        # Execute commands if any
+        for cmd in commands:
+            # EMU-webApp uses webpack 4 which requires legacy OpenSSL algorithms
+            # Use --openssl-legacy-provider flag for Node 17+ compatibility
+            if name == "EMU-webApp" and "npm run build" in cmd:
+                run_command(
+                    f"docker run --rm -v {comp_path}:/app -w /app node:20 sh -c "
+                    f"'export NODE_OPTIONS=--openssl-legacy-provider && {cmd}'",
+                    f"Building {name}: {cmd} (with legacy OpenSSL)",
+                )
+            else:
+                # Use temporary container for builds instead of host Node.js
+                # This ensures clean host and consistent versioning
+                run_command(
+                    f"docker run --rm -v {comp_path}:/app -w /app node:20 {cmd}",
+                    f"Building {name}: {cmd}",
+                )
+
+    print("\nNote: Dependencies are installed based on versions.json configuration.")
     print(
         "In development mode (docker-compose.dev.yml), source code is mounted for hot-reload."
     )
     print(
         "In production mode (docker-compose.prod.yml), run 'docker compose build' to bake code into images."
     )
+
+
+def install_system(mode="dev"):
+    """Install VISP system with all required components"""
+    print("Starting VISP installation...")
+    BASEDIR = os.getcwd()
+
+    # Check for dependencies (non-root, just checks)
+    check_dependencies()
+
+    # Check permissions early
+    check_root_permissions()
+
+    # Setup .env
+    setup_env_file(auto_passwords=True)
+
+    # Setup docker-compose mode
+    setup_docker_compose_mode(mode)
+
+    # Create directories
+    create_required_directories()
+
+    # Generate SSL certificates
+    generate_ssl_certificates()
+
+    # Clone all repos
+    clone_repositories(BASEDIR)
+
+    # Setup service-specific .env files
+    setup_service_env_files()
+
+    # Build all components
+    build_components(BASEDIR)
 
     # Permissions are already correct for rootless execution
 
@@ -591,15 +888,119 @@ def update_repo(
             print(f"Checking out version {version} for {name}")
             subprocess.run(["git", "checkout", version], check=True)
         else:
-            # Use latest (main/master branch)
+            # Use latest (main/master branch) - try main first, then master
             try:
-                subprocess.run(["git", "reset", "--hard", "origin/main"], check=True)
+                # Check if local branch has diverged from remote
+                result = subprocess.run(
+                    ["git", "rev-list", "--count", "HEAD..origin/main"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                behind = int(result.stdout.strip())
+
+                result = subprocess.run(
+                    ["git", "rev-list", "--count", "origin/main..HEAD"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                ahead = int(result.stdout.strip())
+
+                if ahead > 0:
+                    print(
+                        f"⚠️  Warning: {name} has {ahead} local commit(s) not on remote"
+                    )
+                    if force:
+                        print(
+                            "   Force mode: Discarding local commits and resetting to origin/main"
+                        )
+                        subprocess.run(
+                            ["git", "reset", "--hard", "origin/main"], check=True
+                        )
+                    else:
+                        print(
+                            "   Attempting to rebase local commits onto origin/main..."
+                        )
+                        try:
+                            subprocess.run(["git", "rebase", "origin/main"], check=True)
+                            print(f"✓ Successfully rebased {name}")
+                        except subprocess.CalledProcessError:
+                            print(
+                                f"✗ Rebase failed for {name}. Use --force to discard local commits"
+                            )
+                            subprocess.run(["git", "rebase", "--abort"], check=False)
+                            raise
+                elif behind > 0:
+                    print(f"Updating {name} ({behind} commit(s) behind)")
+                    subprocess.run(
+                        ["git", "merge", "--ff-only", "origin/main"], check=True
+                    )
+                else:
+                    print(f"{name} is up to date")
+
             except subprocess.CalledProcessError:
-                subprocess.run(["git", "reset", "--hard", "origin/master"], check=True)
+                # Try master branch if main doesn't exist
+                try:
+                    result = subprocess.run(
+                        ["git", "rev-list", "--count", "HEAD..origin/master"],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    behind = int(result.stdout.strip())
+
+                    result = subprocess.run(
+                        ["git", "rev-list", "--count", "origin/master..HEAD"],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
+                    ahead = int(result.stdout.strip())
+
+                    if ahead > 0:
+                        print(
+                            f"⚠️  Warning: {name} has {ahead} local commit(s) not on remote"
+                        )
+                        if force:
+                            print(
+                                "   Force mode: Discarding local commits and resetting to origin/master"
+                            )
+                            subprocess.run(
+                                ["git", "reset", "--hard", "origin/master"], check=True
+                            )
+                        else:
+                            print(
+                                "   Attempting to rebase local commits onto origin/master..."
+                            )
+                            try:
+                                subprocess.run(
+                                    ["git", "rebase", "origin/master"], check=True
+                                )
+                                print(f"✓ Successfully rebased {name}")
+                            except subprocess.CalledProcessError:
+                                print(
+                                    f"✗ Rebase failed for {name}. Use --force to discard local commits"
+                                )
+                                subprocess.run(
+                                    ["git", "rebase", "--abort"], check=False
+                                )
+                                raise
+                    elif behind > 0:
+                        print(f"Updating {name} ({behind} commit(s) behind)")
+                        subprocess.run(
+                            ["git", "merge", "--ff-only", "origin/master"], check=True
+                        )
+                    else:
+                        print(f"{name} is up to date")
+                except subprocess.CalledProcessError:
+                    print(f"Could not determine remote tracking branch for {name}")
+                    raise
+
     except subprocess.CalledProcessError as e:
         print(f"Git update of {name} failed: {e}")
         sys.exit(1)
-    user_flag = ""
+
     if npm_install:
         if os.path.exists("node_modules"):
             # Remove existing node_modules using Docker to handle permissions
@@ -608,7 +1009,7 @@ def update_repo(
                 f"Removing old node_modules for {name}",
             )
         run_command(
-            f"docker run{user_flag} --rm -v {repo_path}:/app -w /app node:20 npm install --legacy-peer-deps",
+            f"docker run --rm -v {repo_path}:/app -w /app node:20 npm install --legacy-peer-deps",
             f"Installing npm dependencies for {name}",
         )
     if npm_build:
@@ -618,7 +1019,7 @@ def update_repo(
             f"Cleaning dist for {name}",
         )
         run_command(
-            f"docker run{user_flag} --rm -v {repo_path}:/app -w /app node:20 npm run build",
+            f"docker run --rm -v {repo_path}:/app -w /app node:20 npm run build",
             f"Building {name}",
         )
     os.chdir(basedir)
@@ -832,20 +1233,15 @@ def update_system(force=False):
     env_result = check_environment()
     status_results.append(env_result)
 
-    # Set initial permissions
-    print("🔒 Setting initial permissions...")
-    perm_result = set_permissions()
-    status_results.append(perm_result)
-
     # Check and rebuild images
     print("🐳 Checking Docker images...")
     image_result = check_and_rebuild_images()
     status_results.append(image_result)
 
-    # Set final permissions
-    print("🔒 Setting final permissions...")
-    final_perm_result = set_permissions()
-    status_results.append(final_perm_result)
+    # Set permissions after all operations complete
+    print("🔒 Setting file permissions...")
+    perm_result = set_permissions()
+    status_results.append(perm_result)
 
     # Print summary with counters
     print_update_summary(status_results)

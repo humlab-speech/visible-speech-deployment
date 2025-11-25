@@ -1,6 +1,20 @@
-# Exclude everything by default
-*
+# Exclude large/unnecessary directories to reduce build context
+.git
+.github
+mounts
+certs/letsencrypt
+private
+node_modules
+__pycache__
+*.log
 
-# Only include what's needed for emu-webapp build
-!EMU-webApp/**
-!docker/emu-webapp/**
+# Exclude other service directories (not needed for emu-webapp build)
+webclient
+webapi
+session-manager
+wsrng-server
+emu-webapp-server
+container-agent
+
+# Keep EMU-webApp and docker/emu-webapp (needed for build)
+# These are implicitly included by not being listed above
