@@ -197,6 +197,8 @@ services:
     restart: always
     env_file:
       - ./wsrng-server/.env
+    environment:
+      - MONGO_PASSWORD=${MONGO_ROOT_PASSWORD}
     volumes:
       # Data volumes only - no source code mounts
       - "./mounts/wsrng-server/logs:/wsrng-server/logs:Z"

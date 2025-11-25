@@ -134,6 +134,14 @@ services:
       - "./emu-webapp-server:/home/node/app:Z"
     env_file:
       - ./mounts/emu-webapp-server/.env
+    environment:
+      WS_SERVER_PORT: 17890
+      MONGO_URI: mongodb://root:${MONGO_ROOT_PASSWORD}@mongo:27017
+      MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
+      MONGO_DB_NAME: visp
+      REPOSITORIES_PATH: /repositories
+      MEDIA_FILE_BASE_URL: https://emu-webapp.${BASE_DOMAIN}
+      LOG_LEVEL: DEBUG
     networks:
       - visp-net
 
@@ -157,6 +165,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./wsrng-server/.env
+    environment:
+      - MONGO_PASSWORD=${MONGO_ROOT_PASSWORD}
     volumes:
       # Source code mount for development hot-reload
       - "./wsrng-server:/wsrng-server:Z"
