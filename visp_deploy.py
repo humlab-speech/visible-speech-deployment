@@ -706,6 +706,70 @@ def clone_repositories(basedir):
     print(f"✓ All {len(versions_config)} repositories ready")
 
 
+def fix_repository_permissions():
+    """Ensure repository directories have correct permissions for container access"""
+    print("\n🔒 Setting repository permissions for container access...")
+
+    versions_config = load_versions_config()
+
+    for name in versions_config.keys():
+        repo_path = os.path.join(os.getcwd(), name)
+        if os.path.exists(repo_path):
+            try:
+                # Make directories readable/executable by all (755)
+                for root, dirs, files in os.walk(repo_path):
+                    # Skip .git directory to avoid issues
+                    if ".git" in root:
+                        continue
+
+                    # Set directory permissions to 755
+                    for dir_name in dirs:
+                        dir_path = os.path.join(root, dir_name)
+                        try:
+                            os.chmod(dir_path, 0o755)
+                        except OSError:
+                            pass  # Skip if permission denied
+
+                    # Set file permissions to 644
+                    for file_name in files:
+                        file_path = os.path.join(root, file_name)
+                        try:
+                            os.chmod(file_path, 0o644)
+                        except OSError:
+                            pass  # Skip if permission denied
+
+                print(f"  ✓ Fixed permissions for {name}")
+            except Exception as e:
+                print(f"  ⚠️  Could not fix all permissions for {name}: {e}")
+
+    # Also fix mounts directory permissions
+    if os.path.exists("mounts"):
+        try:
+            for root, dirs, files in os.walk("mounts"):
+                for dir_name in dirs:
+                    dir_path = os.path.join(root, dir_name)
+                    try:
+                        os.chmod(dir_path, 0o755)
+                    except OSError:
+                        pass
+
+                for file_name in files:
+                    file_path = os.path.join(root, file_name)
+                    try:
+                        # Log files need to be writable by containers
+                        if file_name.endswith(".log"):
+                            os.chmod(file_path, 0o666)
+                        else:
+                            os.chmod(file_path, 0o644)
+                    except OSError:
+                        pass
+            print("  ✓ Fixed permissions for mounts directory")
+        except Exception as e:
+            print(f"  ⚠️  Could not fix all permissions for mounts: {e}")
+
+    print("✓ Permission setup complete")
+
+
 def setup_service_env_files():
     """Setup environment files for individual services"""
     # Setup emu-webapp-server .env
@@ -831,6 +895,9 @@ def install_system(mode="dev"):
 
     # Clone all repos
     clone_repositories(BASEDIR)
+
+    # Fix permissions for container access
+    fix_repository_permissions()
 
     # Setup service-specific .env files
     setup_service_env_files()
@@ -1227,6 +1294,9 @@ def update_system(force=False):
     print("🔄 Updating repositories...")
     repo_results = update_repositories(BASEDIR, force)
     status_results.extend(repo_results)
+
+    # Fix repository permissions after update
+    fix_repository_permissions()
 
     # Check environment
     print("🔍 Checking environment...")
