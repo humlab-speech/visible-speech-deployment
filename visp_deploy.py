@@ -223,6 +223,9 @@ def setup_env_file(auto_passwords=True, interactive=False):
         "MATOMO_DB_PASSWORD": "local",
         "MATOMO_DB_ROOT_PASSWORD": "local",
         "MATOMO_DB_USER": "local",
+        "SSP_ADMIN_PASSWORD": "local",
+        "SSP_SALT": "local",
+        "MONGO_EXPRESS_PASSWORD": "local",
     }
 
     for var, ptype in password_vars.items():
