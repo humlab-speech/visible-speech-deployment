@@ -14,13 +14,13 @@ mounts/elasticsearch/
 filebeat.docker.yml
 docker_bench.sh
 visp-user-access-tool
-container-agent
+# Ignore all external repositories
+/external/
 archive
 WebSpeechRecorderNg
 mounts/apache/apache/uploads/*
-./session-manager
-./mounts/session-manager
-./emu-webapp-server
+# Ignore all external repositories
+/external/
 install.sh
 .env
 dist
@@ -31,10 +31,7 @@ node_modules
 mounts/apache/saml/certs
 mounts/postgresql/data
 rstudio-router/node_modules
-webclient/node_modules
 mounts/rstudio-router/docker-images
-webclient
-webapi
 mounts/apache/apache/logs
 mounts/apache/apache/vhosts-disabled
 mounts/whisper/models/*
@@ -45,18 +42,14 @@ mounts/mongo/data/
 mounts/mongo/logs/
 mounts/matomo/config
 mounts/session-manager
-./session-manager/
 restart-wsrng-server.sh
 run_git_clone_in_container.sh
-./wsrng-server
 .vscode
 visp-server
-wsrng-server
 mounts/repositories
 docker/emu-webapp/EMU-webApp
 mounts/whisper
 docker/session-manager/matlab_runtime_installer/
-session-manager/
 
 # Python
 __pycache__/
@@ -92,3 +85,4 @@ mounts/whisperx/outputs/*
 
 # Local test scripts for the whisperx image (not intended for repo)
 docker/whisperx/*.sh
+/ARCHIVE/

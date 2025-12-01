@@ -49,16 +49,16 @@ services:
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
-      - "./webclient/dist:/var/www/html:Z"
-      - "./webapi:/var/www/webapi:Z"
+      - "./external/webclient/dist:/var/www/html:Z"
+      - "./external/webapi:/var/www/webapi:Z"
       # The application expects composer autoload at /var/www/html/api/vendor.
-      # In development the host mount of ./webclient/dist onto /var/www/html hides any
+      # In development the host mount of ./external/webclient/dist onto /var/www/html hides any
       # vendor files the image build may have put under /var/www/html/api/vendor, and
-      # the repo now keeps composer packages under ./webapi/vendor. Mount the host
+      # the repo now keeps composer packages under ./external/webapi/vendor. Mount the host
       # vendor folder into the webroot so PHP can always require 'api/vendor/autoload.php'.
       # This mirrors the runtime layout and avoids needing to create a symlink inside
       # the running container as a temporary hotfix.
-      - "./webapi/vendor:/var/www/html/api/vendor:Z"
+      - "./external/webapi/vendor:/var/www/html/api/vendor:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
@@ -74,7 +74,7 @@ services:
   session-manager:
     image: visp-session-manager
     build:
-      context: ./session-manager
+      context: ./external/session-manager
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
@@ -97,7 +97,7 @@ services:
       BASIC_AUTH_PASSWORD: "whisperpass"
     volumes:
       # Source code mount for development hot-reload
-      - "./session-manager:/session-manager:Z"
+      - "./external/session-manager:/session-manager:Z"
       # Data volumes
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/logs:/session-manager/logs:Z"
@@ -115,8 +115,8 @@ services:
   emu-webapp:
     image: visp-emu-webapp
     build:
-      context: .
-      dockerfile: ./docker/emu-webapp/Dockerfile
+      context: ./external
+      dockerfile: ../docker/emu-webapp/Dockerfile
     restart: unless-stopped
     ports:
       - 127.0.0.1:9000:9000
@@ -131,7 +131,7 @@ services:
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
-      - "./emu-webapp-server:/home/node/app:Z"
+      - "./external/emu-webapp-server:/home/node/app:Z"
     env_file:
       - ./mounts/emu-webapp-server/.env
     environment:
@@ -160,16 +160,16 @@ services:
   wsrng-server:
     image: visp-wsrng-server
     build:
-      context: ./wsrng-server
+      context: ./external/wsrng-server
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - ./wsrng-server/.env
+      - ./external/wsrng-server/.env
     environment:
       - MONGO_PASSWORD=${MONGO_ROOT_PASSWORD}
     volumes:
       # Source code mount for development hot-reload
-      - "./wsrng-server:/wsrng-server:Z"
+      - "./external/wsrng-server:/wsrng-server:Z"
       # Data volumes
       - "./mounts/repositories:/repositories:Z"
     networks:

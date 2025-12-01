@@ -444,8 +444,10 @@ def create_required_directories():
     os.makedirs("mounts/webapi", exist_ok=True)
     os.makedirs("mounts/apache/apache/uploads", exist_ok=True)
     os.makedirs("mounts/mongo/logs", exist_ok=True)
-    with open("mounts/mongo/logs/mongodb.log", "w", encoding="utf-8"):
-        pass
+    # Only create mongodb.log if it doesn't exist (avoid permission issues with running containers)
+    if not os.path.exists("mounts/mongo/logs/mongodb.log"):
+        with open("mounts/mongo/logs/mongodb.log", "w", encoding="utf-8"):
+            pass
     os.makedirs("certs", exist_ok=True)
     os.makedirs("mounts/transcription-queued", exist_ok=True)
 
@@ -538,7 +540,7 @@ def clone_repositories(basedir):
     failed_repos = []
 
     for name, config in versions_config.items():
-        repo_path = os.path.join(basedir, name)
+        repo_path = os.path.join(basedir, "external", name)
 
         # Check if directory exists and whether it's a valid git repo
         needs_clone = False
@@ -664,7 +666,7 @@ def clone_repositories(basedir):
             url = get_repo_url(name, config)
             try:
                 print(f"Cloning {name} from {url}...")
-                run_command(f"git clone {url} {name}", f"Cloning {name}")
+                run_command(f"git clone {url} {repo_path}", f"Cloning {name}")
 
                 # Verify the clone succeeded
                 if not os.path.exists(repo_path):
@@ -716,7 +718,7 @@ def fix_repository_permissions():
     versions_config = load_versions_config()
 
     for name in versions_config.keys():
-        repo_path = os.path.join(os.getcwd(), name)
+        repo_path = os.path.join(os.getcwd(), "external", name)
         if os.path.exists(repo_path):
             try:
                 # Make directories readable/executable by all (755)
@@ -790,11 +792,11 @@ def setup_service_env_files():
     os.makedirs("mounts/emu-webapp-server/logs", exist_ok=True)
 
     # Ensure logs directory exists in the source repo for dev mode (required due to volume mount)
-    if os.path.exists("emu-webapp-server"):
-        os.makedirs("emu-webapp-server/logs", exist_ok=True)
+    if os.path.exists("external/emu-webapp-server"):
+        os.makedirs("external/emu-webapp-server/logs", exist_ok=True)
         # Set permissions for the logs directory to ensure container can write to it
         try:
-            os.chmod("emu-webapp-server/logs", 0o777)
+            os.chmod("external/emu-webapp-server/logs", 0o777)
         except OSError:
             pass
 
@@ -805,9 +807,11 @@ def setup_service_env_files():
     )
 
     # Setup wsrng-server .env (copy from .env-example and fill in MongoDB password)
-    if os.path.exists("wsrng-server/.env-example"):
-        if not os.path.exists("wsrng-server/.env"):
-            shutil.copy("wsrng-server/.env-example", "wsrng-server/.env")
+    if os.path.exists("external/wsrng-server/.env-example"):
+        if not os.path.exists("external/wsrng-server/.env"):
+            shutil.copy(
+                "external/wsrng-server/.env-example", "external/wsrng-server/.env"
+            )
             print("Created wsrng-server/.env from .env-example")
 
             # Read the main .env to get MongoDB password
@@ -821,12 +825,12 @@ def setup_service_env_files():
 
             # Update wsrng-server/.env with MongoDB password
             if mongo_password:
-                with open("wsrng-server/.env", "r", encoding="utf-8") as f:
+                with open("external/wsrng-server/.env", "r", encoding="utf-8") as f:
                     content = f.read()
                 content = content.replace(
                     "MONGO_PASSWORD=", f"MONGO_PASSWORD={mongo_password}"
                 )
-                with open("wsrng-server/.env", "w", encoding="utf-8") as f:
+                with open("external/wsrng-server/.env", "w", encoding="utf-8") as f:
                     f.write(content)
                 print("Configured wsrng-server/.env with MongoDB credentials")
 
@@ -938,7 +942,7 @@ def update_repo(
     force=False,
 ):
     print(f"Update {name}...")
-    repo_path = os.path.join(basedir, name)
+    repo_path = os.path.join(basedir, "external", name)
 
     # Clone repository if it doesn't exist
     if not os.path.exists(repo_path):
