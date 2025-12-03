@@ -12,14 +12,17 @@ WORKDIR /app
 RUN gem install sass
 RUN gem install compass
 
-COPY EMU-webApp/package.json EMU-webApp/package-lock.json ./
+COPY package.json package-lock.json ./
 
 RUN npm ci
 
-COPY EMU-webApp/. .
+COPY . .
 
-# This fixes errors with using older ciphers... for now.
-RUN NODE_OPTIONS=--openssl-legacy-provider npm run build
+# Ensure node_modules binaries are executable after COPY (fixes permission issues on some systems)
+RUN chmod -R +x node_modules/.bin/ || true
+
+# Clean dist directory manually and build (avoids rimraf permission issues)
+RUN rm -rf dist/* && NODE_OPTIONS=--openssl-legacy-provider npx webpack --config webpack.prod.js
 
 # =========================================================================
 # Stage 2: The "Final" Stage

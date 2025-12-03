@@ -13,8 +13,28 @@ import json
 
 try:
     from tabulate import tabulate
+
+    HAS_TABULATE = True
 except ImportError:
-    print("tabulate library not found. Install with: pip install tabulate")
+    HAS_TABULATE = False
+
+    # Fallback simple table formatter
+    def tabulate(data, headers=None, tablefmt=None):
+        """Simple fallback when tabulate is not available"""
+        if not data:
+            return ""
+        if headers == "keys" and data:
+            headers = list(data[0].keys())
+        output = []
+        if headers:
+            output.append(" | ".join(str(h) for h in headers))
+            output.append("-" * (len(output[0])))
+        for row in data:
+            if isinstance(row, dict):
+                output.append(" | ".join(str(row.get(h, "")) for h in headers))
+            else:
+                output.append(" | ".join(str(v) for v in row))
+        return "\n".join(output)
 
 
 # Configuration constants
@@ -1353,7 +1373,7 @@ def check_repositories_status(fetch=True):
     repos_behind = []
 
     for repo_name, config in versions_config.items():
-        repo_path = os.path.join(original_cwd, repo_name)
+        repo_path = os.path.join(original_cwd, "external", repo_name)
 
         if not os.path.exists(repo_path):
             status_results.append(

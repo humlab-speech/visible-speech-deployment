@@ -32,6 +32,11 @@ This document explains the three main directory structures in the VISP deploymen
 - Source code is mounted into dev containers for hot-reload
 - Code is baked into production Docker images
 
+**⚠️ CRITICAL**: The `external/` directory **must be populated before building Docker images**.
+- Docker build contexts point directly to repos in `external/` (e.g., `./external/EMU-webApp`)
+- If `external/` is empty, builds will fail with "not found" errors
+- **Always run `python3 visp_deploy.py install` before `docker compose build`**
+
 **Why external/?**
 - Clear separation between deployment code and external dependencies
 - Centralized location for all external repos

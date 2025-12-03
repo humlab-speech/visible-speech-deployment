@@ -115,8 +115,8 @@ services:
   emu-webapp:
     image: visp-emu-webapp
     build:
-      context: ./external
-      dockerfile: ../docker/emu-webapp/Dockerfile
+      context: ./external/EMU-webApp
+      dockerfile: ../../docker/emu-webapp/Dockerfile
     restart: unless-stopped
     ports:
       - 127.0.0.1:9000:9000
