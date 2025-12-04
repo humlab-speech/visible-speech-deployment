@@ -859,7 +859,17 @@ def build_components(basedir):
     """Build all components using temporary Node.js containers based on versions.json config"""
     versions_config = load_versions_config()
 
+    # Read WEBCLIENT_BUILD from .env for webclient builds
+    webclient_build_cmd = "visp-build"  # default
+    if os.path.exists(".env"):
+        with open(".env", "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("WEBCLIENT_BUILD="):
+                    webclient_build_cmd = line.split("=", 1)[1].strip()
+                    break
+
     print("\nBuilding components using temporary Node.js containers...")
+    print(f"Webclient will be built with: npm run {webclient_build_cmd}")
     for name, config in versions_config.items():
         comp_path = os.path.join(basedir, name)
 
@@ -879,7 +889,11 @@ def build_components(basedir):
 
         # Build npm build command based on config
         if config.get("npm_build", False):
-            commands.append("npm run build")
+            # For webclient, use the WEBCLIENT_BUILD setting from .env
+            if name == "webclient":
+                commands.append(f"npm run {webclient_build_cmd}")
+            else:
+                commands.append("npm run build")
 
         # Execute commands if any
         for cmd in commands:
@@ -1355,6 +1369,268 @@ def update_system(force=False):
     print_update_summary(status_results)
 
 
+def check_webclient_build_config():
+    """Check webclient build configuration from .env and compare with actual build"""
+    result = {
+        "Setting": "WEBCLIENT_BUILD",
+        "Expected (.env)": "Not set",
+        "Expected Domain": "Unknown",
+        "Actual Build": "Unknown",
+        "Match Status": "❓ UNKNOWN",
+    }
+
+    # Read .env file to get expected build config
+    expected_build = "visp-build"  # default
+    expected_domain = "Unknown"
+
+    if os.path.exists(".env"):
+        with open(".env", "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("WEBCLIENT_BUILD="):
+                    expected_build = line.split("=", 1)[1].strip()
+                    result["Expected (.env)"] = expected_build
+                elif line.strip().startswith("BASE_DOMAIN="):
+                    expected_domain = line.split("=", 1)[1].strip()
+
+    result["Expected Domain"] = expected_domain
+
+    # Map build configs to their expected domains based on environment files
+    build_to_domain = {
+        "visp-build": "visp.humlab.umu.se",
+        "visp-demo-build": "visp-demo.humlab.umu.se",
+        "visp-pdf-server-build": "visp.pdf-server.humlab.umu.se",
+        "visp-local-build": "visp.local",
+        "datalab-build": None,  # Unknown
+        "visp.dev-build": None,  # Unknown
+        "production": "visp.humlab.umu.se",
+    }
+
+    # Check if we can determine actual built domain from dist files
+    actual_domain = "Not built"
+
+    # Determine deployment mode to prioritize the right location
+    is_dev_mode = False
+    if os.path.islink("docker-compose.yml"):
+        target = os.readlink("docker-compose.yml")
+        is_dev_mode = "dev" in target
+
+    # Try multiple locations:
+    # In dev mode: prioritize local dist (it's mounted)
+    # In prod mode: prioritize container (dist is baked in)
+
+    check_locations = []
+
+    if is_dev_mode:
+        # Dev mode: local dist is mounted, check it first
+        check_locations.append(
+            ("external/webclient/dist", "Local dist (mounted in dev)")
+        )
+
+    # Check if apache container is running and try to check inside it
+    try:
+        container_check = subprocess.run(
+            ["docker", "compose", "ps", "-q", "apache"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if container_check.returncode == 0 and container_check.stdout.strip():
+            check_locations.append(("docker", "Apache container"))
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+    if not is_dev_mode:
+        # Prod mode: also check local dist as fallback
+        check_locations.append(("external/webclient/dist", "Local dist (fallback)"))
+
+    for location, location_desc in check_locations:
+        if location == "docker":
+            # Check inside running container
+            try:
+                # Look for index.html which should contain the domain
+                domain_pattern = (
+                    "(visp\\.local|visp\\.humlab\\.umu\\.se|"
+                    "visp-demo\\.humlab\\.umu\\.se|"
+                    "visp\\.pdf-server\\.humlab\\.umu\\.se)"
+                )
+                docker_result = subprocess.run(
+                    [
+                        "docker",
+                        "compose",
+                        "exec",
+                        "-T",
+                        "apache",
+                        "grep",
+                        "-r",
+                        "-o",
+                        "-E",
+                        domain_pattern,
+                        "/var/www/html/",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=5,
+                )
+                if docker_result.returncode == 0 and docker_result.stdout:
+                    # Find first domain match (visp.local takes priority)
+                    for domain in [
+                        "visp.local",
+                        "visp.pdf-server.humlab.umu.se",
+                        "visp-demo.humlab.umu.se",
+                        "visp.humlab.umu.se",
+                    ]:
+                        if domain in docker_result.stdout:
+                            actual_domain = domain
+                            result["Actual Build"] = f"Container: '{domain}'"
+                            break
+            except (subprocess.SubprocessError, subprocess.TimeoutExpired):
+                pass
+        else:
+            # Check local dist folder
+            webclient_dist = location
+            if os.path.exists(webclient_dist):
+                # Try to find any HTML or JS file that might contain the domain
+                try:
+                    found_files = []
+                    # Look for index.html first, then any .html or .js files
+                    for root, dirs, files in os.walk(webclient_dist):
+                        for file in files:
+                            if file.endswith((".html", ".js")):
+                                found_files.append(os.path.join(root, file))
+                                if len(found_files) >= 5:  # Check up to 5 files
+                                    break
+                        if found_files:
+                            break
+
+                    domain_found = False
+                    if found_files:
+                        for file_path in found_files:
+                            try:
+                                with open(
+                                    file_path, "r", encoding="utf-8", errors="ignore"
+                                ) as f:
+                                    content = f.read(
+                                        10 * 1024 * 1024
+                                    )  # Read first 10MB
+                                    # Search for known domain patterns (visp.local first for local dev detection)
+                                    for domain in [
+                                        "visp.local",
+                                        "visp.pdf-server.humlab.umu.se",
+                                        "visp-demo.humlab.umu.se",
+                                        "visp.humlab.umu.se",
+                                    ]:
+                                        if domain in content:
+                                            actual_domain = domain
+                                            result["Actual Build"] = (
+                                                f"{location_desc}: '{domain}'"
+                                            )
+                                            domain_found = True
+                                            break
+                                    if domain_found:
+                                        break
+                            except (IOError, OSError):
+                                continue
+                except (IOError, OSError):
+                    pass
+
+        # If we found a domain in this location, stop checking other locations
+        if actual_domain != "Not built":
+            break
+
+    # Determine if configuration matches
+    expected_build_domain = build_to_domain.get(expected_build)
+
+    if actual_domain == "Not built":
+        result["Match Status"] = "⚠️  NOT BUILT"
+        result["Actual Build"] = "No dist files found (run build or check container)"
+    elif expected_build_domain and actual_domain != "Not built":
+        if expected_build_domain in actual_domain or actual_domain in str(
+            expected_build_domain
+        ):
+            if expected_domain in actual_domain or actual_domain in expected_domain:
+                result["Match Status"] = "✅ CORRECT"
+            else:
+                result["Match Status"] = (
+                    f"⚠️  MISMATCH (built for {actual_domain}, .env expects {expected_domain})"
+                )
+        else:
+            result["Match Status"] = "⚠️  BUILD MISMATCH"
+    elif not expected_build_domain:
+        result["Match Status"] = "❓ UNKNOWN BUILD TYPE"
+    else:
+        result["Match Status"] = "❓ CANNOT VERIFY"
+
+    return result
+
+
+def check_deployment_mode():
+    """Check which deployment mode is active (dev vs prod) and what's mounted"""
+    result = {
+        "Mode": "Unknown",
+        "Docker Compose File": "Not found",
+        "Webclient Source": "Unknown",
+        "Mounted Services": "Unknown",
+    }
+
+    # Check which docker-compose file is being used
+    compose_file = "docker-compose.yml"
+    if os.path.islink(compose_file):
+        target = os.readlink(compose_file)
+        result["Docker Compose File"] = target
+
+        if "dev" in target:
+            result["Mode"] = "🔧 DEVELOPMENT"
+        elif "prod" in target:
+            result["Mode"] = "🏭 PRODUCTION"
+    elif os.path.exists(compose_file):
+        result["Docker Compose File"] = "docker-compose.yml (regular file)"
+
+    # Check if webclient dist is mounted (dev mode) or baked in (prod mode)
+    mounted_services = []
+
+    try:
+        # Read the active docker-compose file
+        active_compose = None
+        if os.path.islink(compose_file):
+            active_compose = os.readlink(compose_file)
+        elif os.path.exists(compose_file):
+            active_compose = compose_file
+
+        if active_compose and os.path.exists(active_compose):
+            with open(active_compose, "r", encoding="utf-8") as f:
+                content = f.read()
+
+                # Check for webclient dist mount
+                if (
+                    "./external/webclient/dist:/var/www/html" in content
+                    and not content.count('#- "./external/webclient/dist')
+                ):
+                    result["Webclient Source"] = (
+                        "📁 Mounted from external/webclient/dist"
+                    )
+                    mounted_services.append("webclient")
+                else:
+                    result["Webclient Source"] = "📦 Baked into Docker image"
+
+                # Check for other mounted services
+                if "./external/session-manager:/session-manager" in content:
+                    mounted_services.append("session-manager")
+                if "./external/wsrng-server:/wsrng-server" in content:
+                    mounted_services.append("wsrng-server")
+                if "./external/emu-webapp-server:/home/node/app" in content:
+                    mounted_services.append("emu-webapp-server")
+
+                if mounted_services:
+                    result["Mounted Services"] = f"🔧 {', '.join(mounted_services)}"
+                else:
+                    result["Mounted Services"] = "📦 All baked into images"
+    except (IOError, OSError):
+        pass
+
+    return result
+
+
 def check_repositories_status(fetch=True):
     """Check status of all repositories and report uncommitted changes"""
     print("🔍 Checking repository status...")
@@ -1364,6 +1640,12 @@ def check_repositories_status(fetch=True):
 
     # Save original directory
     original_cwd = os.getcwd()
+
+    # Check deployment mode
+    deployment_mode = check_deployment_mode()
+
+    # Check webclient build configuration
+    webclient_build_config = check_webclient_build_config()
 
     versions_config = load_versions_config()
 
@@ -1526,6 +1808,21 @@ def check_repositories_status(fetch=True):
     print("\n" + "=" * 100)
     print("REPOSITORY STATUS CHECK")
     print("=" * 100)
+
+    # Show deployment mode first
+    if deployment_mode:
+        print("\n🚀 DEPLOYMENT MODE")
+        print("-" * 100)
+        print(tabulate([deployment_mode], headers="keys", tablefmt="grid"))
+        print()
+
+    # Show webclient build configuration
+    if webclient_build_config:
+        print("📦 WEBCLIENT BUILD CONFIGURATION")
+        print("-" * 100)
+        print(tabulate([webclient_build_config], headers="keys", tablefmt="grid"))
+        print()
+
     print(tabulate(status_results, headers="keys", tablefmt="grid"))
     print("=" * 100)
 

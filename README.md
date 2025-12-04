@@ -1,60 +1,83 @@
 # Visible Speech
 
-This is a collection of do### Automated Demo Installation
+This is a collection of dockerized services which as a whole makes out the Visible Speech (VISP) system.
 
-For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
+## 📚 Documentation
 
-1. Enter into visible-speech-deployment directory.
-1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
-1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
-1. Once complete, run `docker-compose up -d`
-1. Follow the remaining manual steps for setup (MongoDB, etc.)
+- **[Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Comprehensive guide for dev and production deployments
+- **[Quick Reference Card](docs/QUICK_REFERENCE.md)** - Cheat sheet for common tasks and troubleshooting
+- **[Troubleshooting Decision Tree](docs/TROUBLESHOOTING.md)** - Step-by-step problem diagnosis and solutions
+- **[Webclient Build Configuration](docs/WEBCLIENT_BUILD_CONFIG.md)** - Understanding Angular environment configurations
+- **[Version Management](docs/VERSION_MANAGEMENT.md)** - Managing component versions
+- **[Folder Structure](docs/FOLDER_STRUCTURE.md)** - Understanding the project layout
+- **[Dev vs Prod](docs/DEV_VS_PROD.md)** - Differences between deployment modes
 
-### Permission Requirements
+## Quick Start
 
-The deployment script can run in two modes:
+### For Development (Local)
 
-**Production Mode (Recommended):**
 ```bash
-sudo python3 visp_deploy.py install
+git clone https://github.com/humlab-speech/visible-speech-deployment.git
+cd visible-speech-deployment
+sudo python3 visp_deploy.py install --mode=dev
+docker compose up -d
 ```
-- Sets proper file ownership (matches current user's uid/gid)
-- Full permissions for all operations
-- Required for production deployments
 
-**Development/Demo Mode:**
+Access at: **https://visp.local** (add to `/etc/hosts`)
+
+### For Production (with DNS)
+
 ```bash
-python3 visp_deploy.py install
+git clone https://github.com/humlab-speech/visible-speech-deployment.git
+cd visible-speech-deployment
+
+# Edit .env file - CRITICAL: Set BASE_DOMAIN and WEBCLIENT_BUILD
+nano .env
+
+sudo python3 visp_deploy.py install --mode=prod
+docker compose build
+docker compose up -d
 ```
-- Runs as regular user
-- Skips file ownership changes (shows warnings)
-- Suitable for development, testing, and demo deployments
-- Docker containers work fine without root-level file permissions
 
-### Update System
+**⚠️ IMPORTANT**: The `WEBCLIENT_BUILD` setting in `.env` MUST match your `BASE_DOMAIN`. See the [Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for details.
 
-To update the system components:
+## Deployment Script
 
-1. RUN `python3 visp_deploy.py update`
-1. This will update all repositories, rebuild components using Node.js containers, and check Docker images. which as a whole makes out the Visible Speech (VISP) system.
+The `visp_deploy.py` script automates installation, updates, and status checks:
+
+```bash
+# Install system (dev or prod mode)
+sudo python3 visp_deploy.py install --mode=dev
+
+# Check repository status and configuration
+python3 visp_deploy.py status
+
+# Update all repositories and components
+python3 visp_deploy.py update
+```
+
+### What the Install Script Does
+
+- ✅ Creates `.env` from template with auto-generated passwords
+- ✅ Clones all required repositories
+- ✅ Builds Node.js components in Docker containers (no host Node.js needed)
+- ✅ Generates SSL certificates for local development
+- ✅ Creates required directories and log files
+- ✅ Sets proper file permissions
+- ✅ Configures docker-compose for dev or prod mode
 
 ### Automated Demo Installation
 For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
 
 1. Enter into visible-speech-deployment directory.
-1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
+1. RUN `sudo python3 visp_deploy.py install --mode=dev` (fully automated for demo)
 1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
-1. Once complete, run `docker-compose up -d`
+1. Once complete, run `docker compose up -d`
 1. Follow the remaining manual steps for setup (MongoDB, etc.)
 
-### Update System
+**For complete instructions, see [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)**
 
-To update the system components:
-
-1. RUN `python3 visp_deploy.py update`
-1. This will update all repositories, rebuild components using Node.js containers, and check Docker images.
-
-Included services:
+## Included Services
 
 - Traefik
   - Edge router
@@ -69,6 +92,62 @@ Included services:
 - OCTRA - Local mode only (only hosted, not integrated)
 
 - LabJS - Standalone
+
+## Prerequisites & Installation
+
+See the **[Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** for:
+- Prerequisites and system requirements
+- Step-by-step installation for development and production
+- Configuring custom domains and SSL certificates
+- Adding new deployment domains to the webclient
+- Post-installation configuration
+- Comprehensive troubleshooting
+
+## Quick Installation Summary
+
+### Prerequisites
+
+A Linux environment based on Debian or Ubuntu.
+
+If you are using WSL2, you will run into issues if you put this project inside an NTFS mount, such as `/mnt/c`, use a location inside the WSL2 container instead, such as `~/`. Note that you need to have docker and docker-compose available.
+
+### Install System Dependencies
+
+```bash
+sudo apt install -y curl git openssl docker.io docker-compose python3 python3-pip
+sudo usermod -aG docker $USER
+```
+
+### Automated Installation
+
+**Development Mode:**
+```bash
+sudo python3 visp_deploy.py install --mode=dev
+docker compose up -d
+```
+
+**Production Mode:**
+```bash
+# Edit .env first! Set BASE_DOMAIN and WEBCLIENT_BUILD
+sudo python3 visp_deploy.py install --mode=prod
+docker compose build
+docker compose up -d
+```
+
+### Manual Steps After Installation
+
+1. Add to `/etc/hosts` (for local dev):
+   ```
+   127.0.0.1 visp.local
+   127.0.0.1 emu-webapp.visp.local
+   ```
+
+2. Access test user (dev/demo):
+   ```
+   https://visp.local/?login=<TEST_USER_LOGIN_KEY from .env>
+   ```
+
+3. Configure MongoDB users as needed (see deployment guide)
 
 ## INSTALLATION
 

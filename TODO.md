@@ -9,10 +9,11 @@
   - Contact: Umeå University IT department
   - Issue: Currently using TEST_USER_LOGIN_KEY workaround for authentication
 
-- [ ] **Fix production index.php for test user login**
-  - Current workaround: manually copying `mounts/apache/apache/htdocs/index.php` to `webclient/dist/`
-  - Proper fix: Ensure webclient build includes index.php with TEST_USER_LOGIN_KEY support
-  - Or: Move authentication logic to webapi instead of index.php
+- [x] **✅ Fix production index.php for test user login** (Completed Dec 4, 2025)
+  - Fixed: TEST_USER_LOGIN_KEY now automatically sets loginAllowed:true for test users
+  - Test users created via /?login=<key> no longer get 401 errors
+  - No more manual MongoDB intervention needed
+  - Change in: `external/webclient/src/index.php`
 
 ### Matomo Analytics Integration
 - [ ] **Re-enable Matomo tracking** (currently stashed in git)
@@ -55,6 +56,24 @@
   - See: `docs/DEV_VS_PROD.md` for complete guide
 
 ### Build & Deployment Improvements
+- [x] **✅ Made WEBCLIENT_BUILD configurable** (Completed Dec 4, 2025)
+  - Implemented: WEBCLIENT_BUILD setting in .env controls which domain to build for
+  - Added: Build arg passing from docker-compose to Dockerfile
+  - Enhanced: visp_deploy.py reads WEBCLIENT_BUILD and uses it for builds
+  - Added: Configuration validation in `visp_deploy.py status` command
+  - Added: Domain detection that works with 6.5MB minified Angular bundles
+  - Supports: visp-build, visp-demo-build, visp-pdf-server-build, visp-local-build
+  - Benefits: Easy multi-domain deployment, local dev without changing prod config
+  - See: `docs/WEBCLIENT_BUILD_CONFIG.md` for technical details
+
+- [x] **✅ Added comprehensive deployment documentation** (Completed Dec 4, 2025)
+  - Created: `docs/DEPLOYMENT_GUIDE.md` (890 lines) - Complete step-by-step guide
+  - Created: `docs/QUICK_REFERENCE.md` - Quick reference card with domain mapping
+  - Created: `docs/TROUBLESHOOTING.md` - Decision tree troubleshooting guide
+  - Created: `docs/WEBCLIENT_BUILD_CONFIG.md` - Technical configuration deep-dive
+  - Updated: README.md with documentation links and restructured content
+  - Includes: Adding new domains, dev vs prod workflows, validation checks
+
 - [ ] **Consider moving emu-webapp-server Dockerfile to external repo**
   - Current: Dockerfile is in `docker/emu-webapp-server/`
   - Inconsistency: Other Humlab services (session-manager, wsrng-server) have Dockerfiles in their repos
@@ -63,6 +82,9 @@
   - See: `docs/DOCKERFILE_AUDIT.md` for analysis
 
 - [ ] **Add version drift detection to visp_deploy.py**
+  - ✅ Partially implemented: `visp_deploy.py status` now checks uncommitted changes
+  - ✅ Shows repository status: clean, has changes, ahead/behind remote
+  - [ ] TODO: Add explicit drift warnings with --strict flag
   - Check if external repos have uncommitted local changes
     - Use `git status --porcelain` to detect modified/staged files
     - Warn: "external/session-manager has uncommitted changes - deploy may not be reproducible"
@@ -74,7 +96,7 @@
     - Current checked out commit vs `locked_version` field
     - Warn if mismatch: "external/session-manager is at abc123 but versions.json specifies def456"
   - Add `--strict` flag to fail on any drift (for CI/CD)
-  - Add to `visp_deploy.py status` command
+  - Already in `visp_deploy.py status` command (partially)
 
 - [ ] **Audit Dockerfiles for version consistency**
   - Problem: Some Dockerfiles do `git clone` without specifying version
@@ -192,6 +214,22 @@
 - ✅ **Service .env auto-generation** (Dec 1, 2025)
   - Fixed wsrng-server/.env generation from .env-example + main .env
   - Single source of truth for configuration values
+- ✅ **Configurable webclient build system** (Dec 4, 2025)
+  - Made WEBCLIENT_BUILD setting configurable via .env
+  - Added support for multiple deployment domains (visp, visp-demo, visp-pdf-server, visp-local)
+  - Enhanced visp_deploy.py with build validation and configuration checks
+  - Fixed domain detection in large minified bundles (10MB read buffer)
+  - Added deployment mode detection (dev vs prod) in status command
+- ✅ **Deployment documentation suite** (Dec 4, 2025)
+  - Created comprehensive DEPLOYMENT_GUIDE.md (890 lines)
+  - Created QUICK_REFERENCE.md with domain mapping table
+  - Created TROUBLESHOOTING.md with decision tree format
+  - Created WEBCLIENT_BUILD_CONFIG.md technical guide
+  - Restructured README.md with clear documentation links
+- ✅ **Fixed TEST_USER_LOGIN_KEY authentication** (Dec 4, 2025)
+  - Test users now automatically get loginAllowed:true
+  - No more 401 errors requiring manual MongoDB updates
+  - Fixed in external/webclient/src/index.php
 
 ## Notes
 - **Git stashes to review:**

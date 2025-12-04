@@ -1,6 +1,8 @@
 FROM debian:bookworm
 
-ENV WEBCLIENT_BUILD=visp-build
+# Build argument that can be passed from docker-compose
+ARG WEBCLIENT_BUILD=visp-build
+ENV WEBCLIENT_BUILD=${WEBCLIENT_BUILD}
 
 RUN echo "WEBCLIENT_BUILD is set to ${WEBCLIENT_BUILD}"
 

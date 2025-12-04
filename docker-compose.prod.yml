@@ -1,7 +1,10 @@
 services:
   apache:
     image: visp-apache
-    build: "./docker/apache"
+    build:
+      context: "./docker/apache"
+      args:
+        WEBCLIENT_BUILD: ${WEBCLIENT_BUILD:-visp-build}
     restart: always
     ports:
       - $HTTP_PORT:80
