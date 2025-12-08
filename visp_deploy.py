@@ -10,6 +10,7 @@ import string
 import random
 import getpass
 import json
+from contextlib import contextmanager
 
 try:
     from tabulate import tabulate
@@ -37,7 +38,385 @@ except ImportError:
         return "\n".join(output)
 
 
-# Configuration constants
+# =============================================================================
+# HELPER CLASSES AND CONTEXT MANAGERS
+# =============================================================================
+
+
+@contextmanager
+def working_directory(path):
+    """
+    Context manager for safely changing directories.
+    Prevents directory state corruption if exceptions occur.
+
+    Usage:
+        with working_directory('/some/path'):
+            # do work in /some/path
+            pass
+        # automatically returns to original directory
+    """
+    prev_cwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev_cwd)
+
+
+class GitRepository:
+    """
+    Encapsulates all Git operations for a repository.
+    Centralizes subprocess handling and error management.
+    """
+
+    def __init__(self, path, url=None):
+        """
+        Initialize a Git repository wrapper.
+
+        Args:
+            path: Absolute or relative path to the repository
+            url: Optional remote URL for the repository
+        """
+        self.path = os.path.abspath(path) if path else None
+        self.url = url
+
+    def exists(self):
+        """Check if the repository directory exists."""
+        return self.path and os.path.exists(self.path)
+
+    def is_git_repo(self):
+        """Check if the path is a valid git repository."""
+        if not self.exists():
+            return False
+        return os.path.exists(os.path.join(self.path, ".git"))
+
+    def run_git(self, args, check=True, capture_output=True):
+        """
+        Run a git command in the repository.
+
+        Args:
+            args: List of git command arguments (without 'git')
+            check: Whether to raise exception on non-zero exit
+            capture_output: Whether to capture stdout/stderr
+
+        Returns:
+            CompletedProcess result if capture_output=True, else None
+        """
+        cmd = ["git"] + args
+        if capture_output:
+            result = subprocess.run(
+                cmd, cwd=self.path, capture_output=True, text=True, check=check
+            )
+            return result
+        else:
+            subprocess.run(cmd, cwd=self.path, check=check)
+            return None
+
+    def clone(self, destination=None):
+        """Clone the repository to destination (or self.path if not specified)."""
+        if not self.url:
+            raise ValueError("Cannot clone: no URL specified")
+        target = destination or self.path
+        subprocess.run(["git", "clone", self.url, target], check=True)
+        if destination:
+            self.path = os.path.abspath(destination)
+
+    def fetch(self, quiet=True):
+        """Fetch all remotes."""
+        args = ["fetch", "--all"]
+        if quiet:
+            args.append("--quiet")
+        self.run_git(args)
+
+    def checkout(self, ref, force=False):
+        """Checkout a specific ref (branch, tag, commit)."""
+        args = ["checkout", ref]
+        if force:
+            args.insert(1, "-f")
+        self.run_git(args)
+
+    def pull(self, rebase=False):
+        """Pull from current tracking branch."""
+        args = ["pull"]
+        if rebase:
+            args.append("--rebase")
+        self.run_git(args)
+
+    def get_current_commit(self):
+        """Get the current commit SHA (full)."""
+        try:
+            result = self.run_git(["rev-parse", "HEAD"])
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return None
+
+    def get_current_branch(self):
+        """Get the current branch name."""
+        try:
+            result = self.run_git(["rev-parse", "--abbrev-ref", "HEAD"])
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return None
+
+    def get_commit_info(self, ref="HEAD"):
+        """
+        Get detailed information about a commit.
+
+        Returns:
+            dict with keys: sha, sha_short, date, subject, author
+            or None if the ref doesn't exist
+        """
+        try:
+            # Get full SHA
+            sha_result = self.run_git(["rev-parse", ref])
+            sha = sha_result.stdout.strip()
+
+            # Get short SHA
+            sha_short_result = self.run_git(["rev-parse", "--short", ref])
+            sha_short = sha_short_result.stdout.strip()
+
+            # Get commit details
+            log_result = self.run_git(["log", "-1", "--format=%ci|%s|%an", ref])
+            log_parts = log_result.stdout.strip().split("|", 2)
+
+            return {
+                "sha": sha,
+                "sha_short": sha_short,
+                "date": log_parts[0] if len(log_parts) > 0 else "",
+                "subject": log_parts[1] if len(log_parts) > 1 else "",
+                "author": log_parts[2] if len(log_parts) > 2 else "",
+            }
+        except subprocess.CalledProcessError:
+            return None
+
+    def count_commits_between(self, from_ref, to_ref):
+        """
+        Count commits between two refs.
+
+        Returns:
+            int: Number of commits from from_ref to to_ref
+            Returns 0 if refs are the same or on error
+        """
+        try:
+            result = self.run_git(["rev-list", "--count", f"{from_ref}..{to_ref}"])
+            return int(result.stdout.strip())
+        except (subprocess.CalledProcessError, ValueError):
+            return 0
+
+    def is_dirty(self):
+        """Check if there are uncommitted changes."""
+        try:
+            result = self.run_git(["status", "--porcelain"], check=False)
+            return bool(result.stdout.strip())
+        except subprocess.CalledProcessError:
+            return False
+
+    def get_remote_url(self, remote="origin"):
+        """Get the URL for a remote."""
+        try:
+            result = self.run_git(["remote", "get-url", remote])
+            return result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return None
+
+    def has_remote_branch(self, branch, remote="origin"):
+        """Check if a remote branch exists."""
+        try:
+            self.run_git(["rev-parse", f"{remote}/{branch}"])
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
+
+class ComponentConfig:
+    """
+    Manages the versions.json configuration file.
+    Encapsulates loading, saving, and manipulation of component versions.
+    """
+
+    def __init__(self, filepath="versions.json", defaults=None):
+        """
+        Initialize configuration manager.
+
+        Args:
+            filepath: Path to versions.json file
+            defaults: Default configuration dict (uses DEFAULT_VERSIONS_CONFIG if None)
+        """
+        self.filepath = filepath
+        self.defaults = defaults or DEFAULT_VERSIONS_CONFIG
+        self.config = self._load()
+
+    def _load(self):
+        """Load configuration from file, falling back to defaults."""
+        if os.path.exists(self.filepath):
+            try:
+                with open(self.filepath, "r") as f:
+                    config = json.load(f)
+                # Merge with defaults to ensure all required fields exist
+                for component, default_data in self.defaults.items():
+                    if component not in config:
+                        config[component] = default_data.copy()
+                    else:
+                        # Ensure all default fields exist
+                        for key, value in default_data.items():
+                            if key not in config[component]:
+                                config[component][key] = value
+                return config
+            except (json.JSONDecodeError, IOError) as e:
+                print(f"⚠️  Error loading {self.filepath}: {e}")
+                print("   Using default configuration")
+                return self.defaults.copy()
+        return self.defaults.copy()
+
+    def save(self):
+        """
+        Save configuration to file with backup.
+        Creates a timestamped backup before overwriting.
+        """
+        # Create backup if file exists
+        if os.path.exists(self.filepath):
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = f"{self.filepath}.backup_{timestamp}"
+            shutil.copy2(self.filepath, backup_path)
+
+        # Write new config
+        with open(self.filepath, "w") as f:
+            json.dump(self.config, f, indent=2)
+
+    def get_components(self):
+        """Get all components as (name, data) tuples."""
+        return self.config.items()
+
+    def get_component(self, name):
+        """Get a specific component's configuration."""
+        return self.config.get(name)
+
+    def get_version(self, name):
+        """Get the active version for a component."""
+        component = self.config.get(name, {})
+        return component.get("version", "latest")
+
+    def get_locked_version(self, name):
+        """Get the locked version for a component."""
+        component = self.config.get(name, {})
+        return component.get("locked_version")
+
+    def set_version(self, name, version):
+        """Set the active version for a component."""
+        if name in self.config:
+            self.config[name]["version"] = version
+
+    def set_locked_version(self, name, version):
+        """Set the locked version for a component."""
+        if name in self.config:
+            self.config[name]["locked_version"] = version
+
+    def lock(self, name, commit_sha):
+        """
+        Lock a component to a specific commit.
+        Sets both version and locked_version to the commit SHA.
+        """
+        if name in self.config:
+            self.config[name]["version"] = commit_sha
+            self.config[name]["locked_version"] = commit_sha
+            return True
+        return False
+
+    def unlock(self, name):
+        """
+        Unlock a component to track latest.
+        Sets version to 'latest' but preserves locked_version for rollback.
+        """
+        if name in self.config:
+            self.config[name]["version"] = "latest"
+            # Preserve locked_version for rollback
+            return True
+        return False
+
+    def rollback(self, name):
+        """
+        Rollback a component to its locked version.
+        Sets version to match locked_version.
+        """
+        if name in self.config:
+            locked = self.config[name].get("locked_version")
+            if locked:
+                self.config[name]["version"] = locked
+                return True
+        return False
+
+    def is_locked(self, name):
+        """Check if a component is locked (version != 'latest')."""
+        return self.get_version(name) != "latest"
+
+
+class EnvFile:
+    """
+    Manages .env file operations.
+    Encapsulates reading, writing, and updating environment variables.
+    """
+
+    def __init__(self, path=".env"):
+        """
+        Initialize environment file manager.
+
+        Args:
+            path: Path to .env file
+        """
+        self.path = path
+        self.vars = {}
+        self.comments = {}  # Store comments for each variable
+        self._load()
+
+    def _load(self):
+        """Load variables from .env file if it exists."""
+        if not os.path.exists(self.path):
+            return
+
+        with open(self.path, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" in line:
+                    key, value = line.split("=", 1)
+                    self.vars[key.strip()] = value.strip()
+
+    def get(self, key, default=None):
+        """Get an environment variable value."""
+        return self.vars.get(key, default)
+
+    def set(self, key, value, comment=None):
+        """
+        Set an environment variable.
+
+        Args:
+            key: Variable name
+            value: Variable value
+            comment: Optional comment to store with the variable
+        """
+        self.vars[key] = value
+        if comment:
+            self.comments[key] = comment
+
+    def save(self):
+        """Write variables back to .env file."""
+        with open(self.path, "w") as f:
+            for key, value in sorted(self.vars.items()):
+                if key in self.comments:
+                    f.write(f"# {self.comments[key]}\n")
+                f.write(f"{key}={value}\n")
+
+    def exists(self):
+        """Check if .env file exists."""
+        return os.path.exists(self.path)
+
+
+# =============================================================================
+# CONFIGURATION CONSTANTS
+# =============================================================================
+
+
 DEFAULT_VERSIONS_CONFIG = {
     "webclient": {
         "version": "latest",
@@ -114,8 +493,18 @@ def generate_random_string(length=16):
     return "".join(random.choices(string.ascii_letters + string.digits, k=length))
 
 
+# =============================================================================
+# LEGACY FUNCTION WRAPPERS (for backward compatibility during refactoring)
+# =============================================================================
+
+
 def load_versions_config():
-    """Load version configuration from versions.json or use defaults"""
+    """
+    Load version configuration from versions.json or use defaults.
+    LEGACY: Use ComponentConfig class directly for new code.
+    """
+    # For backward compatibility - note that versions.json structure changed
+    # Old format had {"components": {...}}, new format is flat
     config_file = "versions.json"
     if not os.path.exists(config_file):
         print(f"Warning: {config_file} not found, using default component versions")
@@ -123,99 +512,68 @@ def load_versions_config():
 
     try:
         with open(config_file, "r", encoding="utf-8") as f:
-            loaded_config = json.load(f).get("components", {})
-            return loaded_config if loaded_config else DEFAULT_VERSIONS_CONFIG
+            data = json.load(f)
+            # Handle both old and new format
+            if "components" in data:
+                return data["components"]
+            return data
     except (json.JSONDecodeError, IOError) as e:
         print(f"Warning: Failed to load {config_file}: {e}. Using defaults.")
         return DEFAULT_VERSIONS_CONFIG
 
 
 def save_versions_config(config):
-    """Save version configuration to versions.json with backup"""
-    config_file = "versions.json"
-    backup_file = f"{config_file}.backup"
-
-    # Create backup of existing file
-    if os.path.exists(config_file):
-        try:
-            import shutil
-
-            shutil.copy2(config_file, backup_file)
-        except Exception as e:
-            print(f"Warning: Could not create backup: {e}")
-
-    # Write new config
-    try:
-        with open(config_file, "r", encoding="utf-8") as f:
-            full_config = json.load(f)
-
-        full_config["components"] = config
-
-        with open(config_file, "w", encoding="utf-8") as f:
-            json.dump(full_config, f, indent=2, ensure_ascii=False)
-            f.write("\n")  # Add trailing newline
-
-        print(f"✓ Updated {config_file}")
-        return True
-    except Exception as e:
-        print(f"✗ Failed to save {config_file}: {e}")
-        if os.path.exists(backup_file):
-            print(f"  Backup available at {backup_file}")
-        return False
+    """
+    Save version configuration to versions.json with backup.
+    LEGACY: Use ComponentConfig.save() for new code.
+    """
+    comp_config = ComponentConfig()
+    comp_config.config = config
+    comp_config.save()
+    print("✓ Updated versions.json")
+    return True
 
 
 def get_commit_info(repo_path, commit_ref="HEAD"):
-    """Get commit SHA, date, and subject for a given ref"""
-    try:
-        # Get commit SHA
-        sha_result = subprocess.run(
-            ["git", "rev-parse", commit_ref],
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        sha = sha_result.stdout.strip()
-
-        # Get commit date and subject
-        log_result = subprocess.run(
-            ["git", "log", "-1", "--format=%ci|%s", commit_ref],
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        date_str, subject = log_result.stdout.strip().split("|", 1)
-
-        # Parse date (format: 2025-12-08 10:24:48 +0100)
-        from datetime import datetime
-
-        commit_date = datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S")
-
-        return {
-            "sha": sha,
-            "sha_short": sha[:8],
-            "date": commit_date,
-            "date_str": commit_date.strftime("%Y-%m-%d"),
-            "subject": subject,
-        }
-    except subprocess.CalledProcessError:
+    """
+    Get commit SHA, date, and subject for a given ref.
+    LEGACY: Use GitRepository.get_commit_info() for new code.
+    """
+    repo = GitRepository(repo_path)
+    if not repo.exists():
         return None
+
+    info = repo.get_commit_info(commit_ref)
+    if not info:
+        return None
+
+    # Convert to old format with datetime object
+    from datetime import datetime
+
+    date_str = info.get("date", "")
+    try:
+        commit_date = datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S")
+    except (ValueError, IndexError):
+        commit_date = None
+
+    return {
+        "sha": info["sha"],
+        "sha_short": info["sha_short"],
+        "date": commit_date,
+        "date_str": commit_date.strftime("%Y-%m-%d") if commit_date else "",
+        "subject": info["subject"],
+    }
 
 
 def count_commits_between(repo_path, old_ref, new_ref):
-    """Count commits between two refs"""
-    try:
-        result = subprocess.run(
-            ["git", "rev-list", "--count", f"{old_ref}..{new_ref}"],
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return int(result.stdout.strip())
-    except (subprocess.CalledProcessError, ValueError):
+    """
+    Count commits between two refs.
+    LEGACY: Use GitRepository.count_commits_between() for new code.
+    """
+    repo = GitRepository(repo_path)
+    if not repo.exists():
         return None
+    return repo.count_commits_between(old_ref, new_ref)
 
 
 def get_repo_url(name, config):
@@ -227,33 +585,27 @@ def get_repo_url(name, config):
 
 
 def check_uncommitted_changes(repo_path):
-    """Check if repository has uncommitted changes"""
-    try:
-        result = subprocess.run(
-            ["git", "status", "--porcelain"],
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return bool(result.stdout.strip())
-    except subprocess.CalledProcessError:
+    """
+    Check if repository has uncommitted changes.
+    LEGACY: Use GitRepository.is_dirty() for new code.
+    """
+    repo = GitRepository(repo_path)
+    if not repo.exists():
         return False
+    return repo.is_dirty()
 
 
 def handle_uncommitted_changes(repo_path, name, force=False):
     """Handle uncommitted changes in repository"""
-    if not check_uncommitted_changes(repo_path):
+    repo = GitRepository(repo_path)
+
+    if not repo.is_dirty():
         return True  # No changes, proceed
 
     if force:
         print(f"⚠️  Force mode: Stashing uncommitted changes in {name}")
         try:
-            subprocess.run(
-                ["git", "stash", "push", "-m", f"Auto-stash before update: {name}"],
-                cwd=repo_path,
-                check=True,
-            )
+            repo.run_git(["stash", "push", "-m", f"Auto-stash before update: {name}"])
             return True
         except subprocess.CalledProcessError as e:
             print(f"Failed to stash changes in {name}: {e}")
@@ -640,31 +992,47 @@ def verify_repository_content(repo_path, name):
 
 
 def clone_repositories(basedir, mode="dev"):
-    """Clone all required repositories from versions.json
+    """
+    Clone all required repositories from versions.json.
 
     Args:
         basedir: Base directory for cloning
         mode: Installation mode - 'dev' uses latest, 'prod' uses locked versions
     """
-    versions_config = load_versions_config()
+    config = ComponentConfig()
 
     print("\n📦 Cloning repositories...")
     print(f"Working directory: {os.getcwd()}")
     print(f"Mode: {mode} ({'unlocked/latest' if mode == 'dev' else 'locked versions'})")
+
     failed_repos = []
+    external_dir = os.path.join(basedir, "external")
+    os.makedirs(external_dir, exist_ok=True)
 
-    for name, config in versions_config.items():
-        repo_path = os.path.join(basedir, "external", name)
+    for name, comp_data in config.get_components():
+        repo_path = os.path.join(external_dir, name)
+        url = get_repo_url(name, comp_data)
+        repo = GitRepository(repo_path, url)
 
-        # Check if directory exists and whether it's a valid git repo
-        needs_clone = False
-        if os.path.exists(repo_path):
-            # Directory exists - check if it's a valid git repository with content
-            if not os.path.exists(os.path.join(repo_path, ".git")):
+        # Determine what version to check out
+        version = comp_data.get("version", "latest")
+        locked_version = comp_data.get("locked_version")
+
+        # In prod mode, prefer locked version
+        if mode == "prod" and version == "latest" and locked_version:
+            target_version = locked_version
+            print(
+                f"⊙ {name}: Production mode - using locked version {locked_version[:8]}"
+            )
+        else:
+            target_version = version
+
+        # Check if repo exists and is valid
+        if repo.exists():
+            if not repo.is_git_repo():
                 print(
                     f"⚠️  {name} exists but is not a git repository - will remove and re-clone"
                 )
-                needs_clone = True
                 try:
                     shutil.rmtree(repo_path)
                 except OSError as e:
@@ -672,163 +1040,88 @@ def clone_repositories(basedir, mode="dev"):
                     failed_repos.append(name)
                     continue
             else:
-                # It's a git repo - verify it has files
+                # Existing repo - check if it has content
                 try:
-                    file_count_result = subprocess.run(
-                        ["find", ".", "-type", "f", "-not", "-path", "./.git/*"],
-                        cwd=repo_path,
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    file_count = len(
-                        [f for f in file_count_result.stdout.strip().split("\n") if f]
+                    # Quick check: see if there are any files outside .git
+                    has_content = any(
+                        os.path.isfile(os.path.join(repo_path, f))
+                        for f in os.listdir(repo_path)
+                        if f != ".git"
                     )
 
-                    if file_count == 0:
-                        print(
-                            f"⚠️  {name} appears to be empty (0 files) - will remove and re-clone"
+                    if not has_content:
+                        # Check subdirectories
+                        has_content = any(
+                            os.path.isdir(os.path.join(repo_path, d))
+                            for d in os.listdir(repo_path)
+                            if d != ".git"
                         )
-                        needs_clone = True
-                        try:
-                            shutil.rmtree(repo_path)
-                        except OSError as e:
-                            print(
-                                f"✗ Failed to remove empty repository {repo_path}: {e}"
-                            )
-                            failed_repos.append(name)
-                            continue
+
+                    if not has_content:
+                        print(
+                            f"⚠️  {name} appears to be empty - will remove and re-clone"
+                        )
+                        shutil.rmtree(repo_path)
                     else:
-                        # Repository exists - pull latest updates
-                        print(
-                            f"⊙ Repository {name} already exists at {repo_path} ({file_count} files), updating..."
-                        )
+                        # Valid repo - fetch and update
+                        print(f"⊙ Repository {name} already exists, updating...")
                         try:
-                            subprocess.run(
-                                ["git", "fetch", "--all"],
-                                cwd=repo_path,
-                                check=True,
-                                capture_output=True,
-                            )
+                            repo.fetch(quiet=True)
 
-                            # Get current branch
-                            branch_result = subprocess.run(
-                                ["git", "branch", "--show-current"],
-                                cwd=repo_path,
-                                capture_output=True,
-                                text=True,
-                                check=True,
-                            )
-                            current_branch = branch_result.stdout.strip()
-                            if not current_branch:
-                                current_branch = "main"
-
-                            # Pull latest changes (try main first, then master)
+                            # Try to pull with fast-forward only
                             try:
-                                subprocess.run(
-                                    [
-                                        "git",
-                                        "pull",
-                                        "--ff-only",
-                                        "origin",
-                                        current_branch,
-                                    ],
-                                    cwd=repo_path,
-                                    capture_output=True,
-                                    text=True,
-                                    check=True,
-                                )
+                                repo.pull()
                                 print(f"  ✓ Updated {name} from remote")
                             except subprocess.CalledProcessError:
-                                # Try master if main doesn't work
-                                try:
-                                    subprocess.run(
-                                        [
-                                            "git",
-                                            "pull",
-                                            "--ff-only",
-                                            "origin",
-                                            "master",
-                                        ],
-                                        cwd=repo_path,
-                                        capture_output=True,
-                                        text=True,
-                                        check=True,
-                                    )
-                                    print(
-                                        f"  ✓ Updated {name} from remote (master branch)"
-                                    )
-                                except subprocess.CalledProcessError as e:
-                                    print(
-                                        f"  ⚠️  Could not pull updates for {name}: {e}"
-                                    )
-                                    print(
-                                        "     Repository may have uncommitted changes or diverged from remote"
-                                    )
+                                print(
+                                    f"  ⚠️  Could not pull updates for {name} (may have local changes or diverged)"
+                                )
+
                         except subprocess.CalledProcessError as e:
                             print(f"  ⚠️  Failed to fetch updates for {name}: {e}")
-                        continue
-                except subprocess.CalledProcessError as e:
+
+                        continue  # Skip to next repo
+
+                except OSError as e:
                     print(f"✗ Failed to verify {name}: {e}")
                     failed_repos.append(name)
                     continue
-        else:
-            needs_clone = True
 
         # Clone the repository
-        if needs_clone:
-            url = get_repo_url(name, config)
-            try:
-                print(f"Cloning {name} from {url}...")
-                run_command(f"git clone {url} {repo_path}", f"Cloning {name}")
+        print(f"Cloning {name} from {url}...")
+        try:
+            repo.clone()
 
-                # Verify the clone succeeded
-                if not os.path.exists(repo_path):
-                    print(
-                        f"✗ Failed to clone {name} - directory not created at {repo_path}"
-                    )
-                    failed_repos.append(name)
-                    continue
-
-                # Verify repository content
-                if not verify_repository_content(repo_path, name):
-                    failed_repos.append(name)
-                    continue
-
-                # Determine which version to checkout based on mode
-                version = config.get("version", "latest")
-                locked_version = config.get("locked_version", "N/A")
-
-                # In prod mode, use locked_version if version is "latest"
-                if mode == "prod" and version == "latest" and locked_version != "N/A":
-                    version_to_checkout = locked_version
-                    print(
-                        f"  Production mode: using locked version {locked_version[:8]}"
-                    )
-                else:
-                    version_to_checkout = version
-
-                # Checkout specific version if not "latest"
-                if version_to_checkout != "latest":
-                    os.chdir(repo_path)
-                    run_command(
-                        f"git checkout {version_to_checkout}",
-                        f"Checking out {version_to_checkout[:8]} for {name}",
-                    )
-                    os.chdir(basedir)
-                else:
-                    print("  Development mode: using latest from main/master")
-
-                print(f"✓ Successfully cloned {name} to {repo_path}")
-            except subprocess.CalledProcessError as e:
-                print(f"✗ Failed to clone {name}: {e}")
+            # Verify the clone succeeded
+            if not repo.exists() or not repo.is_git_repo():
+                print(f"✗ Failed to clone {name} - repository not created properly")
                 failed_repos.append(name)
+                continue
 
-    # Check if any critical repositories failed
+            # Checkout specific version if not "latest"
+            if target_version != "latest":
+                try:
+                    repo.checkout(target_version)
+                    print(f"  ✓ Checked out {target_version[:8]} for {name}")
+                except subprocess.CalledProcessError as e:
+                    print(
+                        f"  ⚠️  Failed to checkout {target_version[:8]} for {name}: {e}"
+                    )
+                    print("     Repository will remain on default branch")
+            else:
+                print("  Development mode: using latest from default branch")
+
+            print(f"✓ Successfully cloned {name}")
+
+        except subprocess.CalledProcessError as e:
+            print(f"✗ Failed to clone {name}: {e}")
+            failed_repos.append(name)
+
+    # Report results
     if failed_repos:
         print(f"\n⚠️  WARNING: Failed to clone {len(failed_repos)} repository(ies):")
-        for repo in failed_repos:
-            print(f"  - {repo}")
+        for repo_name in failed_repos:
+            print(f"  - {repo_name}")
         print("\nInstallation incomplete. Please resolve the issues above.")
         print("You may need to:")
         print("  1. Check your internet connection")
@@ -837,7 +1130,8 @@ def clone_repositories(basedir, mode="dev"):
         print("  4. Manually clone missing repositories")
         sys.exit(1)
 
-    print(f"✓ All {len(versions_config)} repositories ready")
+    total_repos = len(list(config.get_components()))
+    print(f"✓ All {total_repos} repositories ready")
 
 
 def fix_repository_permissions():
