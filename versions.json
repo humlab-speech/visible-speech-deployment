@@ -3,7 +3,7 @@
   "components": {
     "webclient": {
       "version": "latest",
-      "locked_version": "e7d7b780e0142dd87ac7cd9cb4be91fcd581c5fa",
+      "locked_version": "f23595ffb943ff624e5b15cd85696043fca0af79",
       "url": "https://github.com/humlab-speech/webclient",
       "npm_install": true,
       "npm_build": true,
@@ -48,7 +48,7 @@
     },
     "emu-webapp-server": {
       "version": "latest",
-      "locked_version": "d6026f6537ee09ff0e7bc00f036b28d590909c88",
+      "locked_version": "2015a10617d9320d8c55c92a8b5363c464439fd8",
       "url": "https://github.com/humlab-speech/emu-webapp-server",
       "npm_install": true,
       "npm_build": false,
@@ -57,7 +57,7 @@
     },
     "EMU-webApp": {
       "version": "latest",
-      "locked_version": "1434f7c552b72dfcf02619ade115a3edc40d172d",
+      "locked_version": "1d7b1c001210c59fd4dd288806b66b02026f3c83",
       "url": "https://github.com/humlab-speech/EMU-webApp",
       "npm_install": true,
       "npm_build": true,

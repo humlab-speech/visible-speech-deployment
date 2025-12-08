@@ -251,7 +251,11 @@ class ComponentConfig:
         if os.path.exists(self.filepath):
             try:
                 with open(self.filepath, "r") as f:
-                    config = json.load(f)
+                    data = json.load(f)
+
+                # Extract components from the wrapper structure
+                config = data.get("components", data)
+
                 # Merge with defaults to ensure all required fields exist
                 for component, default_data in self.defaults.items():
                     if component not in config:
@@ -279,9 +283,17 @@ class ComponentConfig:
             backup_path = f"{self.filepath}.backup_{timestamp}"
             shutil.copy2(self.filepath, backup_path)
 
-        # Write new config
+        # Write new config with wrapper structure
+        output = {
+            "_comment": (
+                "Version can be: 'latest' (tracks main/master), "
+                "a git commit SHA, or a git tag. "
+                "Use 'locked_version' to record current stable version for rollback."
+            ),
+            "components": self.config,
+        }
         with open(self.filepath, "w") as f:
-            json.dump(self.config, f, indent=2)
+            json.dump(output, f, indent=2)
 
     def get_components(self):
         """Get all components as (name, data) tuples."""
@@ -489,91 +501,9 @@ def chown_recursive(path, uid, gid):
         print(f"Failed to chown {path}: {e}")
 
 
-def generate_random_string(length=16):
-    return "".join(random.choices(string.ascii_letters + string.digits, k=length))
-
-
 # =============================================================================
-# LEGACY FUNCTION WRAPPERS (for backward compatibility during refactoring)
+# HELPER FUNCTIONS
 # =============================================================================
-
-
-def load_versions_config():
-    """
-    Load version configuration from versions.json or use defaults.
-    LEGACY: Use ComponentConfig class directly for new code.
-    """
-    # For backward compatibility - note that versions.json structure changed
-    # Old format had {"components": {...}}, new format is flat
-    config_file = "versions.json"
-    if not os.path.exists(config_file):
-        print(f"Warning: {config_file} not found, using default component versions")
-        return DEFAULT_VERSIONS_CONFIG
-
-    try:
-        with open(config_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            # Handle both old and new format
-            if "components" in data:
-                return data["components"]
-            return data
-    except (json.JSONDecodeError, IOError) as e:
-        print(f"Warning: Failed to load {config_file}: {e}. Using defaults.")
-        return DEFAULT_VERSIONS_CONFIG
-
-
-def save_versions_config(config):
-    """
-    Save version configuration to versions.json with backup.
-    LEGACY: Use ComponentConfig.save() for new code.
-    """
-    comp_config = ComponentConfig()
-    comp_config.config = config
-    comp_config.save()
-    print("✓ Updated versions.json")
-    return True
-
-
-def get_commit_info(repo_path, commit_ref="HEAD"):
-    """
-    Get commit SHA, date, and subject for a given ref.
-    LEGACY: Use GitRepository.get_commit_info() for new code.
-    """
-    repo = GitRepository(repo_path)
-    if not repo.exists():
-        return None
-
-    info = repo.get_commit_info(commit_ref)
-    if not info:
-        return None
-
-    # Convert to old format with datetime object
-    from datetime import datetime
-
-    date_str = info.get("date", "")
-    try:
-        commit_date = datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S")
-    except (ValueError, IndexError):
-        commit_date = None
-
-    return {
-        "sha": info["sha"],
-        "sha_short": info["sha_short"],
-        "date": commit_date,
-        "date_str": commit_date.strftime("%Y-%m-%d") if commit_date else "",
-        "subject": info["subject"],
-    }
-
-
-def count_commits_between(repo_path, old_ref, new_ref):
-    """
-    Count commits between two refs.
-    LEGACY: Use GitRepository.count_commits_between() for new code.
-    """
-    repo = GitRepository(repo_path)
-    if not repo.exists():
-        return None
-    return repo.count_commits_between(old_ref, new_ref)
 
 
 def get_repo_url(name, config):
@@ -584,95 +514,50 @@ def get_repo_url(name, config):
     return f"https://github.com/humlab-speech/{name}.git"
 
 
-def check_uncommitted_changes(repo_path):
-    """
-    Check if repository has uncommitted changes.
-    LEGACY: Use GitRepository.is_dirty() for new code.
-    """
-    repo = GitRepository(repo_path)
-    if not repo.exists():
-        return False
-    return repo.is_dirty()
-
-
-def handle_uncommitted_changes(repo_path, name, force=False):
-    """Handle uncommitted changes in repository"""
-    repo = GitRepository(repo_path)
-
-    if not repo.is_dirty():
-        return True  # No changes, proceed
-
-    if force:
-        print(f"⚠️  Force mode: Stashing uncommitted changes in {name}")
-        try:
-            repo.run_git(["stash", "push", "-m", f"Auto-stash before update: {name}"])
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to stash changes in {name}: {e}")
-            return False
-    else:
-        print(f"⚠️  WARNING: {name} has uncommitted changes!")
-        print("   Options:")
-        print("   1. Commit or stash your changes first")
-        print("   2. Run update with --force to stash changes automatically")
-        print("   3. Skip this repository")
-        return False
-
-
-def update_env_var(content, key, value):
-    """Safely update or add an environment variable in .env content
-
-    This function properly handles:
-    - Exact key matching (won't confuse API_KEY with GOOGLE_API_KEY)
-    - Values containing = signs
-    - Adding new variables if they don't exist
-    """
-    lines = content.split("\n")
-    updated = False
-
-    for i, line in enumerate(lines):
-        # Skip comments and empty lines
-        if not line.strip() or line.strip().startswith("#"):
-            continue
-
-        # Check if this line defines the variable we're looking for
-        if "=" in line:
-            line_key = line.split("=", 1)[0].strip()
-            if line_key == key:
-                lines[i] = f"{key}={value}"
-                updated = True
-                break
-
-    # If variable wasn't found, add it at the end
-    if not updated:
-        lines.append(f"{key}={value}")
-
-    return "\n".join(lines)
+def generate_random_string(length=32):
+    """Generate a random string for passwords"""
+    chars = string.ascii_letters + string.digits
+    return "".join(random.choice(chars) for _ in range(length))
 
 
 def setup_env_file(auto_passwords=True, interactive=False):
-    if not os.path.exists(".env"):
-        if os.path.exists(".env-example"):
-            shutil.copy(".env-example", ".env")
-        else:
-            print("Error: .env-example not found")
-            return
+    """
+    Setup .env file with required configuration.
+    Uses EnvFile class for safe file manipulation.
+    """
+    # Initialize the EnvFile class (handles loading logic)
+    env = EnvFile(".env")
 
-    # Read current content
-    with open(".env", "r", encoding="utf-8") as f:
-        content = f.read()
+    # If .env doesn't exist, copy example and reload
+    if not env.exists() and os.path.exists(".env-example"):
+        shutil.copy(".env-example", ".env")
+        env = EnvFile(".env")  # Reload from the copy
+    elif not env.exists():
+        print("Error: .env-example not found")
+        return
 
-    # Set defaults using safe update function
-    env_updates = {"ABS_ROOT_PATH": os.getcwd(), "ADMIN_EMAIL": "admin@visp.local"}
-    for key, value in env_updates.items():
-        content = update_env_var(content, key, value)
+    # 1. Set Basic Defaults
+    defaults = {"ABS_ROOT_PATH": os.getcwd(), "ADMIN_EMAIL": "admin@visp.local"}
+    for key, value in defaults.items():
+        if not env.get(key):
+            env.set(key, value)
 
-    # Check if MongoDB data already exists
+    # 2. Check MongoDB Special Case
     mongo_data_exists = os.path.exists("./mounts/mongo/data") and os.listdir(
         "./mounts/mongo/data"
     )
+    current_mongo_pass = env.get("MONGO_ROOT_PASSWORD")
 
-    # Password variables to handle
+    if mongo_data_exists and current_mongo_pass:
+        print("⚠️  MongoDB database already exists with data.")
+        print("   Keeping existing MONGO_ROOT_PASSWORD to avoid authentication issues.")
+    elif mongo_data_exists and not current_mongo_pass:
+        print("⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env!")
+        if interactive or input("   Set MongoDB password now? (y/n): ").lower() == "y":
+            password = getpass.getpass("   Enter MONGO_ROOT_PASSWORD: ")
+            env.set("MONGO_ROOT_PASSWORD", password)
+
+    # 3. Handle Passwords
     password_vars = {
         "POSTGRES_PASSWORD": "local",
         "TEST_USER_LOGIN_KEY": "local",
@@ -689,73 +574,37 @@ def setup_env_file(auto_passwords=True, interactive=False):
     }
 
     for var, ptype in password_vars.items():
-        # Special handling for MongoDB password if data already exists
-        if var == "MONGO_ROOT_PASSWORD" and mongo_data_exists:
-            # Parse current value safely
-            current_value = ""
-            for line in content.split("\n"):
-                if line.strip().startswith(f"{var}="):
-                    current_value = line.split("=", 1)[1] if "=" in line else ""
-                    break
+        # Skip if already set
+        if env.get(var):
+            continue
 
-            if current_value:
-                # Password exists and MongoDB data exists - don't change it
-                print("⚠️  MongoDB database already exists with data.")
-                print(
-                    "   Keeping existing MONGO_ROOT_PASSWORD to avoid authentication issues."
-                )
-                continue
-            else:
-                # No password set but data exists - warn user
-                print(
-                    "⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env!"
-                )
-                if (
-                    interactive
-                    or input("   Set MongoDB password now? (y/n): ").lower() == "y"
-                ):
-                    password = getpass.getpass(f"   Enter {var}: ")
-                    content = update_env_var(content, var, password)
-                continue
+        # Skip Mongo if we handled it above (data exists check)
+        if var == "MONGO_ROOT_PASSWORD" and mongo_data_exists:
+            continue
 
         if auto_passwords or ptype == "local":
-            random_value = generate_random_string()
-            content = update_env_var(content, var, random_value)
+            env.set(var, generate_random_string())
         elif interactive:
-            # Check if variable exists and has a value
-            has_value = False
-            for line in content.split("\n"):
-                if line.strip().startswith(f"{var}="):
-                    value_part = line.split("=", 1)[1] if "=" in line else ""
-                    has_value = bool(value_part.strip())
-                    break
+            password = getpass.getpass(f"Enter {var}: ")
+            env.set(var, password)
 
-            if not has_value:
-                password = getpass.getpass(f"Enter {var}: ")
-                content = update_env_var(content, var, password)
-
-    with open(".env", "w", encoding="utf-8") as f:
-        f.write(content)
+    # Save changes using the EnvFile class
+    env.save()
 
 
 def check_env_file():
-    if not os.path.exists(".env"):
+    """
+    Check if required environment variables are set.
+    Uses EnvFile class for safe file manipulation.
+    """
+    env = EnvFile(".env")
+
+    if not env.exists():
         print(
             "Warning: .env file not found. Please create it from .env-example "
             "and fill in the required values as per the README."
         )
         return
-
-    # Read file once
-    with open(".env", "r", encoding="utf-8") as f:
-        content = f.read()
-
-    lines = content.splitlines()
-    env_vars = {}
-    for line in lines:
-        if "=" in line and not line.strip().startswith("#"):
-            key, value = line.split("=", 1)
-            env_vars[key.strip()] = value.strip()
 
     required_vars = [
         "POSTGRES_PASSWORD",
@@ -769,7 +618,7 @@ def check_env_file():
 
     missing = []
     for var in required_vars:
-        if var not in env_vars or not env_vars[var]:
+        if not env.get(var):
             missing.append(var)
 
     if missing:
@@ -778,14 +627,12 @@ def check_env_file():
         )
         print("Auto-generating random values for demo deployment...")
 
-        # Generate all missing values using safe update function
+        # Generate all missing values using EnvFile class
         for var in missing:
-            random_value = generate_random_string()
-            content = update_env_var(content, var, random_value)
+            env.set(var, generate_random_string())
 
-        # Write file once
-        with open(".env", "w", encoding="utf-8") as f:
-            f.write(content)
+        # Save using the class
+        env.save()
         print("Environment variables auto-filled.")
     else:
         print("Environment file check passed.")
@@ -1138,9 +985,9 @@ def fix_repository_permissions():
     """Ensure repository directories have correct permissions for container access"""
     print("\n🔒 Setting repository permissions for container access...")
 
-    versions_config = load_versions_config()
+    config = ComponentConfig()
 
-    for name in versions_config.keys():
+    for name, _ in config.get_components():
         repo_path = os.path.join(os.getcwd(), "external", name)
         if os.path.exists(repo_path):
             try:
@@ -1260,7 +1107,7 @@ def setup_service_env_files():
 
 def build_components(basedir):
     """Build all components using temporary Node.js containers based on versions.json config"""
-    versions_config = load_versions_config()
+    config = ComponentConfig()
 
     # Read WEBCLIENT_BUILD from .env for webclient builds
     webclient_build_cmd = "visp-build"  # default
@@ -1273,7 +1120,7 @@ def build_components(basedir):
 
     print("\nBuilding components using temporary Node.js containers...")
     print(f"Webclient will be built with: npm run {webclient_build_cmd}")
-    for name, config in versions_config.items():
+    for name, comp_data in config.get_components():
         comp_path = os.path.join(basedir, name)
 
         # Skip if component doesn't exist
@@ -1283,7 +1130,7 @@ def build_components(basedir):
         commands = []
 
         # Build npm install command based on config
-        if config.get("npm_install", False):
+        if comp_data.get("npm_install", False):
             # Special case for webclient which needs legacy-peer-deps
             if name == "webclient":
                 commands.append("npm install --legacy-peer-deps")
@@ -1291,7 +1138,7 @@ def build_components(basedir):
                 commands.append("npm install")
 
         # Build npm build command based on config
-        if config.get("npm_build", False):
+        if comp_data.get("npm_build", False):
             # For webclient, use the WEBCLIENT_BUILD setting from .env
             if name == "webclient":
                 commands.append(f"npm run {webclient_build_cmd}")
@@ -1548,13 +1395,13 @@ def update_repo(
 
 def update_repositories(basedir, force=False):
     """Update all external repositories with lock awareness"""
-    versions_config = load_versions_config()
+    config = ComponentConfig()
     results = []
 
-    for name, config in versions_config.items():
-        repo_url = get_repo_url(name, config)
-        version = config.get("version", "latest")
-        locked_version = config.get("locked_version", "N/A")
+    for name, comp_data in config.get_components():
+        repo_url = get_repo_url(name, comp_data)
+        version = comp_data.get("version", "latest")
+        locked_version = comp_data.get("locked_version", "N/A")
 
         result = update_repo(
             basedir,
