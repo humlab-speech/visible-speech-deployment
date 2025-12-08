@@ -54,7 +54,39 @@ python3 visp_deploy.py status
 
 # Update all repositories and components
 python3 visp_deploy.py update
+
+# Version locking commands (see below)
+python3 visp_deploy.py lock <component>    # Lock to current version
+python3 visp_deploy.py unlock <component>  # Unlock to track latest
+python3 visp_deploy.py rollback <component> # Rollback to locked version
 ```
+
+### Version Management
+
+Component versions can be **locked** (pinned to specific commits) or **unlocked** (tracking latest):
+
+- **Dev mode** (default): Installs unlocked - always pulls latest code
+- **Prod mode**: Installs locked - uses tested versions from `versions.json`
+
+**Testing updates in production:**
+```bash
+# 1. Unlock component to allow updates
+python3 visp_deploy.py unlock webclient
+
+# 2. Update to latest (shows commit dates and counts)
+python3 visp_deploy.py update
+
+# 3a. If update works - lock the new version
+python3 visp_deploy.py lock webclient
+
+# 3b. If update breaks - rollback to previous version
+python3 visp_deploy.py rollback webclient
+
+# 4. Commit locked versions for team
+git add versions.json && git commit -m "chore: lock webclient to new version"
+```
+
+Use `--all` flag to operate on all components at once.
 
 ### What the Install Script Does
 

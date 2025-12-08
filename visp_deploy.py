@@ -130,6 +130,94 @@ def load_versions_config():
         return DEFAULT_VERSIONS_CONFIG
 
 
+def save_versions_config(config):
+    """Save version configuration to versions.json with backup"""
+    config_file = "versions.json"
+    backup_file = f"{config_file}.backup"
+
+    # Create backup of existing file
+    if os.path.exists(config_file):
+        try:
+            import shutil
+
+            shutil.copy2(config_file, backup_file)
+        except Exception as e:
+            print(f"Warning: Could not create backup: {e}")
+
+    # Write new config
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            full_config = json.load(f)
+
+        full_config["components"] = config
+
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(full_config, f, indent=2, ensure_ascii=False)
+            f.write("\n")  # Add trailing newline
+
+        print(f"✓ Updated {config_file}")
+        return True
+    except Exception as e:
+        print(f"✗ Failed to save {config_file}: {e}")
+        if os.path.exists(backup_file):
+            print(f"  Backup available at {backup_file}")
+        return False
+
+
+def get_commit_info(repo_path, commit_ref="HEAD"):
+    """Get commit SHA, date, and subject for a given ref"""
+    try:
+        # Get commit SHA
+        sha_result = subprocess.run(
+            ["git", "rev-parse", commit_ref],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        sha = sha_result.stdout.strip()
+
+        # Get commit date and subject
+        log_result = subprocess.run(
+            ["git", "log", "-1", "--format=%ci|%s", commit_ref],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        date_str, subject = log_result.stdout.strip().split("|", 1)
+
+        # Parse date (format: 2025-12-08 10:24:48 +0100)
+        from datetime import datetime
+
+        commit_date = datetime.strptime(date_str[:19], "%Y-%m-%d %H:%M:%S")
+
+        return {
+            "sha": sha,
+            "sha_short": sha[:8],
+            "date": commit_date,
+            "date_str": commit_date.strftime("%Y-%m-%d"),
+            "subject": subject,
+        }
+    except subprocess.CalledProcessError:
+        return None
+
+
+def count_commits_between(repo_path, old_ref, new_ref):
+    """Count commits between two refs"""
+    try:
+        result = subprocess.run(
+            ["git", "rev-list", "--count", f"{old_ref}..{new_ref}"],
+            cwd=repo_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return int(result.stdout.strip())
+    except (subprocess.CalledProcessError, ValueError):
+        return None
+
+
 def get_repo_url(name, config):
     """Get repository URL from config or generate default GitHub URL"""
     url = config.get("url")
@@ -551,12 +639,18 @@ def verify_repository_content(repo_path, name):
         return False
 
 
-def clone_repositories(basedir):
-    """Clone all required repositories from versions.json"""
+def clone_repositories(basedir, mode="dev"):
+    """Clone all required repositories from versions.json
+
+    Args:
+        basedir: Base directory for cloning
+        mode: Installation mode - 'dev' uses latest, 'prod' uses locked versions
+    """
     versions_config = load_versions_config()
 
     print("\n📦 Cloning repositories...")
     print(f"Working directory: {os.getcwd()}")
+    print(f"Mode: {mode} ({'unlocked/latest' if mode == 'dev' else 'locked versions'})")
     failed_repos = []
 
     for name, config in versions_config.items():
@@ -701,15 +795,30 @@ def clone_repositories(basedir):
                     failed_repos.append(name)
                     continue
 
-                # Checkout specific version if not "latest"
+                # Determine which version to checkout based on mode
                 version = config.get("version", "latest")
-                if version != "latest":
+                locked_version = config.get("locked_version", "N/A")
+
+                # In prod mode, use locked_version if version is "latest"
+                if mode == "prod" and version == "latest" and locked_version != "N/A":
+                    version_to_checkout = locked_version
+                    print(
+                        f"  Production mode: using locked version {locked_version[:8]}"
+                    )
+                else:
+                    version_to_checkout = version
+
+                # Checkout specific version if not "latest"
+                if version_to_checkout != "latest":
                     os.chdir(repo_path)
                     run_command(
-                        f"git checkout {version}",
-                        f"Checking out {version} for {name}",
+                        f"git checkout {version_to_checkout}",
+                        f"Checking out {version_to_checkout[:8]} for {name}",
                     )
                     os.chdir(basedir)
+                else:
+                    print("  Development mode: using latest from main/master")
+
                 print(f"✓ Successfully cloned {name} to {repo_path}")
             except subprocess.CalledProcessError as e:
                 print(f"✗ Failed to clone {name}: {e}")
@@ -945,8 +1054,8 @@ def install_system(mode="dev"):
     # Generate SSL certificates
     generate_ssl_certificates()
 
-    # Clone all repos
-    clone_repositories(BASEDIR)
+    # Clone all repos (respecting mode for lock behavior)
+    clone_repositories(BASEDIR, mode)
 
     # Fix permissions for container access
     fix_repository_permissions()
@@ -973,175 +1082,202 @@ def update_repo(
     npm_build=False,
     repo_url=None,
     version="latest",
+    locked_version="N/A",
     force=False,
 ):
-    print(f"Update {name}...")
+    """Update a repository with lock awareness
+
+    Args:
+        version: Current version setting from versions.json
+        locked_version: Locked version for rollback reference
+        force: Force update (not used - locks must be explicitly unlocked)
+    """
+    print(f"\n{'='*60}")
+    print(f"Updating {name}...")
+    print(f"{'='*60}")
     repo_path = os.path.join(basedir, "external", name)
 
     # Clone repository if it doesn't exist
     if not os.path.exists(repo_path):
         if not repo_url:
-            # Try to infer the repo URL from the name
             repo_url = f"https://github.com/humlab-speech/{name}.git"
         print(f"Repository {name} not found, cloning from {repo_url}...")
         os.chdir(basedir)
         try:
-            subprocess.run(["git", "clone", repo_url, name], check=True)
+            subprocess.run(["git", "clone", repo_url, repo_path], check=True)
             os.chdir(repo_path)
         except subprocess.CalledProcessError as e:
-            print(f"Git clone of {name} failed: {e}")
-            sys.exit(1)
+            print(f"✗ Git clone of {name} failed: {e}")
+            return {"name": name, "status": "❌ CLONE FAILED", "details": str(e)}
     else:
         os.chdir(repo_path)
 
-        # Check for uncommitted changes before proceeding
-        if not handle_uncommitted_changes(repo_path, name, force):
-            print(f"Skipping {name} due to uncommitted changes")
-            return
-
     try:
-        subprocess.run(["git", "fetch", "--all"], check=True)
+        # Always fetch first to get latest remote info
+        print("Fetching latest from remote...")
+        subprocess.run(["git", "fetch", "--all", "--quiet"], check=True)
 
-        # Handle version checkout
-        if version and version != "latest":
-            print(f"Checking out version {version} for {name}")
-            subprocess.run(["git", "checkout", version], check=True)
-        else:
-            # Use latest (main/master branch) - try main first, then master
+        # Get current commit info
+        current_info = get_commit_info(repo_path, "HEAD")
+        if not current_info:
+            return {
+                "name": name,
+                "status": "❌ ERROR",
+                "details": "Cannot get commit info",
+            }
+
+        # Check if locked
+        is_locked = version != "latest"
+
+        if is_locked:
+            print(f"🔒 {name} is LOCKED to version {version[:8]}")
+            print(
+                f"   Current: {current_info['sha_short']} from {current_info['date_str']}"
+            )
+            print(f"   Locked:  {version[:8]}")
+            print()
+            print("⚠️  Cannot update locked component")
+            print(f"   To update {name}:")
+            print(f"   1. Run: python3 visp_deploy.py unlock {name}")
+            print("   2. Run: python3 visp_deploy.py update")
+            print("   3. Test the changes")
+            print(
+                f"   4. Run: python3 visp_deploy.py lock {name}  (to lock new version)"
+            )
+            print()
+            return {
+                "name": name,
+                "status": "🔒 LOCKED",
+                "details": f"Locked at {version[:8]}",
+            }
+
+        # Component is unlocked - check for updates
+        print(f"🔓 {name} is UNLOCKED (tracking latest)")
+
+        # Check for uncommitted changes
+        if not handle_uncommitted_changes(repo_path, name, force=False):
+            return {
+                "name": name,
+                "status": "⚠️  UNCOMMITTED",
+                "details": "Has local changes",
+            }
+
+        # Determine main branch (try main, fall back to master)
+        main_branch = "main"
+        try:
+            subprocess.run(
+                ["git", "rev-parse", "--verify", "origin/main"],
+                check=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError:
+            main_branch = "master"
+
+        # Get remote HEAD info
+        remote_info = get_commit_info(repo_path, f"origin/{main_branch}")
+        if not remote_info:
+            return {
+                "name": name,
+                "status": "❌ ERROR",
+                "details": "Cannot get remote info",
+            }
+
+        # Check if already up to date
+        if current_info["sha"] == remote_info["sha"]:
+            print(f"✅ Already up to date at {current_info['sha_short']}")
+            print(f"   Date: {current_info['date_str']}")
+            print(f"   Commit: {current_info['subject'][:60]}")
+            return {
+                "name": name,
+                "status": "✅ UP TO DATE",
+                "details": current_info["sha_short"],
+            }
+
+        # Calculate commits ahead/behind
+        commits_behind = count_commits_between(
+            repo_path, current_info["sha"], remote_info["sha"]
+        )
+        commits_ahead = count_commits_between(
+            repo_path, remote_info["sha"], current_info["sha"]
+        )
+
+        # Show update info
+        print("\n📊 Update available:")
+        print(
+            f"   Current:  {current_info['sha_short']} from {current_info['date_str']}"
+        )
+        print(f"   Remote:   {remote_info['sha_short']} from {remote_info['date_str']}")
+        if commits_behind:
+            print(f"   Behind:   {commits_behind} commit(s)")
+        if commits_ahead:
+            print(f"   Ahead:    {commits_ahead} commit(s) (will be rebased)")
+        print()
+
+        # Perform update
+        if commits_ahead > 0:
+            print("⚠️  Local commits detected - attempting rebase...")
             try:
-                # Check if local branch has diverged from remote
-                result = subprocess.run(
-                    ["git", "rev-list", "--count", "HEAD..origin/main"],
-                    capture_output=True,
-                    text=True,
+                subprocess.run(
+                    ["git", "rebase", f"origin/{main_branch}"],
                     check=True,
-                )
-                behind = int(result.stdout.strip())
-
-                result = subprocess.run(
-                    ["git", "rev-list", "--count", "origin/main..HEAD"],
                     capture_output=True,
-                    text=True,
-                    check=True,
                 )
-                ahead = int(result.stdout.strip())
-
-                if ahead > 0:
-                    print(
-                        f"⚠️  Warning: {name} has {ahead} local commit(s) not on remote"
-                    )
-                    if force:
-                        print(
-                            "   Force mode: Discarding local commits and resetting to origin/main"
-                        )
-                        subprocess.run(
-                            ["git", "reset", "--hard", "origin/main"], check=True
-                        )
-                    else:
-                        print(
-                            "   Attempting to rebase local commits onto origin/main..."
-                        )
-                        try:
-                            subprocess.run(["git", "rebase", "origin/main"], check=True)
-                            print(f"✓ Successfully rebased {name}")
-                        except subprocess.CalledProcessError:
-                            print(
-                                f"✗ Rebase failed for {name}. Use --force to discard local commits"
-                            )
-                            subprocess.run(["git", "rebase", "--abort"], check=False)
-                            raise
-                elif behind > 0:
-                    print(f"Updating {name} ({behind} commit(s) behind)")
-                    subprocess.run(
-                        ["git", "merge", "--ff-only", "origin/main"], check=True
-                    )
-                else:
-                    print(f"{name} is up to date")
-
+                print("✓ Successfully rebased local commits")
             except subprocess.CalledProcessError:
-                # Try master branch if main doesn't exist
-                try:
-                    result = subprocess.run(
-                        ["git", "rev-list", "--count", "HEAD..origin/master"],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    behind = int(result.stdout.strip())
+                subprocess.run(["git", "rebase", "--abort"], check=False)
+                print("✗ Rebase failed - manual intervention required")
+                return {
+                    "name": name,
+                    "status": "❌ REBASE FAILED",
+                    "details": "Manual merge needed",
+                }
+        else:
+            print(f"Pulling latest from origin/{main_branch}...")
+            subprocess.run(
+                ["git", "merge", "--ff-only", f"origin/{main_branch}"],
+                check=True,
+            )
 
-                    result = subprocess.run(
-                        ["git", "rev-list", "--count", "origin/master..HEAD"],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                    ahead = int(result.stdout.strip())
+        # Get new commit info
+        new_info = get_commit_info(repo_path, "HEAD")
+        print(f"\n✅ Updated to {new_info['sha_short']} from {new_info['date_str']}")
+        print(f"   {new_info['subject'][:60]}")
 
-                    if ahead > 0:
-                        print(
-                            f"⚠️  Warning: {name} has {ahead} local commit(s) not on remote"
-                        )
-                        if force:
-                            print(
-                                "   Force mode: Discarding local commits and resetting to origin/master"
-                            )
-                            subprocess.run(
-                                ["git", "reset", "--hard", "origin/master"], check=True
-                            )
-                        else:
-                            print(
-                                "   Attempting to rebase local commits onto origin/master..."
-                            )
-                            try:
-                                subprocess.run(
-                                    ["git", "rebase", "origin/master"], check=True
-                                )
-                                print(f"✓ Successfully rebased {name}")
-                            except subprocess.CalledProcessError:
-                                print(
-                                    f"✗ Rebase failed for {name}. Use --force to discard local commits"
-                                )
-                                subprocess.run(
-                                    ["git", "rebase", "--abort"], check=False
-                                )
-                                raise
-                    elif behind > 0:
-                        print(f"Updating {name} ({behind} commit(s) behind)")
-                        subprocess.run(
-                            ["git", "merge", "--ff-only", "origin/master"], check=True
-                        )
-                    else:
-                        print(f"{name} is up to date")
-                except subprocess.CalledProcessError:
-                    print(f"Could not determine remote tracking branch for {name}")
-                    raise
+        return {
+            "name": name,
+            "status": "✅ UPDATED",
+            "details": f"{current_info['sha_short']} → {new_info['sha_short']} ({commits_behind} commits)",
+        }
 
     except subprocess.CalledProcessError as e:
-        print(f"Git update of {name} failed: {e}")
-        sys.exit(1)
+        print(f"✗ Git update of {name} failed: {e}")
+        return {"name": name, "status": "❌ UPDATE FAILED", "details": str(e)}
+    finally:
+        os.chdir(basedir)
 
-    if npm_install:
-        if os.path.exists("node_modules"):
-            # Remove existing node_modules using Docker to handle permissions
-            run_command(
-                f"docker run --rm -v {repo_path}:/app -w /app alpine sh -c 'rm -rf node_modules'",
-                f"Removing old node_modules for {name}",
-            )
-        run_command(
-            f"docker run --rm -v {repo_path}:/app -w /app node:20 npm install --legacy-peer-deps",
-            f"Installing npm dependencies for {name}",
+
+def update_repositories(basedir, force=False):
+    """Update all external repositories with lock awareness"""
+    versions_config = load_versions_config()
+    results = []
+
+    for name, config in versions_config.items():
+        repo_url = get_repo_url(name, config)
+        version = config.get("version", "latest")
+        locked_version = config.get("locked_version", "N/A")
+
+        result = update_repo(
+            basedir,
+            name,
+            repo_url=repo_url,
+            version=version,
+            locked_version=locked_version,
+            force=force,
         )
-    if npm_build:
-        # Clean dist directory using Docker
-        run_command(
-            f"docker run --rm -v {repo_path}:/app -w /app alpine sh -c 'rm -rf dist'",
-            f"Cleaning dist for {name}",
-        )
-        run_command(
-            f"docker run --rm -v {repo_path}:/app -w /app node:20 npm run build",
-            f"Building {name}",
-        )
-    os.chdir(basedir)
+        if result:
+            results.append(result)
+
+    return results
 
 
 def check_image_age(image_name, source_path):
@@ -1199,41 +1335,6 @@ def rebuild_images():
         print(f"Error running rebuild script: {e}, continuing with update.")
     finally:
         os.chdir(original_cwd)
-
-
-def update_repositories(basedir, force=False):
-    """Update all repositories and return status results"""
-    status_results = []
-    versions_config = load_versions_config()
-
-    for repo_name, config in versions_config.items():
-        try:
-            update_repo(
-                basedir,
-                repo_name,
-                config.get("npm_install", False),
-                config.get("npm_build", False),
-                config.get("url"),
-                config.get("version", "latest"),
-                force,
-            )
-            status_results.append(
-                {
-                    "Component": f"Update {repo_name}",
-                    "Status": "✓ PASS",
-                    "Details": f"Updated to {config.get('version', 'latest')}",
-                }
-            )
-        except SystemExit:
-            status_results.append(
-                {
-                    "Component": f"Update {repo_name}",
-                    "Status": "✗ FAIL",
-                    "Details": "Update failed",
-                }
-            )
-
-    return status_results
 
 
 def check_environment():
@@ -1647,6 +1748,80 @@ def check_repositories_status(fetch=True):
     # Check webclient build configuration
     webclient_build_config = check_webclient_build_config()
 
+    # Check deployment repository itself first
+    deployment_repo_status = None
+    print("\n📦 Checking main deployment repository...")
+    try:
+        if fetch:
+            subprocess.run(
+                ["git", "fetch", "--quiet", "origin"],
+                capture_output=True,
+                check=True,
+                cwd=original_cwd,
+            )
+
+        # Get current branch
+        branch_result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=original_cwd,
+        )
+        current_branch = branch_result.stdout.strip()
+
+        # Check for uncommitted changes
+        has_changes = check_uncommitted_changes(original_cwd)
+
+        # Check commits ahead/behind
+        status_result = subprocess.run(
+            [
+                "git",
+                "rev-list",
+                "--count",
+                "--left-right",
+                f"origin/{current_branch}...HEAD",
+            ],
+            capture_output=True,
+            text=True,
+            cwd=original_cwd,
+        )
+
+        behind_count = 0
+        ahead_count = 0
+        if status_result.returncode == 0:
+            ahead_behind = status_result.stdout.strip().split()
+            if len(ahead_behind) == 2:
+                behind_count = int(ahead_behind[0])
+                ahead_count = int(ahead_behind[1])
+
+        deployment_repo_status = {
+            "Repository": "visible-speech-deployment (THIS REPO)",
+            "Branch": current_branch,
+            "Has Changes": "⚠️  YES" if has_changes else "✅ NO",
+            "Behind Remote": f"⬇️ {behind_count}" if behind_count > 0 else "✅ 0",
+            "Ahead Remote": f"🚀 {ahead_count}" if ahead_count > 0 else "✅ 0",
+        }
+
+        if behind_count > 0:
+            print(
+                f"⚠️  WARNING: Deployment repo is {behind_count} commit(s) "
+                "behind remote!"
+            )
+            print(
+                f"   Run 'git pull origin {current_branch}' to update "
+                "the deployment scripts"
+            )
+
+    except subprocess.CalledProcessError as e:
+        deployment_repo_status = {
+            "Repository": "visible-speech-deployment (THIS REPO)",
+            "Branch": "ERROR",
+            "Has Changes": "❌ ERROR",
+            "Behind Remote": f"Error: {str(e)}",
+            "Ahead Remote": "N/A",
+        }
+
     versions_config = load_versions_config()
 
     status_results = []
@@ -1657,30 +1832,59 @@ def check_repositories_status(fetch=True):
     for repo_name, config in versions_config.items():
         repo_path = os.path.join(original_cwd, "external", repo_name)
 
+        # Get version info from config
+        version = config.get("version", "latest")
+        locked_version = config.get("locked_version", "N/A")
+
         if not os.path.exists(repo_path):
+            is_locked = version != "latest"
+            lock_status = "🔒 LOCKED" if is_locked else "🔓 UNLOCKED"
+            lock_details = f"at {version[:8]}" if is_locked else "tracking latest"
+
             status_results.append(
                 {
                     "Repository": repo_name,
+                    "Lock Status": f"{lock_status} ({lock_details})",
+                    "Current Commit": "N/A",
+                    "Locked Version": (
+                        locked_version[:8] if locked_version != "N/A" else "N/A"
+                    ),
                     "Status": "❌ MISSING",
-                    "Local Changes": "Repository not cloned",
-                    "Sync Status": "N/A",
+                    "Sync Status": "Repository not cloned",
                 }
             )
             continue
 
         if not os.path.exists(os.path.join(repo_path, ".git")):
+            is_locked = version != "latest"
+            lock_status = "🔒 LOCKED" if is_locked else "🔓 UNLOCKED"
+            lock_details = f"at {version[:8]}" if is_locked else "tracking latest"
+
             status_results.append(
                 {
                     "Repository": repo_name,
+                    "Lock Status": f"{lock_status} ({lock_details})",
+                    "Current Commit": "N/A",
+                    "Locked Version": (
+                        locked_version[:8] if locked_version != "N/A" else "N/A"
+                    ),
                     "Status": "❌ NOT GIT",
-                    "Local Changes": "Not a git repository",
-                    "Sync Status": "N/A",
+                    "Sync Status": "Not a git repository",
                 }
             )
             continue
 
         try:
             os.chdir(repo_path)
+
+            # Get current commit SHA
+            commit_result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            current_commit = commit_result.stdout.strip()[:8]
 
             # Fetch latest remote information if requested
             if fetch:
@@ -1772,14 +1976,22 @@ def check_repositories_status(fetch=True):
 
             os.chdir(os.getcwd())  # Go back to original directory
 
+            # Determine lock status
+            is_locked = version != "latest"
+            if is_locked:
+                lock_status = "🔒 LOCKED"
+                lock_details = f"at {version[:8]}"
+            else:
+                lock_status = "🔓 UNLOCKED"
+                lock_details = "tracking latest"
+                lock_details = "tracking latest"
+
             # Determine overall status
             if has_changes:
                 repos_with_changes.append(repo_name)
                 overall_status = "⚠️  HAS CHANGES"
-                changes_desc = "Uncommitted changes present"
             else:
                 overall_status = "✅ CLEAN"
-                changes_desc = "No uncommitted changes"
 
             # Combine sync details
             sync_desc = ", ".join(sync_details) if sync_details else "Up to date"
@@ -1787,20 +1999,32 @@ def check_repositories_status(fetch=True):
             status_results.append(
                 {
                     "Repository": repo_name,
+                    "Lock Status": f"{lock_status} ({lock_details})",
+                    "Current Commit": current_commit,
+                    "Locked Version": (
+                        locked_version[:8] if locked_version != "N/A" else "N/A"
+                    ),
                     "Status": overall_status,
-                    "Local Changes": changes_desc,
                     "Sync Status": f"{sync_status} - {sync_desc}",
                 }
             )
 
         except Exception as e:
             os.chdir(original_cwd)  # Make sure we return to original directory
+            is_locked = version != "latest"
+            lock_status = "🔒 LOCKED" if is_locked else "🔓 UNLOCKED"
+            lock_details = f"at {version[:8]}" if is_locked else "tracking latest"
+
             status_results.append(
                 {
                     "Repository": repo_name,
+                    "Lock Status": f"{lock_status} ({lock_details})",
+                    "Current Commit": "ERROR",
+                    "Locked Version": (
+                        locked_version[:8] if locked_version != "N/A" else "N/A"
+                    ),
                     "Status": "❌ ERROR",
-                    "Local Changes": f"Error checking status: {str(e)}",
-                    "Sync Status": "N/A",
+                    "Sync Status": f"Error: {str(e)}",
                 }
             )
 
@@ -1809,9 +2033,16 @@ def check_repositories_status(fetch=True):
     print("REPOSITORY STATUS CHECK")
     print("=" * 100)
 
+    # Show deployment repo status first
+    if deployment_repo_status:
+        print("\n🔧 DEPLOYMENT REPOSITORY (visible-speech-deployment)")
+        print("-" * 100)
+        print(tabulate([deployment_repo_status], headers="keys", tablefmt="grid"))
+        print()
+
     # Show deployment mode first
     if deployment_mode:
-        print("\n🚀 DEPLOYMENT MODE")
+        print("🚀 DEPLOYMENT MODE")
         print("-" * 100)
         print(tabulate([deployment_mode], headers="keys", tablefmt="grid"))
         print()
@@ -1823,6 +2054,8 @@ def check_repositories_status(fetch=True):
         print(tabulate([webclient_build_config], headers="keys", tablefmt="grid"))
         print()
 
+    print("📚 EXTERNAL COMPONENT REPOSITORIES")
+    print("-" * 100)
     print(tabulate(status_results, headers="keys", tablefmt="grid"))
     print("=" * 100)
 
@@ -1859,6 +2092,229 @@ def check_repositories_status(fetch=True):
     for line in summary_lines:
         print(line)
     print("=" * 100)
+
+
+def lock_components(components, lock_all=False):
+    """Lock components to their current commit versions"""
+    original_cwd = os.getcwd()
+    versions_config = load_versions_config()
+
+    if lock_all:
+        components = list(versions_config.keys())
+    elif not components:
+        print("❌ Error: No components specified")
+        print("Usage: visp_deploy.py lock <component> [<component> ...]")
+        print("   or: visp_deploy.py lock --all")
+        return False
+
+    print(f"🔒 Locking {len(components)} component(s)...\n")
+
+    locked_count = 0
+    for component in components:
+        if component not in versions_config:
+            print(f"⚠️  {component}: Not found in versions.json, skipping")
+            continue
+
+        repo_path = os.path.join(original_cwd, "external", component)
+        if not os.path.exists(repo_path):
+            print(f"⚠️  {component}: Repository not cloned at {repo_path}, skipping")
+            continue
+
+        try:
+            # Get current commit
+            commit_info = get_commit_info(repo_path, "HEAD")
+            if not commit_info:
+                print(f"✗ {component}: Failed to get current commit")
+                continue
+
+            # Update versions.json
+            versions_config[component]["version"] = commit_info["sha"]
+            versions_config[component]["locked_version"] = commit_info["sha"]
+
+            print(f"✓ {component}: Locked to {commit_info['sha_short']}")
+            print(f"  Date: {commit_info['date_str']}")
+            print(f"  Commit: {commit_info['subject'][:60]}")
+            print()
+
+            locked_count += 1
+
+        except Exception as e:
+            print(f"✗ {component}: Failed to lock - {e}")
+            continue
+
+    # Save updated config
+    if locked_count > 0:
+        if save_versions_config(versions_config):
+            print(f"\n✅ Successfully locked {locked_count} component(s)")
+            print("   Changes saved to versions.json")
+            print(
+                "   Don't forget to commit versions.json to track these locked versions"
+            )
+            return True
+        else:
+            print("\n❌ Failed to save versions.json")
+            return False
+    else:
+        print("\n⚠️  No components were locked")
+        return False
+
+
+def unlock_components(components, unlock_all=False):
+    """Unlock components to track latest"""
+    versions_config = load_versions_config()
+
+    if unlock_all:
+        components = list(versions_config.keys())
+    elif not components:
+        print("❌ Error: No components specified")
+        print("Usage: visp_deploy.py unlock <component> [<component> ...]")
+        print("   or: visp_deploy.py unlock --all")
+        return False
+
+    print(f"🔓 Unlocking {len(components)} component(s)...\n")
+
+    unlocked_count = 0
+    for component in components:
+        if component not in versions_config:
+            print(f"⚠️  {component}: Not found in versions.json, skipping")
+            continue
+
+        current_version = versions_config[component].get("version", "latest")
+        locked_version = versions_config[component].get("locked_version", "N/A")
+
+        if current_version == "latest":
+            print(f"ℹ️  {component}: Already unlocked (tracking latest)")
+            continue
+
+        # Set to latest, preserve locked_version for rollback
+        versions_config[component]["version"] = "latest"
+
+        print(f"✓ {component}: Unlocked (now tracking latest)")
+        if locked_version != "N/A":
+            print(f"  Locked version preserved for rollback: {locked_version[:8]}")
+        print()
+
+        unlocked_count += 1
+
+    # Save updated config
+    if unlocked_count > 0:
+        if save_versions_config(versions_config):
+            print(f"\n✅ Successfully unlocked {unlocked_count} component(s)")
+            print("   Changes saved to versions.json")
+            print("   Run 'visp_deploy.py update' to pull latest changes")
+            return True
+        else:
+            print("\n❌ Failed to save versions.json")
+            return False
+    else:
+        print("\n⚠️  No components were unlocked")
+        return False
+
+
+def rollback_components(components, rollback_all=False):
+    """Rollback components to their locked versions"""
+    original_cwd = os.getcwd()
+    versions_config = load_versions_config()
+
+    if rollback_all:
+        components = list(versions_config.keys())
+    elif not components:
+        print("❌ Error: No components specified")
+        print("Usage: visp_deploy.py rollback <component> [<component> ...]")
+        print("   or: visp_deploy.py rollback --all")
+        return False
+
+    print(f"⏪ Rolling back {len(components)} component(s)...\n")
+
+    rolled_back_count = 0
+    for component in components:
+        if component not in versions_config:
+            print(f"⚠️  {component}: Not found in versions.json, skipping")
+            continue
+
+        locked_version = versions_config[component].get("locked_version", "N/A")
+        if locked_version == "N/A":
+            print(f"⚠️  {component}: No locked version available, skipping")
+            continue
+
+        repo_path = os.path.join(original_cwd, "external", component)
+        if not os.path.exists(repo_path):
+            print(f"⚠️  {component}: Repository not cloned at {repo_path}, skipping")
+            continue
+
+        try:
+            # Get current commit info
+            current_info = get_commit_info(repo_path, "HEAD")
+            if not current_info:
+                print(f"✗ {component}: Failed to get current commit")
+                continue
+
+            # Get locked version info
+            locked_info = get_commit_info(repo_path, locked_version)
+            if not locked_info:
+                print(f"✗ {component}: Locked version {locked_version[:8]} not found")
+                continue
+
+            # Check if already at locked version
+            if current_info["sha"] == locked_info["sha"]:
+                print(f"ℹ️  {component}: Already at locked version")
+                print(f"  {locked_info['sha_short']} from {locked_info['date_str']}")
+                print()
+                continue
+
+            # Check for uncommitted changes
+            if not handle_uncommitted_changes(repo_path, component, force=False):
+                print(f"⚠️  {component}: Skipping due to uncommitted changes")
+                print("   Commit or stash changes before rollback")
+                print()
+                continue
+
+            # Checkout locked version
+            os.chdir(repo_path)
+            subprocess.run(
+                ["git", "checkout", locked_version], check=True, capture_output=True
+            )
+            os.chdir(original_cwd)
+
+            # Update versions.json
+            versions_config[component]["version"] = locked_version
+
+            # Show what was rolled back
+            commits_back = count_commits_between(
+                repo_path, locked_info["sha"], current_info["sha"]
+            )
+
+            print(f"✓ {component}: Rolled back to {locked_info['sha_short']}")
+            print(f"  From: {current_info['sha_short']} ({current_info['date_str']})")
+            print(f"  To:   {locked_info['sha_short']} ({locked_info['date_str']})")
+            if commits_back:
+                print(f"  Moved back {commits_back} commit(s)")
+            print()
+
+            rolled_back_count += 1
+
+        except subprocess.CalledProcessError as e:
+            print(f"✗ {component}: Failed to rollback - {e}")
+            continue
+        except Exception as e:
+            print(f"✗ {component}: Error during rollback - {e}")
+            continue
+        finally:
+            os.chdir(original_cwd)
+
+    # Save updated config
+    if rolled_back_count > 0:
+        if save_versions_config(versions_config):
+            print(f"\n✅ Successfully rolled back {rolled_back_count} component(s)")
+            print("   Changes saved to versions.json")
+            print("   You may need to rebuild Docker images with updated code")
+            return True
+        else:
+            print("\n❌ Failed to save versions.json")
+            return False
+    else:
+        print("\n⚠️  No components were rolled back")
+        return False
 
 
 def main():
@@ -1911,6 +2367,51 @@ def main():
         help="Skip fetching from remotes (use cached remote state)",
     )
 
+    # Lock command
+    lock_parser = subparsers.add_parser(
+        "lock", help="Lock components to their current versions"
+    )
+    lock_parser.add_argument(
+        "components",
+        nargs="*",
+        help="Components to lock (specify names or use --all)",
+    )
+    lock_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Lock all components",
+    )
+
+    # Unlock command
+    unlock_parser = subparsers.add_parser(
+        "unlock", help="Unlock components to track latest"
+    )
+    unlock_parser.add_argument(
+        "components",
+        nargs="*",
+        help="Components to unlock (specify names or use --all)",
+    )
+    unlock_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Unlock all components",
+    )
+
+    # Rollback command
+    rollback_parser = subparsers.add_parser(
+        "rollback", help="Rollback components to their locked versions"
+    )
+    rollback_parser.add_argument(
+        "components",
+        nargs="*",
+        help="Components to rollback (specify names or use --all)",
+    )
+    rollback_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Rollback all components",
+    )
+
     args = parser.parse_args()
 
     if args.command == "install":
@@ -1919,6 +2420,12 @@ def main():
         update_system(force=getattr(args, "force", False))
     elif args.command == "status":
         check_repositories_status(fetch=not getattr(args, "no_fetch", False))
+    elif args.command == "lock":
+        lock_components(args.components, lock_all=args.all)
+    elif args.command == "unlock":
+        unlock_components(args.components, unlock_all=args.all)
+    elif args.command == "rollback":
+        rollback_components(args.components, rollback_all=args.all)
     else:
         parser.print_help()
 
