@@ -115,44 +115,35 @@
   - Action: Create audit script to find all `git clone` in Dockerfiles
   - Document which Dockerfiles are version-locked and which aren't
 
-- [ ] **Consolidate session image build scripts**
-  - Current: `docker/session-manager/build-*.sh` scripts
-    - `build-rstudio.sh`, `build-jupyter.sh`, etc.
-    - Manually run, separate from main deployment
-    - Hard-coded base image versions
-  - Questions to investigate:
-    1. Should these be in docker-compose.yml?
-       - Pro: Single `docker compose build` builds everything
-       - Con: Session images rarely need rebuilding
-       - Pro: Easier to version control base images
-    2. Should visp_deploy.py handle them?
-       - Add `python3 visp_deploy.py build-sessions` command?
-       - Pro: Can check for new RStudio/Jupyter versions automatically
-       - Con: Adds complexity to deployment script
-    3. Should they stay separate?
-       - Pro: Session images are optional/independent
-       - Con: Easy to forget to update them
-  - Base image version checking:
-    - RStudio: Check https://hub.docker.com/r/rocker/rstudio/tags
-    - Jupyter: Check https://hub.docker.com/r/jupyter/scipy-notebook/tags
-    - Could add automatic check: "New RStudio version available: 4.3.2 -> 4.4.0"
-  - Recommendation: **Integrate into visp_deploy.py** as separate command
-    - `python3 visp_deploy.py build-sessions --check-updates`
-    - Keeps session builds optional but more discoverable
-    - Can add version checking logic
-    - Benefits from our version management approach
+- [x] **✅ Consolidate session image build scripts** (Completed Dec 11, 2025)
+  - Replaced: All 5 bash scripts with Python `SessionImageBuilder` class
+    - Deleted: `build-rstudio.sh`, `build-jupyter.sh`, `build-operations-session.sh`
+    - Deleted: `build-session-images.sh`, `build-session-images-no-cache.sh`
+  - Implemented: `python3 visp_deploy.py build [images] [--cache]` command
+    - Granular control: build all, or specific images (operations/rstudio/jupyter)
+    - Default --no-cache for clean builds, optional --cache flag
+  - Features:
+    - Automatic build context preparation (copies container-agent)
+    - Builds in correct dependency order (operations first)
+    - Cleanup on success or failure
+    - Better error handling than bash scripts
+  - Optimizations:
+    - Jupyter now copies pre-built container-agent from operations-session
+    - Eliminated duplicate npm builds across images
+    - Faster builds, guaranteed consistency
+  - Integrated into `visp_deploy.py update` workflow
+  - See: Commit 15dfca4 for implementation details
 
 - [ ] **Migrate to Podman Quadlets** (as previously discussed)
   - Benefits: systemd integration, rootless by default, better for production
   - Status: Planning phase
   - See: `dev-notes/BUILD_STRATEGY.md`
 
-- [ ] **Fix permission handling in production images**
+- [x] **✅ Fix permission handling in production images** (Completed)
   - ✅ Fixed: wsrng-server (commit a8dcb4d)
-  - [ ] TODO: Audit other services for similar issues
-    - session-manager
-    - emu-webapp-server
-    - Check if other Node.js services have same problem
+  - ✅ Fixed: All services now use proper permissions via fix-permissions.sh
+  - ✅ Integrated: Permission fixing in visp_deploy.py deployment workflow
+  - See commits: d069db6, 7c035e2 for implementation
 
 ## Low Priority / Future Enhancements
 
@@ -230,6 +221,20 @@
   - Test users now automatically get loginAllowed:true
   - No more 401 errors requiring manual MongoDB updates
   - Fixed in external/webclient/src/index.php
+- ✅ **Session image build system refactored to Python** (Dec 11, 2025)
+  - Replaced 5 bash scripts with SessionImageBuilder class
+  - Added `python3 visp_deploy.py build` command with granular control
+  - Optimized Jupyter Dockerfile to reuse pre-built container-agent
+  - Integrated build context management and cleanup
+  - See commit: 15dfca4
+- ✅ **Fixed MongoDB user privileges** (Dec 9, 2025)
+  - Users can now create projects (added createProjects privilege)
+  - Updated index.php to auto-grant privilege for test users
+  - Created fix-testuser-privileges.sh helper script
+- ✅ **Fixed production WebSocket connections** (Dec 9, 2025)
+  - Added nginx WebSocket support with map directive
+  - Fixed HTTP 502 errors during WebSocket upgrade
+  - Documented in ARCHIVE/websocket-debugging-dec2024/
 
 ## Notes
 - **Git stashes to review:**
