@@ -1439,37 +1439,166 @@ def check_image_age(image_name, source_path):
         return True
 
 
-def rebuild_images():
-    script_dir = "docker/session-manager"
-    # Prefer a Docker-based build script when possible so images are available to Docker
-    docker_script = os.path.join(script_dir, "build-session-images-no-cache.sh")
-    legacy_script = os.path.join(script_dir, "build-session-images.sh")
+class SessionImageBuilder:
+    """Handles building session images (operations, rstudio, jupyter)"""
 
-    # select which script to run (prefer Docker script)
-    if shutil.which("docker") and os.path.exists(docker_script):
-        script_path = docker_script
-        print("Rebuilding images using Docker (no-cache script)...")
-    elif os.path.exists(legacy_script):
-        # Fallback: older legacy script present
-        script_path = legacy_script
-        print("Rebuilding images using legacy build script (fallback)...")
-    else:
-        print(f"No build script found in {script_dir}, skipping rebuild.")
-        return
+    def __init__(self, basedir):
+        self.basedir = basedir
+        self.docker_dir = os.path.join(basedir, "docker", "session-manager")
+        self.container_agent_src = os.path.join(basedir, "external", "container-agent")
+        self.container_agent_dest = os.path.join(self.docker_dir, "container-agent")
+        self.images = [
+            {
+                "name": "visp-operations-session",
+                "dockerfile": "operations-session/Dockerfile",
+                "description": "Operations session image",
+            },
+            {
+                "name": "visp-rstudio-session",
+                "dockerfile": "rstudio-session/Dockerfile",
+                "description": "RStudio session image",
+            },
+            {
+                "name": "visp-jupyter-session",
+                "dockerfile": "jupyter-session/Dockerfile",
+                "description": "Jupyter session image",
+            },
+        ]
 
-    try:
-        # Use working_directory context manager instead of manual os.chdir
-        with working_directory(script_dir):
-            # Run the selected script with bash to ensure it executes correctly
-            result = subprocess.run(
-                ["/bin/bash", os.path.basename(script_path)], check=False
+    def prepare_build_context(self):
+        """Copy container-agent source into build context"""
+        print("\n📦 Preparing build context...")
+        print(f"   Copying container-agent from: {self.container_agent_src}")
+        print(f"   To: {self.container_agent_dest}")
+
+        if not os.path.exists(self.container_agent_src):
+            raise FileNotFoundError(
+                f"container-agent source not found at {self.container_agent_src}\n"
+                "Run 'python3 visp_deploy.py install' or 'python3 visp_deploy.py update' first."
             )
-            if result.returncode == 0:
-                print("Images rebuilt successfully.")
-            else:
-                print("Image rebuild failed, but continuing with update.")
-    except (OSError, subprocess.SubprocessError) as e:
-        print(f"Error running rebuild script: {e}, continuing with update.")
+
+        # Remove existing copy if present
+        if os.path.exists(self.container_agent_dest):
+            shutil.rmtree(self.container_agent_dest)
+
+        # Copy container-agent source into build context
+        shutil.copytree(self.container_agent_src, self.container_agent_dest)
+        print("   ✅ Build context ready")
+
+    def cleanup_build_context(self):
+        """Remove temporary container-agent copy from build context"""
+        print("\n🧹 Cleaning up build context...")
+        if os.path.exists(self.container_agent_dest):
+            shutil.rmtree(self.container_agent_dest)
+            print("   ✅ Cleanup complete")
+
+    def rebuild_all(self, no_cache=True, images_to_build=None):
+        """
+        Rebuild session images
+
+        Args:
+            no_cache: Whether to use --no-cache flag
+            images_to_build: List of image names to build, or None for all
+                           e.g. ["visp-operations-session", "visp-jupyter-session"]
+        """
+        print("\n" + "=" * 70)
+        print("REBUILDING SESSION IMAGES")
+        print("=" * 70)
+
+        # Filter images if specific ones requested
+        if images_to_build:
+            images = [img for img in self.images if img["name"] in images_to_build]
+            if not images:
+                print(f"⚠️  No matching images found for: {images_to_build}")
+                return []
+        else:
+            images = self.images
+
+        try:
+            # Prepare build context (copy container-agent)
+            self.prepare_build_context()
+
+            # Build in order (operations must be first since others depend on it)
+            results = []
+            for image in images:
+                result = self.build_image(image, no_cache=no_cache)
+                results.append(result)
+                if not result["success"]:
+                    print(f"⚠️  Build failed for {image['name']}, but continuing...")
+
+            return results
+
+        finally:
+            # Always cleanup, even if build fails
+            self.cleanup_build_context()
+
+    def rebuild_operations(self, no_cache=True):
+        """Rebuild only operations-session image"""
+        return self.rebuild_all(
+            no_cache=no_cache, images_to_build=["visp-operations-session"]
+        )
+
+    def rebuild_jupyter(self, no_cache=True):
+        """Rebuild only jupyter-session image (requires operations-session to exist)"""
+        return self.rebuild_all(
+            no_cache=no_cache, images_to_build=["visp-jupyter-session"]
+        )
+
+    def rebuild_rstudio(self, no_cache=True):
+        """Rebuild only rstudio-session image (requires operations-session to exist)"""
+        return self.rebuild_all(
+            no_cache=no_cache, images_to_build=["visp-rstudio-session"]
+        )
+
+    def build_image(self, image, no_cache=True):
+        """Build a single session image"""
+        print(f"\n{'='*70}")
+        print(f"Building {image['description']}")
+        print(f"Image: {image['name']}")
+        print(f"{'='*70}")
+
+        try:
+            with working_directory(self.docker_dir):
+                cmd = ["docker", "build"]
+                if no_cache:
+                    cmd.append("--no-cache")
+                cmd.extend(["-t", image["name"], "-f", image["dockerfile"], "."])
+
+                print(f"Running: {' '.join(cmd)}")
+                result = subprocess.run(cmd, check=False, capture_output=False)
+
+                if result.returncode == 0:
+                    print(f"✅ Successfully built {image['name']}")
+                    return {"success": True, "image": image["name"]}
+                else:
+                    print(f"❌ Failed to build {image['name']}")
+                    return {
+                        "success": False,
+                        "image": image["name"],
+                        "error": "Build failed",
+                    }
+
+        except (OSError, subprocess.SubprocessError) as e:
+            print(f"❌ Error building {image['name']}: {e}")
+            return {"success": False, "image": image["name"], "error": str(e)}
+
+
+def rebuild_images(basedir=None):
+    """Rebuild session images using SessionImageBuilder"""
+    if basedir is None:
+        basedir = os.getcwd()
+
+    builder = SessionImageBuilder(basedir)
+    results = builder.rebuild_all(no_cache=True)
+
+    # Check if any builds failed
+    failed = [r for r in results if not r["success"]]
+    if failed:
+        print(
+            f"\n⚠️  {len(failed)} image(s) failed to build, but continuing with update."
+        )
+    else:
+        print("\n✅ All images rebuilt successfully.")
 
 
 def check_environment():
@@ -1507,8 +1636,11 @@ def set_permissions():
         }
 
 
-def check_and_rebuild_images():
+def check_and_rebuild_images(basedir=None):
     """Check container image ages and rebuild if needed, return status result"""
+    if basedir is None:
+        basedir = os.getcwd()
+
     images_to_check = [
         ("visp-operations-session", "docker/session-manager/operations-session"),
         ("visp-rstudio-session", "docker/session-manager/rstudio-session"),
@@ -1529,7 +1661,7 @@ def check_and_rebuild_images():
 
     if old_images:
         try:
-            rebuild_images()
+            rebuild_images(basedir)
             return {
                 "Component": "Docker Images",
                 "Status": "✓ REBUILT",
@@ -1556,14 +1688,27 @@ def print_update_summary(status_results):
     print("=" * 80)
     print(tabulate(status_results, headers="keys", tablefmt="grid"))
 
-    # Count results
+    # Count results - handle both key formats (name/status/details and Component/Status/Details)
     total = len(status_results)
     passed = sum(
         1
         for r in status_results
-        if "PASS" in r["Status"]
-        or "REBUILT" in r["Status"]
-        or "UP TO DATE" in r["Status"]
+        if (
+            "Status" in r
+            and (
+                "PASS" in r["Status"]
+                or "REBUILT" in r["Status"]
+                or "UP TO DATE" in r["Status"]
+            )
+        )
+        or (
+            "status" in r
+            and (
+                "PASS" in r["status"]
+                or "REBUILT" in r["status"]
+                or "UP TO DATE" in r["status"]
+            )
+        )
     )
     failed = total - passed
 
@@ -1593,7 +1738,7 @@ def update_system(force=False):
 
     # Check and rebuild images
     print("🐳 Checking Docker images...")
-    image_result = check_and_rebuild_images()
+    image_result = check_and_rebuild_images(BASEDIR)
     status_results.append(image_result)
 
     # Set permissions after all operations complete
@@ -1867,6 +2012,86 @@ def check_deployment_mode():
     return result
 
 
+def check_session_images_status():
+    """Check if session images exist and report their age"""
+    images = ["visp-operations-session", "visp-rstudio-session", "visp-jupyter-session"]
+
+    results = []
+
+    for image_name in images:
+        try:
+            # Check if image exists
+            result = subprocess.run(
+                ["docker", "image", "inspect", image_name, "--format", "{{.Created}}"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                # Parse creation date
+                created_str = result.stdout.strip()
+                # Docker returns ISO format like: 2024-12-11T10:30:45.123456789Z
+                from datetime import datetime, timezone
+
+                try:
+                    created = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
+                    now = datetime.now(timezone.utc)
+                    age = now - created
+
+                    # Format age nicely
+                    if age.days > 0:
+                        age_str = f"{age.days} day(s) old"
+                        status = "⚠️ OLD" if age.days > 30 else "✅ OK"
+                    elif age.seconds > 3600:
+                        hours = age.seconds // 3600
+                        age_str = f"{hours} hour(s) old"
+                        status = "✅ OK"
+                    else:
+                        minutes = age.seconds // 60
+                        age_str = f"{minutes} minute(s) old"
+                        status = "✅ NEW"
+
+                    results.append(
+                        {
+                            "Image": image_name,
+                            "Status": status,
+                            "Age": age_str,
+                            "Built": created.strftime("%Y-%m-%d %H:%M"),
+                        }
+                    )
+                except (ValueError, AttributeError):
+                    results.append(
+                        {
+                            "Image": image_name,
+                            "Status": "✅ EXISTS",
+                            "Age": "Unknown",
+                            "Built": "Unknown",
+                        }
+                    )
+            else:
+                results.append(
+                    {
+                        "Image": image_name,
+                        "Status": "❌ MISSING",
+                        "Age": "N/A",
+                        "Built": "Not built",
+                    }
+                )
+
+        except (subprocess.SubprocessError, OSError) as e:
+            results.append(
+                {
+                    "Image": image_name,
+                    "Status": "❌ ERROR",
+                    "Age": f"Error: {e}",
+                    "Built": "Unknown",
+                }
+            )
+
+    return results
+
+
 def check_repositories_status(fetch=True):
     """Check status of all repositories and report uncommitted changes"""
     print("🔍 Checking repository status...")
@@ -2104,8 +2329,36 @@ def check_repositories_status(fetch=True):
     print(tabulate(status_results, headers="keys", tablefmt="grid"))
     print("=" * 100)
 
+    # Check session images
+    print("\n🐳 SESSION DOCKER IMAGES")
+    print("-" * 100)
+    session_images = check_session_images_status()
+    print(tabulate(session_images, headers="keys", tablefmt="grid"))
+    print("=" * 100)
+
     # Summary
     summary_lines = []
+
+    # Check if any session images are missing or old
+    missing_images = [
+        img["Image"] for img in session_images if "MISSING" in img["Status"]
+    ]
+    old_images = [img["Image"] for img in session_images if "OLD" in img["Status"]]
+
+    if missing_images:
+        summary_lines.append(f"❌ Missing session images: {', '.join(missing_images)}")
+        summary_lines.append(
+            "   Run 'python3 visp_deploy.py build' to build missing images"
+        )
+
+    if old_images:
+        summary_lines.append(
+            f"⚠️  Old session images (>30 days): {', '.join(old_images)}"
+        )
+        summary_lines.append(
+            "   Consider rebuilding with 'python3 visp_deploy.py build'"
+        )
+
     if repos_with_changes:
         summary_lines.append(
             f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}"
@@ -2462,6 +2715,23 @@ def main():
         help="Rollback all components",
     )
 
+    # Build command for session images
+    build_parser = subparsers.add_parser(
+        "build", help="Build session images (operations, rstudio, jupyter)"
+    )
+    build_parser.add_argument(
+        "images",
+        nargs="*",
+        choices=["operations", "rstudio", "jupyter", "all"],
+        default=["all"],
+        help="Which images to build (default: all)",
+    )
+    build_parser.add_argument(
+        "--cache",
+        action="store_true",
+        help="Use Docker cache (default is --no-cache)",
+    )
+
     args = parser.parse_args()
 
     if args.command == "install":
@@ -2476,6 +2746,27 @@ def main():
         unlock_components(args.components, unlock_all=args.all)
     elif args.command == "rollback":
         rollback_components(args.components, rollback_all=args.all)
+    elif args.command == "build":
+        basedir = os.getcwd()
+        builder = SessionImageBuilder(basedir)
+        use_cache = getattr(args, "cache", False)
+        no_cache = not use_cache
+
+        # Determine which images to build
+        images_arg = getattr(args, "images", ["all"])
+        if not images_arg or "all" in images_arg:
+            print("Building all session images...")
+            builder.rebuild_all(no_cache=no_cache)
+        else:
+            # Map short names to full image names
+            image_map = {
+                "operations": "visp-operations-session",
+                "rstudio": "visp-rstudio-session",
+                "jupyter": "visp-jupyter-session",
+            }
+            images_to_build = [image_map[img] for img in images_arg if img in image_map]
+            print(f"Building images: {', '.join(images_arg)}...")
+            builder.rebuild_all(no_cache=no_cache, images_to_build=images_to_build)
     else:
         parser.print_help()
 

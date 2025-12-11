@@ -49,11 +49,17 @@ The `visp_deploy.py` script automates installation, updates, and status checks:
 # Install system (dev or prod mode)
 sudo python3 visp_deploy.py install --mode=dev
 
-# Check repository status and configuration
+# Check repository status, Docker images, and configuration
 python3 visp_deploy.py status
 
 # Update all repositories and components
 python3 visp_deploy.py update
+
+# Build session images
+python3 visp_deploy.py build                    # Build all (no cache)
+python3 visp_deploy.py build --cache            # Build all (with cache)
+python3 visp_deploy.py build operations         # Build only operations
+python3 visp_deploy.py build rstudio jupyter    # Build specific images
 
 # Version locking commands (see below)
 python3 visp_deploy.py lock <component>    # Lock to current version
@@ -179,7 +185,69 @@ docker compose up -d
    https://visp.local/?login=<TEST_USER_LOGIN_KEY from .env>
    ```
 
-3. Configure MongoDB users as needed (see deployment guide)
+3. **Mongo Express** (Database Admin Interface):
+   - **Local:** https://visp.local:28084 or http://localhost:28084
+   - **Production:** https://me.yourdomain.com
+   - **Username:** `mongo`
+   - **Password:** Found in `.env` file as `MONGO_EXPRESS_PASSWORD`
+   - Use this to manage users, set privileges (like `createProjects`), and inspect database
+
+4. Configure MongoDB users as needed (see deployment guide)
+
+## Reverse Proxy Configuration (Production)
+
+For production deployments behind an nginx reverse proxy (common with load balancers), you need to configure nginx to handle all subdomains. The Apache container inside Docker serves multiple subdomains via VirtualHost configuration.
+
+### Required Subdomains
+
+- `yourdomain.com` (main VISP interface - **requires WebSocket support for login**)
+- `app.yourdomain.com` (application portal - **requires WebSocket support**)
+- `emu-webapp.yourdomain.com` (EMU annotation tool - separate WebSocket)
+- `labjs.yourdomain.com` (LabJS experiments)
+- `matomo.yourdomain.com` (analytics)
+- `me.yourdomain.com` (MongoDB admin)
+- `octra.yourdomain.com` (OCTRA transcription)
+- `recorder.yourdomain.com` (audio recorder)
+
+**⚠️ CRITICAL:** WebSocket support is **required** for the main domain and app subdomain. The VISP application uses WebSocket connections to `session-manager:8020` for user authentication and session management. Without WebSocket support, users cannot log in.
+
+### Quick Setup
+
+Pre-configured nginx configuration files are available in `nginx-configs-temp/`:
+
+```bash
+# 1. Request SSL certificates for all subdomains
+cd nginx-configs-temp/
+sudo ./request-certs.sh
+
+# 2. Install the nginx configuration
+sudo cp visp-demo-complete.conf /etc/nginx/sites-enabled/yourdomain.conf
+
+# 3. Edit the config to replace 'visp-demo.humlab.umu.se' with your domain
+sudo nano /etc/nginx/sites-enabled/yourdomain.conf
+
+# 4. Test and reload
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+### Key Configuration Points
+
+- **WebSocket Support**: **CRITICAL** - Required for main VISP application login and session management
+  - Main domain: WebSocket connects to session-manager:8020
+  - Without WebSocket: Login page will not function
+- **Proxy Headers**: Must include `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`
+- **Upgrade Headers**: Required for WebSocket connections (`Upgrade: websocket`, `Connection: upgrade`)
+- **Timeouts**: Long timeouts needed for annotation sessions (24 hours recommended)
+
+### Load Balancer Note
+
+If using a load balancer with SSL termination:
+- You can use Let's Encrypt certificates on the backend nginx (recommended for full encryption)
+- Or use self-signed certificates (simpler but less secure)
+- The nginx config provided uses Let's Encrypt for defense-in-depth security
+
+See `nginx-configs-temp/INSTRUCTIONS.md` for complete setup instructions.
 
 ## INSTALLATION
 

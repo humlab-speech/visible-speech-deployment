@@ -1,4 +1,11 @@
-# Stage 1: Base
+# Stage 1: Build container-agent (no host npm needed!)
+FROM node:20-alpine AS container_agent_builder
+WORKDIR /build
+COPY ./container-agent /build/
+RUN npm install && \
+    npm run build
+
+# Stage 2: Base
 FROM rocker/rstudio:4 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
@@ -62,18 +69,8 @@ RUN mkdir /node_install && \
 
 WORKDIR /home/rstudio
 
-# Container agent install
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-WORKDIR /tmp
-
-# Move .container-agent to /container-agent:
-RUN git clone https://github.com/humlab-speech/container-agent /container-agent-install
-#ADD --chown=root:root ./files/container-agent /container-agent-install
-RUN cd /container-agent-install && \
-    npm install && \
-    npm run build && \
-    cp -R ./dist /container-agent && \
-    rm -rf /container-agent-install
+# Copy the built container-agent from the builder stage
+COPY --from=container_agent_builder /build/dist /container-agent
 
 # Cleanup
 RUN apt-get clean && \

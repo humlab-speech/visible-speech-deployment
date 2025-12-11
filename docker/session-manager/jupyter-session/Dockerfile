@@ -1,4 +1,7 @@
-# Stage 1: Base
+# Stage 1: Get pre-built container-agent from operations-session (no need to rebuild!)
+FROM visp-operations-session AS container_agent_source
+
+# Stage 2: Base
 FROM quay.io/jupyter/datascience-notebook:r-4.3.3 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
@@ -21,7 +24,7 @@ RUN rm /etc/localtime && \
 
 WORKDIR /home/jovyan
 
-# Stage 2: Python packages
+# Stage 3: Python packages
 FROM base AS python_packages
 
 RUN pip install --upgrade pip && \
@@ -37,24 +40,15 @@ RUN pip install --upgrade pip && \
     uv pip install --system ./pysptk/ && rm -rf pysptk && \
     uv pip install --system whisperx
 
-
-
-# Stage 4: Copy MATLAB runtime from Rstudio session image to a clean image
-# Stage 3: Final
+# Stage 4: Final
 FROM python_packages AS final
 
 # Grab the compiled R from the visp_operations_session image, avoiding building them twice
 # NOTE: If the operations session image is updated, this image must be rebuilt
 COPY --from=visp-operations-session /usr/local/lib/R/site-library /opt/conda/lib/R/library
 
-# ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-WORKDIR /tmp
-# Move .container-agent to /container-agent:
-ADD --chown=root:root ./files/container-agent /container-agent-install
-RUN cd /container-agent-install && \
-    npm install && \
-    npm run build && \
-    cp -R ./dist /container-agent
+# Copy the pre-built container-agent from operations-session (already built there!)
+COPY --from=container_agent_source /container-agent /container-agent
 
 COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
 
