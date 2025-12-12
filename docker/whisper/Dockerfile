@@ -8,8 +8,10 @@ RUN apt-get update && \
 WORKDIR /
 
 WORKDIR /Whisper-WebUI
-RUN git clone https://github.com/jhj0517/Whisper-WebUI .
-RUN git checkout 574c3f1
+RUN git clone https://github.com/jhj0517/Whisper-WebUI . && \
+    git checkout 57ccf05
+# Pinned to commit 57ccf05: "Merge pull request #610 from jhj0517/fix/torchaudio-lockdown"
+# This version includes the updated Gradio API with include_subdirectory and save_same_dir parameters
 
 RUN python3 -m venv venv && \
     . venv/bin/activate && \
