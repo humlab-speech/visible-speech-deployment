@@ -60,13 +60,15 @@
   - Action: Create audit script to find all `git clone` in Dockerfiles
   - Document which Dockerfiles are version-locked and which aren't
 
-## Low Priority / Future Enhancements
+## High Priority
 
-### Infrastructure
-- [ ] **Migrate to Podman Quadlets** (as previously discussed)
+### Infrastructure Migration
+- [ ] **Migrate to Podman Quadlets** (In Progress - branch: feature/podman-migration)
   - Benefits: systemd integration, rootless by default, better for production
-  - Status: Planning phase
+  - Current Status: Active development
   - See: `dev-notes/BUILD_STRATEGY.md`
+
+## Medium Priority
 
 ### Code Organization
 - [ ] **Consolidate duplicate configuration**
