@@ -2,6 +2,31 @@
 
 ## High Priority
 
+### Runtime Stability - Whisper/Gradio Integration
+- [x] **✅ Graceful transcription failure handling** (Completed Dec 12, 2025)
+  - Enhanced error serialization (message/stack fallback, robust JSON stringify)
+  - Logs include project/session/bundle context for debugging
+  - Queue item marked as error with detailed error message
+  - Process continues without crashing - queue processing not interrupted
+  - File: `external/session-manager/src/WhisperService.class.js`
+  - Commit: fd33e3b
+
+- [x] **✅ Implement backoff for Whisper/Gradio connection** (Completed Dec 12, 2025)
+  - Replaced tight 5s retry loop with exponential backoff (5s → 5min cap)
+  - Reduced runTranscriptionQueue polling from 5s to 15s interval
+  - Added detailed logging with retry delay information
+  - Silent skip when Whisper not ready (no log spam)
+  - File: `external/session-manager/src/WhisperService.class.js`
+  - Commit: fd33e3b
+
+- [x] **✅ Update Whisper integration to current Gradio API** (Completed Dec 12, 2025)
+  - Updated Whisper Dockerfile to use latest commit (57ccf05)
+  - Investigated new Gradio API: added include_subdirectory and save_same_dir parameters
+  - Shifted all param_N parameters by +2 positions (param_5 → param_7, etc.)
+  - Validated with live API test calls - no more "param_5 is not a valid keyword argument" errors
+  - File: `external/session-manager/src/WhisperService.class.js`, `docker/whisper/Dockerfile`
+  - Commit: 1c5d2f9
+
 ### Authentication & Access
 - [ ] **Register production domain with SWAMID IdP**
   - Domain: `visp.pdf-server.humlab.umu.se`
