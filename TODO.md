@@ -2,43 +2,12 @@
 
 ## High Priority
 
-### Runtime Stability - Whisper/Gradio Integration
-- [x] **✅ Graceful transcription failure handling** (Completed Dec 12, 2025)
-  - Enhanced error serialization (message/stack fallback, robust JSON stringify)
-  - Logs include project/session/bundle context for debugging
-  - Queue item marked as error with detailed error message
-  - Process continues without crashing - queue processing not interrupted
-  - File: `external/session-manager/src/WhisperService.class.js`
-  - Commit: fd33e3b
-
-- [x] **✅ Implement backoff for Whisper/Gradio connection** (Completed Dec 12, 2025)
-  - Replaced tight 5s retry loop with exponential backoff (5s → 5min cap)
-  - Reduced runTranscriptionQueue polling from 5s to 15s interval
-  - Added detailed logging with retry delay information
-  - Silent skip when Whisper not ready (no log spam)
-  - File: `external/session-manager/src/WhisperService.class.js`
-  - Commit: fd33e3b
-
-- [x] **✅ Update Whisper integration to current Gradio API** (Completed Dec 12, 2025)
-  - Updated Whisper Dockerfile to use latest commit (57ccf05)
-  - Investigated new Gradio API: added include_subdirectory and save_same_dir parameters
-  - Shifted all param_N parameters by +2 positions (param_5 → param_7, etc.)
-  - Validated with live API test calls - no more "param_5 is not a valid keyword argument" errors
-  - File: `external/session-manager/src/WhisperService.class.js`, `docker/whisper/Dockerfile`
-  - Commit: 1c5d2f9
-
 ### Authentication & Access
 - [ ] **Register production domain with SWAMID IdP**
   - Domain: `visp.pdf-server.humlab.umu.se`
   - Required files: `shibboleth2.xml`, `attribute-map.xml`, `swamid-idp.xml`
   - Contact: Umeå University IT department
   - Issue: Currently using TEST_USER_LOGIN_KEY workaround for authentication
-
-- [x] **✅ Fix production index.php for test user login** (Completed Dec 4, 2025)
-  - Fixed: TEST_USER_LOGIN_KEY now automatically sets loginAllowed:true for test users
-  - Test users created via /?login=<key> no longer get 401 errors
-  - No more manual MongoDB intervention needed
-  - Change in: `external/webclient/src/index.php`
 
 ### Matomo Analytics Integration
 - [ ] **Re-enable Matomo tracking** (currently stashed in git)
@@ -49,55 +18,6 @@
   - Alternative: Consider using Traefik middleware or individual app integration
 
 ## Medium Priority
-
-### Dependency & Version Management
-- [x] **✅ Pin external repository versions in versions.json** (Completed Dec 1, 2025)
-  - Added `locked_version` field to `versions.json` with current commit SHAs
-  - All repos documented with last-known-good commits
-  - Supports "latest" or specific commit SHA for controlled deployment
-  - See: `docs/VERSION_MANAGEMENT.md` for workflow guide
-
-- [x] **✅ Reorganize external dependencies** (Completed Dec 1, 2025)
-  - Implemented: Moved all external repos to `external/` directory
-  - Updated `visp_deploy.py` to clone to `external/{repo-name}/`
-  - Updated `docker-compose.dev.yml` and `docker-compose.prod.yml` for external/ paths
-  - Updated `.gitignore` to exclude entire `external/` directory
-  - Benefits achieved:
-    - Clear project structure (external/ vs internal code)
-    - Easy .gitignore patterns
-    - Obvious what's maintained internally vs externally
-  - See: `docs/FOLDER_STRUCTURE.md` for complete explanation
-
-### Production vs Development Separation
-- [x] **✅ Clarify dev vs prod deployment modes** (Completed Dec 1, 2025)
-  - Created comprehensive `docs/DEV_VS_PROD.md` documentation
-  - Documented key differences:
-    - Dev: Traefik proxy, source mounts, hot-reload, TEST_USER_LOGIN_KEY
-    - Prod: Direct Apache, baked images, SWAMID auth, always restart
-  - Clarified use cases:
-    - Dev mode: Local development, testing, iteration
-    - Prod mode: Behind existing reverse proxy (Nginx on host)
-  - Includes migration guide and troubleshooting
-  - See: `docs/DEV_VS_PROD.md` for complete guide
-
-### Build & Deployment Improvements
-- [x] **✅ Made WEBCLIENT_BUILD configurable** (Completed Dec 4, 2025)
-  - Implemented: WEBCLIENT_BUILD setting in .env controls which domain to build for
-  - Added: Build arg passing from docker-compose to Dockerfile
-  - Enhanced: visp_deploy.py reads WEBCLIENT_BUILD and uses it for builds
-  - Added: Configuration validation in `visp_deploy.py status` command
-  - Added: Domain detection that works with 6.5MB minified Angular bundles
-  - Supports: visp-build, visp-demo-build, visp-pdf-server-build, visp-local-build
-  - Benefits: Easy multi-domain deployment, local dev without changing prod config
-  - See: `docs/WEBCLIENT_BUILD_CONFIG.md` for technical details
-
-- [x] **✅ Added comprehensive deployment documentation** (Completed Dec 4, 2025)
-  - Created: `docs/DEPLOYMENT_GUIDE.md` (890 lines) - Complete step-by-step guide
-  - Created: `docs/QUICK_REFERENCE.md` - Quick reference card with domain mapping
-  - Created: `docs/TROUBLESHOOTING.md` - Decision tree troubleshooting guide
-  - Created: `docs/WEBCLIENT_BUILD_CONFIG.md` - Technical configuration deep-dive
-  - Updated: README.md with documentation links and restructured content
-  - Includes: Adding new domains, dev vs prod workflows, validation checks
 
 - [ ] **Consider moving emu-webapp-server Dockerfile to external repo**
   - Current: Dockerfile is in `docker/emu-webapp-server/`
@@ -140,37 +60,13 @@
   - Action: Create audit script to find all `git clone` in Dockerfiles
   - Document which Dockerfiles are version-locked and which aren't
 
-- [x] **✅ Consolidate session image build scripts** (Completed Dec 11, 2025)
-  - Replaced: All 5 bash scripts with Python `SessionImageBuilder` class
-    - Deleted: `build-rstudio.sh`, `build-jupyter.sh`, `build-operations-session.sh`
-    - Deleted: `build-session-images.sh`, `build-session-images-no-cache.sh`
-  - Implemented: `python3 visp_deploy.py build [images] [--cache]` command
-    - Granular control: build all, or specific images (operations/rstudio/jupyter)
-    - Default --no-cache for clean builds, optional --cache flag
-  - Features:
-    - Automatic build context preparation (copies container-agent)
-    - Builds in correct dependency order (operations first)
-    - Cleanup on success or failure
-    - Better error handling than bash scripts
-  - Optimizations:
-    - Jupyter now copies pre-built container-agent from operations-session
-    - Eliminated duplicate npm builds across images
-    - Faster builds, guaranteed consistency
-  - Integrated into `visp_deploy.py update` workflow
-  - See: Commit 15dfca4 for implementation details
+## Low Priority / Future Enhancements
 
+### Infrastructure
 - [ ] **Migrate to Podman Quadlets** (as previously discussed)
   - Benefits: systemd integration, rootless by default, better for production
   - Status: Planning phase
   - See: `dev-notes/BUILD_STRATEGY.md`
-
-- [x] **✅ Fix permission handling in production images** (Completed)
-  - ✅ Fixed: wsrng-server (commit a8dcb4d)
-  - ✅ Fixed: All services now use proper permissions via fix-permissions.sh
-  - ✅ Integrated: Permission fixing in visp_deploy.py deployment workflow
-  - See commits: d069db6, 7c035e2 for implementation
-
-## Low Priority / Future Enhancements
 
 ### Code Organization
 - [ ] **Consolidate duplicate configuration**
@@ -183,16 +79,6 @@
   - Include all required and optional variables with descriptions
 
 ### Documentation
-- [x] **✅ Add architecture documentation** (Completed Dec 1, 2025)
-  - Created `docs/FOLDER_STRUCTURE.md` - Complete directory structure explanation
-  - Created `docs/DEV_VS_PROD.md` - Development vs production architecture
-  - Created `docs/DOCKERFILE_AUDIT.md` - Complete Dockerfile analysis
-  - Documented request flow for both modes:
-    - Dev: Nginx (host) → Traefik (container) → Apache (container) → Apps
-    - Prod: Nginx (host) → Apache (container) → Apps
-  - Added README files in external/, docker/, and mounts/ directories
-  - See: `docs/` directory for all documentation
-
 - [ ] **Document Apache vhost configuration**
   - Current issue: `ServerName https://${BASE_DOMAIN}:443` was invalid syntax
   - Fixed but should document the proper format and what variables are available
@@ -204,68 +90,11 @@
   - Test that APIs are accessible
   - Could integrate with `visp_deploy.py status` command
 
-## Completed ✅
-- ✅ Fixed MongoDB password synchronization between .env and services (commit 0ef0191)
-- ✅ Refactored session-manager WhisperService initialization (commit ee3bf55)
-- ✅ Added file permission fixing to deployment script (commits d069db6, 7c035e2)
-- ✅ Fixed Docker Compose V2 compatibility
-- ✅ Removed problematic Matomo Apache injection (commit 1a2333b)
-- ✅ Fixed wsrng-server production image permissions (commit a8dcb4d)
-- ✅ Added missing password variables to deployment script (commit 2d470d2)
-- ✅ **External folder refactor** (Dec 1, 2025)
-  - Moved all external repos to `external/` directory
-  - Updated all paths in visp_deploy.py and docker-compose files
-  - Simplified .gitignore
-- ✅ **Dockerfile single source of truth** (Dec 1, 2025)
-  - Humlab-controlled services now own their Dockerfiles (in external repos)
-  - Archived legacy duplicate Dockerfiles
-  - Added explanation docs in docker/ subdirectories
-- ✅ **Version management implementation** (Dec 1, 2025)
-  - Added `locked_version` fields to versions.json
-  - Documented version control workflow
-- ✅ **Comprehensive documentation** (Dec 1, 2025)
-  - Added FOLDER_STRUCTURE.md, DEV_VS_PROD.md, DOCKERFILE_AUDIT.md
-  - Added VERSION_MANAGEMENT.md, EXTERNAL_FOLDER_REFACTOR.md
-  - Added README files in external/, docker/, mounts/
-- ✅ **Service .env auto-generation** (Dec 1, 2025)
-  - Fixed wsrng-server/.env generation from .env-example + main .env
-  - Single source of truth for configuration values
-- ✅ **Configurable webclient build system** (Dec 4, 2025)
-  - Made WEBCLIENT_BUILD setting configurable via .env
-  - Added support for multiple deployment domains (visp, visp-demo, visp-pdf-server, visp-local)
-  - Enhanced visp_deploy.py with build validation and configuration checks
-  - Fixed domain detection in large minified bundles (10MB read buffer)
-  - Added deployment mode detection (dev vs prod) in status command
-- ✅ **Deployment documentation suite** (Dec 4, 2025)
-  - Created comprehensive DEPLOYMENT_GUIDE.md (890 lines)
-  - Created QUICK_REFERENCE.md with domain mapping table
-  - Created TROUBLESHOOTING.md with decision tree format
-  - Created WEBCLIENT_BUILD_CONFIG.md technical guide
-  - Restructured README.md with clear documentation links
-- ✅ **Fixed TEST_USER_LOGIN_KEY authentication** (Dec 4, 2025)
-  - Test users now automatically get loginAllowed:true
-  - No more 401 errors requiring manual MongoDB updates
-  - Fixed in external/webclient/src/index.php
-- ✅ **Session image build system refactored to Python** (Dec 11, 2025)
-  - Replaced 5 bash scripts with SessionImageBuilder class
-  - Added `python3 visp_deploy.py build` command with granular control
-  - Optimized Jupyter Dockerfile to reuse pre-built container-agent
-  - Integrated build context management and cleanup
-  - See commit: 15dfca4
-- ✅ **Fixed MongoDB user privileges** (Dec 9, 2025)
-  - Users can now create projects (added createProjects privilege)
-  - Updated index.php to auto-grant privilege for test users
-  - Created fix-testuser-privileges.sh helper script
-- ✅ **Fixed production WebSocket connections** (Dec 9, 2025)
-  - Added nginx WebSocket support with map directive
-  - Fixed HTTP 502 errors during WebSocket upgrade
-  - Documented in ARCHIVE/websocket-debugging-dec2024/
-
 ## Notes
-- **Git stashes to review:**
-  - "WIP: Matomo tracking implementation" - Contains tracker files and Docker mounts
-  - "WIP: Docker compose changes for Matomo tracker mounts" - Volume mount configs
 
-- **Branch status:**
-  - Current: `feature/backend-cleanup`
-  - Ahead of origin by multiple commits (need to push)
+### Git History
+All completed tasks are documented in git commits. Use `git log` to review implementation details.
+
+### Git Stashes
+- "WIP: Matomo tracking implementation" - Contains tracker files and Docker mounts
+- "WIP: Docker compose changes for Matomo tracker mounts" - Volume mount configs
