@@ -1,0 +1,19 @@
+[Unit]
+Description=WSRNG Server
+After=network-online.target visp-net.service mongo.service
+Requires=mongo.service
+
+[Container]
+Image=docker.io/library/visp-wsrng-server:latest
+Network=visp-net.network
+EnvironmentFile=%h/Projects/visible-speech-deployment/external/wsrng-server/.env
+EnvironmentFile=%h/Projects/visible-speech-deployment/.env
+Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=unless-stopped
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

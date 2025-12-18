@@ -14,7 +14,18 @@ This is a collection of dockerized services which as a whole makes out the Visib
 
 ## Quick Start
 
-### For Development (Local)
+### ⚠️ Migration to Podman in Progress
+
+**Current Status**: This project is being migrated from Docker to Podman with systemd Quadlets.
+
+- ✅ Phase 1: Podman socket compatibility verified (node-docker-api works)
+- ✅ Phase 2: systemd enabled in WSL
+- ✅ Phase 3: Podman 4.6.2 installed with Quadlet support
+- 🔄 Phase 4: Converting docker-compose services to Quadlets (IN PROGRESS)
+
+**Temporary**: Docker Compose still works for now. Quadlets in `quadlets/` directory.
+
+### For Development (Local) - Docker Compose
 
 ```bash
 git clone https://github.com/humlab-speech/visible-speech-deployment.git
@@ -25,7 +36,7 @@ docker compose up -d
 
 Access at: **https://visp.local** (add to `/etc/hosts`)
 
-### For Production (with DNS)
+### For Production (with DNS) - Podman Quadlets (UPCOMING)
 
 ```bash
 git clone https://github.com/humlab-speech/visible-speech-deployment.git
@@ -35,8 +46,13 @@ cd visible-speech-deployment
 nano .env
 
 sudo python3 visp_deploy.py install --mode=prod
-docker compose build
-docker compose up -d
+
+# Copy quadlets to systemd directory
+cp quadlets/*.{container,network,volume} ~/.config/containers/systemd/
+
+# Enable and start services
+systemctl --user daemon-reload
+systemctl --user start visp.target
 ```
 
 **⚠️ IMPORTANT**: The `WEBCLIENT_BUILD` setting in `.env` MUST match your `BASE_DOMAIN`. See the [Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for details.

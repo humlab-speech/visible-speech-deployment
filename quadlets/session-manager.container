@@ -1,0 +1,32 @@
+[Unit]
+Description=Session Manager Service
+After=network-online.target visp-net.service whisper-net.service whisper.service mongo.service
+Requires=mongo.service whisper.service
+
+[Container]
+Image=docker.io/library/visp-session-manager:latest
+Network=visp-net.network
+Network=whisper-net.network
+PublishPort=8020:8020
+EnvironmentFile=%h/Projects/visible-speech-deployment/.env
+Environment=LOG_LEVEL=debug
+Environment=DEVELOPMENT_MODE=true
+Environment=SESSION_MANAGER_KEEP_CONTAINERS=true
+Environment=GRADIO_WHISPERX_ENDPOINT=http://whisper:7860
+Environment=BASIC_AUTH_USERNAME=whisperuser
+Environment=BASIC_AUTH_PASSWORD=whisperpass
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/uploads:/tmp/uploads:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/logs:/session-manager/logs:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/unimported_audio:/unimported_audio:Z
+Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/repository-template:/repository-template:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/transcription-queued:/transcription-queued:Z
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=unless-stopped
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
