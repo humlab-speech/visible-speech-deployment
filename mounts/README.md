@@ -20,7 +20,6 @@ Docker containers are ephemeral - data inside them is lost when containers are r
 - `repositories/` - **User repositories and project data**
 - `repository-template/` - Template for new user repos
 - `transcription-queued/` - Transcription job queue
-- `hird-webapp/` - HIRD webapp data
 - `octra/` - OCTRA runtime data
 - `traefik/` - Traefik reverse proxy config (dev mode)
 - `vscode/` - VS Code server data

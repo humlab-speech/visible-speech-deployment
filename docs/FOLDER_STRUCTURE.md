@@ -127,7 +127,6 @@ Services we control should be buildable standalone without this deployment proje
 - `mounts/emu-webapp-server/` - EMU server logs and .env file
 - `mounts/webapi/` - API logs and runtime files
 - `mounts/session-manager/` - Session manager logs and data
-- `mounts/hird-webapp/` - HIRD webapp data
 - `mounts/octra/` - OCTRA runtime data
 - `mounts/repositories/` - User repositories and project data
 - `mounts/repository-template/` - Template for new repositories
