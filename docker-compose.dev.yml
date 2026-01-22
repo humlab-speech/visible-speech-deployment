@@ -29,6 +29,7 @@ services:
       - visp-net
       - octra-net
     environment:
+      MODE: dev
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
       BASE_DOMAIN: $BASE_DOMAIN
@@ -52,8 +53,9 @@ services:
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
-      - "./external/webclient/dist:/var/www/html:Z"
-      - "./external/webapi:/var/www/webapi:Z"
+      - "./external/webclient:/webclient:Z"
+      #- "./external/webclient/dist:/var/www/html:Z"
+      #- "./external/webapi:/var/www/webapi:Z"
       # The application expects composer autoload at /var/www/html/api/vendor.
       # In development the host mount of ./external/webclient/dist onto /var/www/html hides any
       # vendor files the image build may have put under /var/www/html/api/vendor, and
@@ -61,7 +63,7 @@ services:
       # vendor folder into the webroot so PHP can always require 'api/vendor/autoload.php'.
       # This mirrors the runtime layout and avoids needing to create a symlink inside
       # the running container as a temporary hotfix.
-      - "./external/webapi/vendor:/var/www/html/api/vendor:Z"
+      #- "./external/webapi/vendor:/var/www/html/api/vendor:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
@@ -120,13 +122,19 @@ services:
     build:
       context: ./external/EMU-webApp
       dockerfile: ../../docker/emu-webapp/Dockerfile
+      target: development
     restart: unless-stopped
     ports:
       - 127.0.0.1:9000:9000
+    volumes:
+      - ./external/EMU-webApp:/app:Z
+      - /app/node_modules
+    networks:
+      - visp-net
 
   emu-webapp-server:
     image: visp-emu-webapp-server
-    build: "./docker/emu-webapp-server"
+    build: "./external/emu-webapp-server/docker"
     restart: unless-stopped
     ports:
       - 127.0.0.1:17890:17890

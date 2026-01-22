@@ -11,6 +11,7 @@ services:
     networks:
       - visp-net
     environment:
+      MODE: prod
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
       BASE_DOMAIN: $BASE_DOMAIN
@@ -89,6 +90,7 @@ services:
     build:
       context: ./external/EMU-webApp
       dockerfile: ../../docker/emu-webapp/Dockerfile
+      target: production
     restart: always
     ports:
       - 127.0.0.1:9000:9000
