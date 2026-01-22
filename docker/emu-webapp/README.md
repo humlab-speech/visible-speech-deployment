@@ -4,6 +4,50 @@
 
 This container serves the EMU-webApp, a legacy web application for phonetic and speech analysis. The application uses outdated dependencies (AngularJS, old Node.js modules) that are no longer maintained.
 
+## Build Targets
+
+This Dockerfile provides three build targets:
+
+### 1. Production Target (default for prod)
+- **Stage**: `production`
+- **Web Server**: nginx (Alpine-based)
+- **Purpose**: Optimized for production deployment
+- **Features**:
+  - Minimal image size
+  - Nginx with security headers
+  - Gzip compression
+  - Asset caching
+  - No rebuild capability
+
+**Usage:**
+```bash
+docker build --target production -t visp-emu-webapp .
+```
+
+### 2. Development Target (default for dev)
+- **Stage**: `development`
+- **Web Server**: nginx (in background)
+- **Purpose**: Development with live reload
+- **Features**:
+  - Webpack watch mode
+  - Automatic rebuild on file changes
+  - Source code mounted as volume
+  - Full build toolchain available
+
+**Usage:**
+```bash
+docker-compose -f docker-compose.dev.yml up emu-webapp
+```
+
+The development mode will:
+1. Perform an initial build
+2. Start nginx in the background
+3. Watch for file changes and rebuild automatically
+
+### 3. Builder Target (internal)
+- **Stage**: `builder`
+- **Purpose**: Build assets (used by production target)
+
 ## Security Model
 
 **⚠️ IMPORTANT: This is a legacy application with known security vulnerabilities.**
@@ -13,8 +57,8 @@ This container serves the EMU-webApp, a legacy web application for phonetic and 
 This container implements a **defense-in-depth** security model:
 
 1. **Multi-stage build**: Separates build-time dependencies from runtime
-2. **Minimal runtime image**: Uses `node:18-slim` to reduce attack surface
-3. **Static file serving only**: Uses `npx serve` - a simple, audited static file server
+2. **Minimal runtime image**: Uses `nginx:alpine` (production) to reduce attack surface
+3. **Static file serving only**: Uses nginx - battle-tested, secure web server
 4. **No application backend**: All logic runs client-side in the browser
 
 ### Recommended Deployment Security
@@ -27,7 +71,7 @@ docker run \
   --read-only \
   --security-opt=no-new-privileges \
   --cap-drop=ALL \
-  --user 1000:1000 \
+  --user nginx:nginx \
   --network internal-only \
   -p 9000:9000 \
   emu-webapp

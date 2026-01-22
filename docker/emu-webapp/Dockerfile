@@ -12,11 +12,11 @@ WORKDIR /app
 RUN gem install sass
 RUN gem install compass
 
-COPY package.json package-lock.json ./
+# Clone EMU-webApp from GitHub
+RUN git clone https://github.com/humlab-speech/EMU-webApp.git /app
 
+# Install dependencies
 RUN npm ci
-
-COPY . .
 
 # Ensure node_modules binaries are executable after COPY (fixes permission issues on some systems)
 RUN chmod -R +x node_modules/.bin/ || true
@@ -53,11 +53,11 @@ WORKDIR /app
 RUN gem install sass
 RUN gem install compass
 
-COPY package.json package-lock.json ./
+# Clone EMU-webApp from GitHub
+RUN git clone https://github.com/humlab-speech/EMU-webApp.git /app
 
+# Install dependencies
 RUN npm ci
-
-COPY . .
 
 # Ensure node_modules binaries are executable
 RUN chmod -R +x node_modules/.bin/ || true
