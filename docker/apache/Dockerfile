@@ -4,7 +4,11 @@ FROM debian:bookworm
 ARG WEBCLIENT_BUILD=visp-build
 ENV WEBCLIENT_BUILD=${WEBCLIENT_BUILD}
 
+ARG MODE=dev
+ENV MODE=${MODE}
+
 RUN echo "WEBCLIENT_BUILD is set to ${WEBCLIENT_BUILD}"
+RUN echo "MODE is set to ${MODE}"
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="A debian based installation of apache with shibboleth, acting as the VISP webserver, router and authentication layer"
@@ -19,6 +23,8 @@ RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesourc
 
 #openssl is only needed for shib-keygen, and php-cli is just to ease with debugging
 RUN apt-get update && apt-get install git nodejs apache2 libapache2-mod-shib libapache2-mod-php ntp openssl php-cli libapache2-mod-php nano curl php-mbstring php-mongodb php-zip php-xml php-pgsql --no-install-recommends -y
+
+RUN phpenmod mongodb
 
 RUN a2enmod proxy proxy_http ssl headers php8.2 rewrite proxy_wstunnel
 
@@ -61,7 +67,8 @@ WORKDIR /var/www/html
 
 USER root
 
-CMD ["bash", "-c", "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"]
+# In dev mode, start watch build process that outputs directly to /var/www/html for Apache to serve
+CMD ["bash", "-c", "if [ \"$MODE\" = \"dev\" ] && [ -d /webclient ]; then /etc/init.d/shibd start -w 3600 && cd /webclient && npx ng build --configuration=visp.dev --output-path /var/www/html --watch & /usr/sbin/apache2 -DFOREGROUND; else /etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND; fi"]
 
 
 EXPOSE 80
