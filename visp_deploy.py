@@ -762,33 +762,49 @@ def create_required_directories():
 def generate_ssl_certificates():
     """Generate SSL certificates for VISP"""
     # Fetch SWAMID cert - this is optional, warn if it fails
-    try:
-        run_command(
-            "curl -f http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt",
-            "Fetching SWAMID cert",
-        )
-    except subprocess.CalledProcessError as e:
-        print("⚠️  Warning: Could not fetch SWAMID certificate from mds.swamid.se")
-        print(f"   Error: {e}")
-        print("   SWAMID authentication may not work properly.")
-        print("   You can manually download it later if needed.")
+    swamid_cert_path = "certs/md-signer2.crt"
+    if not os.path.exists(swamid_cert_path):
+        try:
+            run_command(
+                "curl -f http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt",
+                "Fetching SWAMID cert",
+            )
+        except subprocess.CalledProcessError as e:
+            print("⚠️  Warning: Could not fetch SWAMID certificate from mds.swamid.se")
+            print(f"   Error: {e}")
+            print("   SWAMID authentication may not work properly.")
+            print("   You can manually download it later if needed.")
+    else:
+        print("✓ SWAMID certificate already exists, skipping download")
 
     # Generate self-signed certs for local development
     os.makedirs("certs/visp.local", exist_ok=True)
-    run_command(
-        "openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/cert.key "
-        "-out certs/visp.local/cert.crt -nodes -days 3650 "
-        '-subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"',
-        "Generating TLS cert",
-    )
+    visp_cert_path = "certs/visp.local/cert.crt"
+    visp_key_path = "certs/visp.local/cert.key"
+    
+    if not os.path.exists(visp_cert_path) or not os.path.exists(visp_key_path):
+        run_command(
+            "openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/cert.key "
+            "-out certs/visp.local/cert.crt -nodes -days 3650 "
+            '-subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"',
+            "Generating TLS cert",
+        )
+    else:
+        print("✓ VISP TLS certificate already exists, skipping generation")
 
     os.makedirs("certs/ssp-idp-cert", exist_ok=True)
-    run_command(
-        "openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem "
-        "-out certs/ssp-idp-cert/cert.pem -nodes -days 3650 "
-        '-subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"',
-        "Generating IdP cert",
-    )
+    idp_cert_path = "certs/ssp-idp-cert/cert.pem"
+    idp_key_path = "certs/ssp-idp-cert/key.pem"
+    
+    if not os.path.exists(idp_cert_path) or not os.path.exists(idp_key_path):
+        run_command(
+            "openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem "
+            "-out certs/ssp-idp-cert/cert.pem -nodes -days 3650 "
+            '-subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"',
+            "Generating IdP cert",
+        )
+    else:
+        print("✓ SSP IdP certificate already exists, skipping generation")
 
 
 def verify_repository_content(repo_path, name):
@@ -1172,6 +1188,57 @@ def build_components(basedir):
     )
 
 
+def install_npm_dependencies(basedir):
+    """
+    Install npm dependencies in required external directories.
+    
+    This runs npm install in specific directories that need their dependencies
+    installed for development or build purposes.
+    """
+    npm_directories = [
+        "external/EMU-webApp",
+        "external/container-agent",
+        "external/emu-webapp-server",
+        "external/session-manager",
+        "external/webclient",
+        "external/wsrng-server",
+    ]
+    
+    print("\nInstalling npm dependencies in external directories...")
+    
+    for dir_path in npm_directories:
+        full_path = os.path.join(basedir, dir_path)
+        package_json = os.path.join(full_path, "package.json")
+        
+        # Skip if directory or package.json doesn't exist
+        if not os.path.exists(full_path):
+            print(f"⚠️  Skipping {dir_path} (directory not found)")
+            continue
+        
+        if not os.path.exists(package_json):
+            print(f"⚠️  Skipping {dir_path} (no package.json found)")
+            continue
+        
+        print(f"\n📦 Installing dependencies in {dir_path}...")
+        
+        # Special case for webclient which needs legacy-peer-deps
+        if "webclient" in dir_path:
+            cmd = "npm install --legacy-peer-deps"
+        else:
+            cmd = "npm install"
+        
+        try:
+            # Use temporary container for npm install to avoid host Node.js version issues
+            run_command(
+                f"docker run --rm -v {full_path}:/app -w /app node:20 {cmd}",
+                f"Installing {dir_path}",
+            )
+            print(f"✅ Successfully installed dependencies in {dir_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to install dependencies in {dir_path}: {e}")
+            # Continue with other directories even if one fails
+
+
 def install_system(mode="dev"):
     """Install VISP system with all required components"""
     print("Starting VISP installation...")
@@ -1200,6 +1267,9 @@ def install_system(mode="dev"):
 
     # Fix permissions for container access
     fix_repository_permissions()
+
+    # Install npm dependencies in external directories
+    install_npm_dependencies(BASEDIR)
 
     # Setup service-specific .env files
     setup_service_env_files()
@@ -1730,6 +1800,9 @@ def update_system(force=False):
 
     # Fix repository permissions after update
     fix_repository_permissions()
+
+    # Install npm dependencies after repository updates
+    install_npm_dependencies(BASEDIR)
 
     # Check environment
     print("🔍 Checking environment...")
