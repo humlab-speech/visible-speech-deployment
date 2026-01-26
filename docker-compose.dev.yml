@@ -21,7 +21,8 @@ services:
   apache:
     image: visp-apache
     build:
-      context: "./docker/apache"
+      context: "."
+      dockerfile: "./docker/apache/Dockerfile"
       args:
         WEBCLIENT_BUILD: ${WEBCLIENT_BUILD:-visp-build}
     restart: unless-stopped
@@ -190,7 +191,7 @@ services:
     image: docker.io/library/mongo:6.0.27
     restart: unless-stopped
     ports:
-      - 127.0.0.1:27017:27017
+      - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD

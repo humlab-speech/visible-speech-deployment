@@ -4,9 +4,11 @@ After=network-online.target visp-net.service octra-net.service session-manager.s
 Requires=session-manager.service
 
 [Container]
+ContainerName=apache
 Image=docker.io/library/visp-apache:latest
 Network=visp-net.network
 Network=octra-net.network
+PublishPort=8081:80
 EnvironmentFile=%h/Projects/visible-speech-deployment/.env
 Environment=PROJECT_NAME=${COMPOSE_PROJECT_NAME}
 Environment=LOG_LEVEL=debug
@@ -41,7 +43,7 @@ Volume=/etc/localtime:/etc/localtime:ro
 Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
 
 [Service]
-Restart=unless-stopped
+Restart=always
 TimeoutStartSec=300
 
 [Install]

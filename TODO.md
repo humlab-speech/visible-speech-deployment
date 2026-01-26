@@ -19,12 +19,12 @@
 
 ## Medium Priority
 
-- [ ] **Consider moving emu-webapp-server Dockerfile to external repo**
-  - Current: Dockerfile is in `docker/emu-webapp-server/`
-  - Inconsistency: Other Humlab services (session-manager, wsrng-server) have Dockerfiles in their repos
-  - Recommendation: Follow "single source of truth" principle
-  - Benefits: Standalone buildability, version alignment with code
-  - See: `docs/DOCKERFILE_AUDIT.md` for analysis
+- [x] **~~Consider moving emu-webapp-server Dockerfile to external repo~~** ✅ Done in master (commit 4e5a3f0)
+  - ~~Current: Dockerfile is in `docker/emu-webapp-server/`~~
+  - ~~Inconsistency: Other Humlab services (session-manager, wsrng-server) have Dockerfiles in their repos~~
+  - ~~Recommendation: Follow "single source of truth" principle~~
+  - ~~Benefits: Standalone buildability, version alignment with code~~
+  - ~~See: `docs/DOCKERFILE_AUDIT.md` for analysis~~
 
 - [ ] **Add version drift detection to visp_deploy.py**
   - ✅ Partially implemented: `visp_deploy.py status` now checks uncommitted changes
@@ -167,7 +167,51 @@
     - **Solution**: Production quadlets without source mounts (use docker-compose for dev)
     - **Next**: Create remaining quadlets (apache, emu-webapp, emu-webapp-server, octra, mongo-express)
 
-  - [ ] Phase 3: Update scripts and tooling
+  - [ ] **Phase 3c: Fix Podman Networking (CNI → Netavark)** ⚠️ BLOCKING ISSUE
+    - See: [docs/PODMAN_NETWORKS.md](docs/PODMAN_NETWORKS.md)
+    - **Problem**: DNS resolution fails for multi-homed containers (session-manager)
+      - Session-manager connects to both `visp-net` and `whisper-net`
+      - CNI backend only adds first network's DNS to `/etc/resolv.conf`
+      - Cannot resolve `whisper` hostname from session-manager
+    - **Current Workaround**: Removed `Internal=true` from whisper-net
+      - Trade-off: Whisper is no longer isolated from internet
+    - **Proper Fix**: Migrate from CNI to Netavark backend
+      ```bash
+      # 1. Install netavark
+      sudo apt install podman-netavark aardvark-dns
+
+      # 2. Configure in ~/.config/containers/containers.conf
+      [network]
+      network_backend = "netavark"
+
+      # 3. Reset podman (WARNING: deletes all containers, images, networks)
+      podman system reset
+
+      # 4. Rebuild images and recreate networks
+      ```
+    - **After Migration**: Restore `Internal=true` in whisper-net.network
+    - **Alternative Mitigations** (if netavark not possible):
+      - [ ] Firewall rules inside whisper container (iptables)
+      - [ ] Network policy via host nftables
+      - [ ] Proxy-only access pattern
+
+  - [x] Phase 3d: Create unified management tool ✅ COMPLETE
+    - ✅ Created `visp-podman.py` - Python replacement for visp-logs.sh
+    - **Commands available**:
+      - `visp-podman.py status` - Show service status, quadlet links, containers, networks
+      - `visp-podman.py logs [service] [-f]` - View/follow logs
+      - `visp-podman.py start/stop/restart [service|all]` - Service control
+      - `visp-podman.py install/uninstall [service|all]` - Manage quadlet symlinks
+      - `visp-podman.py reload` - Reload systemd daemon after quadlet changes
+      - `visp-podman.py debug <service>` - Debug startup issues
+      - `visp-podman.py shell <container>` - Open bash in container
+      - `visp-podman.py exec <container> <cmd>` - Run command in container
+      - `visp-podman.py network` - Show network backend and DNS status
+    - [ ] TODO: Add `build` command integration with visp_deploy.py
+    - [ ] TODO: Add `update` command to pull latest images
+    - [ ] TODO: Consider adding bash completion
+
+  - [ ] Phase 4: Update scripts and tooling
     - Replace docker commands in .sh scripts
     - Update visp_deploy.py subprocess calls
     - Add Podman detection/validation

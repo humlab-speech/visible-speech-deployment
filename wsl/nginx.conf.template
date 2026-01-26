@@ -1,0 +1,52 @@
+# WSL Development Bridge - nginx server configuration
+# ${PODMAN_IP} will be replaced at container startup
+# This is included inside the http {} block
+
+# Upstream to Apache Podman container via WSL IP
+upstream apache_backend {
+    server ${PODMAN_IP}:8081;
+}
+
+# HTTP → HTTPS redirect
+server {
+    listen 80;
+    server_name visp.local *.visp.local;
+
+    return 301 https://$host$request_uri;
+}
+
+# HTTPS server
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name visp.local *.visp.local;
+
+    # SSL certificates
+    ssl_certificate /certs/visp.local/cert.crt;
+    ssl_certificate_key /certs/visp.local/cert.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # Allow self-signed certificates
+    ssl_verify_client off;
+
+    # Proxy settings
+    location / {
+        proxy_pass http://apache_backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        # WebSocket support (for session-manager)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
