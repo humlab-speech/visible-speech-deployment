@@ -3,6 +3,7 @@ Description=Traefik Reverse Proxy
 After=network-online.target visp-net.service
 
 [Container]
+ContainerName=traefik
 Image=docker.io/library/traefik:v3.3
 Network=visp-net.network
 PublishPort=8080:80
@@ -11,7 +12,6 @@ EnvironmentFile=%h/Projects/visible-speech-deployment/.env
 Volume=%h/Projects/visible-speech-deployment/mounts/traefik/conf:/etc/traefik:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/traefik/acme:/acme:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/traefik/log:/var/log:Z
-Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 Volume=%h/Projects/visible-speech-deployment/certs:/certs:ro

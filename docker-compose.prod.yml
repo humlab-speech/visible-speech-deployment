@@ -2,7 +2,8 @@ services:
   apache:
     image: visp-apache
     build:
-      context: "./docker/apache"
+      context: "."
+      dockerfile: "./docker/apache/Dockerfile"
       args:
         WEBCLIENT_BUILD: ${WEBCLIENT_BUILD:-visp-build}
     restart: always

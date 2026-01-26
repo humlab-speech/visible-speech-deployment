@@ -4,6 +4,7 @@ After=network-online.target visp-net.service whisper-net.service whisper.service
 Requires=mongo.service whisper.service
 
 [Container]
+ContainerName=session-manager
 Image=docker.io/library/visp-session-manager:latest
 Network=visp-net.network
 Network=whisper-net.network
@@ -22,10 +23,10 @@ Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/repository-template:/repository-template:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/transcription-queued:/transcription-queued:Z
-PodmanArgs=--cgroups=disabled
+PodmanArgs=--cgroups=disabled --dns=10.89.1.1 --dns=10.89.0.1
 
 [Service]
-Restart=unless-stopped
+Restart=always
 TimeoutStartSec=900
 
 [Install]

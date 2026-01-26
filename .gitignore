@@ -87,3 +87,6 @@ mounts/whisperx/outputs/*
 # Local test scripts for the whisperx image (not intended for repo)
 docker/whisperx/*.sh
 /ARCHIVE/
+
+# Downloaded fonts for air-gapped builds (use scripts/download-fonts.sh to populate)
+external/webclient/fonts/

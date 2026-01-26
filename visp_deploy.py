@@ -781,7 +781,7 @@ def generate_ssl_certificates():
     os.makedirs("certs/visp.local", exist_ok=True)
     visp_cert_path = "certs/visp.local/cert.crt"
     visp_key_path = "certs/visp.local/cert.key"
-    
+
     if not os.path.exists(visp_cert_path) or not os.path.exists(visp_key_path):
         run_command(
             "openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/cert.key "
@@ -795,7 +795,7 @@ def generate_ssl_certificates():
     os.makedirs("certs/ssp-idp-cert", exist_ok=True)
     idp_cert_path = "certs/ssp-idp-cert/cert.pem"
     idp_key_path = "certs/ssp-idp-cert/key.pem"
-    
+
     if not os.path.exists(idp_cert_path) or not os.path.exists(idp_key_path):
         run_command(
             "openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem "
@@ -1191,7 +1191,7 @@ def build_components(basedir):
 def install_npm_dependencies(basedir):
     """
     Install npm dependencies in required external directories.
-    
+
     This runs npm install in specific directories that need their dependencies
     installed for development or build purposes.
     """
@@ -1203,30 +1203,30 @@ def install_npm_dependencies(basedir):
         "external/webclient",
         "external/wsrng-server",
     ]
-    
+
     print("\nInstalling npm dependencies in external directories...")
-    
+
     for dir_path in npm_directories:
         full_path = os.path.join(basedir, dir_path)
         package_json = os.path.join(full_path, "package.json")
-        
+
         # Skip if directory or package.json doesn't exist
         if not os.path.exists(full_path):
             print(f"⚠️  Skipping {dir_path} (directory not found)")
             continue
-        
+
         if not os.path.exists(package_json):
             print(f"⚠️  Skipping {dir_path} (no package.json found)")
             continue
-        
+
         print(f"\n📦 Installing dependencies in {dir_path}...")
-        
+
         # Special case for webclient which needs legacy-peer-deps
         if "webclient" in dir_path:
             cmd = "npm install --legacy-peer-deps"
         else:
             cmd = "npm install"
-        
+
         try:
             # Use temporary container for npm install to avoid host Node.js version issues
             run_command(

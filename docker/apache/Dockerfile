@@ -40,18 +40,41 @@ RUN mkdir -p /var/log/api && chmod 0644 /var/log/api && chown www-data /var/log/
 
 WORKDIR /
 
+#prefer a local webclient (for air-gapped builds) if provided in the build context
+COPY external/webclient /webclient
 #anti-cache line
 ADD "https://api.github.com/repos/humlab-speech/webclient/commits?per_page=1" latest_commit
 
-RUN git clone https://github.com/humlab-speech/webclient
-WORKDIR /webclient
-RUN npm install --legacy-peer-deps
-RUN npm run $WEBCLIENT_BUILD
-RUN mv dist/* /var/www/html/
+# If a local webclient folder exists, use it. Otherwise clone from GitHub.
+RUN if [ -d /webclient ] && [ "$(ls -A /webclient 2>/dev/null || true)" != "" ]; then \
+			echo "Using local webclient from build context"; \
+			cd /webclient && if [ -d dist ] && [ "$(ls -A dist 2>/dev/null || true)" != "" ]; then \
+				echo "Using prebuilt dist in /webclient/dist"; \
+			else \
+				echo "No dist found, building webclient inside image"; npm install --legacy-peer-deps && npm run $WEBCLIENT_BUILD; \
+			fi && mv dist/* /var/www/html/; \
+		else \
+			echo "Cloning webclient from GitHub"; git clone https://github.com/humlab-speech/webclient /tmp/webclient && cd /tmp/webclient && npm install --legacy-peer-deps && npm run $WEBCLIENT_BUILD && mv dist/* /var/www/html/; \
+		fi
+
+# If local fonts are provided under external/webclient/fonts, copy them into the site and
+# remove external @import Google Fonts lines so the app uses local fonts only.
+RUN if [ -d /webclient/fonts ] && [ "$(ls -A /webclient/fonts 2>/dev/null || true)" != "" ]; then \
+			mkdir -p /var/www/html/assets/fonts && cp -r /webclient/fonts/* /var/www/html/assets/fonts/; \
+			if [ -f /webclient/fonts.css ]; then \
+				cp /webclient/fonts.css /var/www/html/assets/fonts.css; \
+				# ensure index.html loads fonts.css (only if not already present)
+				grep -q "assets/fonts.css" /var/www/html/index.html || sed -i '/<head>/a <link rel="stylesheet" href="assets/fonts.css">' /var/www/html/index.html || true; \
+			fi; \
+			# remove remote @import lines so fonts are not fetched from Google at runtime
+			if [ -f /var/www/html/main.js ]; then \
+				sed -i -E 's/@import"https:\/\/fonts.googleapis.com[^\"]*";//g' /var/www/html/main.js || true; \
+			fi; \
+		fi
 
 RUN mkdir /init_mongodb
-ADD ./init_mongodb.js /init_mongodb/
-ADD ./package.json /init_mongodb/
+ADD ./docker/apache/init_mongodb.js /init_mongodb/
+ADD ./docker/apache/package.json /init_mongodb/
 WORKDIR /init_mongodb
 RUN npm install --legacy-peer-deps
 RUN npm update --legacy-peer-deps
