@@ -1,0 +1,18 @@
+[Unit]
+Description=Whisper Transcription Service
+After=network-online.target whisper-net.service
+
+[Container]
+ContainerName=whisper
+Image=docker.io/library/visp-whisper:latest
+Network=whisper-net.network
+Volume=%h/Projects/visible-speech-deployment/mounts/whisper/models:/Whisper-WebUI/models:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/whisper/outputs:/Whisper-WebUI/outputs:Z
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

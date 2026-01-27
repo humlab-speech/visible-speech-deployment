@@ -1,0 +1,49 @@
+[Unit]
+Description=Apache Web Server with Webclient
+After=network-online.target visp-net.service octra-net.service session-manager.service
+Requires=session-manager.service
+
+[Container]
+ContainerName=apache
+Image=docker.io/library/visp-apache:latest
+Network=visp-net.network
+Network=octra-net.network
+PublishPort=8081:80
+EnvironmentFile=%h/Projects/visible-speech-deployment/.env
+Environment=PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+Environment=LOG_LEVEL=debug
+PodmanArgs=--cgroups=disabled
+
+# SWAMID volumes (commented out - configure if needed)
+#Volume=%h/Projects/visible-speech-deployment/mounts/apache/saml/swamid/YOUR_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z
+#Volume=%h/Projects/visible-speech-deployment/mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z
+#Volume=%h/Projects/visible-speech-deployment/certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z
+
+# General volumes
+Volume=%h/Projects/visible-speech-deployment/mounts/webapi/logs:/var/log/api:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/envvars:/etc/apache2/envvars:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z
+# DEV MODE: Mount source code for hot-reload development
+Volume=%h/Projects/visible-speech-deployment/external/webclient/dist:/var/www/html:Z
+Volume=%h/Projects/visible-speech-deployment/external/webapi:/var/www/webapi:Z
+Volume=%h/Projects/visible-speech-deployment/external/webapi/vendor:/var/www/html/api/vendor:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z
+Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
+Volume=%h/Projects/visible-speech-deployment/certs:/etc/certs:Z
+Volume=%h/Projects/visible-speech-deployment/certs/letsencrypt:/certs/letsencrypt:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/uploads:/tmp/uploads:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/php.ini:/etc/php/8.2/apache2/php.ini:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

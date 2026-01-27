@@ -1,5 +1,5 @@
 [Unit]
-Description=Session Manager Service
+Description=Session Manager Service (Production)
 After=network-online.target visp-net.service whisper-net.service whisper.service mongo.service
 Requires=mongo.service whisper.service
 
@@ -10,9 +10,8 @@ Network=visp-net.network
 Network=whisper-net.network
 PublishPort=8020:8020
 EnvironmentFile=%h/Projects/visible-speech-deployment/.env
-Environment=LOG_LEVEL=debug
-Environment=DEVELOPMENT_MODE=true
-Environment=SESSION_MANAGER_KEEP_CONTAINERS=true
+Environment=LOG_LEVEL=info
+Environment=DEVELOPMENT_MODE=false
 Environment=VISP_NETWORK_NAME=systemd-visp-net
 Environment=GRADIO_WHISPERX_ENDPOINT=http://whisper:7860
 Environment=BASIC_AUTH_USERNAME=whisperuser

@@ -39,6 +39,55 @@ except ImportError:
 
 
 # =============================================================================
+# CONTAINER RUNTIME DETECTION
+# =============================================================================
+
+# Global container runtime setting - can be overridden via --runtime flag
+_CONTAINER_RUNTIME = None
+
+
+def detect_container_runtime():
+    """
+    Detect available container runtime (podman or docker).
+
+    Returns 'podman' if podman is available, otherwise 'docker'.
+    This prefers podman for rootless container support.
+    """
+    global _CONTAINER_RUNTIME
+
+    if _CONTAINER_RUNTIME is not None:
+        return _CONTAINER_RUNTIME
+
+    # Check for podman first (preferred for rootless)
+    result = subprocess.run(["which", "podman"], capture_output=True, text=True)
+    if result.returncode == 0:
+        _CONTAINER_RUNTIME = "podman"
+        return "podman"
+
+    # Fall back to docker
+    result = subprocess.run(["which", "docker"], capture_output=True, text=True)
+    if result.returncode == 0:
+        _CONTAINER_RUNTIME = "docker"
+        return "docker"
+
+    # Neither found
+    return None
+
+
+def set_container_runtime(runtime):
+    """Explicitly set the container runtime to use."""
+    global _CONTAINER_RUNTIME
+    if runtime not in ("docker", "podman"):
+        raise ValueError(f"Invalid runtime: {runtime}. Must be 'docker' or 'podman'")
+    _CONTAINER_RUNTIME = runtime
+
+
+def get_container_runtime():
+    """Get the currently configured container runtime."""
+    return detect_container_runtime()
+
+
+# =============================================================================
 # HELPER CLASSES AND CONTEXT MANAGERS
 # =============================================================================
 
@@ -658,18 +707,25 @@ def run_command(cmd, description="", check=True):
 
 def check_dependencies():
     """Check if required system dependencies are available"""
-    dependencies = {
-        "docker": "Docker engine",
+    # Core dependencies (always required)
+    core_dependencies = {
         "git": "Git version control",
         "curl": "curl command-line tool",
         "openssl": "OpenSSL for certificate generation",
     }
 
     missing = []
-    for cmd, name in dependencies.items():
+    for cmd, name in core_dependencies.items():
         result = subprocess.run(["which", cmd], capture_output=True, text=True)
         if result.returncode != 0:
             missing.append(f"  - {name} ({cmd})")
+
+    # Check for container runtime (podman OR docker)
+    runtime = detect_container_runtime()
+    if runtime:
+        print(f"✓ Container runtime: {runtime}")
+    else:
+        missing.append("  - Container runtime (podman or docker)")
 
     if missing:
         print("\n⚠️  WARNING: Missing required dependencies:")
@@ -679,6 +735,7 @@ def check_dependencies():
         print(
             "On Debian/Ubuntu: sudo apt install -y curl git openssl docker.io docker-compose"
         )
+        print("Or for Podman: sudo apt install -y curl git openssl podman")
         print(
             "\nNote: You can run this script without root access if dependencies are already installed."
         )
@@ -1162,12 +1219,13 @@ def build_components(basedir):
                 commands.append("npm run build")
 
         # Execute commands if any
+        runtime = get_container_runtime()
         for cmd in commands:
             # EMU-webApp uses webpack 4 which requires legacy OpenSSL algorithms
             # Use --openssl-legacy-provider flag for Node 17+ compatibility
             if name == "EMU-webApp" and "npm run build" in cmd:
                 run_command(
-                    f"docker run --rm -v {comp_path}:/app -w /app node:20 sh -c "
+                    f"{runtime} run --rm -v {comp_path}:/app -w /app node:20 sh -c "
                     f"'export NODE_OPTIONS=--openssl-legacy-provider && {cmd}'",
                     f"Building {name}: {cmd} (with legacy OpenSSL)",
                 )
@@ -1175,7 +1233,7 @@ def build_components(basedir):
                 # Use temporary container for builds instead of host Node.js
                 # This ensures clean host and consistent versioning
                 run_command(
-                    f"docker run --rm -v {comp_path}:/app -w /app node:20 {cmd}",
+                    f"{runtime} run --rm -v {comp_path}:/app -w /app node:20 {cmd}",
                     f"Building {name}: {cmd}",
                 )
 
@@ -1229,8 +1287,9 @@ def install_npm_dependencies(basedir):
 
         try:
             # Use temporary container for npm install to avoid host Node.js version issues
+            runtime = get_container_runtime()
             run_command(
-                f"docker run --rm -v {full_path}:/app -w /app node:20 {cmd}",
+                f"{runtime} run --rm -v {full_path}:/app -w /app node:20 {cmd}",
                 f"Installing {dir_path}",
             )
             print(f"✅ Successfully installed dependencies in {dir_path}")
@@ -1629,7 +1688,8 @@ class SessionImageBuilder:
 
         try:
             with working_directory(self.docker_dir):
-                cmd = ["docker", "build"]
+                runtime = get_container_runtime()
+                cmd = [runtime, "build"]
                 if no_cache:
                     cmd.append("--no-cache")
                 cmd.extend(["-t", image["name"], "-f", image["dockerfile"], "."])
@@ -2695,6 +2755,15 @@ def rollback_components(components, rollback_all=False):
 
 def main():
     parser = argparse.ArgumentParser(description="VISP Deployment Manager")
+
+    # Global options
+    parser.add_argument(
+        "--runtime",
+        choices=["docker", "podman"],
+        default=None,
+        help="Container runtime to use (default: auto-detect, prefers podman)",
+    )
+
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Install command
@@ -2806,6 +2875,15 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Set container runtime if specified
+    if getattr(args, "runtime", None):
+        set_container_runtime(args.runtime)
+        print(f"Using container runtime: {args.runtime}")
+    else:
+        runtime = detect_container_runtime()
+        if runtime:
+            print(f"Auto-detected container runtime: {runtime}")
 
     if args.command == "install":
         install_system(mode=getattr(args, "mode", "dev"))

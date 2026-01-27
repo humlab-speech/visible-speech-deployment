@@ -1,12 +1,12 @@
 # Stage 1: Build container-agent (no host npm needed!)
-FROM node:20-alpine AS container_agent_builder
+FROM docker.io/node:20-alpine AS container_agent_builder
 WORKDIR /build
 COPY ./container-agent /build/
 RUN npm install && \
     npm run build
 
 # Stage 2: Base
-FROM rocker/rstudio:4 AS base
+FROM docker.io/rocker/rstudio:4 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="This image is used for background operations in the VISP system, such as creating the EmuDB database"

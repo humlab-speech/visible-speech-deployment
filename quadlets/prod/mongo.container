@@ -1,0 +1,24 @@
+[Unit]
+Description=MongoDB Database
+After=network-online.target visp-net.service
+
+[Container]
+ContainerName=mongo
+Image=docker.io/library/mongo:6.0.14
+Network=visp-net.network
+PublishPort=127.0.0.1:27017:27017
+EnvironmentFile=%h/Projects/visible-speech-deployment/.env
+Environment=MONGO_INITDB_ROOT_USERNAME=root
+Volume=%h/Projects/visible-speech-deployment/mounts/mongo/data:/data/db:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/mongo/logs:/var/log/mongodb:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+Exec=--logpath /var/log/mongodb/mongodb.log
+PodmanArgs=--cgroups=disabled --userns=keep-id
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

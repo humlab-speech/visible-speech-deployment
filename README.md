@@ -11,6 +11,7 @@ This is a collection of dockerized services which as a whole makes out the Visib
 - **[Version Management](docs/VERSION_MANAGEMENT.md)** - Managing component versions
 - **[Folder Structure](docs/FOLDER_STRUCTURE.md)** - Understanding the project layout
 - **[Dev vs Prod](docs/DEV_VS_PROD.md)** - Differences between deployment modes
+- **[Podman Networks](docs/PODMAN_NETWORKS.md)** - Network configuration for Podman deployments
 
 ## Quick Start
 
@@ -21,11 +22,178 @@ This is a collection of dockerized services which as a whole makes out the Visib
 - ✅ Phase 1: Podman socket compatibility verified (node-docker-api works)
 - ✅ Phase 2: systemd enabled in WSL
 - ✅ Phase 3: Podman 4.6.2 installed with Quadlet support
-- 🔄 Phase 4: Converting docker-compose services to Quadlets (IN PROGRESS)
+- ✅ Phase 4: Core services converted to Quadlets
+- ✅ Phase 5: Dev/Prod mode support added
+- 🔄 Phase 6: Testing and documentation (IN PROGRESS)
 
-**Temporary**: Docker Compose still works for now. Quadlets in `quadlets/` directory.
+---
 
-### For Development (Local) - Docker Compose
+## 🦭 Podman Deployment (Recommended)
+
+The `visp-podman.py` script provides unified management for Podman deployments using systemd Quadlets.
+
+### Prerequisites for Podman
+
+```bash
+# Install Podman (4.6+ required for Quadlets)
+sudo apt install -y podman podman-docker
+
+# Enable user lingering (allows services to run without login)
+sudo loginctl enable-linger $USER
+
+# Verify Podman version
+podman --version  # Should be 4.6+
+```
+
+### Quick Start with Podman
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/humlab-speech/visible-speech-deployment.git
+cd visible-speech-deployment
+
+# 2. Copy and configure environment
+cp .env-example .env
+nano .env  # Set BASE_DOMAIN, passwords, etc.
+
+# 3. Build required images
+./visp-podman.py build session-manager
+./visp-podman.py build container-agent  # For dev mode
+
+# 4. Install quadlets (dev mode by default)
+./visp-podman.py install --mode dev
+
+# 5. Reload systemd and start services
+./visp-podman.py reload
+./visp-podman.py start all
+
+# 6. Check status
+./visp-podman.py status
+```
+
+### Deployment Modes
+
+VISP supports two deployment modes with different configurations:
+
+| Feature | Development | Production |
+|---------|-------------|------------|
+| Traefik reverse proxy | ✅ Included | ❌ Not included (use host nginx) |
+| DEVELOPMENT_MODE | true | false |
+| container-agent | Mounted from local build | Baked into session images |
+| Source code | Can be mounted for hot-reload | Baked into images |
+| LOG_LEVEL | debug | info |
+| Typical use | Local development, testing | Server deployment |
+
+**Switch modes:**
+```bash
+# View current mode
+./visp-podman.py mode
+
+# Switch to production
+./visp-podman.py install --mode prod --force
+./visp-podman.py reload
+./visp-podman.py restart all
+
+# Switch to development
+./visp-podman.py install --mode dev --force
+./visp-podman.py reload
+./visp-podman.py restart all
+```
+
+### visp-podman.py Commands
+
+```bash
+# Status and monitoring
+./visp-podman.py status              # Show all services, quadlet links, containers
+./visp-podman.py logs                # View all logs
+./visp-podman.py logs session-manager -f  # Follow specific service logs
+
+# Service control
+./visp-podman.py start all           # Start all services
+./visp-podman.py stop all            # Stop all services
+./visp-podman.py restart all         # Restart all services
+./visp-podman.py restart session-manager  # Restart specific service
+
+# Quadlet management
+./visp-podman.py install             # Link quadlets to systemd
+./visp-podman.py install --mode prod --force  # Install prod quadlets
+./visp-podman.py uninstall           # Remove quadlet links
+./visp-podman.py reload              # Reload systemd daemon
+
+# Building
+./visp-podman.py build --list        # List all buildable targets
+./visp-podman.py build               # Build all container images
+./visp-podman.py build session-manager --no-cache  # Clean rebuild
+./visp-podman.py build container-agent  # Build Node.js tools (containerized)
+./visp-podman.py build webclient --config visp  # Build Angular webclient
+
+# Debugging
+./visp-podman.py debug session-manager  # Debug service startup issues
+./visp-podman.py shell apache        # Open shell in container
+./visp-podman.py exec apache ls /var/www/html  # Run command in container
+./visp-podman.py network             # Show network and DNS info
+```
+
+### Building Node.js Projects (No Host npm Required)
+
+All Node.js builds run inside containers - no npm/Node.js installation needed on the host:
+
+```bash
+# Build container-agent (required for dev mode)
+./visp-podman.py build container-agent
+
+# Build webclient with specific configuration
+./visp-podman.py build webclient                    # Default: visp config
+./visp-podman.py build webclient --config datalab   # Datalab config
+./visp-podman.py build webclient --config visp-pdf-server  # PDF server config
+
+# Clean rebuild
+./visp-podman.py build container-agent --no-cache
+```
+
+### Quadlet File Structure
+
+```
+quadlets/
+├── dev/                    # Development mode quadlets
+│   ├── apache.container
+│   ├── session-manager.container
+│   ├── traefik.container   # Only in dev
+│   ├── mongo.container
+│   ├── whisper.container
+│   ├── wsrng-server.container
+│   └── *.network
+├── prod/                   # Production mode quadlets
+│   ├── apache.container    # MODE=prod, no Traefik
+│   ├── session-manager.container  # DEVELOPMENT_MODE=false
+│   └── ...
+```
+
+### Troubleshooting Podman
+
+```bash
+# Check service status
+systemctl --user status session-manager.service
+
+# View recent logs
+journalctl --user -u session-manager.service --since "10 minutes ago"
+
+# Check if quadlets are properly linked
+ls -la ~/.config/containers/systemd/
+
+# Verify networks exist
+podman network ls
+
+# Debug container issues
+./visp-podman.py debug session-manager
+
+# Check container-agent build (dev mode)
+ls -la container-agent/dist/  # Should contain main.js
+```
+
+---
+
+### For Development (Local) - Docker Compose (Legacy)
 
 ```bash
 git clone https://github.com/humlab-speech/visible-speech-deployment.git
@@ -36,7 +204,7 @@ docker compose up -d
 
 Access at: **https://visp.local** (add to `/etc/hosts`)
 
-### For Production (with DNS) - Podman Quadlets (UPCOMING)
+### For Production (with DNS) - Podman Quadlets
 
 ```bash
 git clone https://github.com/humlab-speech/visible-speech-deployment.git
@@ -45,14 +213,16 @@ cd visible-speech-deployment
 # Edit .env file - CRITICAL: Set BASE_DOMAIN and WEBCLIENT_BUILD
 nano .env
 
-sudo python3 visp_deploy.py install --mode=prod
+# Build required images
+./visp-podman.py build session-manager
+./visp-podman.py build apache
 
-# Copy quadlets to systemd directory
-cp quadlets/*.{container,network,volume} ~/.config/containers/systemd/
+# Install production quadlets
+./visp-podman.py install --mode prod
 
-# Enable and start services
-systemctl --user daemon-reload
-systemctl --user start visp.target
+# Start services
+./visp-podman.py reload
+./visp-podman.py start all
 ```
 
 **⚠️ IMPORTANT**: The `WEBCLIENT_BUILD` setting in `.env` MUST match your `BASE_DOMAIN`. See the [Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for details.
