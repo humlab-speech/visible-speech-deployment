@@ -80,6 +80,13 @@ SERVICES = [
         "type": "container",
         "file": "session-manager.container",
     },
+    {"name": "emu-webapp", "type": "container", "file": "emu-webapp.container"},
+    {
+        "name": "emu-webapp-server",
+        "type": "container",
+        "file": "emu-webapp-server.container",
+    },
+    {"name": "octra", "type": "container", "file": "octra.container"},
     {"name": "apache", "type": "container", "file": "apache.container"},
 ]
 

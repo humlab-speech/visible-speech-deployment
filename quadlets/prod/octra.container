@@ -1,0 +1,21 @@
+[Unit]
+Description=OCTRA Speech Annotation Tool (Production)
+After=network-online.target octra-net-network.service
+Requires=octra-net-network.service
+
+[Container]
+ContainerName=octra
+Image=docker.io/library/visp-octra:latest
+Network=octra-net.network
+Volume=%h/Projects/visible-speech-deployment/mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

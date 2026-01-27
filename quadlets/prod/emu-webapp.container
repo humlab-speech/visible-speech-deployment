@@ -1,0 +1,18 @@
+[Unit]
+Description=EMU-webapp Container (Production)
+After=network-online.target visp-net-network.service
+Requires=visp-net-network.service
+
+[Container]
+ContainerName=emu-webapp
+Image=docker.io/library/visp-emu-webapp:latest
+Network=visp-net.network
+PublishPort=127.0.0.1:9000:9000
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
