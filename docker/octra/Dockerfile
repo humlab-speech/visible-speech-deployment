@@ -1,5 +1,5 @@
 # Stage 1: Build the project
-FROM node:20.5.1 AS build
+FROM docker.io/node:20.5.1 AS build
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ RUN npm install --legacy-peer-deps
 RUN npm run build:release
 
 # Stage 2: Serve the built files with Apache HTTPD
-FROM httpd:2.4.63
+FROM docker.io/httpd:2.4.63
 
 # Create the media directory
 RUN mkdir -p /usr/local/apache2/htdocs/media
