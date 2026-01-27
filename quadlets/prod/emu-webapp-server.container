@@ -1,0 +1,30 @@
+[Unit]
+Description=EMU-webapp Server (Production)
+After=network-online.target visp-net.service mongo.service
+Requires=mongo.service
+
+[Container]
+ContainerName=emu-webapp-server
+Image=docker.io/library/visp-emu-webapp-server:latest
+Network=visp-net.network
+PublishPort=127.0.0.1:17890:17890
+EnvironmentFile=%h/Projects/visible-speech-deployment/mounts/emu-webapp-server/.env
+EnvironmentFile=%h/Projects/visible-speech-deployment/.env
+Environment=WS_SERVER_PORT=17890
+Environment=MONGO_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+Environment=MONGO_DB_NAME=visp
+Environment=REPOSITORIES_PATH=/repositories
+Environment=MEDIA_FILE_BASE_URL=https://emu-webapp.${BASE_DOMAIN}
+Environment=LOG_LEVEL=INFO
+Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/emu-webapp-server/logs:/home/visp/app/logs:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
