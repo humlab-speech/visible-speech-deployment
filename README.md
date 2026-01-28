@@ -198,7 +198,7 @@ ls -la container-agent/dist/  # Should contain main.js
 ```bash
 git clone https://github.com/humlab-speech/visible-speech-deployment.git
 cd visible-speech-deployment
-sudo python3 visp_deploy.py install --mode=dev
+sudo python3 visp-deploy.py install --mode=dev
 docker compose up -d
 ```
 
@@ -229,28 +229,28 @@ nano .env
 
 ## Deployment Script
 
-The `visp_deploy.py` script automates installation, updates, and status checks:
+The `visp-deploy.py` script automates installation, updates, and status checks:
 
 ```bash
 # Install system (dev or prod mode)
-sudo python3 visp_deploy.py install --mode=dev
+sudo python3 visp-deploy.py install --mode=dev
 
 # Check repository status, Docker images, and configuration
-python3 visp_deploy.py status
+python3 visp-deploy.py status
 
 # Update all repositories and components
-python3 visp_deploy.py update
+python3 visp-deploy.py update
 
 # Build session images
-python3 visp_deploy.py build                    # Build all (no cache)
-python3 visp_deploy.py build --cache            # Build all (with cache)
-python3 visp_deploy.py build operations         # Build only operations
-python3 visp_deploy.py build rstudio jupyter    # Build specific images
+python3 visp-deploy.py build                    # Build all (no cache)
+python3 visp-deploy.py build --cache            # Build all (with cache)
+python3 visp-deploy.py build operations         # Build only operations
+python3 visp-deploy.py build rstudio jupyter    # Build specific images
 
 # Version locking commands (see below)
-python3 visp_deploy.py lock <component>    # Lock to current version
-python3 visp_deploy.py unlock <component>  # Unlock to track latest
-python3 visp_deploy.py rollback <component> # Rollback to locked version
+python3 visp-deploy.py lock <component>    # Lock to current version
+python3 visp-deploy.py unlock <component>  # Unlock to track latest
+python3 visp-deploy.py rollback <component> # Rollback to locked version
 ```
 
 ### Version Management
@@ -263,16 +263,16 @@ Component versions can be **locked** (pinned to specific commits) or **unlocked*
 **Testing updates in production:**
 ```bash
 # 1. Unlock component to allow updates
-python3 visp_deploy.py unlock webclient
+python3 visp-deploy.py unlock webclient
 
 # 2. Update to latest (shows commit dates and counts)
-python3 visp_deploy.py update
+python3 visp-deploy.py update
 
 # 3a. If update works - lock the new version
-python3 visp_deploy.py lock webclient
+python3 visp-deploy.py lock webclient
 
 # 3b. If update breaks - rollback to previous version
-python3 visp_deploy.py rollback webclient
+python3 visp-deploy.py rollback webclient
 
 # 4. Commit locked versions for team
 git add versions.json && git commit -m "chore: lock webclient to new version"
@@ -294,7 +294,7 @@ Use `--all` flag to operate on all components at once.
 For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
 
 1. Enter into visible-speech-deployment directory.
-1. RUN `sudo python3 visp_deploy.py install --mode=dev` (fully automated for demo)
+1. RUN `sudo python3 visp-deploy.py install --mode=dev` (fully automated for demo)
 1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
 1. Once complete, run `docker compose up -d`
 1. Follow the remaining manual steps for setup (MongoDB, etc.)
@@ -346,14 +346,14 @@ sudo usermod -aG docker $USER
 
 **Development Mode:**
 ```bash
-sudo python3 visp_deploy.py install --mode=dev
+sudo python3 visp-deploy.py install --mode=dev
 docker compose up -d
 ```
 
 **Production Mode:**
 ```bash
 # Edit .env first! Set BASE_DOMAIN and WEBCLIENT_BUILD
-sudo python3 visp_deploy.py install --mode=prod
+sudo python3 visp-deploy.py install --mode=prod
 docker compose build
 docker compose up -d
 ```
@@ -448,7 +448,7 @@ If you are using WSL2, you will run into issues if you put this project inside a
 For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings:
 
 1. Enter into visible-speech-deployment directory.
-1. RUN `sudo python3 visp_deploy.py install` (fully automated for demo)
+1. RUN `sudo python3 visp-deploy.py install` (fully automated for demo)
 1. The script will install dependencies, clone repositories, build components, auto-generate passwords, and build Docker images in the background.
 1. Once complete, run `docker-compose up -d`
 1. Follow the remaining manual steps for setup (MongoDB, etc.)
@@ -457,7 +457,7 @@ For demo deployments, run the automated installer which will set up everything w
 
 To update the system components:
 
-1. RUN `python3 visp_deploy.py update`
+1. RUN `python3 visp-deploy.py update`
 1. This will update all repositories, rebuild components, and check Docker images.
 
 ## DEVELOPMENT
@@ -483,7 +483,7 @@ All Node.js components (webclient, container-agent, session-manager, wsrng-serve
 
 ### Python Environment
 
-The deployment script (`visp_deploy.py`) is written in Python 3 and handles all installation and update operations.
+The deployment script (`visp-deploy.py`) is written in Python 3 and handles all installation and update operations.
 
 ## TROUBLESHOOTING
 
@@ -494,7 +494,7 @@ The deployment script (`visp_deploy.py`) is written in Python 3 and handles all 
 **Cause:** Script trying to set file ownership to match current user's UID/GID.
 
 **Solutions:**
-- **Production deployments:** Run with `sudo python3 visp_deploy.py install`
+- **Production deployments:** Run with `sudo python3 visp-deploy.py install`
 - **Development/demo:** Run without sudo - script shows warnings but continues successfully
 - **Why:** Script sets proper file ownership to match the current user for Docker container access
 
@@ -528,7 +528,7 @@ pip3 install --user tabulate
 sudo usermod -aG docker $USER
 
 # Or run with sudo (not recommended for development):
-sudo python3 visp_deploy.py install
+sudo python3 visp-deploy.py install
 ```
 
 ## Manual installation

@@ -7,8 +7,8 @@ ContainerName=mongo
 Image=docker.io/library/mongo:6.0.14
 Network=visp-net.network
 PublishPort=127.0.0.1:27017:27017
-EnvironmentFile=%h/Projects/visible-speech-deployment/.env
 Environment=MONGO_INITDB_ROOT_USERNAME=root
+Secret=visp_mongo_root_password,type=env,target=MONGO_INITDB_ROOT_PASSWORD
 Volume=%h/Projects/visible-speech-deployment/mounts/mongo/data:/data/db:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/mongo/logs:/var/log/mongodb:Z
 Volume=/etc/timezone:/etc/timezone:ro

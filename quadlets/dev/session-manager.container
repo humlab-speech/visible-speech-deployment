@@ -17,6 +17,9 @@ Environment=VISP_NETWORK_NAME=systemd-visp-net
 Environment=GRADIO_WHISPERX_ENDPOINT=http://whisper:7860
 Environment=BASIC_AUTH_USERNAME=whisperuser
 Environment=BASIC_AUTH_PASSWORD=whisperpass
+Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN
+Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
+Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/uploads:/tmp/uploads:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/logs:/session-manager/logs:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/unimported_audio:/unimported_audio:Z

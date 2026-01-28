@@ -571,10 +571,11 @@ def generate_random_string(length=32):
 
 def setup_env_file(auto_passwords=True, interactive=False):
     """
-    Setup .env file with required configuration.
+    Setup .env and .env.secrets files with required configuration.
     Uses EnvFile class for safe file manipulation.
+    Separates non-sensitive config (.env) from sensitive credentials (.env.secrets).
     """
-    # Initialize the EnvFile class (handles loading logic)
+    # Initialize EnvFile for non-sensitive config
     env = EnvFile(".env")
 
     # If .env doesn't exist, copy example and reload
@@ -585,7 +586,17 @@ def setup_env_file(auto_passwords=True, interactive=False):
         print("Error: .env-example not found")
         return
 
-    # 1. Set Basic Defaults
+    # Initialize EnvFile for sensitive credentials
+    secrets = EnvFile(".env.secrets")
+
+    # If .env.secrets doesn't exist, create from template or empty
+    if not secrets.exists():
+        if os.path.exists(".env.secrets.template"):
+            shutil.copy(".env.secrets.template", ".env.secrets")
+            secrets = EnvFile(".env.secrets")  # Reload from the copy
+        print("📝 Created .env.secrets file for sensitive credentials")
+
+    # 1. Set Basic Defaults (non-sensitive, goes to .env)
     defaults = {"ABS_ROOT_PATH": os.getcwd(), "ADMIN_EMAIL": "admin@visp.local"}
     for key, value in defaults.items():
         if not env.get(key):
@@ -595,36 +606,45 @@ def setup_env_file(auto_passwords=True, interactive=False):
     mongo_data_exists = os.path.exists("./mounts/mongo/data") and os.listdir(
         "./mounts/mongo/data"
     )
-    current_mongo_pass = env.get("MONGO_ROOT_PASSWORD")
+    current_mongo_pass = secrets.get("MONGO_ROOT_PASSWORD")  # Check secrets file
 
     if mongo_data_exists and current_mongo_pass:
         print("⚠️  MongoDB database already exists with data.")
         print("   Keeping existing MONGO_ROOT_PASSWORD to avoid authentication issues.")
     elif mongo_data_exists and not current_mongo_pass:
-        print("⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env!")
+        print(
+            "⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env.secrets!"
+        )
         if interactive or input("   Set MongoDB password now? (y/n): ").lower() == "y":
             password = getpass.getpass("   Enter MONGO_ROOT_PASSWORD: ")
-            env.set("MONGO_ROOT_PASSWORD", password)
+            secrets.set("MONGO_ROOT_PASSWORD", password, "MongoDB root password")
 
-    # 3. Handle Passwords
+    # 3. Handle Passwords (all go to .env.secrets)
     password_vars = {
-        "POSTGRES_PASSWORD": "local",
-        "TEST_USER_LOGIN_KEY": "local",
-        "VISP_API_ACCESS_TOKEN": "local",
-        "RSTUDIO_PASSWORD": "local",
-        "MONGO_ROOT_PASSWORD": "local",
-        "ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN": "local",
-        "MATOMO_DB_PASSWORD": "local",
-        "MATOMO_DB_ROOT_PASSWORD": "local",
-        "MATOMO_DB_USER": "local",
-        "SSP_ADMIN_PASSWORD": "local",
-        "SSP_SALT": "local",
-        "MONGO_EXPRESS_PASSWORD": "local",
+        "POSTGRES_PASSWORD": ("local", "PostgreSQL password"),
+        "TEST_USER_LOGIN_KEY": ("local", "Test user login bypass key"),
+        "VISP_API_ACCESS_TOKEN": ("local", "API access token"),
+        "RSTUDIO_PASSWORD": ("local", "RStudio password"),
+        "MONGO_ROOT_PASSWORD": ("local", "MongoDB root password"),
+        "ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN": (
+            "local",
+            "Elastic agent fleet enrollment token",
+        ),
+        "MATOMO_DB_PASSWORD": ("local", "Matomo database password"),
+        "MATOMO_DB_ROOT_PASSWORD": ("local", "Matomo database root password"),
+        "MATOMO_DB_USER": ("local", "Matomo database user"),
+        "SSP_ADMIN_PASSWORD": ("local", "SimpleSAMLphp admin password"),
+        "SSP_SALT": ("local", "SimpleSAMLphp salt"),
+        "MONGO_EXPRESS_PASSWORD": ("local", "Mongo Express password"),
+        "MONGO_INITDB_ROOT_PASSWORD": (
+            "local",
+            "MongoDB init root password (should match MONGO_ROOT_PASSWORD)",
+        ),
     }
 
-    for var, ptype in password_vars.items():
-        # Skip if already set
-        if env.get(var):
+    for var, (ptype, comment) in password_vars.items():
+        # Skip if already set in secrets file
+        if secrets.get(var):
             continue
 
         # Skip Mongo if we handled it above (data exists check)
@@ -632,21 +652,47 @@ def setup_env_file(auto_passwords=True, interactive=False):
             continue
 
         if auto_passwords or ptype == "local":
-            env.set(var, generate_random_string())
+            password = generate_random_string()
+            secrets.set(var, password, comment)
+
+            # Special case: MONGO_INITDB_ROOT_PASSWORD should match MONGO_ROOT_PASSWORD
+            if var == "MONGO_ROOT_PASSWORD":
+                secrets.set(
+                    "MONGO_INITDB_ROOT_PASSWORD",
+                    password,
+                    "MongoDB init root password (matches MONGO_ROOT_PASSWORD)",
+                )
         elif interactive:
             password = getpass.getpass(f"Enter {var}: ")
-            env.set(var, password)
+            secrets.set(var, password, comment)
 
-    # Save changes using the EnvFile class
+    # 4. Ensure non-sensitive vars are NOT in .env (they should be in .env only for reference)
+    # Remove any password variables from .env if they exist (legacy cleanup)
+    for var in password_vars.keys():
+        if env.get(var):
+            print(f"ℹ️  Removing {var} from .env (moved to .env.secrets)")
+            del env.vars[var]
+
+    # Save both files
     env.save()
+    secrets.save()
+    print("✅ Configuration saved:")
+    print("   • .env (non-sensitive config)")
+    print("   • .env.secrets (passwords and tokens)")
+    print()
+    print("ℹ️  Security Note:")
+    print("   • .env contains configuration (safe to share in documentation)")
+    print("   • .env.secrets contains passwords (NEVER commit to git)")
+    print("   • Passwords are managed via Podman Secrets for security")
 
 
 def check_env_file():
     """
-    Check if required environment variables are set.
+    Check if required environment variables are set in .env and .env.secrets.
     Uses EnvFile class for safe file manipulation.
     """
     env = EnvFile(".env")
+    secrets = EnvFile(".env.secrets")
 
     if not env.exists():
         print(
@@ -655,20 +701,28 @@ def check_env_file():
         )
         return
 
-    required_vars = [
+    if not secrets.exists():
+        print(
+            "Warning: .env.secrets file not found. Please create it from .env.secrets.template "
+            "and fill in all password values."
+        )
+        return
+
+    # Check non-sensitive config in .env
+    required_config = ["BASE_DOMAIN", "ADMIN_EMAIL", "ABS_ROOT_PATH"]
+    missing_config = [var for var in required_config if not env.get(var)]
+
+    # Check sensitive credentials in .env.secrets
+    required_secrets = [
         "POSTGRES_PASSWORD",
         "VISP_API_ACCESS_TOKEN",
         "MONGO_ROOT_PASSWORD",
         "RSTUDIO_PASSWORD",
-        "MATOMO_DB_ROOT_PASSWORD",
-        "MATOMO_DB_USER",
-        "MATOMO_DB_PASSWORD",
+        "TEST_USER_LOGIN_KEY",
     ]
+    missing_secrets = [var for var in required_secrets if not secrets.get(var)]
 
-    missing = []
-    for var in required_vars:
-        if not env.get(var):
-            missing.append(var)
+    missing = missing_config + missing_secrets
 
     if missing:
         print(
@@ -757,7 +811,7 @@ def check_root_permissions():
     else:
         print("⚠️  Running as regular user - some operations may be skipped")
         print("   This is fine for development/demo deployments")
-        print("   For production, consider running with: sudo python3 visp_deploy.py")
+        print("   For production, consider running with: sudo python3 visp-deploy.py")
         return False
 
 
@@ -801,7 +855,7 @@ def create_required_directories():
         os.chmod("mounts/session-manager/session-manager.log", 0o644)
     except OSError as e:
         print(f"⚠️  Could not set ownership on session-manager log: {e}")
-        print("   → For production: run with 'sudo python3 visp_deploy.py install'")
+        print("   → For production: run with 'sudo python3 visp-deploy.py install'")
         print("   → For development: this warning is OK, continuing...")
         print()
 
@@ -1414,11 +1468,11 @@ def update_repo(
             print()
             print("⚠️  Cannot update locked component")
             print(f"   To update {name}:")
-            print(f"   1. Run: python3 visp_deploy.py unlock {name}")
-            print("   2. Run: python3 visp_deploy.py update")
+            print(f"   1. Run: python3 visp-deploy.py unlock {name}")
+            print("   2. Run: python3 visp-deploy.py update")
             print("   3. Test the changes")
             print(
-                f"   4. Run: python3 visp_deploy.py lock {name}  (to lock new version)"
+                f"   4. Run: python3 visp-deploy.py lock {name}  (to lock new version)"
             )
             print()
             return {
@@ -1603,7 +1657,7 @@ class SessionImageBuilder:
         if not os.path.exists(self.container_agent_src):
             raise FileNotFoundError(
                 f"container-agent source not found at {self.container_agent_src}\n"
-                "Run 'python3 visp_deploy.py install' or 'python3 visp_deploy.py update' first."
+                "Run 'python3 visp-deploy.py install' or 'python3 visp-deploy.py update' first."
             )
 
         # Remove existing copy if present
@@ -2481,7 +2535,7 @@ def check_repositories_status(fetch=True):
     if missing_images:
         summary_lines.append(f"❌ Missing session images: {', '.join(missing_images)}")
         summary_lines.append(
-            "   Run 'python3 visp_deploy.py build' to build missing images"
+            "   Run 'python3 visp-deploy.py build' to build missing images"
         )
 
     if old_images:
@@ -2489,7 +2543,7 @@ def check_repositories_status(fetch=True):
             f"⚠️  Old session images (>30 days): {', '.join(old_images)}"
         )
         summary_lines.append(
-            "   Consider rebuilding with 'python3 visp_deploy.py build'"
+            "   Consider rebuilding with 'python3 visp-deploy.py build'"
         )
 
     if repos_with_changes:
@@ -2533,8 +2587,8 @@ def lock_components(components, lock_all=False):
         components = [name for name, _ in config.get_components()]
     elif not components:
         print("❌ Error: No components specified")
-        print("Usage: visp_deploy.py lock <component> [<component> ...]")
-        print("   or: visp_deploy.py lock --all")
+        print("Usage: visp-deploy.py lock <component> [<component> ...]")
+        print("   or: visp-deploy.py lock --all")
         return False
 
     print(f"🔒 Locking {len(components)} component(s)...\n")
@@ -2603,8 +2657,8 @@ def unlock_components(components, unlock_all=False):
         components = [name for name, _ in config.get_components()]
     elif not components:
         print("❌ Error: No components specified")
-        print("Usage: visp_deploy.py unlock <component> [<component> ...]")
-        print("   or: visp_deploy.py unlock --all")
+        print("Usage: visp-deploy.py unlock <component> [<component> ...]")
+        print("   or: visp-deploy.py unlock --all")
         return False
 
     print(f"🔓 Unlocking {len(components)} component(s)...\n")
@@ -2637,7 +2691,7 @@ def unlock_components(components, unlock_all=False):
             config.save()
             print(f"\n✅ Successfully unlocked {unlocked_count} component(s)")
             print("   Changes saved to versions.json")
-            print("   Run 'visp_deploy.py update' to pull latest changes")
+            print("   Run 'visp-deploy.py update' to pull latest changes")
             return True
         except Exception as e:
             print(f"\n❌ Failed to save versions.json: {e}")
@@ -2655,8 +2709,8 @@ def rollback_components(components, rollback_all=False):
         components = [name for name, _ in config.get_components()]
     elif not components:
         print("❌ Error: No components specified")
-        print("Usage: visp_deploy.py rollback <component> [<component> ...]")
-        print("   or: visp_deploy.py rollback --all")
+        print("Usage: visp-deploy.py rollback <component> [<component> ...]")
+        print("   or: visp-deploy.py rollback --all")
         return False
 
     print(f"⏪ Rolling back {len(components)} component(s)...\n")

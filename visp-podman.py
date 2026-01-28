@@ -136,6 +136,126 @@ def journalctl(*args) -> None:
     subprocess.run(["journalctl", "--user", *args])
 
 
+def load_env_vars(env_file_path: Path) -> dict:
+    """Load environment variables from a .env file."""
+    env_vars = {}
+    if not env_file_path.exists():
+        return env_vars
+
+    with open(env_file_path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, value = line.split("=", 1)
+                env_vars[key.strip()] = value.strip()
+    return env_vars
+
+
+def load_all_env_vars() -> dict:
+    """Load environment variables from both .env and .env.secrets files.
+    Returns merged dictionary with secrets taking precedence."""
+    env_vars = {}
+
+    # Load non-sensitive config from .env
+    env_file = Path(__file__).parent / ".env"
+    if env_file.exists():
+        env_vars.update(load_env_vars(env_file))
+
+    # Load sensitive credentials from .env.secrets (overrides .env)
+    secrets_file = Path(__file__).parent / ".env.secrets"
+    if secrets_file.exists():
+        env_vars.update(load_env_vars(secrets_file))
+    elif not (Path(__file__).parent / ".env.secrets").exists():
+        print(color("⚠ WARNING: .env.secrets file not found!", Colors.YELLOW))
+        print(color("  Secrets will be read from .env (legacy mode)", Colors.YELLOW))
+        print(color("  Consider running: cp .env .env.secrets", Colors.YELLOW))
+
+    return env_vars
+
+
+def get_derived_secrets(env_vars: dict) -> dict:
+    """Build derived secrets from environment variables.
+    Returns dict of secret_name -> secret_value."""
+    secrets = {}
+
+    # Direct secrets from .env
+    if "MONGO_ROOT_PASSWORD" in env_vars:
+        secrets["visp_mongo_root_password"] = env_vars["MONGO_ROOT_PASSWORD"]
+
+    if "VISP_API_ACCESS_TOKEN" in env_vars:
+        secrets["visp_api_access_token"] = env_vars["VISP_API_ACCESS_TOKEN"]
+
+    if "TEST_USER_LOGIN_KEY" in env_vars:
+        secrets["visp_test_user_login_key"] = env_vars["TEST_USER_LOGIN_KEY"]
+
+    # Derived/constructed secrets
+    if "MONGO_ROOT_PASSWORD" in env_vars:
+        secrets["visp_mongo_uri"] = (
+            f"mongodb://root:{env_vars['MONGO_ROOT_PASSWORD']}@mongo:27017"
+        )
+
+    if "BASE_DOMAIN" in env_vars:
+        secrets["visp_media_file_base_url"] = (
+            f"https://emu-webapp.{env_vars['BASE_DOMAIN']}"
+        )
+
+    return secrets
+
+
+def create_podman_secrets(secrets: dict) -> None:
+    """Create or update Podman secrets from a dictionary."""
+    for name, value in secrets.items():
+        # Check if secret exists
+        result = subprocess.run(
+            ["podman", "secret", "inspect", name], capture_output=True, text=True
+        )
+
+        if result.returncode == 0:
+            # Secret exists, remove it first (podman doesn't support update)
+            subprocess.run(["podman", "secret", "rm", name], capture_output=True)
+
+        # Create the secret
+        process = subprocess.run(
+            ["podman", "secret", "create", name, "-"],
+            input=value,
+            capture_output=True,
+            text=True,
+        )
+
+        if process.returncode == 0:
+            print(f"  ✓ Secret '{name}': created")
+        else:
+            print(f"  ✗ Secret '{name}': failed - {process.stderr}")
+
+
+def remove_podman_secrets(secret_names: list) -> None:
+    """Remove Podman secrets by name."""
+    for name in secret_names:
+        result = subprocess.run(
+            ["podman", "secret", "rm", name], capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            print(f"  ✓ Secret '{name}': removed")
+
+
+def list_visp_secrets() -> list:
+    """List all VISP-related Podman secrets."""
+    result = subprocess.run(
+        ["podman", "secret", "ls", "--format", "{{.Name}}"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return [
+            name
+            for name in result.stdout.strip().split("\n")
+            if name.startswith("visp_")
+        ]
+    return []
+
+
 # === Status Commands ===
 
 
@@ -329,6 +449,15 @@ def cmd_install(args):
     print(f"  Target: {SYSTEMD_QUADLETS_DIR}")
     print()
 
+    # Load environment variables from both .env and .env.secrets
+    env_vars = load_all_env_vars()
+
+    # Create Podman secrets from environment variables
+    print(color("Creating Podman secrets...", Colors.CYAN))
+    secrets = get_derived_secrets(env_vars)
+    create_podman_secrets(secrets)
+    print()
+
     # Determine which services are available in this mode
     services = _resolve_services(args.service)
 
@@ -347,35 +476,20 @@ def cmd_install(args):
             print(color(f"  ✗ {svc['file']}: source not found", Colors.RED))
             continue
 
-        if target.is_symlink():
-            if target.resolve() == source.resolve():
-                print(f"  ○ {svc['file']}: already linked")
+        # Remove existing target if --force is set
+        if target.exists() or target.is_symlink():
+            if not args.force:
+                print(f"  ○ {svc['file']}: already installed")
                 continue
-            else:
-                if args.force:
-                    target.unlink()
-                else:
-                    print(
-                        color(
-                            f"  ! {svc['file']}: exists with different target (use --force)",
-                            Colors.YELLOW,
-                        )
-                    )
-                    continue
-        elif target.exists():
-            if args.force:
-                target.unlink()
-            else:
-                print(
-                    color(
-                        f"  ! {svc['file']}: exists as file (use --force)",
-                        Colors.YELLOW,
-                    )
-                )
-                continue
+            target.unlink()
 
-        target.symlink_to(source.resolve())
-        print(color(f"  ✓ {svc['file']}: linked", Colors.GREEN))
+        # Create symlink to source quadlet
+        try:
+            target.symlink_to(source.resolve())
+            print(color(f"  ✓ {svc['file']}: installed", Colors.GREEN))
+        except Exception as e:
+            print(color(f"  ✗ {svc['file']}: {e}", Colors.RED))
+            continue
 
     # Save the mode
     set_current_mode(mode)
@@ -410,6 +524,16 @@ def cmd_uninstall(args):
         else:
             print(f"  ○ {svc['file']}: not installed")
 
+    print()
+
+    # Remove Podman secrets
+    print(color("Removing Podman secrets...", Colors.CYAN))
+    visp_secrets = list_visp_secrets()
+    if visp_secrets:
+        remove_podman_secrets(visp_secrets)
+    else:
+        print("  No VISP secrets found")
+    print()
     print()
     print("Run './visp-podman.py reload' to apply changes.")
 
