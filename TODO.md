@@ -342,6 +342,28 @@
     - [ ] TODO: Add `build` command integration with visp-deploy.py
     - [ ] TODO: Add `update` command to pull latest images
     - [ ] TODO: Consider adding bash completion
+    - [ ] **Optional: Remove networks during `uninstall`** (`--remove-networks`)
+      - **Why**: Provide an opt-in full teardown (useful for ephemeral/dev/CI) while avoiding accidental network removal on shared hosts.
+      - **Pros**:
+        - Clean teardown removes VISP-created networks (good for tests/CI)
+        - Convenient for ephemeral environments and full uninstall workflows
+      - **Cons**:
+        - Risky if networks are shared with other projects or containers
+        - Requires careful checks (attached containers) and confirmation to be safe
+      - **Design / Implementation Notes**:
+        - CLI flag: `--remove-networks` (alias `--prune-networks`)
+        - Safety checks:
+          - Only target known VISP networks: `systemd-visp-net`, `systemd-whisper-net`, `systemd-octra-net`
+          - Inspect networks for attached containers before removing
+          - Prompt for confirmation; accept `--force` to skip prompt
+          - Abort if attached containers are found unless `--force` and explicit confirmation
+        - Documentation: Update `docs/PODMAN_NETWORKS.md` and `README.md`
+      - **Acceptance Criteria / Tests**:
+        - Manual tests:
+          - `uninstall --remove-networks` removes networks when none attached
+          - `uninstall --remove-networks` aborts when containers attached unless `--force`
+        - Unit tests: Mock podman calls to verify behavior
+        - Help text and `--help` updated
 
   - [x] Phase 3e: Implement Podman Secrets ✅ COMPLETE
     - ✅ Created `.env.secrets` file for sensitive credentials (separate from `.env`)
