@@ -11,9 +11,12 @@ Network=octra-net.network
 # Production: Expose on standard HTTP port (behind host nginx/reverse proxy)
 PublishPort=8081:80
 EnvironmentFile=%h/Projects/visible-speech-deployment/.env
-Environment=MODE=prod
-Environment=PROJECT_NAME=${COMPOSE_PROJECT_NAME}
 Environment=LOG_LEVEL=info
+Environment=HTTP_PROTOCOL=https
+Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN
+Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
+Secret=visp_test_user_login_key,type=env,target=TEST_USER_LOGIN_KEY
+Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 PodmanArgs=--cgroups=disabled
 
 # SWAMID volumes - uncomment and configure for production

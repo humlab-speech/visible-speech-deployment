@@ -10,8 +10,11 @@ Network=visp-net.network
 Network=octra-net.network
 PublishPort=8081:80
 EnvironmentFile=%h/Projects/visible-speech-deployment/.env
-Environment=PROJECT_NAME=${COMPOSE_PROJECT_NAME}
 Environment=LOG_LEVEL=debug
+Environment=HTTP_PROTOCOL=http
+Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN
+Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
+Secret=visp_test_user_login_key,type=env,target=TEST_USER_LOGIN_KEY
 PodmanArgs=--cgroups=disabled
 
 # SWAMID volumes (commented out - configure if needed)

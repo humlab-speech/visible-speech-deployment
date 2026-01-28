@@ -19,6 +19,28 @@
 
 ## Medium Priority
 
+### Security Improvements
+- [ ] **Implement socket proxy for container management**
+  - **Current**: Direct socket mount (`/run/user/1000/podman/podman.sock:/var/run/docker.sock`)
+    - session-manager and traefik have full access to Podman API
+    - Security risk: compromised container = full control over host containers
+  - **Recommendation**: Use socket proxy with restricted permissions
+    - Example: [tecnativa/docker-socket-proxy](https://github.com/Tecnativa/docker-socket-proxy)
+    - Or create custom proxy for Podman socket
+    - Restrict API access to only required operations:
+      - session-manager needs: `POST /containers/create`, `POST /containers/{id}/start`, `DELETE /containers/{id}`, `GET /containers/json`
+      - traefik needs: `GET /containers/json` (read-only container discovery)
+  - **Benefits**:
+    - Principle of least privilege
+    - Limits blast radius of container compromise
+    - Can log/audit socket API calls
+    - Standard security hardening for production
+  - **Implementation**:
+    - Deploy socket-proxy as separate container
+    - Configure allowed API endpoints via environment variables
+    - Update session-manager and traefik to use proxy socket instead
+    - Test all container operations still work
+
 - [x] **~~Consider moving emu-webapp-server Dockerfile to external repo~~** ✅ Done in master (commit 4e5a3f0)
   - ~~Current: Dockerfile is in `docker/emu-webapp-server/`~~
   - ~~Inconsistency: Other Humlab services (session-manager, wsrng-server) have Dockerfiles in their repos~~
@@ -26,8 +48,8 @@
   - ~~Benefits: Standalone buildability, version alignment with code~~
   - ~~See: `docs/DOCKERFILE_AUDIT.md` for analysis~~
 
-- [ ] **Add version drift detection to visp_deploy.py**
-  - ✅ Partially implemented: `visp_deploy.py status` now checks uncommitted changes
+- [ ] **Add version drift detection to visp-deploy.py**
+  - ✅ Partially implemented: `visp-deploy.py status` now checks uncommitted changes
   - ✅ Shows repository status: clean, has changes, ahead/behind remote
   - [ ] TODO: Add explicit drift warnings with --strict flag
   - Check if external repos have uncommitted local changes
@@ -41,7 +63,7 @@
     - Current checked out commit vs `locked_version` field
     - Warn if mismatch: "external/session-manager is at abc123 but versions.json specifies def456"
   - Add `--strict` flag to fail on any drift (for CI/CD)
-  - Already in `visp_deploy.py status` command (partially)
+  - Already in `visp-deploy.py status` command (partially)
 
 - [ ] **Audit Dockerfiles for version consistency**
   - Problem: Some Dockerfiles do `git clone` without specifying version
@@ -109,8 +131,8 @@
        - Lines 7, 23, 36, 50: `docker ps`, `docker exec` commands
        - **Action**: Replace `docker` → `podman` in scripts
 
-  4. **Python deployment script (visp_deploy.py)**
-     - File: [visp_deploy.py](visp_deploy.py)
+  4. **Python deployment script (visp-deploy.py)**
+     - File: [visp-deploy.py](visp-deploy.py)
        - Line 1154-1162: `docker run --rm -v {comp_path}:/app -w /app node:20 ...`
        - Used for building Node.js components in temporary containers
        - Multiple references to "Docker Compose" and Docker images
@@ -207,13 +229,50 @@
       - `visp-podman.py shell <container>` - Open bash in container
       - `visp-podman.py exec <container> <cmd>` - Run command in container
       - `visp-podman.py network` - Show network backend and DNS status
-    - [ ] TODO: Add `build` command integration with visp_deploy.py
+    - [ ] TODO: Add `build` command integration with visp-deploy.py
     - [ ] TODO: Add `update` command to pull latest images
     - [ ] TODO: Consider adding bash completion
 
+  - [x] Phase 3e: Implement Podman Secrets ✅ COMPLETE
+    - ✅ Created `.env.secrets` file for sensitive credentials (separate from `.env`)
+    - ✅ Added `.env.secrets.template` for documentation
+    - ✅ Updated `.gitignore` to exclude `.env.secrets`
+    - ✅ Implemented `load_all_env_vars()` in visp-podman.py to merge both files
+    - ✅ Created `get_derived_secrets()` to generate secrets from environment variables
+    - ✅ Implemented `create_podman_secrets()` and `remove_podman_secrets()` functions
+    - ✅ Updated `cmd_install()` to create Podman secrets automatically
+    - ✅ Updated `cmd_uninstall()` to clean up secrets
+    - **Secrets managed**:
+      - `visp_mongo_root_password` → MONGO_ROOT_PASSWORD
+      - `visp_api_access_token` → HS_API_ACCESS_TOKEN
+      - `visp_test_user_login_key` → TEST_USER_LOGIN_KEY
+      - `visp_mongo_uri` → MONGO_URI (derived secret)
+      - `visp_media_file_base_url` → MEDIA_FILE_BASE_URL (derived secret)
+    - ✅ All quadlets updated to use `Secret=` directives instead of hardcoded values
+    - ✅ Security audit passed: no secrets hardcoded in container files
+    - **Benefits**: Secure credential management, no passwords in quadlet files, Git-safe configuration
+
+  - [x] Phase 3f: Quadlet architecture improvements ✅ COMPLETE
+    - ✅ Switched from copying to symlinking quadlet files
+      - `~/.config/containers/systemd/*.container` → symlinks to source files
+      - Single source of truth: edit in `quadlets/dev/` or `quadlets/prod/`
+    - ✅ Removed environment variable substitution (no longer needed)
+    - ✅ Configuration split:
+      - `.env` - Non-sensitive config (BASE_DOMAIN, ADMIN_EMAIL, etc.)
+      - `.env.secrets` - Passwords and tokens (managed via Podman Secrets)
+    - ✅ Updated visp-deploy.py to generate passwords to `.env.secrets`
+    - ✅ All containers load config from `.env` via `EnvironmentFile=` directive
+    - ✅ Secrets override config values via `Secret=` directives
+    - **Security**: No container gets passwords it doesn't need
+
+  - [x] Phase 3g: Naming consistency ✅ COMPLETE
+    - ✅ Renamed `visp_deploy.py` → `visp-deploy.py` (consistent with visp-podman.py)
+    - ✅ Used `git mv` to preserve history
+    - ✅ Updated all references in documentation and scripts
+
   - [ ] Phase 4: Update scripts and tooling
     - Replace docker commands in .sh scripts
-    - Update visp_deploy.py subprocess calls
+    - Update visp-deploy.py subprocess calls
     - Add Podman detection/validation
     - Test full deployment workflow
 
@@ -251,14 +310,16 @@
 ## Medium Priority
 
 ### Code Organization
-- [ ] **Consolidate duplicate configuration**
-  - `.env` has some duplicated/corrupted values (admin email repetition, ABS_ROOT_PATH repetition)
-  - Add validation to `visp_deploy.py` to detect and warn about duplicates
+- [x] **Consolidate duplicate configuration** ✅ COMPLETE
+  - ✅ Split `.env` into non-sensitive config and `.env.secrets` for passwords
+  - ✅ Removed all password variables from `.env`
+  - ✅ visp-deploy.py now generates passwords to `.env.secrets` only
+  - ✅ Clean separation: configuration vs credentials
 
-- [ ] **Create .env.example template**
-  - Currently using `.env-example` if it exists
-  - Should have comprehensive documented template in repo
-  - Include all required and optional variables with descriptions
+- [x] **Create .env.example template** ✅ COMPLETE
+  - ✅ Created `.env.secrets.template` with all password variables documented
+  - ✅ visp-deploy.py copies template to `.env.secrets` if not exists
+  - ✅ All sensitive variables documented with descriptions
 
 ### Documentation
 - [ ] **Document Apache vhost configuration**
@@ -270,7 +331,25 @@
   - Test that all services start successfully
   - Test that authentication works (both Shibboleth and test user)
   - Test that APIs are accessible
-  - Could integrate with `visp_deploy.py status` command
+  - Could integrate with `visp-deploy.py status` command
+
+## Low Priority
+
+### Session Recovery
+- [ ] **Investigate crash recovery for running sessions**
+  - **Current State**: If session-manager crashes, running Jupyter/RStudio containers are orphaned with no way to reconnect
+  - **Desired Feature**: Detect and import running session containers after session-manager restart
+  - **Challenges**:
+    - Need to reconstruct session state from container inspection
+    - Session metadata (user, timestamps, URLs) stored only in memory/MongoDB
+    - Container labels or naming conventions could help identify orphaned sessions
+    - Would need to rebuild session-manager's internal state from discovered containers
+  - **Potential Approach**:
+    - Label all session containers with user ID, session type, creation timestamp
+    - On startup, query Podman for containers matching session labels
+    - Query MongoDB for corresponding session records
+    - Reconstruct session objects and re-establish proxying
+  - **Priority**: Low - session-manager crashes are rare, manual cleanup currently works
 
 ## Notes
 

@@ -23,6 +23,7 @@ mounts/apache/apache/uploads/*
 /external/
 install.sh
 .env
+.env.secrets
 dist
 certs/*
 private/*
