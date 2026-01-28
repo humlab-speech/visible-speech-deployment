@@ -93,5 +93,6 @@ docker/whisperx/*.sh
 # Downloaded fonts for air-gapped builds (use scripts/download-fonts.sh to populate)
 external/webclient/fonts/
 .visp-mode
+backups/
 COMMIT_MESSAGE.md
 NETAVARK_MIGRATION.md
