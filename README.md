@@ -38,12 +38,34 @@ The `visp-podman.py` script provides unified management for Podman deployments u
 # Install Podman (4.6+ required for Quadlets)
 sudo apt install -y podman podman-docker
 
+# Install netavark for proper DNS support (REQUIRED)
+sudo apt install -y podman-netavark aardvark-dns
+
 # Enable user lingering (allows services to run without login)
 sudo loginctl enable-linger $USER
 
 # Verify Podman version
 podman --version  # Should be 4.6+
+podman info | grep networkBackend  # Should show "netavark"
 ```
+
+**⚠️ IMPORTANT: Netavark Network Backend Required**
+
+VISP requires the **netavark** network backend for proper DNS resolution. The older CNI backend has critical DNS issues causing 20+ second timeouts.
+
+**First-time Setup**: visp-podman.py will automatically configure netavark if not detected.
+
+**Migrating from CNI**: If you have existing containers:
+1. **Backup your database first**: `./visp-podman.py backup-database`
+2. Run `./visp-podman.py install` - it will detect CNI and offer to migrate
+3. **All containers will be removed** (images preserved) during migration
+4. Networks will be recreated automatically
+
+**Why netavark?**
+- ✅ Fast, reliable DNS (0.02s vs 20s+ with CNI)
+- ✅ Works with Internal=true networks (proper isolation)
+- ✅ Modern, officially recommended by Podman team
+- ✅ Better performance and stability
 
 ### Quick Start with Podman
 

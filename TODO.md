@@ -2,6 +2,26 @@
 
 ## High Priority
 
+- [ ] **Document netavark requirement in installation guides** 📝 URGENT
+  - **Why**: New installations need netavark, CNI has critical DNS bugs (20s timeouts)
+  - **Status**: Netavark migration successful on dev (2026-01-28), automation added
+  - **What to update**:
+    - [x] README.md - Added netavark prerequisite and migration info
+    - [x] visp-podman.py - Added automatic netavark detection and configuration
+    - [x] visp-podman.py - Added automatic network creation (quadlets don't auto-create)
+    - [ ] DEPLOYMENT_GUIDE.md - Add detailed migration procedure
+    - [ ] docs/QUICK_REFERENCE.md - Update network troubleshooting section
+  - **Automation Features**:
+    - ✅ Detects CNI backend and offers migration
+    - ✅ Configures netavark in containers.conf
+    - ✅ Prompts for podman system reset (warns about container removal)
+    - ✅ Auto-creates networks (systemd-visp-net, systemd-whisper-net, systemd-octra-net)
+    - ✅ Validates network backend before installation
+  - **Testing**:
+    - [ ] Test fresh install with netavark pre-installed
+    - [ ] Test migration from CNI (with backup/restore)
+    - [ ] Verify network auto-creation works correctly
+
 ### Authentication & Access
 - [ ] **Register production domain with SWAMID IdP**
   - Domain: `visp.pdf-server.humlab.umu.se`
@@ -81,6 +101,67 @@
        - More consistent with our "single source of truth" approach
   - Action: Create audit script to find all `git clone` in Dockerfiles
   - Document which Dockerfiles are version-locked and which aren't
+
+- [ ] **Harden container security in quadlets** ⚠️ Important for production
+  - **When**: After all services are verified working
+  - **Goal**: Apply principle of least privilege to all containers
+  - **Hardening checklist per service**:
+    - [ ] Drop unnecessary Linux capabilities
+      - Add `DropCapability=ALL` then selectively add back only needed caps
+      - Example: Most containers don't need `CAP_NET_ADMIN`, `CAP_SYS_ADMIN`
+      - session-manager needs container creation caps (keep current permissions)
+    - [ ] Make filesystems read-only where possible
+      - Add `ReadOnly=true` for containers that don't write to filesystem
+      - Use `Volume=` with `:ro` suffix for read-only mounts
+      - Example: whisper, octra likely don't need write access to container FS
+    - [ ] Remove network access where not needed
+      - Review which containers actually need network access
+      - Example: mongo only needs internal network access (already isolated)
+    - [ ] Add resource limits
+      - `Memory=2G` for containers that may consume excessive memory
+      - `CPUQuota=200%` to prevent CPU starvation
+    - [ ] Run as non-root user where possible
+      - Add `User=<uid>` to run container as specific user
+      - Many images already support this (check Dockerfile USER directive)
+  - **Testing approach**:
+    - Apply hardening incrementally, one container at a time
+    - Test full workflow after each change
+    - Document any capabilities/permissions actually required
+
+- [ ] **MAYBE: Proxy session container network traffic** 🤔 Consider for high-security environments
+  - **Problem**: Jupyter/RStudio containers can access host LAN
+    - Users could potentially probe internal network from session containers
+    - Security risk in environments with sensitive internal services
+  - **Proposed solution**: Network isolation proxy
+    - Allow outgoing internet access (for pip/CRAN installs)
+    - Block access to private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+    - Block access to host machine and other containers
+  - **Implementation options**:
+    - **Option 1**: squid proxy with ACL rules
+    - **Option 2**: Dedicated network with iptables/nftables filtering
+    - **Option 3**: Podman network plugin with policy enforcement
+  - **Trade-offs**:
+    - ✅ Pro: Stronger isolation, defense in depth
+    - ✅ Pro: Prevents lateral movement in case of container compromise
+    - ❌ Con: More complex networking setup
+    - ❌ Con: May break legitimate use cases (accessing internal APIs)
+    - ❌ Con: Performance overhead from proxy
+  - **Decision criteria**:
+    - **High priority** if: Deployment on network with sensitive internal services
+    - **Low priority** if: Development environment or isolated network segment
+    - **Skip** if: Sessions are only used by trusted administrators
+
+- [ ] **MAYBE: Reconsider dev mode build strategy for webclient** 🔨
+  - **Current**: External build via `visp-podman.py build webclient`, mount dist/ directory
+  - **Previous**: In-container `ng build --watch` for hot-reload during development
+  - **Issue**: Permission conflicts between mounted files and container build process
+    - Container running as root couldn't overwrite nobody:nogroup owned files
+    - Caused 20-second delays on startup as build repeatedly failed
+  - **Options**:
+    1. Keep external build (current) - cleaner separation, explicit rebuilds
+    2. Fix permissions and restore watch mode - better DX for active frontend dev
+    3. Hybrid: env var to enable/disable watch mode based on workflow
+  - **Decision**: Keeping external for now (removed watch from Dockerfile)
 
 ## High Priority
 
@@ -189,8 +270,32 @@
     - **Solution**: Production quadlets without source mounts (use docker-compose for dev)
     - **Next**: Create remaining quadlets (apache, emu-webapp, emu-webapp-server, octra, mongo-express)
 
-  - [ ] **Phase 3c: Fix Podman Networking (CNI → Netavark)** ⚠️ BLOCKING ISSUE
+  - [x] **Phase 3c: Fix Podman Networking (CNI → Netavark)** ✅ COMPLETE - MIGRATED 2026-01-28
+    - **RESOLVED**: Migrated to netavark, DNS now instant (0.02-0.07s vs 20-25s)
+    - See: NETAVARK_MIGRATION_SUCCESS.md for full details
+    - **What was fixed**:
+      - CNI dnsname plugin DNS servers not running → netavark built-in DNS works
+      - 20-25 second DNS timeouts → instant resolution
+      - 1+ minute login delays → ~1 second
+      - Internal=true broke DNS → now works perfectly
+    - **Remaining work**:
+      - [ ] Update installation guide with netavark requirement
+      - [ ] Add network creation to visp-podman.py (quadlet .network files don't auto-create with netavark)
+      - [ ] Test migration procedure on fresh install
+      - [ ] Document in DEPLOYMENT_GUIDE.md
     - See: [docs/PODMAN_NETWORKS.md](docs/PODMAN_NETWORKS.md)
+    - **CRITICAL ISSUE DISCOVERED**: CNI dnsname plugin DNS servers not running
+      - **Impact**: Every DNS lookup takes 20-25 seconds (timeout)
+      - **Symptoms**: 1+ minute login delays, slow page loads, timeouts everywhere
+      - **Root Cause**: dnsmasq processes for CNI networks (10.89.1.1, 10.89.0.1) not running
+        - Session-manager connects to mongo: 20s delay
+        - Session-manager connects to whisper: 25s delay
+        - Apache connects to session-manager: 20s delay
+      - **Temporary Workaround Applied**: Added /etc/hosts entries to running containers
+        - session-manager: `10.89.1.2 mongo`, `10.89.0.2 whisper`
+        - apache: `10.89.1.5 session-manager`, `10.89.1.2 mongo`
+        - **Result**: Instant DNS resolution (0.07s), app now fast
+        - **Limitation**: Workaround lost on container restart, IPs may change
     - **Problem**: `Internal=true` networks disable DNS resolution with CNI backend
       - **whisper-net**: Multi-homed session-manager cannot resolve `whisper` hostname
         - Session-manager connects to both `visp-net` and `whisper-net`
@@ -201,6 +306,7 @@
     - **Current Workaround**: Removed `Internal=true` from both networks
       - Trade-off: Whisper and Octra are no longer isolated from internet
       - Security risk: containers can make external connections
+      - BUT: DNS still broken even without Internal=true!
     - **Proper Fix**: Migrate from CNI to Netavark backend
       ```bash
       # 1. Install netavark

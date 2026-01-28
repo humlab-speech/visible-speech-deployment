@@ -8,6 +8,10 @@ docker-elk/
 docker/elasticsearch/
 docker/filebeat/
 docker/kibana/
+
+# Netavark migration guides (temporary, not committed)
+NETAVARK_MIGRATION.md
+NETAVARK_MIGRATION_SUCCESS.md
 docker/logstash/
 filebeat-demo/
 mounts/elasticsearch/
@@ -93,3 +97,4 @@ docker/whisperx/*.sh
 external/webclient/fonts/
 .visp-mode
 COMMIT_MESSAGE.md
+NETAVARK_MIGRATION.md

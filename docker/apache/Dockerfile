@@ -90,8 +90,11 @@ WORKDIR /var/www/html
 
 USER root
 
-# In dev mode, start watch build process that outputs directly to /var/www/html for Apache to serve
-CMD ["bash", "-c", "if [ \"$MODE\" = \"dev\" ] && [ -d /webclient ]; then /etc/init.d/shibd start -w 3600 && cd /webclient && npx ng build --configuration=visp.dev --output-path /var/www/html --watch & /usr/sbin/apache2 -DFOREGROUND; else /etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND; fi"]
+# NOTE: Dev mode used to run 'ng build --watch' on startup, but this caused permission conflicts
+# with the mounted dist/ directory. Builds are now handled externally via visp-podman.py build.
+# The container just serves pre-built files from the mounted /var/www/html directory.
+# TODO: Reconsider dev mode build strategy - in-container watch vs external rebuild command
+CMD ["bash", "-c", "/etc/init.d/shibd start -w 3600 && /usr/sbin/apache2 -DFOREGROUND"]
 
 
 EXPOSE 80
