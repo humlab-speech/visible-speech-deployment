@@ -15,6 +15,8 @@ Commands:
   build       Build container images (supports --no-cache, --pull)
   exec        Execute command in container
   shell       Open shell in container
+  backup      Backup MongoDB database to tar.gz
+  restore     Restore MongoDB database from backup
 
 Build examples:
   ./visp-podman.py build                         # Build all services
@@ -23,6 +25,12 @@ Build examples:
   ./visp-podman.py build webclient --config visp # Build webclient with visp config
   ./visp-podman.py build --no-cache              # Clean rebuild (no cache)
   ./visp-podman.py build --list                  # List buildable services
+
+Backup/Restore examples:
+  ./visp-podman.py backup                        # Backup to current directory
+  ./visp-podman.py backup -o /backups/db.tar.gz  # Backup to specific path
+  ./visp-podman.py restore backup.tar.gz         # Restore with confirmation
+  ./visp-podman.py restore backup.tar.gz --force # Restore without confirmation
 
 Mode examples:
   ./visp-podman.py mode                          # Show current mode
@@ -1265,6 +1273,265 @@ def cmd_images(args):
                 print(f"  {container}: {nets if nets else 'none'}")
 
 
+# === Backup/Restore Commands ===
+
+
+def cmd_backup(args):
+    """Backup MongoDB database to timestamped tar.gz file."""
+    import os
+    from datetime import datetime
+
+    print(color("=== MongoDB Backup ===", Colors.CYAN))
+    print()
+
+    # Check if mongo container is running
+    rc, _, _ = run_quiet(["podman", "ps", "-q", "-f", "name=^mongo$"])
+    if rc != 0:
+        print(color("✗ MongoDB container not running", Colors.RED))
+        print("  Start it with: ./visp-podman.py start mongo")
+        sys.exit(1)
+
+    # Get MongoDB version from running container
+    print("Detecting MongoDB version...")
+    rc, stdout, stderr = run_quiet(["podman", "exec", "mongo", "mongod", "--version"])
+
+    if rc == 0 and stdout:
+        # Extract version (e.g., "db version v6.0.14")
+        version_lines = [
+            line for line in stdout.split("\n") if "version" in line.lower()
+        ]
+        if version_lines:
+            version_line = version_lines[0]
+            # Extract version number
+            if "v" in version_line:
+                mongo_version = (
+                    version_line.split("v")[-1].split()[0].split("-")[0]
+                )  # Handle v6.0.14-rc1
+            else:
+                mongo_version = "unknown"
+        else:
+            mongo_version = "unknown"
+    else:
+        print(color(f"  ⚠ Could not detect version: {stderr}", Colors.YELLOW))
+        mongo_version = "unknown"
+
+    # Load environment variables to get MongoDB password
+    env_vars = load_all_env_vars()
+    mongo_password = env_vars.get("MONGO_ROOT_PASSWORD")
+
+    if not mongo_password:
+        print(
+            color("✗ MONGO_ROOT_PASSWORD not found in .env or .env.secrets", Colors.RED)
+        )
+        sys.exit(1)
+
+    # Create backup filename with timestamp and version
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_name = f"visp_mongodb_{mongo_version}_{timestamp}"
+    backup_dir = f"/tmp/{backup_name}"
+
+    print(f"  MongoDB version: {color(mongo_version, Colors.GREEN)}")
+    print(f"  Backup name: {color(backup_name + '.tar.gz', Colors.GREEN)}")
+    print()
+
+    # Run mongodump inside container
+    print("Running mongodump...")
+    result = run(
+        [
+            "podman",
+            "exec",
+            "mongo",
+            "mongodump",
+            "--username=root",
+            f"--password={mongo_password}",
+            "--authenticationDatabase=admin",
+            f"--out={backup_dir}",
+        ],
+        capture=False,
+    )
+
+    if result.returncode != 0:
+        print(color("✗ Backup failed", Colors.RED))
+        sys.exit(1)
+
+    # Create tar.gz from the dump
+    print("\nCompressing backup...")
+    result = run(
+        [
+            "podman",
+            "exec",
+            "mongo",
+            "tar",
+            "-czf",
+            f"{backup_dir}.tar.gz",
+            "-C",
+            "/tmp",
+            backup_name,
+        ],
+        capture=False,
+    )
+
+    if result.returncode != 0:
+        print(color("✗ Compression failed", Colors.RED))
+        sys.exit(1)
+
+    # Copy backup out of container
+    output_path = args.output or f"./{backup_name}.tar.gz"
+    print(f"\nCopying to {output_path}...")
+    result = run(["podman", "cp", f"mongo:{backup_dir}.tar.gz", output_path])
+
+    if result.returncode != 0:
+        print(color("✗ Copy failed", Colors.RED))
+        sys.exit(1)
+
+    # Cleanup inside container
+    run_quiet(
+        ["podman", "exec", "mongo", "rm", "-rf", backup_dir, f"{backup_dir}.tar.gz"]
+    )
+
+    # Get file size
+    if os.path.exists(output_path):
+        size_mb = os.path.getsize(output_path) / (1024 * 1024)
+        print(
+            color(
+                f"\n✓ Backup complete: {output_path} ({size_mb:.1f} MB)", Colors.GREEN
+            )
+        )
+        print()
+        print("To restore:")
+        print(f"  ./visp-podman.py restore {output_path}")
+        print()
+        print(
+            color(
+                "Note: This backup contains ONLY the database (users, sessions, metadata).",
+                Colors.YELLOW,
+            )
+        )
+        print(
+            "      Audio files in mounts/repositories/ should be backed up separately."
+        )
+    else:
+        print(color("✗ Backup file not created", Colors.RED))
+        sys.exit(1)
+
+
+def cmd_restore(args):
+    """Restore MongoDB database from backup file."""
+    import os
+
+    backup_file = args.backup_file
+
+    if not os.path.exists(backup_file):
+        print(color(f"✗ Backup file not found: {backup_file}", Colors.RED))
+        sys.exit(1)
+
+    # Check if mongo container is running
+    rc, _, _ = run_quiet(["podman", "ps", "-q", "-f", "name=^mongo$"])
+    if rc != 0:
+        print(color("✗ MongoDB container not running", Colors.RED))
+        print("  Start it with: ./visp-podman.py start mongo")
+        sys.exit(1)
+
+    print(color("=== MongoDB Restore ===", Colors.YELLOW))
+    print()
+    print(color("⚠️  WARNING: This will REPLACE all data in MongoDB!", Colors.YELLOW))
+    print(f"Backup file: {backup_file}")
+
+    # Load environment variables to get MongoDB password
+    env_vars = load_all_env_vars()
+    mongo_password = env_vars.get("MONGO_ROOT_PASSWORD")
+
+    if not mongo_password:
+        print(
+            color("✗ MONGO_ROOT_PASSWORD not found in .env or .env.secrets", Colors.RED)
+        )
+        sys.exit(1)
+
+    if not args.force:
+        print()
+        response = input("Continue? (yes/no): ")
+        if response.lower() != "yes":
+            print("Restore cancelled")
+            sys.exit(0)
+
+    # Copy backup into container
+    print("\nCopying backup into container...")
+    result = run(["podman", "cp", backup_file, "mongo:/tmp/restore.tar.gz"])
+
+    if result.returncode != 0:
+        print(color("✗ Copy failed", Colors.RED))
+        sys.exit(1)
+
+    # Extract backup
+    print("Extracting backup...")
+    result = run(
+        ["podman", "exec", "mongo", "tar", "-xzf", "/tmp/restore.tar.gz", "-C", "/tmp"]
+    )
+
+    if result.returncode != 0:
+        print(color("✗ Extraction failed", Colors.RED))
+        run_quiet(["podman", "exec", "mongo", "rm", "-f", "/tmp/restore.tar.gz"])
+        sys.exit(1)
+
+    # Find the extracted directory
+    print("Finding backup directory...")
+    rc, stdout, _ = run_quiet(
+        [
+            "podman",
+            "exec",
+            "mongo",
+            "find",
+            "/tmp",
+            "-maxdepth",
+            "1",
+            "-name",
+            "visp_mongodb_*",
+            "-type",
+            "d",
+        ]
+    )
+
+    if rc != 0 or not stdout.strip():
+        print(color("✗ Could not find backup directory in archive", Colors.RED))
+        run_quiet(["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz"])
+        sys.exit(1)
+
+    backup_dir = stdout.strip().split("\n")[0]
+    print(f"  Found: {backup_dir}")
+
+    # Run mongorestore
+    print("\nRestoring database...")
+    result = run(
+        [
+            "podman",
+            "exec",
+            "mongo",
+            "mongorestore",
+            "--username=root",
+            f"--password={mongo_password}",
+            "--authenticationDatabase=admin",
+            "--drop",  # Drop existing collections before restoring
+            backup_dir,
+        ],
+        capture=False,
+    )
+
+    # Cleanup
+    print("\nCleaning up...")
+    run_quiet(
+        ["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz", backup_dir]
+    )
+
+    if result.returncode == 0:
+        print(color("\n✓ Restore complete", Colors.GREEN))
+        print()
+        print("You may need to restart services:")
+        print("  ./visp-podman.py restart apache session-manager")
+    else:
+        print(color("\n✗ Restore failed", Colors.RED))
+        sys.exit(1)
+
+
 # === Helpers ===
 
 
@@ -1447,6 +1714,23 @@ Examples:
         "images", aliases=["img"], help="List VISP container images and build status"
     )
 
+    # backup
+    p_backup = subparsers.add_parser("backup", help="Backup MongoDB database")
+    p_backup.add_argument(
+        "--output",
+        "-o",
+        help="Output file path (default: ./visp_mongodb_VERSION_TIMESTAMP.tar.gz)",
+    )
+
+    # restore
+    p_restore = subparsers.add_parser(
+        "restore", help="Restore MongoDB database from backup"
+    )
+    p_restore.add_argument("backup_file", help="Backup file to restore")
+    p_restore.add_argument(
+        "--force", action="store_true", help="Skip confirmation prompt"
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -1483,6 +1767,8 @@ Examples:
         "net": cmd_network,
         "images": cmd_images,
         "img": cmd_images,
+        "backup": cmd_backup,
+        "restore": cmd_restore,
     }
 
     handler = cmd_map.get(args.command)
