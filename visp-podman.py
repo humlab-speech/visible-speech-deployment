@@ -47,6 +47,7 @@ from pathlib import Path
 # Configuration
 QUADLETS_BASE_DIR = Path(__file__).parent / "quadlets"
 SYSTEMD_QUADLETS_DIR = Path.home() / ".config/containers/systemd"
+CONTAINERS_CONF = Path.home() / ".config/containers/containers.conf"
 MODE_FILE = Path(__file__).parent / ".visp-mode"
 
 # Default mode
@@ -441,11 +442,298 @@ def cmd_restart(args):
                 print(color("  Restarted", Colors.GREEN))
 
 
+# === Network Backend Management ===
+
+
+def check_netavark() -> tuple[bool, str]:
+    """Check if netavark is configured and working.
+
+    Returns:
+        tuple: (is_netavark, backend_name) - True if netavark, False if CNI or unknown
+    """
+    try:
+        result = subprocess.run(
+            ["podman", "info", "--format", "{{.Host.NetworkBackend}}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            backend = result.stdout.strip()
+            return (backend == "netavark", backend)
+    except Exception:
+        pass
+    return (False, "unknown")
+
+
+def configure_netavark() -> bool:
+    """Configure Podman to use netavark backend.
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    print(color("Configuring netavark network backend...", Colors.CYAN))
+
+    # Check if packages are installed
+    try:
+        result = subprocess.run(
+            ["dpkg", "-l", "podman-netavark", "aardvark-dns"],
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            print(color("  ✗ Required packages not installed", Colors.RED))
+            print("  Please install: sudo apt install podman-netavark aardvark-dns")
+            return False
+    except Exception:
+        print(color("  ⚠ Could not verify package installation", Colors.YELLOW))
+
+    # Create containers config directory
+    CONTAINERS_CONF.parent.mkdir(parents=True, exist_ok=True)
+
+    # Read existing config or create new
+    config_lines = []
+    network_section_exists = False
+
+    if CONTAINERS_CONF.exists():
+        with open(CONTAINERS_CONF, "r") as f:
+            config_lines = f.readlines()
+        # Check if [network] section exists
+        for line in config_lines:
+            if line.strip() == "[network]":
+                network_section_exists = True
+                break
+
+    # Add or update netavark configuration
+    if not network_section_exists:
+        # Add new [network] section
+        if config_lines and not config_lines[-1].endswith("\n"):
+            config_lines.append("\n")
+        config_lines.append("\n[network]\n")
+        config_lines.append('network_backend = "netavark"\n')
+    else:
+        # Update existing section
+        in_network_section = False
+        backend_set = False
+        new_lines = []
+        for line in config_lines:
+            if line.strip() == "[network]":
+                in_network_section = True
+                new_lines.append(line)
+            elif in_network_section and line.startswith("["):
+                # Entering new section
+                if not backend_set:
+                    new_lines.append('network_backend = "netavark"\n')
+                in_network_section = False
+                new_lines.append(line)
+            elif in_network_section and "network_backend" in line:
+                new_lines.append('network_backend = "netavark"\n')
+                backend_set = True
+            else:
+                new_lines.append(line)
+
+        if in_network_section and not backend_set:
+            new_lines.append('network_backend = "netavark"\n')
+        config_lines = new_lines
+
+    # Write config
+    try:
+        with open(CONTAINERS_CONF, "w") as f:
+            f.writelines(config_lines)
+        print(color(f"  ✓ Updated {CONTAINERS_CONF}", Colors.GREEN))
+        return True
+    except Exception as e:
+        print(color(f"  ✗ Failed to write config: {e}", Colors.RED))
+        return False
+
+
+def prompt_netavark_migration() -> bool:
+    """Prompt user for netavark migration.
+
+    Returns:
+        bool: True if user wants to migrate, False otherwise
+    """
+    print()
+    print(color("=" * 70, Colors.YELLOW))
+    print(color("NETAVARK MIGRATION REQUIRED", Colors.YELLOW))
+    print(color("=" * 70, Colors.YELLOW))
+    print()
+    print("VISP requires the netavark network backend for proper DNS resolution.")
+    print("Your system is currently using CNI, which has critical DNS issues.")
+    print()
+    print(color("What will happen:", Colors.CYAN))
+    print("  1. Configure netavark in ~/.config/containers/containers.conf")
+    print("  2. Run 'podman system reset' (removes all containers)")
+    print("  3. Images are preserved (no need to rebuild)")
+    print("  4. Networks will be recreated automatically")
+    print()
+    print(color("⚠️  WARNING: All running containers will be removed!", Colors.RED))
+    print("  Make sure you have backups of important data.")
+    print()
+
+    while True:
+        response = input("Proceed with migration? (yes/no): ").strip().lower()
+        if response in ["yes", "y"]:
+            return True
+        elif response in ["no", "n"]:
+            print()
+            print("Migration cancelled. VISP may not work correctly with CNI.")
+            print("You can migrate later by running: ./visp-podman.py install")
+            return False
+        else:
+            print("Please answer 'yes' or 'no'")
+
+
+def migrate_to_netavark() -> bool:
+    """Perform netavark migration.
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    # Configure netavark
+    if not configure_netavark():
+        return False
+
+    print()
+    print(color("Running podman system reset...", Colors.CYAN))
+    print("  This will remove all containers but preserve images.")
+
+    try:
+        result = subprocess.run(["podman", "system", "reset", "-f"], check=False)
+        if result.returncode != 0:
+            print(color("  ✗ podman system reset failed", Colors.RED))
+            return False
+        print(color("  ✓ System reset complete", Colors.GREEN))
+        return True
+    except Exception as e:
+        print(color(f"  ✗ Error: {e}", Colors.RED))
+        return False
+
+
+def ensure_networks_exist() -> bool:
+    """Ensure all required Podman networks exist.
+
+    With netavark, quadlet .network files don't auto-create networks.
+    We need to create them manually with the correct settings.
+
+    Returns:
+        bool: True if all networks exist or were created, False on error
+    """
+    # Networks that need to be created
+    required_networks = [
+        {"name": "systemd-visp-net", "internal": False},
+        {"name": "systemd-whisper-net", "internal": True},
+        {"name": "systemd-octra-net", "internal": True},
+    ]
+
+    print(color("Checking Podman networks...", Colors.CYAN))
+
+    # Get existing networks
+    try:
+        result = subprocess.run(
+            ["podman", "network", "ls", "--format", "{{.Name}}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        existing_networks = (
+            set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
+        )
+    except Exception as e:
+        print(color(f"  ✗ Failed to list networks: {e}", Colors.RED))
+        return False
+
+    # Create missing networks
+    for network in required_networks:
+        if network["name"] in existing_networks:
+            print(f"  ○ {network['name']}: exists")
+            continue
+
+        print(f"  Creating {network['name']}...")
+        cmd = ["podman", "network", "create", "--driver", "bridge"]
+        if network["internal"]:
+            cmd.append("--internal")
+        cmd.append(network["name"])
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+            if result.returncode == 0:
+                print(color(f"  ✓ {network['name']}: created", Colors.GREEN))
+            else:
+                print(
+                    color(f"  ✗ {network['name']}: {result.stderr.strip()}", Colors.RED)
+                )
+                return False
+        except Exception as e:
+            print(color(f"  ✗ {network['name']}: {e}", Colors.RED))
+            return False
+
+    return True
+
+
 # === Installation Commands ===
 
 
 def cmd_install(args):
     """Link quadlet files to systemd directory."""
+
+    # Check for netavark backend
+    is_netavark, current_backend = check_netavark()
+
+    if not is_netavark:
+        print()
+        print(color(f"Current network backend: {current_backend}", Colors.YELLOW))
+        print()
+
+        if current_backend == "cni":
+            # Offer to migrate from CNI
+            if prompt_netavark_migration():
+                if not migrate_to_netavark():
+                    print(
+                        color(
+                            "Migration failed. Please fix the errors and try again.",
+                            Colors.RED,
+                        )
+                    )
+                    sys.exit(1)
+                print()
+                print(color("✓ Migration complete!", Colors.GREEN))
+                print()
+            else:
+                sys.exit(1)
+        else:
+            # Unknown backend, just configure netavark
+            print(
+                color("Netavark is required for proper DNS resolution.", Colors.YELLOW)
+            )
+            response = input("Configure netavark now? (yes/no): ").strip().lower()
+            if response in ["yes", "y"]:
+                if not configure_netavark():
+                    sys.exit(1)
+                print()
+                print(
+                    color(
+                        "✓ Netavark configured. Please restart Podman services.",
+                        Colors.GREEN,
+                    )
+                )
+                print("  Run: podman system reset")
+                print()
+            else:
+                print("Installation cancelled.")
+                sys.exit(1)
+
+    # Ensure networks exist (netavark doesn't auto-create from quadlet files)
+    print()
+    if not ensure_networks_exist():
+        print(
+            color(
+                "Failed to create networks. Please check the errors above.", Colors.RED
+            )
+        )
+        sys.exit(1)
+    print()
+
     SYSTEMD_QUADLETS_DIR.mkdir(parents=True, exist_ok=True)
 
     # Get mode from args or current setting

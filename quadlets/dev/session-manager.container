@@ -8,7 +8,7 @@ ContainerName=session-manager
 Image=docker.io/library/visp-session-manager:latest
 Network=visp-net.network
 Network=whisper-net.network
-PublishPort=8020:8020
+# Port 8020 not published - accessed via Apache proxy on internal network
 EnvironmentFile=%h/Projects/visible-speech-deployment/.env
 Environment=LOG_LEVEL=debug
 Environment=DEVELOPMENT_MODE=true
