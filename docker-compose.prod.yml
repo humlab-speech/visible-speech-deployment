@@ -57,6 +57,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     environment:
+      MODE: "prod"
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
@@ -132,7 +133,7 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
 
   mongo:
-    image: mongo:6.0.27
+    image: docker.io/library/mongo:6.0.27
     restart: always
     ports:
       - 127.0.0.1:27017:27017
@@ -149,7 +150,7 @@ services:
       - visp-net
 
   matomo-db:
-    image: mariadb:10.3
+    image: docker.io/library/mariadb:10.3
     restart: unless-stopped
     networks:
       - visp-net
@@ -164,7 +165,7 @@ services:
       MYSQL_PASSWORD: ${MATOMO_DB_PASSWORD}
 
   matomo:
-    image: matomo:5.1.2
+    image: docker.io/library/matomo:5.1.2
     restart: unless-stopped
     depends_on:
       - matomo-db
@@ -181,7 +182,7 @@ services:
       - "/etc/localtime:/etc/localtime:ro"
 
   mongo-express:
-    image: mongo-express:1.0.2-20-alpine3.19
+    image: docker.io/library/mongo-express:1.0.2-20-alpine3.19
     restart: unless-stopped
     ports:
       - 28084:8081

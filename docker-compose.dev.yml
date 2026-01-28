@@ -1,12 +1,12 @@
 services:
   traefik:
-    image: traefik:v3.3
+    image: docker.io/library/traefik:v3.3
     restart: always
     volumes:
       - "./mounts/traefik/conf:/etc/traefik:Z"
       - "./mounts/traefik/acme:/acme:Z"
       - "./mounts/traefik/log:/var/log:Z"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      #- "/var/run/docker.sock:/var/run/docker.sock"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       - "./certs:/certs:ro"
@@ -72,8 +72,8 @@ services:
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/apache/apache/php.ini:/etc/php/8.2/apache2/php.ini:Z"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
+      #- "/etc/timezone:/etc/timezone:ro"
+      #- "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
 
   session-manager:
@@ -85,6 +85,7 @@ services:
     ports:
       - 8020:8020
     environment:
+      MODE: "dev"
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
@@ -186,7 +187,7 @@ services:
       - visp-net
 
   mongo:
-    image: mongo:6.0.27
+    image: docker.io/library/mongo:6.0.27
     restart: unless-stopped
     ports:
       - 127.0.0.1:27017:27017
@@ -203,7 +204,7 @@ services:
       - visp-net
 
   mongo-express:
-    image: mongo-express:1.0.2-20-alpine3.19
+    image: docker.io/library/mongo-express:1.0.2-20-alpine3.19
     restart: unless-stopped
     ports:
       - 127.0.0.1:8081:8081
