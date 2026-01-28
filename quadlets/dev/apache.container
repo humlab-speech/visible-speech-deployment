@@ -35,7 +35,7 @@ Volume=%h/Projects/visible-speech-deployment/external/webapi/vendor:/var/www/htm
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z
-Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
+# Podman socket removed - webapi uses HTTP API to session-manager, not Docker socket
 Volume=%h/Projects/visible-speech-deployment/certs:/etc/certs:Z
 Volume=%h/Projects/visible-speech-deployment/certs/letsencrypt:/certs/letsencrypt:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/uploads:/tmp/uploads:Z

@@ -1,2 +1,3 @@
 [Network]
-Internal=true
+# Internal=true disabled to enable DNS resolution with CNI backend
+# Re-enable when switching to netavark

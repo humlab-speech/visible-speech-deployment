@@ -191,12 +191,16 @@
 
   - [ ] **Phase 3c: Fix Podman Networking (CNI → Netavark)** ⚠️ BLOCKING ISSUE
     - See: [docs/PODMAN_NETWORKS.md](docs/PODMAN_NETWORKS.md)
-    - **Problem**: DNS resolution fails for multi-homed containers (session-manager)
-      - Session-manager connects to both `visp-net` and `whisper-net`
-      - CNI backend only adds first network's DNS to `/etc/resolv.conf`
-      - Cannot resolve `whisper` hostname from session-manager
-    - **Current Workaround**: Removed `Internal=true` from whisper-net
-      - Trade-off: Whisper is no longer isolated from internet
+    - **Problem**: `Internal=true` networks disable DNS resolution with CNI backend
+      - **whisper-net**: Multi-homed session-manager cannot resolve `whisper` hostname
+        - Session-manager connects to both `visp-net` and `whisper-net`
+        - CNI backend only adds first network's DNS to `/etc/resolv.conf`
+      - **octra-net**: Apache cannot resolve `octra` hostname for proxying
+        - Apache needs to proxy requests to `http://octra/`
+        - `Internal=true` disables DNS even for single-network containers
+    - **Current Workaround**: Removed `Internal=true` from both networks
+      - Trade-off: Whisper and Octra are no longer isolated from internet
+      - Security risk: containers can make external connections
     - **Proper Fix**: Migrate from CNI to Netavark backend
       ```bash
       # 1. Install netavark
@@ -211,9 +215,9 @@
 
       # 4. Rebuild images and recreate networks
       ```
-    - **After Migration**: Restore `Internal=true` in whisper-net.network
+    - **After Migration**: Restore `Internal=true` in whisper-net.network and octra-net.network
     - **Alternative Mitigations** (if netavark not possible):
-      - [ ] Firewall rules inside whisper container (iptables)
+      - [ ] Firewall rules inside whisper/octra containers (iptables)
       - [ ] Network policy via host nftables
       - [ ] Proxy-only access pattern
 
