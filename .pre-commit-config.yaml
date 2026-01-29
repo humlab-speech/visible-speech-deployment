@@ -18,6 +18,17 @@ repos:
             docker/session-manager/files/jupyter_notebook_config\.py
           )$
 
+  # Python testing
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: bash -c 'PYTHONPATH=. pytest tests/ -q'
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+
   # JavaScript/TypeScript linting and formatting via containers
   # - repo: https://github.com/pre-commit/mirrors-eslint
   #   rev: v9.15.0

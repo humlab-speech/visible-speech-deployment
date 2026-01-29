@@ -2,6 +2,22 @@
 
 ## High Priority
 
+- [ ] **Uploads failing in Podman (high priority)** ⚠️
+  - **Why**: PHP upload handler fails to create/move uploaded files into the mounted upload staging path (`/tmp/uploads` → host `mounts/apache/apache/uploads`). Observed `mkdir(): Permission denied` and `move_uploaded_file(): Unable to move ...` in Apache PHP error logs (example: 2026-01-29 10:07:32 for upload id `p1aLa0PMC8UEsjcwMsE8o`). Probe tests show the Apache worker (`www-data`) cannot write into per-upload directories (owner-only directories and some created with owner UID `100032`). After a temporary `chmod -R 777` retry, files still didn't appear (likely a new upload id or client-side failure), so uploads are effectively failing in this Podman environment.
+  - **Where to look (logs & paths)**:
+    - Apache PHP error log: `mounts/apache/apache/logs/apache2/visp.local-error.log` (search for `mkdir(): Permission denied` / `move_uploaded_file`)
+    - Apache access log: `mounts/apache/apache/logs/apache2/visp.local-access.log` (search for `POST /api/v1/upload`)
+    - Upload staging path: `mounts/apache/apache/uploads/<gitlabUserId>/<upload-id>/...` (bind-mounted into container at `/tmp/uploads`)
+    - Session-manager logs: use `./visp-logs.sh session-manager` — look for `Converting all files in /tmp/uploads` and `No audio files found` messages
+  - **Immediate mitigation / recommended fix**:
+    - Make upload tree group-owned by `www-data` and group-writable (e.g., `chgrp -R www-data mounts/apache/apache/uploads && find mounts/apache/apache/uploads -type d -exec chmod 2775 {} + && find mounts/apache/apache/uploads -type f -exec chmod 664 {} +`)
+    - Ensure PHP/webapi creates directories with group-write (e.g., `mkdir(..., 0o2775)` or set proper umask) and consider using setgid for inheritance
+    - Improve webapi error propagation so move failures return meaningful errors to the UI instead of silent failures
+  - **Acceptance / next steps**:
+    - Reproduce an upload while tailing Apache access+error logs and session-manager logs; capture the new upload id and verify files are present on the host
+    - Add an automated test/CI check to verify uploads succeed under Podman with the configured mounts
+    - Prioritize as **High** — blocks user uploads in Podman deployments
+
 - [ ] **Document netavark requirement in installation guides** 📝 URGENT
   - **Why**: New installations need netavark, CNI has critical DNS bugs (20s timeouts)
   - **Status**: Netavark migration successful on dev (2026-01-28), automation added

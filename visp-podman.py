@@ -44,6 +44,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Use the new modular managers where appropriate
+from vispctl.runner import Runner
+from vispctl.build import BuildManager
+from vispctl.network import NetworkManager
+from vispctl.service import Service
+from vispctl.service_manager import ServiceManager
+
 # Configuration
 QUADLETS_BASE_DIR = Path(__file__).parent / "quadlets"
 SYSTEMD_QUADLETS_DIR = Path.home() / ".config/containers/systemd"
@@ -76,31 +83,23 @@ def get_quadlets_dir(mode: str = None) -> Path:
 # Service definitions - order matters for startup
 SERVICES = [
     # Networks first
-    {"name": "visp-net", "type": "network", "file": "visp-net.network"},
-    {"name": "whisper-net", "type": "network", "file": "whisper-net.network"},
-    {"name": "octra-net", "type": "network", "file": "octra-net.network"},
+    Service("visp-net", "network", "visp-net.network"),
+    Service("whisper-net", "network", "whisper-net.network"),
+    Service("octra-net", "network", "octra-net.network"),
     # Then containers in dependency order
-    {"name": "mongo", "type": "container", "file": "mongo.container"},
-    {"name": "traefik", "type": "container", "file": "traefik.container"},
-    {"name": "whisper", "type": "container", "file": "whisper.container"},
-    {"name": "wsrng-server", "type": "container", "file": "wsrng-server.container"},
-    {
-        "name": "session-manager",
-        "type": "container",
-        "file": "session-manager.container",
-    },
-    {"name": "emu-webapp", "type": "container", "file": "emu-webapp.container"},
-    {
-        "name": "emu-webapp-server",
-        "type": "container",
-        "file": "emu-webapp-server.container",
-    },
-    {"name": "octra", "type": "container", "file": "octra.container"},
-    {"name": "apache", "type": "container", "file": "apache.container"},
+    Service("mongo", "container", "mongo.container"),
+    Service("traefik", "container", "traefik.container"),
+    Service("whisper", "container", "whisper.container"),
+    Service("wsrng-server", "container", "wsrng-server.container"),
+    Service("session-manager", "container", "session-manager.container"),
+    Service("emu-webapp", "container", "emu-webapp.container"),
+    Service("emu-webapp-server", "container", "emu-webapp-server.container"),
+    Service("octra", "container", "octra.container"),
+    Service("apache", "container", "apache.container"),
 ]
 
-CONTAINER_SERVICES = [s for s in SERVICES if s["type"] == "container"]
-NETWORK_SERVICES = [s for s in SERVICES if s["type"] == "network"]
+CONTAINER_SERVICES = [s for s in SERVICES if s.type == "container"]
+NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
 
 
 # Colors
@@ -120,29 +119,30 @@ def color(text: str, c: str) -> str:
     return f"{c}{text}{Colors.NC}"
 
 
+# Module-level Runner instance for consistent subprocess handling
+RUNNER = Runner()
+
+
 def run(
-    cmd: list[str], capture: bool = False, check: bool = True
+    cmd: list[str], capture: bool = False, check: bool = True, **kwargs
 ) -> subprocess.CompletedProcess:
-    """Run a command."""
-    if capture:
-        return subprocess.run(cmd, capture_output=True, text=True, check=check)
-    return subprocess.run(cmd, check=check)
+    """Run a command via the shared Runner."""
+    return RUNNER.run(cmd, capture=capture, check=check, **kwargs)
 
 
 def run_quiet(cmd: list[str]) -> tuple[int, str, str]:
-    """Run a command and return (returncode, stdout, stderr)."""
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    return result.returncode, result.stdout.strip(), result.stderr.strip()
+    """Run a command and return (returncode, stdout, stderr) via Runner."""
+    return RUNNER.run_quiet(cmd)
 
 
 def systemctl(*args) -> subprocess.CompletedProcess:
-    """Run systemctl --user command."""
-    return run(["systemctl", "--user", *args], capture=True, check=False)
+    """Run systemctl --user command via Runner."""
+    return RUNNER.systemctl(*args)
 
 
-def journalctl(*args) -> None:
-    """Run journalctl --user command."""
-    subprocess.run(["journalctl", "--user", *args])
+def journalctl(*args) -> subprocess.CompletedProcess:
+    """Run journalctl --user command via Runner."""
+    return RUNNER.journalctl(*args)
 
 
 def load_env_vars(env_file_path: Path) -> dict:
@@ -162,107 +162,9 @@ def load_env_vars(env_file_path: Path) -> dict:
     return env_vars
 
 
-def load_all_env_vars() -> dict:
-    """Load environment variables from both .env and .env.secrets files.
-    Returns merged dictionary with secrets taking precedence."""
-    env_vars = {}
-
-    # Load non-sensitive config from .env
-    env_file = Path(__file__).parent / ".env"
-    if env_file.exists():
-        env_vars.update(load_env_vars(env_file))
-
-    # Load sensitive credentials from .env.secrets (overrides .env)
-    secrets_file = Path(__file__).parent / ".env.secrets"
-    if secrets_file.exists():
-        env_vars.update(load_env_vars(secrets_file))
-    elif not (Path(__file__).parent / ".env.secrets").exists():
-        print(color("⚠ WARNING: .env.secrets file not found!", Colors.YELLOW))
-        print(color("  Secrets will be read from .env (legacy mode)", Colors.YELLOW))
-        print(color("  Consider running: cp .env .env.secrets", Colors.YELLOW))
-
-    return env_vars
-
-
-def get_derived_secrets(env_vars: dict) -> dict:
-    """Build derived secrets from environment variables.
-    Returns dict of secret_name -> secret_value."""
-    secrets = {}
-
-    # Direct secrets from .env
-    if "MONGO_ROOT_PASSWORD" in env_vars:
-        secrets["visp_mongo_root_password"] = env_vars["MONGO_ROOT_PASSWORD"]
-
-    if "VISP_API_ACCESS_TOKEN" in env_vars:
-        secrets["visp_api_access_token"] = env_vars["VISP_API_ACCESS_TOKEN"]
-
-    if "TEST_USER_LOGIN_KEY" in env_vars:
-        secrets["visp_test_user_login_key"] = env_vars["TEST_USER_LOGIN_KEY"]
-
-    # Derived/constructed secrets
-    if "MONGO_ROOT_PASSWORD" in env_vars:
-        secrets["visp_mongo_uri"] = (
-            f"mongodb://root:{env_vars['MONGO_ROOT_PASSWORD']}@mongo:27017"
-        )
-
-    if "BASE_DOMAIN" in env_vars:
-        secrets["visp_media_file_base_url"] = (
-            f"https://emu-webapp.{env_vars['BASE_DOMAIN']}"
-        )
-
-    return secrets
-
-
-def create_podman_secrets(secrets: dict) -> None:
-    """Create or update Podman secrets from a dictionary."""
-    for name, value in secrets.items():
-        # Check if secret exists
-        result = subprocess.run(
-            ["podman", "secret", "inspect", name], capture_output=True, text=True
-        )
-
-        if result.returncode == 0:
-            # Secret exists, remove it first (podman doesn't support update)
-            subprocess.run(["podman", "secret", "rm", name], capture_output=True)
-
-        # Create the secret
-        process = subprocess.run(
-            ["podman", "secret", "create", name, "-"],
-            input=value,
-            capture_output=True,
-            text=True,
-        )
-
-        if process.returncode == 0:
-            print(f"  ✓ Secret '{name}': created")
-        else:
-            print(f"  ✗ Secret '{name}': failed - {process.stderr}")
-
-
-def remove_podman_secrets(secret_names: list) -> None:
-    """Remove Podman secrets by name."""
-    for name in secret_names:
-        result = subprocess.run(
-            ["podman", "secret", "rm", name], capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            print(f"  ✓ Secret '{name}': removed")
-
-
-def list_visp_secrets() -> list:
-    """List all VISP-related Podman secrets."""
-    result = subprocess.run(
-        ["podman", "secret", "ls", "--format", "{{.Name}}"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
-        return [
-            name
-            for name in result.stdout.strip().split("\n")
-            if name.startswith("visp_")
-        ]
-    return []
+# Deprecated secret wrapper functions removed — use `vispctl.secrets.SecretManager` directly.
+# These wrappers were left behind during refactoring and are now deleted to remove
+# dead code and avoid confusion.
 
 
 # === Status Commands ===
@@ -273,23 +175,11 @@ def cmd_status(args):
     print(color("=== VISP Service Status ===", Colors.CYAN))
     print()
 
-    # Check systemd services
-    for svc in CONTAINER_SERVICES:
-        service_name = f"{svc['name']}.service"
-        rc, stdout, _ = run_quiet(["systemctl", "--user", "is-active", service_name])
-        status = stdout if rc == 0 else "inactive"
+    # Use ServiceManager for service status
+    sm = ServiceManager(Runner(), SERVICES)
+    sm.status()
 
-        if status == "active":
-            symbol = color("●", Colors.GREEN)
-            status_text = color(status, Colors.GREEN)
-        elif status == "inactive":
-            symbol = color("○", Colors.YELLOW)
-            status_text = color(status, Colors.YELLOW)
-        else:
-            symbol = color("✗", Colors.RED)
-            status_text = color(status, Colors.RED)
-
-        print(f"  {symbol} {svc['name']}: {status_text}")
+    # (ServiceManager prints service status). Continue with quadlet links and other info below.
 
     print()
     print(color("=== Quadlet Links ===", Colors.CYAN))
@@ -299,8 +189,8 @@ def cmd_status(args):
     print()
 
     for svc in SERVICES:
-        link_path = SYSTEMD_QUADLETS_DIR / svc["file"]
-        target_path = quadlets_dir / svc["file"]
+        link_path = SYSTEMD_QUADLETS_DIR / svc.file
+        target_path = quadlets_dir / svc.file
 
         if link_path.is_symlink():
             actual_target = link_path.resolve()
@@ -325,7 +215,7 @@ def cmd_status(args):
             symbol = color("○", Colors.RED)
             status = color("not linked", Colors.RED)
 
-        print(f"  {symbol} {svc['file']}: {status}")
+        print(f"  {symbol} {svc.file}: {status}")
 
     print()
     print(color("=== Container Status ===", Colors.CYAN))
@@ -361,7 +251,7 @@ def cmd_logs(args):
         # All services
         units = []
         for svc in CONTAINER_SERVICES:
-            units.extend(["-u", f"{svc['name']}.service"])
+            units.extend(["-u", f"{svc.name}.service"])
         print(color("=== Viewing logs for all VISP services ===", Colors.CYAN))
         journalctl(*units, *extra_args)
     else:
@@ -375,71 +265,32 @@ def cmd_logs(args):
 
 def cmd_start(args):
     """Start service(s)."""
-    services = _resolve_services(args.service)
-
-    for svc in services:
-        if svc["type"] == "network":
-            continue  # Networks start automatically
-        service_name = f"{svc['name']}.service"
-        print(f"Starting {service_name}...")
-        result = systemctl("start", service_name)
-        if result.returncode != 0:
-            print(color(f"  Failed: {result.stderr}", Colors.RED))
-        else:
-            print(color("  Started", Colors.GREEN))
+    sm = ServiceManager(Runner(), SERVICES)
+    sm.start(args.service)
 
 
 def cmd_stop(args):
     """Stop service(s)."""
-    services = _resolve_services(args.service)
-
-    # Stop in reverse order
-    for svc in reversed(services):
-        if svc["type"] == "network":
-            continue
-        service_name = f"{svc['name']}.service"
-        print(f"Stopping {service_name}...")
-        result = systemctl("stop", service_name)
-        if result.returncode != 0:
-            print(color(f"  Failed: {result.stderr}", Colors.RED))
-        else:
-            print(color("  Stopped", Colors.GREEN))
+    sm = ServiceManager(Runner(), SERVICES)
+    sm.stop(args.service)
 
 
 def cmd_restart(args):
     """Restart service(s) or entire cluster."""
-    services = _resolve_services(args.service)
+    sm = ServiceManager(Runner(), SERVICES)
 
     if args.service == "all":
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
-
-        # Stop in reverse order
         print(color("Stopping services...", Colors.YELLOW))
-        for svc in reversed([s for s in services if s["type"] == "container"]):
-            service_name = f"{svc['name']}.service"
-            print(f"  Stopping {svc['name']}...")
-            systemctl("stop", service_name)
-
+        sm.stop("all")
         print()
         print(color("Starting services...", Colors.GREEN))
-        for svc in [s for s in services if s["type"] == "container"]:
-            service_name = f"{svc['name']}.service"
-            print(f"  Starting {svc['name']}...")
-            result = systemctl("start", service_name)
-            if result.returncode != 0:
-                print(color(f"    Failed: {result.stderr}", Colors.RED))
+        sm.start("all")
     else:
-        for svc in services:
-            if svc["type"] == "network":
-                continue
-            service_name = f"{svc['name']}.service"
-            print(f"Restarting {service_name}...")
-            result = systemctl("restart", service_name)
-            if result.returncode != 0:
-                print(color(f"  Failed: {result.stderr}", Colors.RED))
-            else:
-                print(color("  Restarted", Colors.GREEN))
+        # For individual services, stop then start the specific names
+        sm.stop(args.service)
+        sm.start(args.service)
 
 
 # === Network Backend Management ===
@@ -448,22 +299,11 @@ def cmd_restart(args):
 def check_netavark() -> tuple[bool, str]:
     """Check if netavark is configured and working.
 
-    Returns:
-        tuple: (is_netavark, backend_name) - True if netavark, False if CNI or unknown
+    Delegates to NetworkManager.
     """
-    try:
-        result = subprocess.run(
-            ["podman", "info", "--format", "{{.Host.NetworkBackend}}"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode == 0:
-            backend = result.stdout.strip()
-            return (backend == "netavark", backend)
-    except Exception:
-        pass
-    return (False, "unknown")
+    runner = Runner()
+    nm = NetworkManager(runner)
+    return nm.check_netavark()
 
 
 def configure_netavark() -> bool:
@@ -472,79 +312,9 @@ def configure_netavark() -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
-    print(color("Configuring netavark network backend...", Colors.CYAN))
-
-    # Check if packages are installed
-    try:
-        result = subprocess.run(
-            ["dpkg", "-l", "podman-netavark", "aardvark-dns"],
-            capture_output=True,
-            check=False,
-        )
-        if result.returncode != 0:
-            print(color("  ✗ Required packages not installed", Colors.RED))
-            print("  Please install: sudo apt install podman-netavark aardvark-dns")
-            return False
-    except Exception:
-        print(color("  ⚠ Could not verify package installation", Colors.YELLOW))
-
-    # Create containers config directory
-    CONTAINERS_CONF.parent.mkdir(parents=True, exist_ok=True)
-
-    # Read existing config or create new
-    config_lines = []
-    network_section_exists = False
-
-    if CONTAINERS_CONF.exists():
-        with open(CONTAINERS_CONF, "r") as f:
-            config_lines = f.readlines()
-        # Check if [network] section exists
-        for line in config_lines:
-            if line.strip() == "[network]":
-                network_section_exists = True
-                break
-
-    # Add or update netavark configuration
-    if not network_section_exists:
-        # Add new [network] section
-        if config_lines and not config_lines[-1].endswith("\n"):
-            config_lines.append("\n")
-        config_lines.append("\n[network]\n")
-        config_lines.append('network_backend = "netavark"\n')
-    else:
-        # Update existing section
-        in_network_section = False
-        backend_set = False
-        new_lines = []
-        for line in config_lines:
-            if line.strip() == "[network]":
-                in_network_section = True
-                new_lines.append(line)
-            elif in_network_section and line.startswith("["):
-                # Entering new section
-                if not backend_set:
-                    new_lines.append('network_backend = "netavark"\n')
-                in_network_section = False
-                new_lines.append(line)
-            elif in_network_section and "network_backend" in line:
-                new_lines.append('network_backend = "netavark"\n')
-                backend_set = True
-            else:
-                new_lines.append(line)
-
-        if in_network_section and not backend_set:
-            new_lines.append('network_backend = "netavark"\n')
-        config_lines = new_lines
-
-    # Write config
-    try:
-        with open(CONTAINERS_CONF, "w") as f:
-            f.writelines(config_lines)
-        print(color(f"  ✓ Updated {CONTAINERS_CONF}", Colors.GREEN))
-        return True
-    except Exception as e:
-        print(color(f"  ✗ Failed to write config: {e}", Colors.RED))
-        return False
+    runner = Runner()
+    nm = NetworkManager(runner)
+    return nm.configure_netavark()
 
 
 def prompt_netavark_migration() -> bool:
@@ -587,88 +357,21 @@ def prompt_netavark_migration() -> bool:
 def migrate_to_netavark() -> bool:
     """Perform netavark migration.
 
-    Returns:
-        bool: True if successful, False otherwise
+    Delegates to NetworkManager.
     """
-    # Configure netavark
-    if not configure_netavark():
-        return False
-
-    print()
-    print(color("Running podman system reset...", Colors.CYAN))
-    print("  This will remove all containers but preserve images.")
-
-    try:
-        result = subprocess.run(["podman", "system", "reset", "-f"], check=False)
-        if result.returncode != 0:
-            print(color("  ✗ podman system reset failed", Colors.RED))
-            return False
-        print(color("  ✓ System reset complete", Colors.GREEN))
-        return True
-    except Exception as e:
-        print(color(f"  ✗ Error: {e}", Colors.RED))
-        return False
+    runner = Runner()
+    nm = NetworkManager(runner)
+    return nm.migrate_to_netavark()
 
 
 def ensure_networks_exist() -> bool:
     """Ensure all required Podman networks exist.
 
-    With netavark, quadlet .network files don't auto-create networks.
-    We need to create them manually with the correct settings.
-
-    Returns:
-        bool: True if all networks exist or were created, False on error
+    Delegates to NetworkManager.
     """
-    # Networks that need to be created
-    required_networks = [
-        {"name": "systemd-visp-net", "internal": False},
-        {"name": "systemd-whisper-net", "internal": True},
-        {"name": "systemd-octra-net", "internal": True},
-    ]
-
-    print(color("Checking Podman networks...", Colors.CYAN))
-
-    # Get existing networks
-    try:
-        result = subprocess.run(
-            ["podman", "network", "ls", "--format", "{{.Name}}"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        existing_networks = (
-            set(result.stdout.strip().split("\n")) if result.stdout.strip() else set()
-        )
-    except Exception as e:
-        print(color(f"  ✗ Failed to list networks: {e}", Colors.RED))
-        return False
-
-    # Create missing networks
-    for network in required_networks:
-        if network["name"] in existing_networks:
-            print(f"  ○ {network['name']}: exists")
-            continue
-
-        print(f"  Creating {network['name']}...")
-        cmd = ["podman", "network", "create", "--driver", "bridge"]
-        if network["internal"]:
-            cmd.append("--internal")
-        cmd.append(network["name"])
-
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-            if result.returncode == 0:
-                print(color(f"  ✓ {network['name']}: created", Colors.GREEN))
-            else:
-                print(
-                    color(f"  ✗ {network['name']}: {result.stderr.strip()}", Colors.RED)
-                )
-                return False
-        except Exception as e:
-            print(color(f"  ✗ {network['name']}: {e}", Colors.RED))
-            return False
-
-    return True
+    runner = Runner()
+    nm = NetworkManager(runner)
+    return nm.ensure_networks_exist()
 
 
 # === Installation Commands ===
@@ -677,8 +380,11 @@ def ensure_networks_exist() -> bool:
 def cmd_install(args):
     """Link quadlet files to systemd directory."""
 
-    # Check for netavark backend
-    is_netavark, current_backend = check_netavark()
+    # Check for netavark backend using NetworkManager
+    runner = Runner()
+    nm = NetworkManager(runner)
+
+    is_netavark, current_backend = nm.check_netavark()
 
     if not is_netavark:
         print()
@@ -687,8 +393,8 @@ def cmd_install(args):
 
         if current_backend == "cni":
             # Offer to migrate from CNI
-            if prompt_netavark_migration():
-                if not migrate_to_netavark():
+            if nm.prompt_netavark_migration():
+                if not nm.migrate_to_netavark():
                     print(
                         color(
                             "Migration failed. Please fix the errors and try again.",
@@ -708,7 +414,7 @@ def cmd_install(args):
             )
             response = input("Configure netavark now? (yes/no): ").strip().lower()
             if response in ["yes", "y"]:
-                if not configure_netavark():
+                if not nm.configure_netavark():
                     sys.exit(1)
                 print()
                 print(
@@ -745,46 +451,49 @@ def cmd_install(args):
     print(f"  Target: {SYSTEMD_QUADLETS_DIR}")
     print()
 
-    # Load environment variables from both .env and .env.secrets
-    env_vars = load_all_env_vars()
+    # Load environment variables and create Podman secrets via SecretManager
+    from vispctl.secrets import SecretManager
+
+    sm = SecretManager(RUNNER)
+    env_vars = sm.load_all()
 
     # Create Podman secrets from environment variables
     print(color("Creating Podman secrets...", Colors.CYAN))
-    secrets = get_derived_secrets(env_vars)
-    create_podman_secrets(secrets)
+    secrets = sm.get_derived(env_vars)
+    sm.create_secrets(secrets)
     print()
 
     # Determine which services are available in this mode
     services = _resolve_services(args.service)
 
     # Filter to only services that exist in the mode's quadlet directory
-    available_services = [s for s in services if (quadlets_dir / s["file"]).exists()]
+    available_services = [s for s in services if (quadlets_dir / s.file).exists()]
 
     if not available_services:
         print(color(f"No quadlet files found in {quadlets_dir}", Colors.RED))
         return
 
     for svc in available_services:
-        source = quadlets_dir / svc["file"]
-        target = SYSTEMD_QUADLETS_DIR / svc["file"]
+        source = quadlets_dir / svc.file
+        target = SYSTEMD_QUADLETS_DIR / svc.file
 
         if not source.exists():
-            print(color(f"  ✗ {svc['file']}: source not found", Colors.RED))
+            print(color(f"  ✗ {svc.file}: source not found", Colors.RED))
             continue
 
         # Remove existing target if --force is set
         if target.exists() or target.is_symlink():
             if not args.force:
-                print(f"  ○ {svc['file']}: already installed")
+                print(f"  ○ {svc.file}: already installed")
                 continue
             target.unlink()
 
         # Create symlink to source quadlet
         try:
             target.symlink_to(source.resolve())
-            print(color(f"  ✓ {svc['file']}: installed", Colors.GREEN))
+            print(color(f"  ✓ {svc.file}: installed", Colors.GREEN))
         except Exception as e:
-            print(color(f"  ✗ {svc['file']}: {e}", Colors.RED))
+            print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
             continue
 
     # Save the mode
@@ -802,31 +511,33 @@ def cmd_uninstall(args):
     # Stop services first
     if not args.keep_running:
         print(color("Stopping services...", Colors.YELLOW))
-        for svc in reversed([s for s in services if s["type"] == "container"]):
-            service_name = f"{svc['name']}.service"
-            systemctl("stop", service_name)
+        sm = ServiceManager(Runner(), SERVICES)
+        sm.stop("all")
 
     print()
     print(color("Removing links...", Colors.CYAN))
 
     for svc in services:
-        target = SYSTEMD_QUADLETS_DIR / svc["file"]
+        target = SYSTEMD_QUADLETS_DIR / svc.file
 
         if target.is_symlink():
             target.unlink()
-            print(color(f"  ✓ {svc['file']}: removed", Colors.GREEN))
+            print(color(f"  ✓ {svc.file}: removed", Colors.GREEN))
         elif target.exists():
-            print(color(f"  ! {svc['file']}: not a symlink, skipping", Colors.YELLOW))
+            print(color(f"  ! {svc.file}: not a symlink, skipping", Colors.YELLOW))
         else:
-            print(f"  ○ {svc['file']}: not installed")
+            print(f"  ○ {svc.file}: not installed")
 
     print()
 
-    # Remove Podman secrets
+    # Remove Podman secrets using SecretManager
     print(color("Removing Podman secrets...", Colors.CYAN))
-    visp_secrets = list_visp_secrets()
+    from vispctl.secrets import SecretManager
+
+    sm = SecretManager(RUNNER)
+    visp_secrets = sm.list_secrets()
     if visp_secrets:
-        remove_podman_secrets(visp_secrets)
+        sm.remove_secrets(visp_secrets)
     else:
         print("  No VISP secrets found")
     print()
@@ -990,65 +701,12 @@ def prepare_build_context(name: str, config: dict) -> bool:
     """
     Prepare the build context for images that need extra files copied in.
 
-    For session images, this copies the container-agent source into the build context.
-    The Dockerfile will then build container-agent as part of the multi-stage build.
-
-    Args:
-        name: Build target name
-        config: Build configuration dict
-
-    Returns:
-        True if preparation succeeded, False otherwise
+    Delegates to BuildManager.
     """
-    import shutil
-
-    prepare = config.get("prepare_context")
-    if not prepare:
-        return True  # Nothing to prepare
-
-    context_dir = Path(__file__).parent / config["context"]
-
-    if prepare == "container-agent":
-        # Copy container-agent SOURCE to session-manager build context
-        # The Dockerfile builds it as part of multi-stage build
-        agent_source = (
-            Path(__file__).parent / NODE_BUILD_CONFIGS["container-agent"]["source"]
-        )
-        agent_dest = context_dir / "container-agent"
-
-        if not agent_source.exists():
-            print(
-                color(
-                    f"  ✗ container-agent source not found at {agent_source}",
-                    Colors.RED,
-                )
-            )
-            return False
-
-        # Check for package.json to ensure it's the source directory
-        if not (agent_source / "package.json").exists():
-            print(color("  ✗ container-agent source missing package.json", Colors.RED))
-            return False
-
-        # Ensure destination exists and is clean
-        if agent_dest.exists():
-            shutil.rmtree(agent_dest)
-
-        # Copy source directory (excluding node_modules for faster copy)
-        def ignore_patterns(directory, files):
-            return (
-                ["node_modules", ".git", "dist"]
-                if any(x in files for x in ["node_modules", ".git", "dist"])
-                else []
-            )
-
-        shutil.copytree(agent_source, agent_dest, ignore=ignore_patterns)
-
-        print(color("  ✓ Copied container-agent source to build context", Colors.GREEN))
-        return True
-
-    print(color(f"  ✗ Unknown prepare_context type: {prepare}", Colors.RED))
-    return False
+    bm = BuildManager(
+        Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS
+    )
+    return bm.prepare_build_context(name, config)
 
 
 def build_node_project(
@@ -1057,132 +715,21 @@ def build_node_project(
     """
     Build a Node.js project using a containerized build (no host npm needed).
 
-    Uses podman to run node container that:
-    1. Mounts source directory
-    2. Runs npm install && npm run build
-    3. Outputs to the configured output directory
-
-    Args:
-        name: Project name
-        config: Build configuration dict
-        no_cache: Whether to clean before building
-        build_config: Optional build configuration (e.g., 'visp', 'datalab' for webclient)
+    Delegates to BuildManager.
     """
-    import shutil
-    import os
-
-    source_dir = Path(__file__).parent / config["source"]
-    output_dir = Path(__file__).parent / config["output"]
-
-    # Determine build command
-    build_cmd = config.get("build_cmd", "npm run build")
-    if "{config}" in build_cmd:
-        cfg = build_config or config.get("default_config", "production")
-        build_cmd = build_cmd.format(config=cfg)
-
-    # Container image (default to node:20-alpine for smaller size)
-    container_image = config.get("container_image", "node:20-alpine")
-    verify_file = config.get("verify_file", "main.js")
-
-    print(color(f"Building {name} (containerized Node.js build)...", Colors.BLUE))
-    print(f"  Source: {source_dir}")
-    print(f"  Output: {output_dir}")
-    print(f"  Description: {config['description']}")
-    print(f"  Build command: {build_cmd}")
-    if build_config:
-        print(f"  Configuration: {build_config}")
-    print()
-
-    if not source_dir.exists():
-        print(color(f"  ✗ Source directory not found: {source_dir}", Colors.RED))
-        return False
-
-    # Create output directory if needed
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # If no_cache, remove existing output
-    if no_cache:
-        print(color("  Cleaning output directory for fresh build...", Colors.YELLOW))
-        for item in output_dir.iterdir():
-            if item.is_file():
-                item.unlink()
-            elif item.is_dir():
-                shutil.rmtree(item)
-
-    # Build command using podman
-    # Strategy: Copy source to container, build there, copy output back
-    # This avoids permission issues with bind mounts
-    uid = os.getuid()
-    gid = os.getgid()
-
-    # For Angular/large projects, increase memory limit
-    memory_limit = "--memory=4g" if "angular" in config["description"].lower() else ""
-
-    cmd = [
-        "podman",
-        "run",
-        "--rm",
-    ]
-    if memory_limit:
-        cmd.append(memory_limit)
-    cmd.extend(
-        [
-            "-v",
-            f"{source_dir.resolve()}:/src:ro,Z",
-            "-v",
-            f"{output_dir.resolve()}:/output:Z",
-            container_image,
-            "sh",
-            "-c",
-            (
-                f"cp -r /src /build && cd /build && npm install --legacy-peer-deps && "
-                f"{build_cmd} && cp -r dist/* /output/ && chown -R {uid}:{gid} /output"
-            ),
-        ]
+    bm = BuildManager(
+        Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS
     )
-
-    print(color("  Running containerized build...", Colors.CYAN))
-    print(f"  Container: {container_image}")
-    print(f"  Steps: npm install && {build_cmd}")
-    print()
-
-    try:
-        result = subprocess.run(cmd, check=False)
-        if result.returncode == 0:
-            # Verify output
-            verify_path = output_dir / verify_file
-            if verify_path.exists():
-                print(color(f"  ✓ {name} built successfully", Colors.GREEN))
-                print(f"    Output: {verify_path}")
-                return True
-            else:
-                # Check if any files were created
-                files = list(output_dir.iterdir())
-                if files:
-                    print(color(f"  ✓ {name} built successfully", Colors.GREEN))
-                    print(f"    Output directory: {output_dir}")
-                    return True
-                print(
-                    color(
-                        f"  ✗ Build completed but {verify_file} not found", Colors.RED
-                    )
-                )
-                return False
-        else:
-            print(
-                color(
-                    f"  ✗ {name} build failed (exit code {result.returncode})",
-                    Colors.RED,
-                )
-            )
-            return False
-    except Exception as e:
-        print(color(f"  ✗ {name} build error: {e}", Colors.RED))
-        return False
+    return bm.build_node_project(
+        name, config, no_cache=no_cache, build_config=build_config
+    )
 
 
 def cmd_build(args):
-    """Build container images."""
+    """Build container images.
+
+    Delegates image and node builds to BuildManager.
+    """
     # Handle --list flag
     if getattr(args, "list", False):
         cmd_build_list(args)
@@ -1193,10 +740,14 @@ def cmd_build(args):
     service = getattr(args, "service", "all")
     build_config = getattr(args, "config", None)
 
-    # Check if it's a Node.js build target
+    bm = BuildManager(
+        Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS
+    )
+
+    # Node build target
     if service in NODE_BUILD_CONFIGS:
         config = NODE_BUILD_CONFIGS[service]
-        success = build_node_project(service, config, no_cache, build_config)
+        success = bm.build_node_project(service, config, no_cache, build_config)
         if success:
             print(color(f"\n✓ {service} build complete", Colors.GREEN))
         else:
@@ -1206,7 +757,6 @@ def cmd_build(args):
     # Determine which services to build
     if service == "all":
         services_to_build = BUILDABLE_SERVICES
-        # Also build node projects when building "all"
         node_builds_to_do = list(NODE_BUILD_CONFIGS.keys())
     elif service in BUILD_CONFIGS:
         services_to_build = [service]
@@ -1225,29 +775,23 @@ def cmd_build(args):
         print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
     print()
 
-    # Track results
     results = {"success": [], "failed": [], "skipped": []}
 
     for svc_name in services_to_build:
         config = BUILD_CONFIGS[svc_name]
-        context = config["context"]
-        dockerfile = config.get("dockerfile", "Dockerfile")
-        image = config["image"]
-        target = config.get("target")
         description = config.get("description", "")
-        depends_on = config.get("depends_on")
+        target = config.get("target")
 
         print(color(f"Building {svc_name}...", Colors.BLUE))
-        print(f"  Image: {image}:latest")
-        print(f"  Context: {context}")
+        print(f"  Image: {config['image']}:latest")
+        print(f"  Context: {config['context']}")
         if description:
             print(f"  Description: {description}")
         if target:
             print(f"  Target: {target}")
 
-        # Check dependencies
+        depends_on = config.get("depends_on")
         if depends_on and depends_on not in results["success"]:
-            # Check if the dependent image exists
             rc, _, _ = run_quiet(
                 [
                     "podman",
@@ -1263,47 +807,17 @@ def cmd_build(args):
                 print()
                 continue
 
-        # Prepare context if needed (e.g., copy container-agent for session images)
+        # Prepare context and build using BuildManager
         if config.get("prepare_context"):
-            if not prepare_build_context(svc_name, config):
+            if not bm.prepare_build_context(svc_name, config):
                 results["failed"].append(svc_name)
                 print()
                 continue
 
-        # Build the podman build command
-        cmd = ["podman", "build"]
-
-        if no_cache:
-            cmd.append("--no-cache")
-        if pull:
-            cmd.append("--pull")
-        if target:
-            cmd.extend(["--target", target])
-
-        cmd.extend(["-t", f"{image}:latest"])
-        cmd.extend(
-            [
-                "-f",
-                (
-                    f"{context}/{dockerfile}"
-                    if not dockerfile.startswith("./")
-                    else dockerfile
-                ),
-            ]
-        )
-        cmd.append(context)
-        print()
-
-        try:
-            result = subprocess.run(cmd, check=False)
-            if result.returncode == 0:
-                print(color(f"✓ {svc_name} built successfully", Colors.GREEN))
-                results["success"].append(svc_name)
-            else:
-                print(color(f"✗ {svc_name} build failed", Colors.RED))
-                results["failed"].append(svc_name)
-        except Exception as e:
-            print(color(f"✗ {svc_name} build error: {e}", Colors.RED))
+        ok = bm.build_image(svc_name, config, no_cache=no_cache, pull=pull)
+        if ok:
+            results["success"].append(svc_name)
+        else:
             results["failed"].append(svc_name)
 
         print()
@@ -1315,7 +829,7 @@ def cmd_build(args):
         print()
         for node_name in node_builds_to_do:
             config = NODE_BUILD_CONFIGS[node_name]
-            success = build_node_project(node_name, config, no_cache, build_config)
+            success = bm.build_node_project(node_name, config, no_cache, build_config)
             if success:
                 results["success"].append(node_name)
             else:
@@ -1525,7 +1039,7 @@ def cmd_images(args):
 
     print(color("=== VISP Networks ===", Colors.CYAN))
     for svc in NETWORK_SERVICES:
-        net_name = f"systemd-{svc['name']}"
+        net_name = f"systemd-{svc.name}"
         rc, _, _ = run_quiet(["podman", "network", "exists", net_name])
         if rc == 0:
             print(color(f"\n  {net_name}:", Colors.GREEN))
@@ -1604,7 +1118,10 @@ def cmd_backup(args):
         mongo_version = "unknown"
 
     # Load environment variables to get MongoDB password
-    env_vars = load_all_env_vars()
+    from vispctl.secrets import SecretManager
+
+    sm = SecretManager(RUNNER)
+    env_vars = sm.load_all()
     mongo_password = env_vars.get("MONGO_ROOT_PASSWORD")
 
     if not mongo_password:
@@ -1726,7 +1243,10 @@ def cmd_restore(args):
     print(f"Backup file: {backup_file}")
 
     # Load environment variables to get MongoDB password
-    env_vars = load_all_env_vars()
+    from vispctl.secrets import SecretManager
+
+    sm = SecretManager(RUNNER)
+    env_vars = sm.load_all()
     mongo_password = env_vars.get("MONGO_ROOT_PASSWORD")
 
     if not mongo_password:
@@ -1823,23 +1343,23 @@ def cmd_restore(args):
 # === Helpers ===
 
 
-def _resolve_services(service_arg: str) -> list[dict]:
-    """Resolve service argument to list of service dicts."""
+def _resolve_services(service_arg: str) -> list[Service]:
+    """Resolve service argument to list of Service objects."""
     if service_arg == "all":
         return SERVICES
 
-    svc = next((s for s in SERVICES if s["name"] == service_arg), None)
+    svc = next((s for s in SERVICES if s.name == service_arg), None)
     if svc:
         return [svc]
 
     print(color(f"Unknown service: {service_arg}", Colors.RED))
-    print(f"Available: {', '.join(s['name'] for s in SERVICES)}")
+    print(f"Available: {', '.join(s.name for s in SERVICES)}")
     sys.exit(1)
 
 
 def _get_service_names() -> list[str]:
     """Get list of service names for argparse choices."""
-    return ["all"] + [s["name"] for s in SERVICES]
+    return ["all"] + [s.name for s in SERVICES]
 
 
 # === Main ===
