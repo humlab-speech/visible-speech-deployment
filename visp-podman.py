@@ -950,8 +950,33 @@ def cmd_debug(args):
 
 
 def cmd_network(args):
-    """Show network information and DNS status."""
+    """Show network information and DNS status, or perform actions like 'ensure'."""
+    runner = Runner()
+    nm = NetworkManager(runner)
+
+    if getattr(args, "action", None) == "ensure":
+        print(color("Ensuring required Podman networks exist...", Colors.CYAN))
+        ok = nm.ensure_networks_exist()
+        if ok:
+            print(color("  ✓ Networks ensured", Colors.GREEN))
+        else:
+            print(color("  ✗ Failed to ensure networks", Colors.RED))
+            sys.exit(1)
+        return
+
+    # Default: show current network backend status
     print(color("=== Network Backend ===", Colors.CYAN))
+    is_net, backend = nm.check_netavark()
+    if is_net:
+        print(color(f"  Backend: {backend} (recommended)", Colors.GREEN))
+    else:
+        print(
+            color(
+                f"  Backend: {backend} (CNI - consider upgrading to netavark)",
+                Colors.YELLOW,
+            )
+        )
+    print()
 
 
 def cmd_images(args):
@@ -1513,8 +1538,14 @@ Examples:
     )
 
     # network
-    subparsers.add_parser(
+    p_network = subparsers.add_parser(
         "network", aliases=["n", "net"], help="Show network info and DNS status"
+    )
+    p_network.add_argument(
+        "action",
+        nargs="?",
+        choices=["ensure"],
+        help="Optional action: ensure (create required networks)",
     )
 
     # images
