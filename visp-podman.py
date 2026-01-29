@@ -935,9 +935,9 @@ def cmd_debug(args):
 
     # Check quadlet link
     print(color("Quadlet Link:", Colors.YELLOW))
-    svc_info = next((s for s in SERVICES if s["name"] == service), None)
+    svc_info = next((s for s in SERVICES if s.name == service), None)
     if svc_info:
-        link_path = SYSTEMD_QUADLETS_DIR / svc_info["file"]
+        link_path = SYSTEMD_QUADLETS_DIR / svc_info.file
         if link_path.is_symlink():
             print(f"  {link_path} -> {link_path.resolve()}")
         elif link_path.exists():
