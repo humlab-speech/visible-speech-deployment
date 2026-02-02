@@ -1211,14 +1211,17 @@ def setup_service_env_files():
             )
             print("Created wsrng-server/.env from .env-example")
 
-            # Read the main .env to get MongoDB password
+            # Read MongoDB password from .env.secrets (or .env as fallback)
             mongo_password = ""
-            if os.path.exists(".env"):
-                with open(".env", "r", encoding="utf-8") as f:
-                    for line in f:
-                        if line.startswith("MONGO_ROOT_PASSWORD="):
-                            mongo_password = line.split("=", 1)[1].strip()
-                            break
+            for env_file in [".env.secrets", ".env"]:
+                if os.path.exists(env_file):
+                    with open(env_file, "r", encoding="utf-8") as f:
+                        for line in f:
+                            if line.startswith("MONGO_ROOT_PASSWORD="):
+                                mongo_password = line.split("=", 1)[1].strip()
+                                break
+                    if mongo_password:
+                        break
 
             # Update wsrng-server/.env with MongoDB password
             if mongo_password:

@@ -21,6 +21,7 @@ from pathlib import Path
 
 # Configuration
 ENV_FILE = Path(__file__).parent / ".env"
+ENV_SECRETS_FILE = Path(__file__).parent / ".env.secrets"
 MONGO_CONTAINER = "mongo"  # Container name (without systemd- prefix for quadlets)
 DATABASE = "visp"
 COLLECTION = "users"
@@ -42,24 +43,30 @@ def color(text: str, c: str) -> str:
 
 
 def load_env() -> dict:
-    """Load environment variables from .env file."""
+    """Load environment variables from .env and .env.secrets files."""
     env = {}
-    if ENV_FILE.exists():
-        with open(ENV_FILE) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, _, value = line.partition("=")
-                    env[key.strip()] = value.strip()
+    for env_file in [ENV_FILE, ENV_SECRETS_FILE]:
+        if env_file.exists():
+            with open(env_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, _, value = line.partition("=")
+                        env[key.strip()] = value.strip()
     return env
 
 
 def get_mongo_password() -> str:
-    """Get MongoDB root password from .env."""
+    """Get MongoDB root password from .env or .env.secrets."""
     env = load_env()
     password = env.get("MONGO_ROOT_PASSWORD") or env.get("MONGO_INITDB_ROOT_PASSWORD")
     if not password:
-        print(color("Error: MONGO_ROOT_PASSWORD not found in .env", Colors.RED))
+        print(
+            color(
+                "Error: MONGO_ROOT_PASSWORD not found in .env or .env.secrets",
+                Colors.RED,
+            )
+        )
         sys.exit(1)
     return password
 
