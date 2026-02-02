@@ -1100,269 +1100,131 @@ def cmd_images(args):
                 print(f"  {container}: {nets if nets else 'none'}")
 
 
+def cmd_fix_permissions(args):
+    """Fix file ownership and permissions using 'podman unshare'."""
+    from vispctl.permissions import PermissionsManager
+
+    # Default target path if none provided: common repositories mount
+    paths = (
+        [Path(p) for p in getattr(args, "paths", [])]
+        if getattr(args, "paths", None)
+        else [Path("mounts/repositories")]
+    )
+
+    existing = [p for p in paths if p.exists()]
+    missing = [p for p in paths if not p.exists()]
+    for p in missing:
+        print(color(f"! Path does not exist: {p}", Colors.YELLOW))
+
+    if not existing:
+        print(
+            color(
+                "No existing target paths to operate on. Use --path to specify one.",
+                Colors.YELLOW,
+            )
+        )
+        return
+
+    host_owner_flag = getattr(args, "host_owner", False)
+    pm = PermissionsManager(RUNNER)
+    planned = pm.plan_fix(
+        existing,
+        recursive=getattr(args, "recursive", False),
+        host_owner=host_owner_flag,
+    )
+
+    print(color("=== Permission Fix Plan ===", Colors.CYAN))
+    for c in planned:
+        print(f"  {c}")
+
+    if not getattr(args, "apply", False):
+        print()
+        print(
+            color(
+                "Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW
+            )
+        )
+        return
+
+    print()
+    print(color("Applying permission fixes...", Colors.CYAN))
+
+    ok = pm.apply_fix(
+        existing,
+        recursive=getattr(args, "recursive", False),
+        host_owner=host_owner_flag,
+    )
+
+    if ok:
+        print(color("✓ Permissions fixed", Colors.GREEN))
+    else:
+        print(color("✗ One or more operations failed", Colors.RED))
+
+    # Post-check: confirm host ownership matches current user when possible
+    import os
+
+    mismatched = []
+    for p in existing:
+        try:
+            st = p.stat()
+            if st.st_uid != os.getuid():
+                mismatched.append((p, st.st_uid))
+        except Exception:
+            mismatched.append((p, None))
+
+    if mismatched:
+        print()
+        print(
+            color(
+                "⚠️  Ownership check: some paths are not owned by the "
+                "current user on the host:",
+                Colors.YELLOW,
+            )
+        )
+        for p, uid in mismatched:
+            if uid is None:
+                print(f"  - {p}: cannot stat (permission denied)")
+            else:
+                print(f"  - {p}: host uid={uid} " f"(current user uid={os.getuid()})")
+        print(
+            color(
+                "Note: this can be normal under rootless Podman userns "
+                "mapping. If you passed --host-owner and host ownership "
+                "does not match, your system's userns mapping doesn't map "
+                "namespace 0 to your host UID. In that case you can either "
+                "remove files inside the namespace (podman unshare rm -rf) "
+                "or manually chown as admin outside this script "
+                "(not recommended for normal operation).",
+                Colors.YELLOW,
+            )
+        )
+
+
 # === Backup/Restore Commands ===
 
 
 def cmd_backup(args):
     """Backup MongoDB database to timestamped tar.gz file."""
-    import os
-    from datetime import datetime
+    from vispctl.backup import BackupManager
 
-    print(color("=== MongoDB Backup ===", Colors.CYAN))
-    print()
-
-    # Check if mongo container is running
-    rc, _, _ = run_quiet(["podman", "ps", "-q", "-f", "name=^mongo$"])
-    if rc != 0:
-        print(color("✗ MongoDB container not running", Colors.RED))
-        print("  Start it with: ./visp-podman.py start mongo")
-        sys.exit(1)
-
-    # Get MongoDB version from running container
-    print("Detecting MongoDB version...")
-    rc, stdout, stderr = run_quiet(["podman", "exec", "mongo", "mongod", "--version"])
-
-    if rc == 0 and stdout:
-        # Extract version (e.g., "db version v6.0.14")
-        version_lines = [
-            line for line in stdout.split("\n") if "version" in line.lower()
-        ]
-        if version_lines:
-            version_line = version_lines[0]
-            # Extract version number
-            if "v" in version_line:
-                mongo_version = (
-                    version_line.split("v")[-1].split()[0].split("-")[0]
-                )  # Handle v6.0.14-rc1
-            else:
-                mongo_version = "unknown"
-        else:
-            mongo_version = "unknown"
-    else:
-        print(color(f"  ⚠ Could not detect version: {stderr}", Colors.YELLOW))
-        mongo_version = "unknown"
-
-    # Load environment variables to get MongoDB password
-    from vispctl.secrets import SecretManager
-
-    sm = SecretManager(RUNNER)
-    env_vars = sm.load_all()
-    mongo_password = env_vars.get("MONGO_ROOT_PASSWORD")
-
-    if not mongo_password:
-        print(
-            color("✗ MONGO_ROOT_PASSWORD not found in .env or .env.secrets", Colors.RED)
-        )
-        sys.exit(1)
-
-    # Create backup filename with timestamp and version
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_name = f"visp_mongodb_{mongo_version}_{timestamp}"
-    backup_dir = f"/tmp/{backup_name}"
-
-    print(f"  MongoDB version: {color(mongo_version, Colors.GREEN)}")
-    print(f"  Backup name: {color(backup_name + '.tar.gz', Colors.GREEN)}")
-    print()
-
-    # Run mongodump inside container
-    print("Running mongodump...")
-    result = run(
-        [
-            "podman",
-            "exec",
-            "mongo",
-            "mongodump",
-            "--username=root",
-            f"--password={mongo_password}",
-            "--authenticationDatabase=admin",
-            f"--out={backup_dir}",
-        ],
-        capture=False,
+    bm = BackupManager(RUNNER)
+    out = bm.backup(
+        output=getattr(args, "output", None), dry_run=getattr(args, "dry_run", False)
     )
-
-    if result.returncode != 0:
-        print(color("✗ Backup failed", Colors.RED))
+    if out is None:
         sys.exit(1)
-
-    # Create tar.gz from the dump
-    print("\nCompressing backup...")
-    result = run(
-        [
-            "podman",
-            "exec",
-            "mongo",
-            "tar",
-            "-czf",
-            f"{backup_dir}.tar.gz",
-            "-C",
-            "/tmp",
-            backup_name,
-        ],
-        capture=False,
-    )
-
-    if result.returncode != 0:
-        print(color("✗ Compression failed", Colors.RED))
-        sys.exit(1)
-
-    # Copy backup out of container
-    output_path = args.output or f"./{backup_name}.tar.gz"
-    print(f"\nCopying to {output_path}...")
-    result = run(["podman", "cp", f"mongo:{backup_dir}.tar.gz", output_path])
-
-    if result.returncode != 0:
-        print(color("✗ Copy failed", Colors.RED))
-        sys.exit(1)
-
-    # Cleanup inside container
-    run_quiet(
-        ["podman", "exec", "mongo", "rm", "-rf", backup_dir, f"{backup_dir}.tar.gz"]
-    )
-
-    # Get file size
-    if os.path.exists(output_path):
-        size_mb = os.path.getsize(output_path) / (1024 * 1024)
-        print(
-            color(
-                f"\n✓ Backup complete: {output_path} ({size_mb:.1f} MB)", Colors.GREEN
-            )
-        )
-        print()
-        print("To restore:")
-        print(f"  ./visp-podman.py restore {output_path}")
-        print()
-        print(
-            color(
-                "Note: This backup contains ONLY the database (users, sessions, metadata).",
-                Colors.YELLOW,
-            )
-        )
-        print(
-            "      Audio files in mounts/repositories/ should be backed up separately."
-        )
-    else:
-        print(color("✗ Backup file not created", Colors.RED))
-        sys.exit(1)
+    return
 
 
 def cmd_restore(args):
     """Restore MongoDB database from backup file."""
-    import os
+    from vispctl.backup import BackupManager
 
-    backup_file = args.backup_file
-
-    if not os.path.exists(backup_file):
-        print(color(f"✗ Backup file not found: {backup_file}", Colors.RED))
+    bm = BackupManager(RUNNER)
+    ok = bm.restore(Path(args.backup_file), force=getattr(args, "force", False))
+    if not ok:
         sys.exit(1)
-
-    # Check if mongo container is running
-    rc, _, _ = run_quiet(["podman", "ps", "-q", "-f", "name=^mongo$"])
-    if rc != 0:
-        print(color("✗ MongoDB container not running", Colors.RED))
-        print("  Start it with: ./visp-podman.py start mongo")
-        sys.exit(1)
-
-    print(color("=== MongoDB Restore ===", Colors.YELLOW))
-    print()
-    print(color("⚠️  WARNING: This will REPLACE all data in MongoDB!", Colors.YELLOW))
-    print(f"Backup file: {backup_file}")
-
-    # Load environment variables to get MongoDB password
-    from vispctl.secrets import SecretManager
-
-    sm = SecretManager(RUNNER)
-    env_vars = sm.load_all()
-    mongo_password = env_vars.get("MONGO_ROOT_PASSWORD")
-
-    if not mongo_password:
-        print(
-            color("✗ MONGO_ROOT_PASSWORD not found in .env or .env.secrets", Colors.RED)
-        )
-        sys.exit(1)
-
-    if not args.force:
-        print()
-        response = input("Continue? (yes/no): ")
-        if response.lower() != "yes":
-            print("Restore cancelled")
-            sys.exit(0)
-
-    # Copy backup into container
-    print("\nCopying backup into container...")
-    result = run(["podman", "cp", backup_file, "mongo:/tmp/restore.tar.gz"])
-
-    if result.returncode != 0:
-        print(color("✗ Copy failed", Colors.RED))
-        sys.exit(1)
-
-    # Extract backup
-    print("Extracting backup...")
-    result = run(
-        ["podman", "exec", "mongo", "tar", "-xzf", "/tmp/restore.tar.gz", "-C", "/tmp"]
-    )
-
-    if result.returncode != 0:
-        print(color("✗ Extraction failed", Colors.RED))
-        run_quiet(["podman", "exec", "mongo", "rm", "-f", "/tmp/restore.tar.gz"])
-        sys.exit(1)
-
-    # Find the extracted directory
-    print("Finding backup directory...")
-    rc, stdout, _ = run_quiet(
-        [
-            "podman",
-            "exec",
-            "mongo",
-            "find",
-            "/tmp",
-            "-maxdepth",
-            "1",
-            "-name",
-            "visp_mongodb_*",
-            "-type",
-            "d",
-        ]
-    )
-
-    if rc != 0 or not stdout.strip():
-        print(color("✗ Could not find backup directory in archive", Colors.RED))
-        run_quiet(["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz"])
-        sys.exit(1)
-
-    backup_dir = stdout.strip().split("\n")[0]
-    print(f"  Found: {backup_dir}")
-
-    # Run mongorestore
-    print("\nRestoring database...")
-    result = run(
-        [
-            "podman",
-            "exec",
-            "mongo",
-            "mongorestore",
-            "--username=root",
-            f"--password={mongo_password}",
-            "--authenticationDatabase=admin",
-            "--drop",  # Drop existing collections before restoring
-            backup_dir,
-        ],
-        capture=False,
-    )
-
-    # Cleanup
-    print("\nCleaning up...")
-    run_quiet(
-        ["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz", backup_dir]
-    )
-
-    if result.returncode == 0:
-        print(color("\n✓ Restore complete", Colors.GREEN))
-        print()
-        print("You may need to restart services:")
-        print("  ./visp-podman.py restart apache session-manager")
-    else:
-        print(color("\n✗ Restore failed", Colors.RED))
-        sys.exit(1)
+    return
 
 
 # === Helpers ===
@@ -1553,12 +1415,53 @@ Examples:
         "images", aliases=["img"], help="List VISP container images and build status"
     )
 
+    # fix-permissions
+    p_fix = subparsers.add_parser(
+        "fix-permissions",
+        aliases=["fixperm"],
+        help="Fix ownership and permissions for mount paths using podman unshare",
+    )
+    p_fix.add_argument(
+        "--path",
+        "-p",
+        dest="paths",
+        action="append",
+        help=(
+            "Path to fix (can be specified multiple times). "
+            "Default: mounts/repositories"
+        ),
+    )
+    p_fix.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Apply changes recursively (adds -R to chown/chmod)",
+    )
+    p_fix.add_argument(
+        "--host-owner",
+        action="store_true",
+        help=(
+            "Try to set host ownership to the current user using "
+            "namespace mapping (uses 'podman unshare chown 0:0'; no sudo)."
+        ),
+    )
+    p_fix.add_argument(
+        "--apply",
+        action="store_true",
+        help="Actually perform the changes. Default: dry-run",
+    )
+
     # backup
     p_backup = subparsers.add_parser("backup", help="Backup MongoDB database")
     p_backup.add_argument(
         "--output",
         "-o",
         help="Output file path (default: ./visp_mongodb_VERSION_TIMESTAMP.tar.gz)",
+    )
+    p_backup.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Do a dry-run (show actions without making changes)",
     )
 
     # restore
@@ -1606,6 +1509,8 @@ Examples:
         "net": cmd_network,
         "images": cmd_images,
         "img": cmd_images,
+        "fix-permissions": cmd_fix_permissions,
+        "fixperm": cmd_fix_permissions,
         "backup": cmd_backup,
         "restore": cmd_restore,
     }
