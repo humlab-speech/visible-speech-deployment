@@ -1186,6 +1186,7 @@ def fix_repository_permissions():
 def setup_service_env_files():
     """Setup environment files for individual services"""
     # Setup emu-webapp-server .env
+    os.makedirs("mounts/emu-webapp-server", exist_ok=True)
     os.makedirs("mounts/emu-webapp-server/logs", exist_ok=True)
 
     # Ensure logs directory exists in the source repo for dev mode (required due to volume mount)
@@ -1197,11 +1198,57 @@ def setup_service_env_files():
         except OSError:
             pass
 
-    run_command(
-        "curl -L https://raw.githubusercontent.com/humlab-speech/emu-webapp-server/main/.env-example "
-        "-o ./mounts/emu-webapp-server/.env",
-        "Fetching emu-webapp-server .env",
-    )
+    # Copy .env-example from external/emu-webapp-server and fill with appropriate values
+    env_example_path = "external/emu-webapp-server/.env-example"
+    env_target_path = "mounts/emu-webapp-server/.env"
+    
+    if os.path.exists(env_example_path):
+        if not os.path.exists(env_target_path):
+            # Read MongoDB password and BASE_DOMAIN from .env files
+            mongo_password = ""
+            base_domain = ""
+            for env_file in [".env.secrets", ".env"]:
+                if os.path.exists(env_file):
+                    with open(env_file, "r", encoding="utf-8") as f:
+                        for line in f:
+                            if line.startswith("MONGO_ROOT_PASSWORD="):
+                                mongo_password = line.split("=", 1)[1].strip()
+                            elif line.startswith("BASE_DOMAIN="):
+                                base_domain = line.split("=", 1)[1].strip()
+                    if mongo_password and base_domain:
+                        break
+            
+            # Copy and configure .env file
+            shutil.copy(env_example_path, env_target_path)
+            
+            with open(env_target_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            
+            # Replace placeholders with actual values
+            if mongo_password:
+                content = content.replace(
+                    "MONGO_URI=mongodb://USER:PASS@mongo:27017",
+                    f"MONGO_URI=mongodb://root:{mongo_password}@mongo:27017"
+                )
+                content = content.replace(
+                    "MONGO_ROOT_PASSWORD=",
+                    f"MONGO_ROOT_PASSWORD={mongo_password}"
+                )
+            
+            if base_domain:
+                content = content.replace(
+                    "MEDIA_FILE_BASE_URL=https://emu-webapp.MYDOMAIN",
+                    f"MEDIA_FILE_BASE_URL=https://emu-webapp.{base_domain}"
+                )
+            
+            with open(env_target_path, "w", encoding="utf-8") as f:
+                f.write(content)
+            
+            print(f"Created and configured {env_target_path} from {env_example_path}")
+        else:
+            print(f"ℹ️  {env_target_path} already exists, skipping (delete to regenerate)")
+    else:
+        print(f"Warning: {env_example_path} not found. Skipping emu-webapp-server .env setup.")
 
     # Setup wsrng-server .env (copy from .env-example and fill in MongoDB password)
     if os.path.exists("external/wsrng-server/.env-example"):
@@ -1235,7 +1282,7 @@ def setup_service_env_files():
                 print("Configured wsrng-server/.env with MongoDB credentials")
 
 
-def build_components(basedir):
+def build_components(basedir, force_rebuild=False):
     """Build all components using temporary Node.js containers based on versions.json config"""
     config = ComponentConfig()
 
@@ -1261,19 +1308,27 @@ def build_components(basedir):
 
         # Build npm install command based on config
         if comp_data.get("npm_install", False):
-            # Special case for webclient which needs legacy-peer-deps
-            if name == "webclient":
-                commands.append("npm install --legacy-peer-deps")
+            # Check if dependencies already installed
+            if not force_rebuild and check_npm_dependencies_installed(comp_path):
+                print(f"ℹ️  {name}: Dependencies already installed, skipping npm install")
             else:
-                commands.append("npm install")
+                # Special case for webclient which needs legacy-peer-deps
+                if name == "webclient":
+                    commands.append("npm install --legacy-peer-deps")
+                else:
+                    commands.append("npm install")
 
         # Build npm build command based on config
         if comp_data.get("npm_build", False):
-            # For webclient, use the WEBCLIENT_BUILD setting from .env
-            if name == "webclient":
-                commands.append(f"npm run {webclient_build_cmd}")
+            # Check if build output already exists
+            if not force_rebuild and check_build_output_exists(comp_path):
+                print(f"ℹ️  {name}: Build output already exists, skipping build")
             else:
-                commands.append("npm run build")
+                # For webclient, use the WEBCLIENT_BUILD setting from .env
+                if name == "webclient":
+                    commands.append(f"npm run {webclient_build_cmd}")
+                else:
+                    commands.append("npm run build")
 
         # Execute commands if any
         runtime = get_container_runtime()
@@ -1332,6 +1387,11 @@ def install_npm_dependencies(basedir):
 
         if not os.path.exists(package_json):
             print(f"⚠️  Skipping {dir_path} (no package.json found)")
+            continue
+
+        # Check if dependencies already installed
+        if check_npm_dependencies_installed(full_path):
+            print(f"ℹ️  {dir_path}: Dependencies already installed, skipping")
             continue
 
         print(f"\n📦 Installing dependencies in {dir_path}...")
@@ -1603,12 +1663,52 @@ def update_repositories(basedir, force=False):
     return results
 
 
+def check_image_exists(image_name):
+    """Check if a container image exists"""
+    runtime = get_container_runtime()
+    try:
+        result = subprocess.run(
+            [runtime, "image", "inspect", image_name],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
+def check_npm_dependencies_installed(component_path):
+    """Check if node_modules exists and appears valid"""
+    node_modules = os.path.join(component_path, "node_modules")
+    if not os.path.exists(node_modules):
+        return False
+    # Check if node_modules has content (not just an empty directory)
+    try:
+        return len(os.listdir(node_modules)) > 0
+    except OSError:
+        return False
+
+
+def check_build_output_exists(component_path, output_dir="dist"):
+    """Check if build output exists"""
+    output_path = os.path.join(component_path, output_dir)
+    if not os.path.exists(output_path):
+        return False
+    # Check if output has content
+    try:
+        return len(os.listdir(output_path)) > 0
+    except OSError:
+        return False
+
+
 def check_image_age(image_name, source_path):
     if not os.path.exists(source_path):
         return False  # If source doesn't exist, don't rebuild
     try:
+        runtime = get_container_runtime()
         result = subprocess.run(
-            ["docker", "inspect", "-f", "{{.Created}}", image_name],
+            [runtime, "inspect", "-f", "{{.Created}}", image_name],
             capture_output=True,
             text=True,
             check=True,
@@ -1678,7 +1778,7 @@ class SessionImageBuilder:
             shutil.rmtree(self.container_agent_dest)
             print("   ✅ Cleanup complete")
 
-    def rebuild_all(self, no_cache=True, images_to_build=None):
+    def rebuild_all(self, no_cache=True, images_to_build=None, force_rebuild=False):
         """
         Rebuild session images
 
@@ -1686,6 +1786,7 @@ class SessionImageBuilder:
             no_cache: Whether to use --no-cache flag
             images_to_build: List of image names to build, or None for all
                            e.g. ["visp-operations-session", "visp-jupyter-session"]
+            force_rebuild: If True, rebuild even if images already exist
         """
         print("\n" + "=" * 70)
         print("REBUILDING SESSION IMAGES")
@@ -1707,9 +1808,9 @@ class SessionImageBuilder:
             # Build in order (operations must be first since others depend on it)
             results = []
             for image in images:
-                result = self.build_image(image, no_cache=no_cache)
+                result = self.build_image(image, no_cache=no_cache, force_rebuild=force_rebuild)
                 results.append(result)
-                if not result["success"]:
+                if not result["success"] and not result.get("skipped", False):
                     print(f"⚠️  Build failed for {image['name']}, but continuing...")
 
             return results
@@ -1736,8 +1837,13 @@ class SessionImageBuilder:
             no_cache=no_cache, images_to_build=["visp-rstudio-session"]
         )
 
-    def build_image(self, image, no_cache=True):
+    def build_image(self, image, no_cache=True, force_rebuild=False):
         """Build a single session image"""
+        # Check if image already exists and skip if not forcing rebuild
+        if not force_rebuild and check_image_exists(image["name"]):
+            print(f"ℹ️  Image {image['name']} already exists, skipping build")
+            return {"success": True, "image": image["name"], "skipped": True}
+
         print(f"\n{'='*70}")
         print(f"Building {image['description']}")
         print(f"Image: {image['name']}")
@@ -1770,21 +1876,26 @@ class SessionImageBuilder:
             return {"success": False, "image": image["name"], "error": str(e)}
 
 
-def rebuild_images(basedir=None):
+def rebuild_images(basedir=None, force_rebuild=False):
     """Rebuild session images using SessionImageBuilder"""
     if basedir is None:
         basedir = os.getcwd()
 
     builder = SessionImageBuilder(basedir)
-    results = builder.rebuild_all(no_cache=True)
+    results = builder.rebuild_all(no_cache=True, force_rebuild=force_rebuild)
 
-    # Check if any builds failed
-    failed = [r for r in results if not r["success"]]
+    # Check if any builds failed (excluding skipped builds)
+    failed = [r for r in results if not r["success"] and not r.get("skipped", False)]
+    skipped = [r for r in results if r.get("skipped", False)]
+    
+    if skipped and not force_rebuild:
+        print(f"\nℹ️  {len(skipped)} image(s) already exist, skipped building")
+    
     if failed:
         print(
             f"\n⚠️  {len(failed)} image(s) failed to build, but continuing with update."
         )
-    else:
+    elif not skipped:
         print("\n✅ All images rebuilt successfully.")
 
 
@@ -2208,11 +2319,12 @@ def check_session_images_status():
 
     results = []
 
+    runtime = get_container_runtime()
     for image_name in images:
         try:
             # Check if image exists
             result = subprocess.run(
-                ["docker", "image", "inspect", image_name, "--format", "{{.Created}}"],
+                [runtime, "image", "inspect", image_name, "--format", "{{.Created}}"],
                 capture_output=True,
                 text=True,
                 check=False,
