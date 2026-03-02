@@ -2,11 +2,12 @@ services:
   apache:
     image: visp-apache
     build:
-      context: "."
-      dockerfile: "./docker/apache/Dockerfile"
+      context: ./external/webclient
+      dockerfile: ./docker/Dockerfile
+      target: production
       args:
         WEBCLIENT_BUILD: ${WEBCLIENT_BUILD:-visp-build}
-    restart: always
+    restart: unless-stopped
     ports:
       - $HTTP_PORT:80
     networks:
@@ -89,13 +90,17 @@ services:
       - whisper-net
 
   emu-webapp:
-    image: visp-emu-webapp
     build:
-      context: ./docker/emu-webapp
+      context: ./external/EMU-webApp
+      dockerfile: ../../docker/emu-webapp/Dockerfile
       target: production
-    restart: always
+    restart: unless-stopped
+    stop_grace_period: 30s
     ports:
       - 127.0.0.1:9000:9000
+    volumes:
+      - ./external/EMU-webApp:/app:Z
+      - /app/node_modules
     networks:
       - visp-net
 
