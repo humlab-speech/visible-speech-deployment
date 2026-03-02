@@ -1,74 +1,59 @@
-# =========================================================================
-# Stage 1: The "Builder" Stage
-# =========================================================================
-FROM node:18-bookworm AS builder
+# syntax=docker/dockerfile:1
 
-RUN apt-get update && \
-    apt-get install -y curl ca-certificates gnupg git nano wget rubygems ruby-dev build-essential xsel && \
-    rm -rf /var/lib/apt/lists/*
-
+############################
+# 1) Base deps stage
+############################
+FROM node:18-bookworm AS deps
 WORKDIR /app
 
-RUN gem install sass
-RUN gem install compass
-
-# Clone EMU-webApp from GitHub
-RUN git clone https://github.com/humlab-speech/EMU-webApp.git /app
-
-# Install dependencies
+# Install deps first (better caching)
+COPY package*.json ./
 RUN npm ci
 
-# Ensure node_modules binaries are executable after COPY (fixes permission issues on some systems)
-RUN chmod -R +x node_modules/.bin/ || true
+############################
+# 2) Development stage
+############################
+FROM node:18-bookworm AS development
+WORKDIR /app
 
-# Clean dist directory manually and build (avoids rimraf permission issues)
-RUN rm -rf dist/* && NODE_OPTIONS=--openssl-legacy-provider npx webpack --config webpack.prod.js
+# Reuse node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# =========================================================================
-# Stage 2: The "Production" Stage - Nginx
-# =========================================================================
+# Webpack 4 + newer OpenSSL often needs this
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
+# If bind-mount file events are flaky, polling makes rebuild reliable
+ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_INTERVAL=250
+
+EXPOSE 9000
+
+CMD ["npx", "webpack-dev-server", "--config", "webpack.dev.js", "--host", "0.0.0.0", "--port", "9000"]
+
+############################
+# 3) Build stage (creates static assets)
+############################
+FROM node:18-bookworm AS build
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
+# IMPORTANT: replace with your real production build command
+# e.g. "npm run build" should produce /app/dist (or /app/build)
+RUN npm run build
+
+############################
+# 4) Production stage (serves built assets)
+############################
 FROM nginx:alpine AS production
 
-# Copy built files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# If your build output is /app/dist, copy it into nginx web root:
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx-production.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
 
-EXPOSE 9000
-
-CMD ["nginx", "-g", "daemon off;"]
-
-# =========================================================================
-# Stage 3: The "Development" Stage - With Watch Mode
-# =========================================================================
-FROM node:18-bookworm AS development
-
-RUN apt-get update && \
-    apt-get install -y curl ca-certificates gnupg git nano wget rubygems ruby-dev build-essential xsel nginx && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-RUN gem install sass
-RUN gem install compass
-
-# Clone EMU-webApp from GitHub
-RUN git clone https://github.com/humlab-speech/EMU-webApp.git /app
-
-# Install dependencies
-RUN npm ci
-
-# Ensure node_modules binaries are executable
-RUN chmod -R +x node_modules/.bin/ || true
-
-# Copy nginx configuration for development
-COPY nginx-development.conf /etc/nginx/sites-available/default
-
-# Copy and setup start script
-COPY start-dev.sh /usr/local/bin/start-dev.sh
-RUN chmod +x /usr/local/bin/start-dev.sh
-
-EXPOSE 9000
-
-CMD ["/usr/local/bin/start-dev.sh"]
+# Default nginx command is fine
