@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 RUN apt-get update && \
-    apt-get install -y curl git python3 python3-pip python3-venv && \
+    apt-get install -y curl git python3 python3-pip python3-venv tini && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
     mkdir -p /Whisper-WebUI
 
@@ -21,4 +21,6 @@ RUN python3 -m venv venv && \
 ENV PATH="/Whisper-WebUI/venv/bin:$PATH"
 ENV LD_LIBRARY_PATH=/Whisper-WebUI/venv/lib64/python3.11/site-packages/nvidia/cublas/lib:/Whisper-WebUI/venv/lib64/python3.11/site-packages/nvidia/cudnn/lib
 
+# Use tini as init system to handle signals properly
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD [ "python3", "app.py", "--server_name", "0.0.0.0", "--server_port", "7860" ]
