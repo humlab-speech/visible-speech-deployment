@@ -74,11 +74,12 @@ services:
       GRADIO_WHISPERX_ENDPOINT: "http://whisper:7860"
       BASIC_AUTH_USERNAME: "whisperuser"
       BASIC_AUTH_PASSWORD: "whisperpass"
+      DOCKER_SOCKET_PATH: ${DOCKER_SOCKET_PATH:-/run/user/1000/podman/podman.sock}
     volumes:
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
-      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "${DOCKER_SOCKET_PATH}:${DOCKER_SOCKET_PATH}:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
