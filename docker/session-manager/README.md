@@ -16,21 +16,21 @@ This is **NOT** for building the session-manager service itself. The session-man
 
 ## Usage:
 
-Use `visp_deploy.py` to build session images:
+Use `visp-deploy.py` to build session images:
 
 ```bash
 # Build all session images (no cache by default)
-python3 visp_deploy.py build
+python3 visp-deploy.py build
 
 # Build all with cache
-python3 visp_deploy.py build --cache
+python3 visp-deploy.py build --cache
 
 # Build specific images
-python3 visp_deploy.py build operations
-python3 visp_deploy.py build rstudio jupyter
+python3 visp-deploy.py build operations
+python3 visp-deploy.py build rstudio jupyter
 
 # Build is also part of update
-python3 visp_deploy.py update
+python3 visp-deploy.py update
 ```
 
 **Note**: Operations session must be built first since rstudio and jupyter depend on it. The build system handles this automatically.
