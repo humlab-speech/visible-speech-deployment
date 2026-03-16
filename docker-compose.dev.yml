@@ -97,6 +97,7 @@ services:
       GRADIO_WHISPERX_ENDPOINT: "http://whisper:7860"
       BASIC_AUTH_USERNAME: "whisperuser"
       BASIC_AUTH_PASSWORD: "whisperpass"
+      DOCKER_SOCKET_PATH: ${DOCKER_SOCKET_PATH:-/run/user/1000/podman/podman.sock}
     volumes:
       # Source code mount for development hot-reload
       - "./external/session-manager:/session-manager:Z"
@@ -104,7 +105,7 @@ services:
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/logs:/session-manager/logs:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
-      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "${DOCKER_SOCKET_PATH}:${DOCKER_SOCKET_PATH}:Z"
       - "./mounts/repositories:/repositories:Z"
       - "./mounts/repository-template:/repository-template:Z"
       - "./mounts/transcription-queued:/transcription-queued:Z"
@@ -118,11 +119,11 @@ services:
     build:
       context: ./external/EMU-webApp
       dockerfile: ../../docker/emu-webapp/Dockerfile
-      target: development
+      target: production #this is intentionally set to production, since the webpack-dev-server used in the development stage refuses to serve other than localhost domains currently and I have been unsuccessful in changing that. If you do manage to fix that, the port should then be changed to 9000
     restart: unless-stopped
     stop_grace_period: 30s
     ports:
-      - 127.0.0.1:9000:9000
+      - 9000:80
     volumes:
       - ./external/EMU-webApp:/app:Z
       - /app/node_modules
