@@ -871,51 +871,19 @@ def create_required_directories():
 
 
 def generate_ssl_certificates():
-    """Generate SSL certificates for VISP"""
-    # Fetch SWAMID cert - this is optional, warn if it fails
-    swamid_cert_path = "certs/md-signer2.crt"
-    if not os.path.exists(swamid_cert_path):
-        try:
-            run_command(
-                "curl -f http://mds.swamid.se/md/md-signer2.crt -o certs/md-signer2.crt",
-                "Fetching SWAMID cert",
-            )
-        except subprocess.CalledProcessError as e:
-            print("⚠️  Warning: Could not fetch SWAMID certificate from mds.swamid.se")
-            print(f"   Error: {e}")
-            print("   SWAMID authentication may not work properly.")
-            print("   You can manually download it later if needed.")
-    else:
-        print("✓ SWAMID certificate already exists, skipping download")
-
-    # Generate self-signed certs for local development
-    os.makedirs("certs/visp.local", exist_ok=True)
-    visp_cert_path = "certs/visp.local/cert.crt"
-    visp_key_path = "certs/visp.local/cert.key"
-
-    if not os.path.exists(visp_cert_path) or not os.path.exists(visp_key_path):
-        run_command(
-            "openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/cert.key "
-            "-out certs/visp.local/cert.crt -nodes -days 3650 "
-            '-subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"',
-            "Generating TLS cert",
-        )
-    else:
-        print("✓ VISP TLS certificate already exists, skipping generation")
-
-    os.makedirs("certs/ssp-idp-cert", exist_ok=True)
-    idp_cert_path = "certs/ssp-idp-cert/cert.pem"
-    idp_key_path = "certs/ssp-idp-cert/key.pem"
-
-    if not os.path.exists(idp_cert_path) or not os.path.exists(idp_key_path):
-        run_command(
-            "openssl req -x509 -newkey rsa:4096 -keyout certs/ssp-idp-cert/key.pem "
-            "-out certs/ssp-idp-cert/cert.pem -nodes -days 3650 "
-            '-subj "/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN=visp.local"',
-            "Generating IdP cert",
-        )
-    else:
-        print("✓ SSP IdP certificate already exists, skipping generation")
+    """Generate SSL certificates for VISP by calling the generate-certs.sh script"""
+    script_path = os.path.join(os.getcwd(), "generate-certs.sh")
+    
+    if not os.path.exists(script_path):
+        print(f"⚠️  Warning: {script_path} not found")
+        print("   Certificate generation skipped")
+        return
+    
+    try:
+        run_command("./generate-certs.sh", "Generating SSL certificates")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️  Warning: Certificate generation failed: {e}")
+        print("   You can run ./generate-certs.sh manually later")
 
 
 def verify_repository_content(repo_path, name):
@@ -1767,8 +1735,14 @@ class SessionImageBuilder:
         if os.path.exists(self.container_agent_dest):
             shutil.rmtree(self.container_agent_dest)
 
-        # Copy container-agent source into build context
-        shutil.copytree(self.container_agent_src, self.container_agent_dest)
+        # Copy container-agent source into build context, excluding node_modules
+        # and dist so the Docker build always does a clean npm install/build
+        # with correct permissions (avoids "webpack: Permission denied" errors).
+        shutil.copytree(
+            self.container_agent_src,
+            self.container_agent_dest,
+            ignore=shutil.ignore_patterns("node_modules", "dist"),
+        )
         print("   ✅ Build context ready")
 
     def cleanup_build_context(self):
@@ -2031,6 +2005,9 @@ def update_system(force=False):
 
     # Install npm dependencies after repository updates
     install_npm_dependencies(BASEDIR)
+
+    # Setup service-specific .env files (creates missing ones)
+    setup_service_env_files()
 
     # Check environment
     print("🔍 Checking environment...")
@@ -3042,6 +3019,11 @@ def main():
         action="store_true",
         help="Use Docker cache (default is --no-cache)",
     )
+    build_parser.add_argument(
+        "--force-rebuild",
+        action="store_true",
+        help="Rebuild even if images already exist",
+    )
 
     args = parser.parse_args()
 
@@ -3071,12 +3053,13 @@ def main():
         builder = SessionImageBuilder(basedir)
         use_cache = getattr(args, "cache", False)
         no_cache = not use_cache
+        force_rebuild = getattr(args, "force_rebuild", False)
 
         # Determine which images to build
         images_arg = getattr(args, "images", ["all"])
         if not images_arg or "all" in images_arg:
             print("Building all session images...")
-            builder.rebuild_all(no_cache=no_cache)
+            builder.rebuild_all(no_cache=no_cache, force_rebuild=force_rebuild)
         else:
             # Map short names to full image names
             image_map = {
@@ -3086,7 +3069,11 @@ def main():
             }
             images_to_build = [image_map[img] for img in images_arg if img in image_map]
             print(f"Building images: {', '.join(images_arg)}...")
-            builder.rebuild_all(no_cache=no_cache, images_to_build=images_to_build)
+            builder.rebuild_all(
+                no_cache=no_cache,
+                images_to_build=images_to_build,
+                force_rebuild=force_rebuild,
+            )
     else:
         parser.print_help()
 
