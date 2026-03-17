@@ -1,4 +1,4 @@
-FROM nginx:alpine
+FROM docker.io/library/nginx:alpine
 
 # Remove default configuration
 RUN rm /etc/nginx/conf.d/default.conf

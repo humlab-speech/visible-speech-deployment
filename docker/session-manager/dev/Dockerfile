@@ -1,4 +1,4 @@
-FROM node:lts-bookworm
+FROM docker.io/library/node:lts-bookworm
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 

@@ -1,4 +1,4 @@
-FROM httpd:2.4
+FROM docker.io/library/httpd:2.4
 
 RUN apt-get update && apt-get install -y curl nano git
 

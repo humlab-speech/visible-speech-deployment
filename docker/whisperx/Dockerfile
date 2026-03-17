@@ -1,7 +1,7 @@
 # WhisperX Web API Container
 # Minimal containerized WhisperX with web API for speech transcription
 
-FROM python:3.11-slim as builder
+FROM docker.io/library/python:3.11-slim as builder
 
 # Install system dependencies for audio processing
 RUN apt-get update && apt-get install -y \
@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir torch torchaudio --index-url https://download.pyt
 RUN pip install --no-cache-dir whisperx fastapi uvicorn python-multipart
 
 # Production stage
-FROM python:3.11-slim
+FROM docker.io/library/python:3.11-slim
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y \

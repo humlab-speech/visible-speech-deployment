@@ -3,7 +3,7 @@
 ############################
 # 1) Base deps stage
 ############################
-FROM node:18-bookworm AS deps
+FROM docker.io/library/node:18-bookworm AS deps
 WORKDIR /app
 
 # Install deps first (better caching)
@@ -13,7 +13,7 @@ RUN npm ci
 ############################
 # 2) Development stage
 ############################
-FROM node:18-bookworm AS development
+FROM docker.io/library/node:18-bookworm AS development
 WORKDIR /app
 
 # Reuse node_modules from deps stage
@@ -34,7 +34,7 @@ CMD ["npx", "webpack-dev-server", "--config", "webpack.dev.js", "--host", "0.0.0
 ############################
 # 3) Build stage (creates static assets)
 ############################
-FROM node:18-bookworm AS build
+FROM docker.io/library/node:18-bookworm AS build
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -49,7 +49,7 @@ RUN npm run build
 ############################
 # 4) Production stage (serves built assets)
 ############################
-FROM nginx:alpine AS production
+FROM docker.io/library/nginx:alpine AS production
 
 # If your build output is /app/dist, copy it into nginx web root:
 COPY --from=build /app/dist /usr/share/nginx/html
