@@ -4,24 +4,20 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
 
-from .runner import Runner, color, Colors
+from .runner import Colors, Runner, color
 from .secrets import SecretManager
 
 
 class BackupManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
         self.runner = runner
-        self.project_dir = (
-            Path(project_dir) if project_dir else Path(__file__).parent.parent
-        )
+        self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
         self.sm = SecretManager(self.runner, project_dir=self.project_dir)
 
     def _detect_mongo_version(self) -> str:
-        rc, out, _ = self.runner.run_quiet(
-            ["podman", "exec", "mongo", "mongod", "--version"]
-        )
+        rc, out, _ = self.runner.run_quiet(["podman", "exec", "mongo", "mongod", "--version"])
         if rc == 0 and out:
             for line in out.splitlines():
                 if "version" in line.lower():
@@ -35,9 +31,7 @@ class BackupManager:
             return []
         return sorted([p for p in d.glob("*.tar.gz") if p.is_file()])
 
-    def backup(
-        self, output: Optional[Path] = None, dry_run: bool = False
-    ) -> Optional[Path]:
+    def backup(self, output: Optional[Path] = None, dry_run: bool = False) -> Optional[Path]:
         """Perform a MongoDB backup and return the path to the created archive.
 
         If dry_run is True, print planned actions and return a suggested path without making changes.
@@ -78,9 +72,7 @@ class BackupManager:
                 f"--username=root --password=*** "
                 f"--authenticationDatabase=admin --out={backup_dir}"
             )
-            print(
-                f"  Would run: podman exec mongo tar -czf {archive_in_container} -C /tmp {backup_name}"
-            )
+            print(f"  Would run: podman exec mongo tar -czf {archive_in_container} -C /tmp {backup_name}")
             print(f"  Would run: podman cp mongo:{archive_in_container} {output_path}")
             return output_path
 
@@ -123,17 +115,13 @@ class BackupManager:
 
         # Copy backup out of container
         print(f"\nCopying to {output_path}...")
-        res = self.runner.run(
-            ["podman", "cp", f"mongo:{archive_in_container}", str(output_path)]
-        )
+        res = self.runner.run(["podman", "cp", f"mongo:{archive_in_container}", str(output_path)])
         if res.returncode != 0:
             print(color("✗ Copy failed", Colors.RED))
             return None
 
         # Cleanup inside container
-        self.runner.run(
-            ["podman", "exec", "mongo", "rm", "-rf", backup_dir, archive_in_container]
-        )
+        self.runner.run(["podman", "exec", "mongo", "rm", "-rf", backup_dir, archive_in_container])
 
         # Verify file
         if output_path.exists():
@@ -156,17 +144,13 @@ class BackupManager:
             return False
 
         if not force:
-            resp = input(
-                "This will restore the database and overwrite data. Continue? (yes/no): "
-            )
+            resp = input("This will restore the database and overwrite data. Continue? (yes/no): ")
             if resp.strip().lower() not in ("yes", "y"):
                 print("Restore cancelled.")
                 return False
 
         # Copy file into container
-        res = self.runner.run(
-            ["podman", "cp", str(b), "mongo:/tmp/restore.tar.gz"]
-        )  # reusing /tmp
+        res = self.runner.run(["podman", "cp", str(b), "mongo:/tmp/restore.tar.gz"])  # reusing /tmp
         if res.returncode != 0:
             print(color("✗ Failed to copy backup into container", Colors.RED))
             return False
@@ -206,9 +190,7 @@ class BackupManager:
         )
         if rc != 0 or not out.strip():
             print(color("✗ Could not find backup directory in archive", Colors.RED))
-            self.runner.run(
-                ["podman", "exec", "mongo", "rm", "-f", "/tmp/restore.tar.gz"]
-            )
+            self.runner.run(["podman", "exec", "mongo", "rm", "-f", "/tmp/restore.tar.gz"])
             return False
 
         backup_dir = out.strip().splitlines()[0]
@@ -235,9 +217,7 @@ class BackupManager:
         )
 
         # Cleanup
-        self.runner.run(
-            ["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz", backup_dir]
-        )
+        self.runner.run(["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz", backup_dir])
 
         if res.returncode != 0:
             print(color("✗ Restore failed", Colors.RED))

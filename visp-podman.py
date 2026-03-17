@@ -44,10 +44,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+from vispctl.build import BuildManager
+from vispctl.images import ImageManager
+from vispctl.network import NetworkManager
+
 # Use the new modular managers where appropriate
 from vispctl.runner import Runner
-from vispctl.build import BuildManager
-from vispctl.network import NetworkManager
 from vispctl.service import Service
 from vispctl.service_manager import ServiceManager
 
@@ -89,7 +91,8 @@ SERVICES = [
     # Then containers in dependency order
     Service("mongo", "container", "mongo.container"),
     Service("traefik", "container", "traefik.container"),
-    Service("whisper", "container", "whisper.container"),
+    Service("whisperx", "container", "whisperx.container"),
+    Service("whisperx-nginx", "container", "whisperx-nginx.container"),
     Service("wsrng-server", "container", "wsrng-server.container"),
     Service("session-manager", "container", "session-manager.container"),
     Service("emu-webapp", "container", "emu-webapp.container"),
@@ -123,9 +126,7 @@ def color(text: str, c: str) -> str:
 RUNNER = Runner()
 
 
-def run(
-    cmd: list[str], capture: bool = False, check: bool = True, **kwargs
-) -> subprocess.CompletedProcess:
+def run(cmd: list[str], capture: bool = False, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
     """Run a command via the shared Runner."""
     return RUNNER.run(cmd, capture=capture, check=check, **kwargs)
 
@@ -380,6 +381,27 @@ def ensure_networks_exist() -> bool:
 def cmd_install(args):
     """Link quadlet files to systemd directory."""
 
+    # First-time setup: generate passwords if needed
+    env_file_path = Path(".env")
+    secrets_file_path = Path(".env.secrets")
+
+    if not env_file_path.exists() or not secrets_file_path.exists():
+        print(color("\n=== First-Time Setup: Generating Environment Files ===", Colors.CYAN))
+        print()
+        print("This will create .env and .env.secrets with auto-generated passwords.")
+        print("You can modify these files later if needed.")
+        print()
+
+        from vispctl.passwords import setup_env_file
+
+        try:
+            setup_env_file(auto_passwords=True, interactive=False)
+            print()
+        except Exception as e:
+            print(color(f"❌ Error setting up environment files: {e}", Colors.RED))
+            print("Please check the error and try again.")
+            sys.exit(1)
+
     # Check for netavark backend using NetworkManager
     runner = Runner()
     nm = NetworkManager(runner)
@@ -409,9 +431,7 @@ def cmd_install(args):
                 sys.exit(1)
         else:
             # Unknown backend, just configure netavark
-            print(
-                color("Netavark is required for proper DNS resolution.", Colors.YELLOW)
-            )
+            print(color("Netavark is required for proper DNS resolution.", Colors.YELLOW))
             response = input("Configure netavark now? (yes/no): ").strip().lower()
             if response in ["yes", "y"]:
                 if not nm.configure_netavark():
@@ -432,11 +452,7 @@ def cmd_install(args):
     # Ensure networks exist (netavark doesn't auto-create from quadlet files)
     print()
     if not ensure_networks_exist():
-        print(
-            color(
-                "Failed to create networks. Please check the errors above.", Colors.RED
-            )
-        )
+        print(color("Failed to create networks. Please check the errors above.", Colors.RED))
         sys.exit(1)
     print()
 
@@ -563,9 +579,7 @@ def cmd_mode(args):
         # Set mode
         old_mode = get_current_mode()
         set_current_mode(new_mode)
-        print(
-            f"Mode changed from {color(old_mode, Colors.YELLOW)} to {color(new_mode, Colors.GREEN)}"
-        )
+        print(f"Mode changed from {color(old_mode, Colors.YELLOW)} to {color(new_mode, Colors.GREEN)}")
         print()
         print(color("To apply the new mode:", Colors.CYAN))
         print(f"  1. ./visp-podman.py install --mode {new_mode} --force")
@@ -576,15 +590,11 @@ def cmd_mode(args):
         current = get_current_mode()
         print(color("=== Deployment Mode ===", Colors.CYAN))
         print()
-        print(
-            f"  Current mode: {color(current, Colors.GREEN if current == 'prod' else Colors.YELLOW)}"
-        )
+        print(f"  Current mode: {color(current, Colors.GREEN if current == 'prod' else Colors.YELLOW)}")
         print()
         print(color("Mode differences:", Colors.CYAN))
         print("  dev      - Traefik proxy, source code mounts, container-agent mounted")
-        print(
-            "  prod     - No Traefik, code baked into images, optimized for deployment"
-        )
+        print("  prod     - No Traefik, code baked into images, optimized for deployment")
         print()
         print("  Change mode: ./visp-podman.py mode [dev|prod]")
 
@@ -625,8 +635,8 @@ BUILD_CONFIGS = {
         "target": "production",
     },
     "emu-webapp-server": {
-        "context": "./external/emu-webapp-server/docker",
-        "dockerfile": "Dockerfile",
+        "context": "./external/emu-webapp-server",
+        "dockerfile": "docker/Dockerfile",
         "image": "visp-emu-webapp-server",
     },
     "octra": {
@@ -639,10 +649,17 @@ BUILD_CONFIGS = {
         "dockerfile": "Dockerfile",
         "image": "visp-wsrng-server",
     },
-    "whisper": {
-        "context": "./docker/whisper",
-        "dockerfile": "Dockerfile",
-        "image": "visp-whisper",
+    "whisperx": {
+        "context": "./external/WhisperVault",
+        "dockerfile": "container/Containerfile",
+        "image": "visp-whisperx",
+        "description": "WhisperX transcription server (network-isolated, communicates via Unix socket)",
+    },
+    "whisperx-nginx": {
+        "context": "./external/WhisperVault/container/nginx",
+        "dockerfile": "Containerfile",
+        "image": "visp-whisperx-nginx",
+        "description": "nginx sidecar that proxies whisperx Unix socket to TCP for other containers",
     },
     # Session images - used by session-manager to spawn user sessions
     "operations-session": {
@@ -681,8 +698,10 @@ NODE_BUILD_CONFIGS = {
         "source": "./external/webclient",
         "output": "./external/webclient/dist",
         "description": "Angular webclient (ng build)",
-        # Default to visp-build, can be overridden with --config
-        "build_cmd": "npm run {config}-build",
+        # Run ng build directly - skipping php:vendor (composer) since the Apache
+        # Dockerfile installs PHP dependencies itself during image build.
+        # Use npx to invoke the locally installed ng binary.
+        "build_cmd": "npx ng build --configuration={config} --output-path dist",
         "default_config": "visp",
         "verify_file": "index.html",
         # Angular needs more memory and uses node:20 (not alpine) for better compatibility
@@ -703,32 +722,25 @@ def prepare_build_context(name: str, config: dict) -> bool:
 
     Delegates to BuildManager.
     """
-    bm = BuildManager(
-        Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS
-    )
+    bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
     return bm.prepare_build_context(name, config)
 
 
-def build_node_project(
-    name: str, config: dict, no_cache: bool = False, build_config: str = None
-) -> bool:
+def build_node_project(name: str, config: dict, no_cache: bool = False, build_config: str = None) -> bool:
     """
     Build a Node.js project using a containerized build (no host npm needed).
 
     Delegates to BuildManager.
     """
-    bm = BuildManager(
-        Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS
-    )
-    return bm.build_node_project(
-        name, config, no_cache=no_cache, build_config=build_config
-    )
+    bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
+    return bm.build_node_project(name, config, no_cache=no_cache, build_config=build_config)
 
 
 def cmd_build(args):
     """Build container images.
 
     Delegates image and node builds to BuildManager.
+    Checks version drift before building.
     """
     # Handle --list flag
     if getattr(args, "list", False):
@@ -739,10 +751,83 @@ def cmd_build(args):
     pull = getattr(args, "pull", False)
     service = getattr(args, "service", "all")
     build_config = getattr(args, "config", None)
+    force = getattr(args, "force", False)
 
-    bm = BuildManager(
-        Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS
-    )
+    # Check version drift before building (unless --force)
+    if not force:
+        from pathlib import Path
+
+        from vispctl.git_repo import GitRepository
+        from vispctl.versions import ComponentConfig
+
+        config = ComponentConfig()
+        mode = get_current_mode()
+
+        # Determine which services need version checks
+        services_to_check = []
+        if service == "all":
+            # Check all node builds that correspond to external repos
+            services_to_check = [s for s in NODE_BUILD_CONFIGS.keys() if s in dict(config.get_components())]
+        elif service in NODE_BUILD_CONFIGS and service in dict(config.get_components()):
+            services_to_check = [service]
+
+        # Check for version drift
+        version_warnings = []
+        for svc_name in services_to_check:
+            comp_data = config.get_component(svc_name)
+            if not comp_data:
+                continue
+
+            version = comp_data.get("version", "latest")
+            is_locked = config.is_locked(svc_name)
+
+            repo_path = Path.cwd() / "external" / svc_name
+            if not repo_path.exists():
+                version_warnings.append(f"  ⚠️  {svc_name}: Repository not found at {repo_path}")
+                continue
+
+            repo = GitRepository(str(repo_path))
+            if not repo.is_git_repo():
+                continue
+
+            current_commit = repo.get_current_commit()
+            if not current_commit:
+                continue
+
+            # In prod mode (locked), check if current commit matches locked version
+            if mode == "prod" and is_locked:
+                if current_commit != version:
+                    version_warnings.append(
+                        f"  ⚠️  {svc_name}: Version mismatch in PROD mode\n"
+                        f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
+                        f"      Run: ./visp-podman.py deploy update"
+                    )
+            # In dev mode (unlocked), just warn if there's drift from locked version
+            elif mode == "dev" and not is_locked:
+                locked_version = config.get_locked_version(svc_name)
+                if locked_version and locked_version != "N/A" and current_commit != locked_version:
+                    version_warnings.append(
+                        f"  ℹ️  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
+                        f"      Current: {current_commit[:8]}, Locked: {locked_version[:8]}"
+                    )
+
+        if version_warnings:
+            print(color("\n=== Version Check Warnings ===", Colors.YELLOW))
+            for warning in version_warnings:
+                print(warning)
+            print()
+            if mode == "prod" and any("Version mismatch" in w for w in version_warnings):
+                print(color("❌ Cannot build in PROD mode with version mismatches.", Colors.RED))
+                print("   Options:")
+                print("   1. Run: ./visp-podman.py deploy update")
+                print("   2. Use --force to override (not recommended)")
+                print()
+                return
+            elif version_warnings:
+                print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
+                print()
+
+    bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
 
     # Node build target
     if service in NODE_BUILD_CONFIGS:
@@ -887,9 +972,7 @@ def cmd_build_list(args):
         print(f"    Description: {config['description']}")
         if config.get("default_config"):
             print(f"    Default config: {config['default_config']}")
-            print(
-                "    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local"
-            )
+            print("    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local")
         print()
 
 
@@ -981,123 +1064,97 @@ def cmd_network(args):
 
 def cmd_images(args):
     """List VISP container images and their status."""
-    print(color("=== VISP Container Images ===", Colors.CYAN))
-    print()
+    if hasattr(args, "subcommand") and args.subcommand == "base":
+        return cmd_images_base(args)
 
-    # Get all expected images from BUILD_CONFIGS
-    expected_images = {config["image"]: name for name, config in BUILD_CONFIGS.items()}
+    im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
+    im.display_visp_images()
+    im.display_network_info()
 
-    # Get actual images from podman
-    rc, stdout, _ = run_quiet(
-        [
-            "podman",
-            "images",
-            "--format",
-            "{{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.Created}}",
-        ]
-    )
 
-    if rc != 0:
-        print(color("Failed to list images", Colors.RED))
-        return
+def cmd_images_base(args):
+    """List all base images used in Dockerfiles."""
+    im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
+    im.display_base_images()
 
-    found_images = {}
-    for line in stdout.strip().split("\n"):
-        if not line:
-            continue
-        parts = line.split("\t")
-        if len(parts) >= 4:
-            repo, tag, size, created = parts[0], parts[1], parts[2], parts[3]
-            # Extract image name from full path (e.g., docker.io/library/visp-apache -> visp-apache)
-            image_name = repo.split("/")[-1]
-            if image_name.startswith("visp-"):
-                found_images[image_name] = {
-                    "tag": tag,
-                    "size": size,
-                    "created": created,
-                    "full_repo": repo,
-                }
 
-    # Print status for each expected image
-    for image_name, build_name in sorted(expected_images.items()):
-        if image_name in found_images:
-            info = found_images[image_name]
-            print(
-                f"  {color('✓', Colors.GREEN)} {color(build_name, Colors.BLUE):25} {image_name}:{info['tag']}"
-            )
-            print(f"      Size: {info['size']:12}  Created: {info['created']}")
-        else:
-            print(
-                f"  {color('✗', Colors.RED)} {color(build_name, Colors.BLUE):25} {image_name} (not built)"
-            )
-        print()
+# === Deploy Commands ===
 
-    # Summary
-    built = sum(1 for img in expected_images if img in found_images)
-    total = len(expected_images)
 
-    if built == total:
-        print(color(f"All {total} images are built.", Colors.GREEN))
+def cmd_deploy(args):
+    """Dispatch deploy subcommands."""
+    if args.deploy_command == "status":
+        cmd_deploy_status(args)
+    elif args.deploy_command == "lock":
+        cmd_deploy_lock(args)
+    elif args.deploy_command == "unlock":
+        cmd_deploy_unlock(args)
+    elif args.deploy_command == "rollback":
+        cmd_deploy_rollback(args)
+    elif args.deploy_command == "update":
+        cmd_deploy_update(args)
     else:
-        print(
-            color(
-                f"{built}/{total} images built. Missing images can be built with:",
-                Colors.YELLOW,
-            )
-        )
-        print("  ./visp-podman.py build all")
+        print("Unknown deploy command. Use --help for usage.")
+        sys.exit(1)
 
-    rc, stdout, _ = run_quiet(
-        ["podman", "info", "--format", "{{.Host.NetworkBackend}}"]
-    )
-    backend = stdout if rc == 0 else "unknown"
-    if backend == "netavark":
-        print(color(f"  Backend: {backend} (recommended)", Colors.GREEN))
-    else:
-        print(
-            color(
-                f"  Backend: {backend} (CNI - consider upgrading to netavark)",
-                Colors.YELLOW,
-            )
-        )
-    print()
 
-    print(color("=== VISP Networks ===", Colors.CYAN))
-    for svc in NETWORK_SERVICES:
-        net_name = f"systemd-{svc.name}"
-        rc, _, _ = run_quiet(["podman", "network", "exists", net_name])
-        if rc == 0:
-            print(color(f"\n  {net_name}:", Colors.GREEN))
-            run(
-                [
-                    "podman",
-                    "network",
-                    "inspect",
-                    net_name,
-                    "--format",
-                    "    DNS: {{.DNSEnabled}}\n    Internal: {{.Internal}}\n    Driver: {{.Driver}}",
-                ],
-                check=False,
-            )
-        else:
-            print(color(f"\n  {net_name}: not found", Colors.RED))
+def cmd_deploy_status(args):
+    """Show repository status and version drift."""
+    from vispctl.deploy import DeployManager
 
-    print()
-    print(color("=== Container Network Connections ===", Colors.CYAN))
-    rc, stdout, _ = run_quiet(["podman", "ps", "--format", "{{.Names}}"])
-    if rc == 0 and stdout:
-        for container in stdout.split("\n"):
-            if container.startswith("systemd-"):
-                rc, nets, _ = run_quiet(
-                    [
-                        "podman",
-                        "inspect",
-                        container,
-                        "--format",
-                        "{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}",
-                    ]
-                )
-                print(f"  {container}: {nets if nets else 'none'}")
+    dm = DeployManager(runner=RUNNER)
+    dm.check_status(fetch=not getattr(args, "no_fetch", False))
+
+
+def cmd_deploy_lock(args):
+    """Lock components to current versions."""
+    from vispctl.deploy import DeployManager
+
+    dm = DeployManager()
+    components = getattr(args, "components", [])
+    lock_all = getattr(args, "all", False)
+
+    success = dm.lock_components(components, lock_all=lock_all)
+    if not success:
+        sys.exit(1)
+
+
+def cmd_deploy_unlock(args):
+    """Unlock components to track latest."""
+    from vispctl.deploy import DeployManager
+
+    dm = DeployManager()
+    components = getattr(args, "components", [])
+    unlock_all = getattr(args, "all", False)
+
+    success = dm.unlock_components(components, unlock_all=unlock_all)
+    if not success:
+        sys.exit(1)
+
+
+def cmd_deploy_rollback(args):
+    """Rollback components to locked versions."""
+    from vispctl.deploy import DeployManager
+
+    dm = DeployManager()
+    components = getattr(args, "components", [])
+    rollback_all = getattr(args, "all", False)
+
+    success = dm.rollback_components(components, rollback_all=rollback_all)
+    if not success:
+        sys.exit(1)
+
+
+def cmd_deploy_update(args):
+    """Update external repositories."""
+    from vispctl.deploy import DeployManager
+
+    dm = DeployManager()
+    force = getattr(args, "force", False)
+
+    success = dm.update_components(force=force)
+    if not success:
+        sys.exit(1)
 
 
 def cmd_fix_permissions(args):
@@ -1106,9 +1163,7 @@ def cmd_fix_permissions(args):
 
     # Default target path if none provided: common repositories mount
     paths = (
-        [Path(p) for p in getattr(args, "paths", [])]
-        if getattr(args, "paths", None)
-        else [Path("mounts/repositories")]
+        [Path(p) for p in getattr(args, "paths", [])] if getattr(args, "paths", None) else [Path("mounts/repositories")]
     )
 
     existing = [p for p in paths if p.exists()]
@@ -1139,11 +1194,7 @@ def cmd_fix_permissions(args):
 
     if not getattr(args, "apply", False):
         print()
-        print(
-            color(
-                "Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW
-            )
-        )
+        print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
         return
 
     print()
@@ -1176,8 +1227,7 @@ def cmd_fix_permissions(args):
         print()
         print(
             color(
-                "⚠️  Ownership check: some paths are not owned by the "
-                "current user on the host:",
+                "⚠️  Ownership check: some paths are not owned by the " "current user on the host:",
                 Colors.YELLOW,
             )
         )
@@ -1208,9 +1258,7 @@ def cmd_backup(args):
     from vispctl.backup import BackupManager
 
     bm = BackupManager(RUNNER)
-    out = bm.backup(
-        output=getattr(args, "output", None), dry_run=getattr(args, "dry_run", False)
-    )
+    out = bm.backup(output=getattr(args, "output", None), dry_run=getattr(args, "dry_run", False))
     if out is None:
         sys.exit(1)
     return
@@ -1268,6 +1316,10 @@ Examples:
   visp-ctl debug mongo         # Debug mongo startup issues
   visp-ctl shell session-manager  # Open bash in session-manager
   visp-ctl exec mongo mongosh  # Run mongosh in mongo container
+  visp-ctl deploy status       # Check git repo versions and drift
+  visp-ctl deploy lock webclient  # Lock webclient to current version
+  visp-ctl deploy unlock --all # Unlock all components to track latest
+  visp-ctl deploy update       # Update repos to configured versions
 """,
     )
 
@@ -1277,12 +1329,8 @@ Examples:
     subparsers.add_parser("status", aliases=["s"], help="Show status of all services")
 
     # logs
-    p_logs = subparsers.add_parser(
-        "logs", aliases=["l"], help="View logs from services"
-    )
-    p_logs.add_argument(
-        "service", nargs="?", default="all", help="Service name or 'all'"
-    )
+    p_logs = subparsers.add_parser("logs", aliases=["l"], help="View logs from services")
+    p_logs.add_argument("service", nargs="?", default="all", help="Service name or 'all'")
     p_logs.add_argument("-f", "--follow", action="store_true", help="Follow logs")
     p_logs.add_argument("-n", "--lines", type=int, help="Number of lines to show")
     p_logs.add_argument("--since", help="Show logs since TIME (e.g., '1 hour ago')")
@@ -1290,56 +1338,32 @@ Examples:
 
     # start
     p_start = subparsers.add_parser("start", help="Start service(s)")
-    p_start.add_argument(
-        "service", default="all", nargs="?", help="Service name or 'all'"
-    )
+    p_start.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
 
     # stop
     p_stop = subparsers.add_parser("stop", help="Stop service(s)")
-    p_stop.add_argument(
-        "service", default="all", nargs="?", help="Service name or 'all'"
-    )
+    p_stop.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
 
     # restart
-    p_restart = subparsers.add_parser(
-        "restart", aliases=["r"], help="Restart service(s)"
-    )
-    p_restart.add_argument(
-        "service", default="all", nargs="?", help="Service name or 'all'"
-    )
+    p_restart = subparsers.add_parser("restart", aliases=["r"], help="Restart service(s)")
+    p_restart.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
 
     # install
-    p_install = subparsers.add_parser(
-        "install", aliases=["i"], help="Link quadlet files to systemd"
-    )
-    p_install.add_argument(
-        "service", default="all", nargs="?", help="Service name or 'all'"
-    )
-    p_install.add_argument(
-        "-f", "--force", action="store_true", help="Overwrite existing links"
-    )
-    p_install.add_argument(
-        "-m", "--mode", choices=["dev", "prod"], help="Deployment mode (dev or prod)"
-    )
+    p_install = subparsers.add_parser("install", aliases=["i"], help="Link quadlet files to systemd")
+    p_install.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
+    p_install.add_argument("-f", "--force", action="store_true", help="Overwrite existing links")
+    p_install.add_argument("-m", "--mode", choices=["dev", "prod"], help="Deployment mode (dev or prod)")
 
     # uninstall
-    p_uninstall = subparsers.add_parser(
-        "uninstall", aliases=["u"], help="Remove quadlet links"
-    )
-    p_uninstall.add_argument(
-        "service", default="all", nargs="?", help="Service name or 'all'"
-    )
-    p_uninstall.add_argument(
-        "--keep-running", action="store_true", help="Don't stop services first"
-    )
+    p_uninstall = subparsers.add_parser("uninstall", aliases=["u"], help="Remove quadlet links")
+    p_uninstall.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
+    p_uninstall.add_argument("--keep-running", action="store_true", help="Don't stop services first")
 
     # reload
     subparsers.add_parser("reload", help="Reload systemd daemon")
 
     # mode
-    p_mode = subparsers.add_parser(
-        "mode", aliases=["m"], help="Show or set deployment mode"
-    )
+    p_mode = subparsers.add_parser("mode", aliases=["m"], help="Show or set deployment mode")
     p_mode.add_argument(
         "new_mode",
         nargs="?",
@@ -1352,25 +1376,17 @@ Examples:
     p_debug.add_argument("service", help="Service to debug")
 
     # exec
-    p_exec = subparsers.add_parser(
-        "exec", aliases=["e"], help="Execute command in container"
-    )
+    p_exec = subparsers.add_parser("exec", aliases=["e"], help="Execute command in container")
     p_exec.add_argument("container", help="Container name (without systemd- prefix)")
     p_exec.add_argument("command", nargs="+", help="Command to run")
 
     # shell
-    p_shell = subparsers.add_parser(
-        "shell", aliases=["sh"], help="Open shell in container"
-    )
+    p_shell = subparsers.add_parser("shell", aliases=["sh"], help="Open shell in container")
     p_shell.add_argument("container", help="Container name (without systemd- prefix)")
-    p_shell.add_argument(
-        "--shell", default="/bin/bash", help="Shell to use (default: /bin/bash)"
-    )
+    p_shell.add_argument("--shell", default="/bin/bash", help="Shell to use (default: /bin/bash)")
 
     # build
-    p_build = subparsers.add_parser(
-        "build", aliases=["b"], help="Build container images"
-    )
+    p_build = subparsers.add_parser("build", aliases=["b"], help="Build container images")
     p_build.add_argument(
         "service",
         default="all",
@@ -1398,11 +1414,14 @@ Examples:
         default=None,
         help="Build configuration for webclient (e.g., visp, datalab, visp-pdf-server)",
     )
+    p_build.add_argument(
+        "--force",
+        action="store_true",
+        help="Skip version checks (not recommended in production)",
+    )
 
     # network
-    p_network = subparsers.add_parser(
-        "network", aliases=["n", "net"], help="Show network info and DNS status"
-    )
+    p_network = subparsers.add_parser("network", aliases=["n", "net"], help="Show network info and DNS status")
     p_network.add_argument(
         "action",
         nargs="?",
@@ -1411,9 +1430,38 @@ Examples:
     )
 
     # images
-    subparsers.add_parser(
-        "images", aliases=["img"], help="List VISP container images and build status"
+    p_images = subparsers.add_parser("images", aliases=["img"], help="List VISP container images and build status")
+    p_images_sub = p_images.add_subparsers(dest="subcommand", help="Images subcommands")
+    p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions")
+
+    # deploy
+    p_deploy = subparsers.add_parser("deploy", help="Manage deployments: version control, git repos, status")
+    p_deploy_sub = p_deploy.add_subparsers(dest="deploy_command", help="Deploy subcommands", required=True)
+
+    # deploy status
+    p_deploy_status = p_deploy_sub.add_parser("status", help="Check repository status and version drift")
+    p_deploy_status.add_argument(
+        "--no-fetch", action="store_true", help="Skip fetching from remotes (use cached remote state)"
     )
+
+    # deploy lock
+    p_deploy_lock = p_deploy_sub.add_parser("lock", help="Lock components to their current versions")
+    p_deploy_lock.add_argument("components", nargs="*", help="Components to lock (specify names or use --all)")
+    p_deploy_lock.add_argument("--all", action="store_true", help="Lock all components")
+
+    # deploy unlock
+    p_deploy_unlock = p_deploy_sub.add_parser("unlock", help="Unlock components to track latest")
+    p_deploy_unlock.add_argument("components", nargs="*", help="Components to unlock (specify names or use --all)")
+    p_deploy_unlock.add_argument("--all", action="store_true", help="Unlock all components")
+
+    # deploy rollback
+    p_deploy_rollback = p_deploy_sub.add_parser("rollback", help="Rollback components to their locked versions")
+    p_deploy_rollback.add_argument("components", nargs="*", help="Components to rollback (specify names or use --all)")
+    p_deploy_rollback.add_argument("--all", action="store_true", help="Rollback all components")
+
+    # deploy update
+    p_deploy_update = p_deploy_sub.add_parser("update", help="Update external repositories to configured versions")
+    p_deploy_update.add_argument("--force", action="store_true", help="Force update even with uncommitted changes")
 
     # fix-permissions
     p_fix = subparsers.add_parser(
@@ -1426,10 +1474,7 @@ Examples:
         "-p",
         dest="paths",
         action="append",
-        help=(
-            "Path to fix (can be specified multiple times). "
-            "Default: mounts/repositories"
-        ),
+        help=("Path to fix (can be specified multiple times). " "Default: mounts/repositories"),
     )
     p_fix.add_argument(
         "-r",
@@ -1465,13 +1510,9 @@ Examples:
     )
 
     # restore
-    p_restore = subparsers.add_parser(
-        "restore", help="Restore MongoDB database from backup"
-    )
+    p_restore = subparsers.add_parser("restore", help="Restore MongoDB database from backup")
     p_restore.add_argument("backup_file", help="Backup file to restore")
-    p_restore.add_argument(
-        "--force", action="store_true", help="Skip confirmation prompt"
-    )
+    p_restore.add_argument("--force", action="store_true", help="Skip confirmation prompt")
 
     args = parser.parse_args()
 
@@ -1509,6 +1550,7 @@ Examples:
         "net": cmd_network,
         "images": cmd_images,
         "img": cmd_images,
+        "deploy": cmd_deploy,
         "fix-permissions": cmd_fix_permissions,
         "fixperm": cmd_fix_permissions,
         "backup": cmd_backup,

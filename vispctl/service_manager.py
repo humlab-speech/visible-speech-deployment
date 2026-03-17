@@ -1,9 +1,10 @@
 """ServiceManager - orchestrates service lifecycle using Runner."""
 
 from __future__ import annotations
+
 from typing import Iterable, List
 
-from .runner import Runner, color, Colors
+from .runner import Colors, Runner, color
 from .service import Service
 
 
@@ -52,30 +53,14 @@ class ServiceManager:
         for svc in self.services:
             if svc.type == "network":
                 # For networks, check Podman network existence
-                rc, _, _ = self.runner.run_quiet(
-                    ["podman", "network", "exists", f"systemd-{svc.name}"]
-                )
+                rc, _, _ = self.runner.run_quiet(["podman", "network", "exists", f"systemd-{svc.name}"])
                 status = "active" if rc == 0 else "not found"
-                sym = (
-                    color("●", Colors.GREEN)
-                    if status == "active"
-                    else color("○", Colors.YELLOW)
-                )
-                stat_col = color(
-                    status, Colors.GREEN if status == "active" else Colors.YELLOW
-                )
+                sym = color("●", Colors.GREEN) if status == "active" else color("○", Colors.YELLOW)
+                stat_col = color(status, Colors.GREEN if status == "active" else Colors.YELLOW)
                 print(f"  {sym} {svc.name}: {stat_col}")
             else:
-                rc, out, _ = self.runner.run_quiet(
-                    ["systemctl", "--user", "is-active", f"{svc.name}.service"]
-                )
+                rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", f"{svc.name}.service"])
                 status = out if rc == 0 else "inactive"
-                sym = (
-                    color("●", Colors.GREEN)
-                    if status == "active"
-                    else color("○", Colors.YELLOW)
-                )
-                stat_col = color(
-                    status, Colors.GREEN if status == "active" else Colors.YELLOW
-                )
+                sym = color("●", Colors.GREEN) if status == "active" else color("○", Colors.YELLOW)
+                stat_col = color(status, Colors.GREEN if status == "active" else Colors.YELLOW)
                 print(f"  {sym} {svc.name}: {stat_col}")

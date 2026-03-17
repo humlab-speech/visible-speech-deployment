@@ -1,0 +1,28 @@
+[Unit]
+Description=WhisperX Transcription Server (network-isolated)
+After=network-online.target
+
+[Container]
+ContainerName=whisperx
+Image=localhost/visp-whisperx:latest
+# Network-isolated: zero internet access after model download
+Network=none
+# Models mounted read-only; socket dir mounted read-write
+Volume=%h/Projects/visible-speech-deployment/mounts/whisper/models:/models/extra:ro,Z
+Volume=/tmp/whisperx-api:/run/api:Z
+# Model and language configuration
+Environment=WHISPERX_MODEL=/models/extra/kb-whisper-large-ct2
+Environment=WHISPERX_ALIGN_MODEL=/models/extra/wav2vec2-large-voxrex-swedish
+Environment=WHISPERX_DIARIZE_MODEL=/models/extra/pyannote-speaker-diarization
+Environment=WHISPERX_LANGUAGE=sv
+Environment=WHISPERX_DEVICE=cpu
+Environment=WHISPERX_COMPUTE_TYPE=float32
+PodmanArgs=--cgroups=disabled --cap-drop=ALL --security-opt=no-new-privileges:true
+
+[Service]
+Restart=always
+# Model loading can take 1-5 min; socket only appears once model is ready
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

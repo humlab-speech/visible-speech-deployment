@@ -2,7 +2,7 @@
 FROM visp-operations-session AS container_agent_source
 
 # Stage 2: Base
-FROM quay.io/jupyter/datascience-notebook:r-4.3.3 AS base
+FROM quay.io/jupyter/datascience-notebook:r-4.5.2 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="The Jupyter session image, which is instantiated when a new Jupyter session is spawned in the VISP interface"

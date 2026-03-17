@@ -1,0 +1,19 @@
+[Unit]
+Description=WhisperX nginx sidecar (proxies Unix socket to TCP for other containers)
+After=network-online.target whisper-net.service whisperx.service
+Requires=whisperx.service
+
+[Container]
+ContainerName=whisperx-nginx
+Image=localhost/visp-whisperx-nginx:latest
+Network=whisper-net.network
+# Read-only access to the whisperx Unix socket
+Volume=/tmp/whisperx-api:/run/api:ro,z
+PodmanArgs=--cgroups=disabled --cap-drop=ALL --security-opt=no-new-privileges:true
+
+[Service]
+Restart=always
+TimeoutStartSec=60
+
+[Install]
+WantedBy=default.target

@@ -5,7 +5,7 @@ Requires=mongo.service
 
 [Container]
 ContainerName=emu-webapp-server
-Image=docker.io/library/visp-emu-webapp-server:latest
+Image=localhost/visp-emu-webapp-server:latest
 Network=visp-net.network
 PublishPort=127.0.0.1:17890:17890
 EnvironmentFile=%h/Projects/visible-speech-deployment/mounts/emu-webapp-server/.env

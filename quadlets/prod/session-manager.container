@@ -1,11 +1,11 @@
 [Unit]
 Description=Session Manager Service (Production)
-After=network-online.target visp-net.service whisper-net.service whisper.service mongo.service
-Requires=mongo.service whisper.service
+After=network-online.target visp-net.service whisper-net.service whisperx-nginx.service mongo.service
+Requires=mongo.service
 
 [Container]
 ContainerName=session-manager
-Image=docker.io/library/visp-session-manager:latest
+Image=localhost/visp-session-manager:latest
 Network=visp-net.network
 Network=whisper-net.network
 # Port 8020 not published - accessed via Apache proxy on internal network
@@ -13,9 +13,7 @@ EnvironmentFile=%h/Projects/visible-speech-deployment/.env
 Environment=LOG_LEVEL=info
 Environment=DEVELOPMENT_MODE=false
 Environment=VISP_NETWORK_NAME=systemd-visp-net
-Environment=GRADIO_WHISPERX_ENDPOINT=http://whisper:7860
-Environment=BASIC_AUTH_USERNAME=whisperuser
-Environment=BASIC_AUTH_PASSWORD=whisperpass
+Environment=WHISPERX_ENDPOINT=http://whisperx-nginx:8080/
 Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN
 Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD

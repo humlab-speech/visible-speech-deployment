@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import shutil
-import subprocess
 import argparse
-from datetime import datetime
-import string
-import random
 import getpass
 import json
+import os
+import random
+import shutil
+import string
+import subprocess
+import sys
 from contextlib import contextmanager
+from datetime import datetime
 
 try:
     from tabulate import tabulate
@@ -153,9 +153,7 @@ class GitRepository:
         """
         cmd = ["git"] + args
         if capture_output:
-            result = subprocess.run(
-                cmd, cwd=self.path, capture_output=True, text=True, check=check
-            )
+            result = subprocess.run(cmd, cwd=self.path, capture_output=True, text=True, check=check)
             return result
         else:
             subprocess.run(cmd, cwd=self.path, check=check)
@@ -541,9 +539,7 @@ def chown_recursive(path, uid, gid):
     """Recursively change ownership of path using system chown command for speed"""
     try:
         # Using subprocess is 10-100x faster than os.walk for large directories like node_modules
-        subprocess.run(
-            ["chown", "-R", f"{uid}:{gid}", path], check=True, capture_output=True
-        )
+        subprocess.run(["chown", "-R", f"{uid}:{gid}", path], check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         print(f"Failed to chown {path}: {e}")
     except OSError as e:
@@ -603,18 +599,14 @@ def setup_env_file(auto_passwords=True, interactive=False):
             env.set(key, value)
 
     # 2. Check MongoDB Special Case
-    mongo_data_exists = os.path.exists("./mounts/mongo/data") and os.listdir(
-        "./mounts/mongo/data"
-    )
+    mongo_data_exists = os.path.exists("./mounts/mongo/data") and os.listdir("./mounts/mongo/data")
     current_mongo_pass = secrets.get("MONGO_ROOT_PASSWORD")  # Check secrets file
 
     if mongo_data_exists and current_mongo_pass:
         print("⚠️  MongoDB database already exists with data.")
         print("   Keeping existing MONGO_ROOT_PASSWORD to avoid authentication issues.")
     elif mongo_data_exists and not current_mongo_pass:
-        print(
-            "⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env.secrets!"
-        )
+        print("⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env.secrets!")
         if interactive or input("   Set MongoDB password now? (y/n): ").lower() == "y":
             password = getpass.getpass("   Enter MONGO_ROOT_PASSWORD: ")
             secrets.set("MONGO_ROOT_PASSWORD", password, "MongoDB root password")
@@ -725,9 +717,7 @@ def check_env_file():
     missing = missing_config + missing_secrets
 
     if missing:
-        print(
-            f"Warning: The following required environment variables are not set in .env: {', '.join(missing)}"
-        )
+        print(f"Warning: The following required environment variables are not set in .env: {', '.join(missing)}")
         print("Auto-generating random values for demo deployment...")
 
         # Generate all missing values using EnvFile class
@@ -744,9 +734,7 @@ def check_env_file():
 def run_command(cmd, description="", check=True):
     print(f"Running: {description or cmd}")
     try:
-        result = subprocess.run(
-            cmd, shell=True, check=check, capture_output=True, text=True
-        )
+        result = subprocess.run(cmd, shell=True, check=check, capture_output=True, text=True)
         if result.stdout:
             print(result.stdout)
         return result
@@ -786,13 +774,9 @@ def check_dependencies():
         for dep in missing:
             print(dep)
         print("\nPlease install these dependencies before continuing.")
-        print(
-            "On Debian/Ubuntu: sudo apt install -y curl git openssl docker.io docker-compose"
-        )
+        print("On Debian/Ubuntu: sudo apt install -y curl git openssl docker.io docker-compose")
         print("Or for Podman: sudo apt install -y curl git openssl podman")
-        print(
-            "\nNote: You can run this script without root access if dependencies are already installed."
-        )
+        print("\nNote: You can run this script without root access if dependencies are already installed.")
         response = input("\nContinue anyway? (y/N): ")
         if response.lower() != "y":
             print("Installation cancelled.")
@@ -826,20 +810,14 @@ def setup_docker_compose_mode(mode="dev"):
             print(f"✓ Docker Compose is already configured for {mode} mode")
         else:
             print(f"⚠️  Docker Compose is already linked to {current_target}")
-            print(
-                "   Keeping existing configuration. To change mode, manually update the symlink."
-            )
+            print("   Keeping existing configuration. To change mode, manually update the symlink.")
     elif os.path.exists(compose_file):
         print(f"⚠️  {compose_file} already exists as a regular file")
-        print(
-            f"   Keeping existing file. To use mode-based configuration, manually create symlink to {target_file}"
-        )
+        print(f"   Keeping existing file. To use mode-based configuration, manually create symlink to {target_file}")
     else:
         try:
             os.symlink(target_file, compose_file)
-            print(
-                f"✓ Created docker-compose.yml symlink pointing to {target_file} ({mode} mode)"
-            )
+            print(f"✓ Created docker-compose.yml symlink pointing to {target_file} ({mode} mode)")
         except OSError as e:
             print(f"⚠️  Could not create symlink: {e}")
             print(f"   You can manually create: ln -s {target_file} {compose_file}")
@@ -873,12 +851,12 @@ def create_required_directories():
 def generate_ssl_certificates():
     """Generate SSL certificates for VISP by calling the generate-certs.sh script"""
     script_path = os.path.join(os.getcwd(), "generate-certs.sh")
-    
+
     if not os.path.exists(script_path):
         print(f"⚠️  Warning: {script_path} not found")
         print("   Certificate generation skipped")
         return
-    
+
     try:
         run_command("./generate-certs.sh", "Generating SSL certificates")
     except subprocess.CalledProcessError as e:
@@ -963,18 +941,14 @@ def clone_repositories(basedir, mode="dev"):
         # In prod mode, prefer locked version
         if mode == "prod" and version == "latest" and locked_version:
             target_version = locked_version
-            print(
-                f"⊙ {name}: Production mode - using locked version {locked_version[:8]}"
-            )
+            print(f"⊙ {name}: Production mode - using locked version {locked_version[:8]}")
         else:
             target_version = version
 
         # Check if repo exists and is valid
         if repo.exists():
             if not repo.is_git_repo():
-                print(
-                    f"⚠️  {name} exists but is not a git repository - will remove and re-clone"
-                )
+                print(f"⚠️  {name} exists but is not a git repository - will remove and re-clone")
                 try:
                     shutil.rmtree(repo_path)
                 except OSError as e:
@@ -986,23 +960,17 @@ def clone_repositories(basedir, mode="dev"):
                 try:
                     # Quick check: see if there are any files outside .git
                     has_content = any(
-                        os.path.isfile(os.path.join(repo_path, f))
-                        for f in os.listdir(repo_path)
-                        if f != ".git"
+                        os.path.isfile(os.path.join(repo_path, f)) for f in os.listdir(repo_path) if f != ".git"
                     )
 
                     if not has_content:
                         # Check subdirectories
                         has_content = any(
-                            os.path.isdir(os.path.join(repo_path, d))
-                            for d in os.listdir(repo_path)
-                            if d != ".git"
+                            os.path.isdir(os.path.join(repo_path, d)) for d in os.listdir(repo_path) if d != ".git"
                         )
 
                     if not has_content:
-                        print(
-                            f"⚠️  {name} appears to be empty - will remove and re-clone"
-                        )
+                        print(f"⚠️  {name} appears to be empty - will remove and re-clone")
                         shutil.rmtree(repo_path)
                     else:
                         # Valid repo - fetch and update
@@ -1015,9 +983,7 @@ def clone_repositories(basedir, mode="dev"):
                                 repo.pull()
                                 print(f"  ✓ Updated {name} from remote")
                             except subprocess.CalledProcessError:
-                                print(
-                                    f"  ⚠️  Could not pull updates for {name} (may have local changes or diverged)"
-                                )
+                                print(f"  ⚠️  Could not pull updates for {name} (may have local changes or diverged)")
 
                         except subprocess.CalledProcessError as e:
                             print(f"  ⚠️  Failed to fetch updates for {name}: {e}")
@@ -1046,9 +1012,7 @@ def clone_repositories(basedir, mode="dev"):
                     repo.checkout(target_version)
                     print(f"  ✓ Checked out {target_version[:8]} for {name}")
                 except subprocess.CalledProcessError as e:
-                    print(
-                        f"  ⚠️  Failed to checkout {target_version[:8]} for {name}: {e}"
-                    )
+                    print(f"  ⚠️  Failed to checkout {target_version[:8]} for {name}: {e}")
                     print("     Repository will remain on default branch")
             else:
                 print("  Development mode: using latest from default branch")
@@ -1169,7 +1133,7 @@ def setup_service_env_files():
     # Copy .env-example from external/emu-webapp-server and fill with appropriate values
     env_example_path = "external/emu-webapp-server/.env-example"
     env_target_path = "mounts/emu-webapp-server/.env"
-    
+
     if os.path.exists(env_example_path):
         if not os.path.exists(env_target_path):
             # Read MongoDB password and BASE_DOMAIN from .env files
@@ -1185,33 +1149,30 @@ def setup_service_env_files():
                                 base_domain = line.split("=", 1)[1].strip()
                     if mongo_password and base_domain:
                         break
-            
+
             # Copy and configure .env file
             shutil.copy(env_example_path, env_target_path)
-            
+
             with open(env_target_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            
+
             # Replace placeholders with actual values
             if mongo_password:
                 content = content.replace(
                     "MONGO_URI=mongodb://USER:PASS@mongo:27017",
-                    f"MONGO_URI=mongodb://root:{mongo_password}@mongo:27017"
+                    f"MONGO_URI=mongodb://root:{mongo_password}@mongo:27017",
                 )
-                content = content.replace(
-                    "MONGO_ROOT_PASSWORD=",
-                    f"MONGO_ROOT_PASSWORD={mongo_password}"
-                )
-            
+                content = content.replace("MONGO_ROOT_PASSWORD=", f"MONGO_ROOT_PASSWORD={mongo_password}")
+
             if base_domain:
                 content = content.replace(
                     "MEDIA_FILE_BASE_URL=https://emu-webapp.MYDOMAIN",
-                    f"MEDIA_FILE_BASE_URL=https://emu-webapp.{base_domain}"
+                    f"MEDIA_FILE_BASE_URL=https://emu-webapp.{base_domain}",
                 )
-            
+
             with open(env_target_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            
+
             print(f"Created and configured {env_target_path} from {env_example_path}")
         else:
             print(f"ℹ️  {env_target_path} already exists, skipping (delete to regenerate)")
@@ -1221,9 +1182,7 @@ def setup_service_env_files():
     # Setup wsrng-server .env (copy from .env-example and fill in MongoDB password)
     if os.path.exists("external/wsrng-server/.env-example"):
         if not os.path.exists("external/wsrng-server/.env"):
-            shutil.copy(
-                "external/wsrng-server/.env-example", "external/wsrng-server/.env"
-            )
+            shutil.copy("external/wsrng-server/.env-example", "external/wsrng-server/.env")
             print("Created wsrng-server/.env from .env-example")
 
             # Read MongoDB password from .env.secrets (or .env as fallback)
@@ -1242,9 +1201,7 @@ def setup_service_env_files():
             if mongo_password:
                 with open("external/wsrng-server/.env", "r", encoding="utf-8") as f:
                     content = f.read()
-                content = content.replace(
-                    "MONGO_PASSWORD=", f"MONGO_PASSWORD={mongo_password}"
-                )
+                content = content.replace("MONGO_PASSWORD=", f"MONGO_PASSWORD={mongo_password}")
                 with open("external/wsrng-server/.env", "w", encoding="utf-8") as f:
                     f.write(content)
                 print("Configured wsrng-server/.env with MongoDB credentials")
@@ -1318,12 +1275,8 @@ def build_components(basedir, force_rebuild=False):
                 )
 
     print("\nNote: Dependencies are installed based on versions.json configuration.")
-    print(
-        "In development mode (docker-compose.dev.yml), source code is mounted for hot-reload."
-    )
-    print(
-        "In production mode (docker-compose.prod.yml), run 'docker compose build' to bake code into images."
-    )
+    print("In development mode (docker-compose.dev.yml), source code is mounted for hot-reload.")
+    print("In production mode (docker-compose.prod.yml), run 'docker compose build' to bake code into images.")
 
 
 def install_npm_dependencies(basedir):
@@ -1502,9 +1455,7 @@ def update_repo(
             print(f"   1. Run: python3 visp-deploy.py unlock {name}")
             print("   2. Run: python3 visp-deploy.py update")
             print("   3. Test the changes")
-            print(
-                f"   4. Run: python3 visp-deploy.py lock {name}  (to lock new version)"
-            )
+            print(f"   4. Run: python3 visp-deploy.py lock {name}  (to lock new version)")
             print()
             return {
                 "name": name,
@@ -1555,12 +1506,8 @@ def update_repo(
             }
 
         # Calculate commits ahead/behind using GitRepository
-        commits_behind = repo.count_commits_between(
-            current_info["sha"], remote_info["sha"]
-        )
-        commits_ahead = repo.count_commits_between(
-            remote_info["sha"], current_info["sha"]
-        )
+        commits_behind = repo.count_commits_between(current_info["sha"], remote_info["sha"])
+        commits_ahead = repo.count_commits_between(remote_info["sha"], current_info["sha"])
 
         # Show update info
         print("\n📊 Update available:")
@@ -1635,7 +1582,7 @@ def check_image_exists(image_name):
     """Check if a container image exists"""
     runtime = get_container_runtime()
     try:
-        result = subprocess.run(
+        subprocess.run(
             [runtime, "image", "inspect", image_name],
             capture_output=True,
             text=True,
@@ -1795,21 +1742,15 @@ class SessionImageBuilder:
 
     def rebuild_operations(self, no_cache=True):
         """Rebuild only operations-session image"""
-        return self.rebuild_all(
-            no_cache=no_cache, images_to_build=["visp-operations-session"]
-        )
+        return self.rebuild_all(no_cache=no_cache, images_to_build=["visp-operations-session"])
 
     def rebuild_jupyter(self, no_cache=True):
         """Rebuild only jupyter-session image (requires operations-session to exist)"""
-        return self.rebuild_all(
-            no_cache=no_cache, images_to_build=["visp-jupyter-session"]
-        )
+        return self.rebuild_all(no_cache=no_cache, images_to_build=["visp-jupyter-session"])
 
     def rebuild_rstudio(self, no_cache=True):
         """Rebuild only rstudio-session image (requires operations-session to exist)"""
-        return self.rebuild_all(
-            no_cache=no_cache, images_to_build=["visp-rstudio-session"]
-        )
+        return self.rebuild_all(no_cache=no_cache, images_to_build=["visp-rstudio-session"])
 
     def build_image(self, image, no_cache=True, force_rebuild=False):
         """Build a single session image"""
@@ -1861,14 +1802,12 @@ def rebuild_images(basedir=None, force_rebuild=False):
     # Check if any builds failed (excluding skipped builds)
     failed = [r for r in results if not r["success"] and not r.get("skipped", False)]
     skipped = [r for r in results if r.get("skipped", False)]
-    
+
     if skipped and not force_rebuild:
         print(f"\nℹ️  {len(skipped)} image(s) already exist, skipped building")
-    
+
     if failed:
-        print(
-            f"\n⚠️  {len(failed)} image(s) failed to build, but continuing with update."
-        )
+        print(f"\n⚠️  {len(failed)} image(s) failed to build, but continuing with update.")
     elif not skipped:
         print("\n✅ All images rebuilt successfully.")
 
@@ -1965,22 +1904,8 @@ def print_update_summary(status_results):
     passed = sum(
         1
         for r in status_results
-        if (
-            "Status" in r
-            and (
-                "PASS" in r["Status"]
-                or "REBUILT" in r["Status"]
-                or "UP TO DATE" in r["Status"]
-            )
-        )
-        or (
-            "status" in r
-            and (
-                "PASS" in r["status"]
-                or "REBUILT" in r["status"]
-                or "UP TO DATE" in r["status"]
-            )
-        )
+        if ("Status" in r and ("PASS" in r["Status"] or "REBUILT" in r["Status"] or "UP TO DATE" in r["Status"]))
+        or ("status" in r and ("PASS" in r["status"] or "REBUILT" in r["status"] or "UP TO DATE" in r["status"]))
     )
     failed = total - passed
 
@@ -2081,9 +2006,7 @@ def check_webclient_build_config():
 
     if is_dev_mode:
         # Dev mode: local dist is mounted, check it first
-        check_locations.append(
-            ("external/webclient/dist", "Local dist (mounted in dev)")
-        )
+        check_locations.append(("external/webclient/dist", "Local dist (mounted in dev)"))
 
     # Check if apache container is running and try to check inside it
     try:
@@ -2166,12 +2089,8 @@ def check_webclient_build_config():
                     if found_files:
                         for file_path in found_files:
                             try:
-                                with open(
-                                    file_path, "r", encoding="utf-8", errors="ignore"
-                                ) as f:
-                                    content = f.read(
-                                        10 * 1024 * 1024
-                                    )  # Read first 10MB
+                                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                                    content = f.read(10 * 1024 * 1024)  # Read first 10MB
                                     # Search for known domain patterns (visp.local first for local dev detection)
                                     for domain in [
                                         "visp.local",
@@ -2181,9 +2100,7 @@ def check_webclient_build_config():
                                     ]:
                                         if domain in content:
                                             actual_domain = domain
-                                            result["Actual Build"] = (
-                                                f"{location_desc}: '{domain}'"
-                                            )
+                                            result["Actual Build"] = f"{location_desc}: '{domain}'"
                                             domain_found = True
                                             break
                                     if domain_found:
@@ -2204,15 +2121,11 @@ def check_webclient_build_config():
         result["Match Status"] = "⚠️  NOT BUILT"
         result["Actual Build"] = "No dist files found (run build or check container)"
     elif expected_build_domain and actual_domain != "Not built":
-        if expected_build_domain in actual_domain or actual_domain in str(
-            expected_build_domain
-        ):
+        if expected_build_domain in actual_domain or actual_domain in str(expected_build_domain):
             if expected_domain in actual_domain or actual_domain in expected_domain:
                 result["Match Status"] = "✅ CORRECT"
             else:
-                result["Match Status"] = (
-                    f"⚠️  MISMATCH (built for {actual_domain}, .env expects {expected_domain})"
-                )
+                result["Match Status"] = f"⚠️  MISMATCH (built for {actual_domain}, .env expects {expected_domain})"
         else:
             result["Match Status"] = "⚠️  BUILD MISMATCH"
     elif not expected_build_domain:
@@ -2261,13 +2174,10 @@ def check_deployment_mode():
                 content = f.read()
 
                 # Check for webclient dist mount
-                if (
-                    "./external/webclient/dist:/var/www/html" in content
-                    and not content.count('#- "./external/webclient/dist')
+                if "./external/webclient/dist:/var/www/html" in content and not content.count(
+                    '#- "./external/webclient/dist'
                 ):
-                    result["Webclient Source"] = (
-                        "📁 Mounted from external/webclient/dist"
-                    )
+                    result["Webclient Source"] = "📁 Mounted from external/webclient/dist"
                     mounted_services.append("webclient")
                 else:
                     result["Webclient Source"] = "📦 Baked into Docker image"
@@ -2396,12 +2306,8 @@ def check_repositories_status(fetch=True):
         has_changes = deployment_repo.is_dirty()
 
         # Calculate ahead/behind using the class method
-        behind_count = deployment_repo.count_commits_between(
-            f"origin/{current_branch}", "HEAD"
-        )
-        ahead_count = deployment_repo.count_commits_between(
-            "HEAD", f"origin/{current_branch}"
-        )
+        behind_count = deployment_repo.count_commits_between(f"origin/{current_branch}", "HEAD")
+        ahead_count = deployment_repo.count_commits_between("HEAD", f"origin/{current_branch}")
 
         deployment_repo_status = {
             "Repository": "visible-speech-deployment (THIS REPO)",
@@ -2412,14 +2318,8 @@ def check_repositories_status(fetch=True):
         }
 
         if behind_count > 0:
-            print(
-                f"⚠️  WARNING: Deployment repo is {behind_count} commit(s) "
-                "behind remote!"
-            )
-            print(
-                f"   Run 'git pull origin {current_branch}' to update "
-                "the deployment scripts"
-            )
+            print(f"⚠️  WARNING: Deployment repo is {behind_count} commit(s) " "behind remote!")
+            print(f"   Run 'git pull origin {current_branch}' to update " "the deployment scripts")
 
     except Exception as e:
         deployment_repo_status = {
@@ -2457,9 +2357,7 @@ def check_repositories_status(fetch=True):
                     "Repository": repo_name,
                     "Lock Status": f"{lock_status} ({lock_details})",
                     "Current Commit": "N/A",
-                    "Locked Version": (
-                        locked_version[:8] if locked_version != "N/A" else "N/A"
-                    ),
+                    "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
                     "Status": "❌ MISSING",
                     "Sync Status": "Repository not cloned",
                 }
@@ -2472,9 +2370,7 @@ def check_repositories_status(fetch=True):
                     "Repository": repo_name,
                     "Lock Status": f"{lock_status} ({lock_details})",
                     "Current Commit": "N/A",
-                    "Locked Version": (
-                        locked_version[:8] if locked_version != "N/A" else "N/A"
-                    ),
+                    "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
                     "Status": "❌ NOT GIT",
                     "Sync Status": "Not a git repository",
                 }
@@ -2509,12 +2405,8 @@ def check_repositories_status(fetch=True):
                     # Check if remote branch exists
                     if repo.has_remote_branch(current_branch):
                         # Calculate ahead/behind using class methods
-                        behind_count = repo.count_commits_between(
-                            f"origin/{current_branch}", "HEAD"
-                        )
-                        ahead_count = repo.count_commits_between(
-                            "HEAD", f"origin/{current_branch}"
-                        )
+                        behind_count = repo.count_commits_between(f"origin/{current_branch}", "HEAD")
+                        ahead_count = repo.count_commits_between("HEAD", f"origin/{current_branch}")
 
                         if ahead_count > 0:
                             repos_ahead.append(repo_name)
@@ -2524,11 +2416,7 @@ def check_repositories_status(fetch=True):
                         if behind_count > 0:
                             repos_behind.append(repo_name)
                             sync_details.append(f"⬇️ {behind_count} behind")
-                            sync_status = (
-                                "⬇️ BEHIND"
-                                if sync_status == "✅ SYNCED"
-                                else "🔄 DIVERGED"
-                            )
+                            sync_status = "⬇️ BEHIND" if sync_status == "✅ SYNCED" else "🔄 DIVERGED"
                     else:
                         sync_details.append("Remote branch not found")
                         sync_status = "❓ NO REMOTE BRANCH"
@@ -2555,9 +2443,7 @@ def check_repositories_status(fetch=True):
                     "Repository": repo_name,
                     "Lock Status": f"{lock_status} ({lock_details})",
                     "Current Commit": current_commit,
-                    "Locked Version": (
-                        locked_version[:8] if locked_version != "N/A" else "N/A"
-                    ),
+                    "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
                     "Status": overall_status,
                     "Sync Status": f"{sync_status} - {sync_desc}",
                 }
@@ -2569,9 +2455,7 @@ def check_repositories_status(fetch=True):
                     "Repository": repo_name,
                     "Lock Status": f"{lock_status} ({lock_details})",
                     "Current Commit": "ERROR",
-                    "Locked Version": (
-                        locked_version[:8] if locked_version != "N/A" else "N/A"
-                    ),
+                    "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
                     "Status": "❌ ERROR",
                     "Sync Status": f"Error: {str(e)}",
                 }
@@ -2619,52 +2503,34 @@ def check_repositories_status(fetch=True):
     summary_lines = []
 
     # Check if any session images are missing or old
-    missing_images = [
-        img["Image"] for img in session_images if "MISSING" in img["Status"]
-    ]
+    missing_images = [img["Image"] for img in session_images if "MISSING" in img["Status"]]
     old_images = [img["Image"] for img in session_images if "OLD" in img["Status"]]
 
     if missing_images:
         summary_lines.append(f"❌ Missing session images: {', '.join(missing_images)}")
-        summary_lines.append(
-            "   Run 'python3 visp-deploy.py build' to build missing images"
-        )
+        summary_lines.append("   Run 'python3 visp-deploy.py build' to build missing images")
 
     if old_images:
-        summary_lines.append(
-            f"⚠️  Old session images (>30 days): {', '.join(old_images)}"
-        )
-        summary_lines.append(
-            "   Consider rebuilding with 'python3 visp-deploy.py build'"
-        )
+        summary_lines.append(f"⚠️  Old session images (>30 days): {', '.join(old_images)}")
+        summary_lines.append("   Consider rebuilding with 'python3 visp-deploy.py build'")
 
     if repos_with_changes:
-        summary_lines.append(
-            f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}"
-        )
-        summary_lines.append(
-            f"   Total: {len(repos_with_changes)} repo(s) have local changes"
-        )
+        summary_lines.append(f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}")
+        summary_lines.append(f"   Total: {len(repos_with_changes)} repo(s) have local changes")
 
     if repos_ahead:
-        summary_lines.append(
-            f"🚀 Repositories ahead of remote: {', '.join(repos_ahead)}"
-        )
+        summary_lines.append(f"🚀 Repositories ahead of remote: {', '.join(repos_ahead)}")
         summary_lines.append(f"   Total: {len(repos_ahead)} repo(s) need to push")
 
     if repos_behind:
-        summary_lines.append(
-            f"⬇️  Repositories behind remote: {', '.join(repos_behind)}"
-        )
+        summary_lines.append(f"⬇️  Repositories behind remote: {', '.join(repos_behind)}")
         summary_lines.append(f"   Total: {len(repos_behind)} repo(s) need to pull")
 
     if not repos_with_changes and not repos_ahead and not repos_behind:
         summary_lines.append("✅ All repositories are clean and synced!")
     else:
         summary_lines.append("   Use 'git status' in each repo for details")
-        summary_lines.append(
-            "   Run update with --force to stash local changes before updating"
-        )
+        summary_lines.append("   Run update with --force to stash local changes before updating")
 
     for line in summary_lines:
         print(line)
@@ -2729,9 +2595,7 @@ def lock_components(components, lock_all=False):
             config.save()
             print(f"\n✅ Successfully locked {locked_count} component(s)")
             print("   Changes saved to versions.json")
-            print(
-                "   Don't forget to commit versions.json to track these locked versions"
-            )
+            print("   Don't forget to commit versions.json to track these locked versions")
             return True
         except Exception as e:
             print(f"\n❌ Failed to save versions.json: {e}")
@@ -2859,9 +2723,7 @@ def rollback_components(components, rollback_all=False):
             config.rollback(component)
 
             # Calculate commits difference
-            commits_back = repo.count_commits_between(
-                locked_info["sha"], current_info["sha"]
-            )
+            commits_back = repo.count_commits_between(locked_info["sha"], current_info["sha"])
 
             # Extract dates for display
             current_date = current_info["date"][:10] if current_info["date"] else "N/A"
@@ -2934,9 +2796,7 @@ def main():
     )
 
     # Update command
-    update_parser = subparsers.add_parser(
-        "update", help="Update VISP system components"
-    )
+    update_parser = subparsers.add_parser("update", help="Update VISP system components")
     update_parser.add_argument(
         "--rebuild-images",
         action="store_true",
@@ -2949,9 +2809,7 @@ def main():
     )
 
     # Status command
-    status_parser = subparsers.add_parser(
-        "status", help="Check status of all repositories for uncommitted changes"
-    )
+    status_parser = subparsers.add_parser("status", help="Check status of all repositories for uncommitted changes")
     status_parser.add_argument(
         "--no-fetch",
         action="store_true",
@@ -2959,9 +2817,7 @@ def main():
     )
 
     # Lock command
-    lock_parser = subparsers.add_parser(
-        "lock", help="Lock components to their current versions"
-    )
+    lock_parser = subparsers.add_parser("lock", help="Lock components to their current versions")
     lock_parser.add_argument(
         "components",
         nargs="*",
@@ -2974,9 +2830,7 @@ def main():
     )
 
     # Unlock command
-    unlock_parser = subparsers.add_parser(
-        "unlock", help="Unlock components to track latest"
-    )
+    unlock_parser = subparsers.add_parser("unlock", help="Unlock components to track latest")
     unlock_parser.add_argument(
         "components",
         nargs="*",
@@ -2989,9 +2843,7 @@ def main():
     )
 
     # Rollback command
-    rollback_parser = subparsers.add_parser(
-        "rollback", help="Rollback components to their locked versions"
-    )
+    rollback_parser = subparsers.add_parser("rollback", help="Rollback components to their locked versions")
     rollback_parser.add_argument(
         "components",
         nargs="*",
@@ -3004,9 +2856,7 @@ def main():
     )
 
     # Build command for session images
-    build_parser = subparsers.add_parser(
-        "build", help="Build session images (operations, rstudio, jupyter)"
-    )
+    build_parser = subparsers.add_parser("build", help="Build session images (operations, rstudio, jupyter)")
     build_parser.add_argument(
         "images",
         nargs="*",

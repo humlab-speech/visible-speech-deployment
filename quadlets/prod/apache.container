@@ -5,7 +5,7 @@ Requires=session-manager.service
 
 [Container]
 ContainerName=apache
-Image=docker.io/library/visp-apache:latest
+Image=localhost/visp-apache:latest
 Network=visp-net.network
 Network=octra-net.network
 # Production: Expose on standard HTTP port (behind host nginx/reverse proxy)

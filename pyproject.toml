@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes, I = isort
+select = ["E", "W", "F", "I"]
+ignore = [
+    "E501",  # line too long — ruff-format handles this; linter warning is redundant
+]
+
+[tool.ruff.lint.per-file-ignores]
+"docker/session-manager/files/jupyter_notebook_config.py" = ["E", "W", "F"]

@@ -56,7 +56,7 @@ VISP requires the **netavark** network backend for proper DNS resolution. The ol
 **First-time Setup**: visp-podman.py will automatically configure netavark if not detected.
 
 **Migrating from CNI**: If you have existing containers:
-1. **Backup your database first**: `./visp-podman.py backup-database`
+1. **Backup your database first**: `./visp-podman.py backup`
 2. Run `./visp-podman.py install` - it will detect CNI and offer to migrate
 3. **All containers will be removed** (images preserved) during migration
 4. Networks will be recreated automatically
@@ -146,15 +146,42 @@ VISP supports two deployment modes with different configurations:
 # Building
 ./visp-podman.py build --list        # List all buildable targets
 ./visp-podman.py build               # Build all container images
-./visp-podman.py build session-manager --no-cache  # Clean rebuild
-./visp-podman.py build container-agent  # Build Node.js tools (containerized)
-./visp-podman.py build webclient --config visp  # Build Angular webclient
+
+# Build service containers
+./visp-podman.py build session-manager  # Session manager service
+./visp-podman.py build apache        # Apache web server
+./visp-podman.py build whisper       # Whisper transcription
+./visp-podman.py build wsrng-server  # Random number generator
+
+# Build session images (for RStudio/Jupyter containers)
+./visp-podman.py build operations-session  # Base session (required first)
+./visp-podman.py build rstudio-session     # RStudio (depends on operations)
+./visp-podman.py build jupyter-session     # Jupyter (depends on operations)
+
+# Build Node.js projects (containerized, no npm required on host)
+./visp-podman.py build container-agent  # Required for dev mode
+./visp-podman.py build webclient        # Default: visp config
+./visp-podman.py build webclient --config datalab  # Datalab config
+
+# Build options
+./visp-podman.py build apache --no-cache  # Clean rebuild
+./visp-podman.py build --pull         # Pull latest base images
 
 # Debugging
 ./visp-podman.py debug session-manager  # Debug service startup issues
 ./visp-podman.py shell apache        # Open shell in container
 ./visp-podman.py exec apache ls /var/www/html  # Run command in container
+
+# Network management
 ./visp-podman.py network             # Show network and DNS info
+./visp-podman.py network ensure      # Create missing networks
+
+# Image management
+./visp-podman.py images              # List VISP images, networks, and build status
+./visp-podman.py images base         # Audit base images from Dockerfiles (version pinning check)
+
+# Permissions
+./visp-podman.py fix-permissions     # Fix mount path permissions using podman unshare
 
 # Database management
 ./visp-podman.py backup              # Backup MongoDB to current directory
@@ -245,6 +272,112 @@ All Node.js builds run inside containers - no npm/Node.js installation needed on
 # Clean rebuild
 ./visp-podman.py build container-agent --no-cache
 ```
+
+### Building All Image Types
+
+VISP uses three categories of container images:
+
+**1. Service Containers** (core infrastructure):
+```bash
+./visp-podman.py build apache           # Web server with Shibboleth
+./visp-podman.py build session-manager  # Session orchestrator
+./visp-podman.py build whisper          # Speech transcription
+./visp-podman.py build wsrng-server     # Random number generator
+./visp-podman.py build emu-webapp       # EMU annotation tool
+./visp-podman.py build emu-webapp-server
+./visp-podman.py build octra            # OCTRA transcription
+```
+
+**2. Session Images** (user environments - must build in order):
+```bash
+# Build base session first (contains R and common libraries)
+./visp-podman.py build operations-session
+
+# Then build specialized sessions (depend on operations-session)
+./visp-podman.py build rstudio-session  # RStudio IDE
+./visp-podman.py build jupyter-session  # Jupyter Notebook
+```
+
+**3. Node.js Projects** (build artifacts for services):
+```bash
+./visp-podman.py build container-agent  # Required for dev mode
+./visp-podman.py build webclient        # Angular web interface
+```
+
+**Build all at once:**
+```bash
+./visp-podman.py build  # Builds all container images
+```
+
+### ⚠️ Important: Build Dependencies
+
+**Apache container behavior:**
+- **If `external/webclient/dist/` exists** → Uses it (fast) ✅
+- **If dist/ missing** → Builds webclient inside container (5-10 min) ⏱️
+- **Recommendation**: Always pre-build: `./visp-podman.py build webclient`
+
+**Session images behavior:**
+- Always build container-agent from source (multi-stage build)
+- No pre-built check (always fresh build ~30 sec)
+
+**Development workflow:**
+```bash
+# Edit webclient code
+./visp-podman.py build webclient        # Rebuild dist/
+systemctl --user restart apache         # Pick up new dist/
+# Refresh browser
+
+# Edit PHP code (webapi)
+# Just refresh browser - mounted, auto-detected
+```
+
+**Production deployment:**
+```bash
+# Use version locking to ensure reproducible builds
+python3 visp-deploy.py status           # Check versions
+python3 visp-deploy.py lock webclient   # Lock to current tested version
+git add versions.json && git commit -m "Lock webclient version"
+
+# Build with locked versions
+./visp-podman.py build webclient
+./visp-podman.py build apache
+```
+
+See [Version Management](docs/VERSION_MANAGEMENT.md) for details on locking/unlocking versions.
+
+### Inspecting Container Images
+
+Monitor and audit container images:
+
+```bash
+# List VISP images with build status
+./visp-podman.py images
+# Shows:
+# - All expected VISP images (visp-apache, visp-session-manager, etc.)
+# - Build status (✓ built / ✗ not built)
+# - Image size and creation time
+# - Network backend (netavark/CNI)
+# - VISP networks status
+# - Container network connections
+
+# Audit base images from Dockerfiles
+./visp-podman.py images base
+# Shows:
+# - All base images used in Dockerfiles (debian, node, nginx, etc.)
+# - Version pinning status (✓ pinned / ⚠️ unpinned)
+# - Which Dockerfiles use each base image
+# - Summary of unpinned images
+# Useful for:
+#   - Checking for outdated base images
+#   - Ensuring reproducible builds
+#   - Finding which files need updating
+```
+
+**Version Pinning Best Practices:**
+- ✅ Pin all base images to specific versions (e.g., `debian:bookworm-20260202`)
+- ⚠️ Avoid floating tags like `latest`, `stable`, `:20`, `:4`
+- 📌 Use `images base` to audit current pinning status
+- 🔄 Periodically check for newer versions and test updates
 
 ### Quadlet File Structure
 

@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import subprocess
-from typing import Tuple, List
+from typing import List, Tuple
 
 
 class Colors:
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
     CYAN = "\033[0;36m"
+    MAGENTA = "\033[0;35m"
     NC = "\033[0m"
+    BOLD = "\033[1m"
 
 
 def color(text: str, c: str) -> str:
@@ -24,14 +27,10 @@ class Runner:
     This intentionally mirrors the small API used in `visp-podman.py`.
     """
 
-    def run(
-        self, cmd: List[str], capture: bool = False, check: bool = True, **kwargs
-    ) -> subprocess.CompletedProcess:
+    def run(self, cmd: List[str], capture: bool = False, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
         """Run a command. Accepts additional subprocess.run kwargs like 'input'."""
         if capture:
-            return subprocess.run(
-                cmd, capture_output=True, text=True, check=check, **kwargs
-            )
+            return subprocess.run(cmd, capture_output=True, text=True, check=check, **kwargs)
         return subprocess.run(cmd, check=check, **kwargs)
 
     def run_quiet(self, cmd: List[str]) -> Tuple[int, str, str]:

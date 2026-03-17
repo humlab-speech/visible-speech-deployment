@@ -5,20 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Tuple
 
-from .runner import Runner, color, Colors
+from .runner import Colors, Runner, color
 
 
 class NetworkManager:
     def __init__(self, runner: Runner, containers_conf: Path = None):
         self.runner = runner
-        self.containers_conf = containers_conf or (
-            Path.home() / ".config/containers/containers.conf"
-        )
+        self.containers_conf = containers_conf or (Path.home() / ".config/containers/containers.conf")
 
     def check_netavark(self) -> Tuple[bool, str]:
-        rc, stdout, _ = self.runner.run_quiet(
-            ["podman", "info", "--format", "{{.Host.NetworkBackend}}"]
-        )
+        rc, stdout, _ = self.runner.run_quiet(["podman", "info", "--format", "{{.Host.NetworkBackend}}"])
         if rc == 0:
             backend = stdout.strip()
             return (backend == "netavark", backend)
@@ -31,9 +27,7 @@ class NetworkManager:
             {"name": "systemd-octra-net", "internal": True},
         ]
 
-        rc, stdout, _ = self.runner.run_quiet(
-            ["podman", "network", "ls", "--format", "{{.Name}}"]
-        )
+        rc, stdout, _ = self.runner.run_quiet(["podman", "network", "ls", "--format", "{{.Name}}"])
         if rc != 0:
             print(color("  ✗ Failed to list networks", Colors.RED))
             return False
@@ -65,9 +59,7 @@ class NetworkManager:
         print(color("Configuring netavark network backend...", Colors.CYAN))
 
         # Check if packages are installed
-        rc, _, _ = self.runner.run_quiet(
-            ["dpkg", "-l", "podman-netavark", "aardvark-dns"]
-        )
+        rc, _, _ = self.runner.run_quiet(["dpkg", "-l", "podman-netavark", "aardvark-dns"])
         if rc != 0:
             print(color("  ✗ Required packages not installed", Colors.RED))
             print("  Please install: sudo apt install podman-netavark aardvark-dns")

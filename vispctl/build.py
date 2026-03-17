@@ -5,9 +5,9 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
-from .runner import Runner, color, Colors
+from .runner import Colors, Runner, color
 
 
 class BuildManager:
@@ -48,9 +48,7 @@ class BuildManager:
                 return False
 
             if not (agent_source / "package.json").exists():
-                print(
-                    color("  ✗ container-agent source missing package.json", Colors.RED)
-                )
+                print(color("  ✗ container-agent source missing package.json", Colors.RED))
                 return False
 
             if agent_dest.exists():
@@ -64,11 +62,7 @@ class BuildManager:
                 )
 
             shutil.copytree(agent_source, agent_dest, ignore=ignore_patterns)
-            print(
-                color(
-                    "  ✓ Copied container-agent source to build context", Colors.GREEN
-                )
-            )
+            print(color("  ✓ Copied container-agent source to build context", Colors.GREEN))
             return True
 
         print(color(f"  ✗ Unknown prepare_context type: {prepare}", Colors.RED))
@@ -94,15 +88,39 @@ class BuildManager:
         if target:
             cmd.extend(["--target", target])
 
+        # Add git commit label if we're building from a git repo
+        import subprocess
+        from pathlib import Path
+
+        context_path = Path(context).resolve()
+        try:
+            # Check if context is in a git repo
+            git_check = subprocess.run(
+                ["git", "rev-parse", "--git-dir"], cwd=context_path, capture_output=True, check=False
+            )
+            if git_check.returncode == 0:
+                # Get current commit hash
+                commit_result = subprocess.run(
+                    ["git", "rev-parse", "HEAD"], cwd=context_path, capture_output=True, text=True, check=False
+                )
+                if commit_result.returncode == 0:
+                    commit_hash = commit_result.stdout.strip()
+                    cmd.extend(["--label", f"git.commit={commit_hash}"])
+
+                    # Also add timestamp
+                    from datetime import datetime
+
+                    build_time = datetime.now().isoformat()
+                    cmd.extend(["--label", f"build.timestamp={build_time}"])
+        except Exception:
+            # If git info fails, just continue without labels
+            pass
+
         cmd.extend(["-t", f"{image}:latest"])
         cmd.extend(
             [
                 "-f",
-                (
-                    f"{context}/{dockerfile}"
-                    if not dockerfile.startswith("./")
-                    else dockerfile
-                ),
+                (f"{context}/{dockerfile}" if not dockerfile.startswith("./") else dockerfile),
             ]
         )
         cmd.append(context)
@@ -147,9 +165,7 @@ class BuildManager:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if no_cache:
-            print(
-                color("  Cleaning output directory for fresh build...", Colors.YELLOW)
-            )
+            print(color("  Cleaning output directory for fresh build...", Colors.YELLOW))
             for item in output_dir.iterdir():
                 if item.is_file():
                     item.unlink()
@@ -173,7 +189,7 @@ class BuildManager:
             "-c",
             (
                 f"cp -r /src /build && cd /build && npm install --legacy-peer-deps && "
-                f"{build_cmd} && cp -r dist/* /output/ && chown -R {uid}:{gid} /output"
+                f"{build_cmd} && chmod -R 777 /output && rm -rf /output/* && cp -r dist/* /output/ && chown -R {uid}:{gid} /output"
             ),
         ]
 
@@ -186,17 +202,9 @@ class BuildManager:
                 if verify_path.exists() or any(output_dir.iterdir()):
                     print(color(f"  ✓ {name} built successfully", Colors.GREEN))
                     return True
-                print(
-                    color(
-                        f"  ✗ Build completed but {verify_file} not found", Colors.RED
-                    )
-                )
+                print(color(f"  ✗ Build completed but {verify_file} not found", Colors.RED))
                 return False
-            print(
-                color(
-                    f"  ✗ {name} build failed (exit code {res.returncode})", Colors.RED
-                )
-            )
+            print(color(f"  ✗ {name} build failed (exit code {res.returncode})", Colors.RED))
             return False
         except Exception as e:
             print(color(f"  ✗ {name} build error: {e}", Colors.RED))

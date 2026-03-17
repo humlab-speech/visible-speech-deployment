@@ -5,7 +5,7 @@ Requires=octra-net-network.service
 
 [Container]
 ContainerName=octra
-Image=docker.io/library/visp-octra:latest
+Image=localhost/visp-octra:latest
 Network=octra-net.network
 Volume=%h/Projects/visible-speech-deployment/mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z
 Volume=%h/Projects/visible-speech-deployment/mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z

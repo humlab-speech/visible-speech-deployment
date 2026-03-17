@@ -15,6 +15,7 @@ RUN git clone https://github.com/jhj0517/Whisper-WebUI . && \
 
 RUN python3 -m venv venv && \
     . venv/bin/activate && \
+    pip install --no-cache-dir setuptools && \
     pip install --no-cache-dir torch==2.3.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121 && \
     pip install --no-cache-dir -r requirements.txt
 

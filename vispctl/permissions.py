@@ -11,15 +11,13 @@ import os
 from pathlib import Path
 from typing import Iterable, List
 
-from .runner import Runner, color, Colors
+from .runner import Colors, Runner, color
 
 
 class PermissionsManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
         self.runner = runner
-        self.project_dir = (
-            Path(project_dir) if project_dir else Path(__file__).parent.parent
-        )
+        self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
 
     def plan_fix(
         self,
