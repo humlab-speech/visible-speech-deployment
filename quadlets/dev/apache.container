@@ -1,7 +1,7 @@
 [Unit]
 Description=Apache Web Server with Webclient
 After=network-online.target visp-net.service octra-net.service session-manager.service
-Requires=session-manager.service
+Wants=session-manager.service
 
 [Container]
 ContainerName=apache
@@ -31,8 +31,6 @@ Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/vhosts:/etc/ap
 # DEV MODE: Mount source code for hot-reload development
 Volume=%h/Projects/visible-speech-deployment/external/webclient/dist:/var/www/html:Z
 Volume=%h/Projects/visible-speech-deployment/external/webapi:/var/www/webapi:Z
-Volume=%h/Projects/visible-speech-deployment/external/webapi/vendor:/var/www/html/api/vendor:Z
-Volume=%h/Projects/visible-speech-deployment/external/webapi/vendor:/var/www/vendor:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z

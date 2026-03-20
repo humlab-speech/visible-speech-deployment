@@ -15,6 +15,7 @@ Environment=DEVELOPMENT_MODE=true
 Environment=SESSION_MANAGER_KEEP_CONTAINERS=true
 Environment=VISP_NETWORK_NAME=systemd-visp-net
 Environment=WHISPERX_ENDPOINT=http://whisperx-nginx:8080/
+Environment=DOCKER_SOCKET_PATH=/var/run/docker.sock
 Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN
 Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD

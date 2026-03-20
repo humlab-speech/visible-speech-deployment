@@ -1,7 +1,7 @@
 [Unit]
 Description=Apache Web Server with Webclient (Production)
 After=network-online.target visp-net.service octra-net.service session-manager.service
-Requires=session-manager.service
+Wants=session-manager.service
 
 [Container]
 ContainerName=apache
