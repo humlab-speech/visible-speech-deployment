@@ -232,6 +232,42 @@ timeouts). Use `podman info | grep networkBackend` to verify.
 
 ---
 
+## WSL Deployment Notes
+
+When running VISP on **WSL2 with rootless Podman**, port forwarding from Windows to WSL requires special handling:
+
+**Port Forwarding Issue:**
+- Rootless Podman cannot bind to privileged ports (80/443)
+- Traefik runs on ports 8080 (HTTP) and 8443 (HTTPS) inside WSL
+- ⚠️ **CRITICAL**: Use the **WSL IP address** (e.g., `172.29.72.57`), NOT `127.0.0.1`
+  - Using `127.0.0.1` will NOT work for port forwarding
+  - The WSL IP must be obtained from the WSL terminal with `hostname -I`
+
+**Setup (Windows PowerShell, Administrator):**
+```powershell
+# Get WSL IP from WSL terminal: hostname -I
+$WSL_IP = "172.29.72.57"  # Example - use actual WSL IP
+
+# Forward Windows 80 → WSL 8080
+netsh interface portproxy add v4tov4 listenport=80 listenaddress=0.0.0.0 connectport=8080 connectaddress=$WSL_IP
+
+# Forward Windows 443 → WSL 8443
+netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=8443 connectaddress=$WSL_IP
+```
+
+**Cleanup (when no longer needed):**
+```powershell
+netsh interface portproxy delete v4tov4 listenport=80 listenaddress=0.0.0.0
+netsh interface portproxy delete v4tov4 listenport=443 listenaddress=0.0.0.0
+```
+
+**Verification:**
+```powershell
+netsh interface portproxy show all
+```
+
+---
+
 ## Things to avoid
 
 - Do not run `podman stop` or `systemctl --user stop` on a service and assume it stays
@@ -241,3 +277,5 @@ timeouts). Use `podman info | grep networkBackend` to verify.
   optional and transcription must fail gracefully when it is not running.
 - Do not add files to `external/` by hand — use `visp-deploy.py update`.
 - Do not commit `.env`, `.env.secrets`, `mounts/mongo/data/`, `backups/`, or `.venv/`.
+- **WSL-specific**: Do not use `127.0.0.1` in netsh portproxy commands — use the actual WSL IP
+  address (e.g., `172.29.72.57`). Localhost forwarding does not work for rootless Podman on WSL.

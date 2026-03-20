@@ -93,19 +93,34 @@ class BuildManager:
         from pathlib import Path
 
         context_path = Path(context).resolve()
+        # Use source_repo for git.commit label when the build context is not the source
+        # (e.g. apache embeds webclient, operations-session embeds container-agent)
+        source_repo = config.get("source_repo")
+        git_label_path = Path(source_repo).resolve() if source_repo else context_path
         try:
             # Check if context is in a git repo
             git_check = subprocess.run(
-                ["git", "rev-parse", "--git-dir"], cwd=context_path, capture_output=True, check=False
+                ["git", "rev-parse", "--git-dir"], cwd=git_label_path, capture_output=True, check=False
             )
             if git_check.returncode == 0:
                 # Get current commit hash
                 commit_result = subprocess.run(
-                    ["git", "rev-parse", "HEAD"], cwd=context_path, capture_output=True, text=True, check=False
+                    ["git", "rev-parse", "HEAD"], cwd=git_label_path, capture_output=True, text=True, check=False
                 )
                 if commit_result.returncode == 0:
                     commit_hash = commit_result.stdout.strip()
                     cmd.extend(["--label", f"git.commit={commit_hash}"])
+
+                    # Check if the source tree was dirty at build time
+                    dirty_result = subprocess.run(
+                        ["git", "status", "--porcelain"],
+                        cwd=git_label_path,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    if dirty_result.returncode == 0 and dirty_result.stdout.strip():
+                        cmd.extend(["--label", "git.dirty=true"])
 
                     # Also add timestamp
                     from datetime import datetime

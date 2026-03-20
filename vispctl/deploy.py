@@ -64,7 +64,9 @@ class DeployManager:
         if not self.runner:
             return None
 
-        rc, stdout, _ = self.runner.run_quiet(["podman", "inspect", image_name, "--format", f"{{{{.Labels.{label}}}}}"])
+        rc, stdout, _ = self.runner.run_quiet(
+            ["podman", "inspect", image_name, "--format", f'{{{{index .Labels "{label}"}}}}']
+        )
 
         if rc == 0 and stdout.strip() and stdout.strip() != "<no value>":
             return stdout.strip()
@@ -94,7 +96,7 @@ class DeployManager:
             "webclient": "visp-apache:latest",  # webclient is in apache
             "session-manager": "visp-session-manager:latest",
             "wsrng-server": "visp-wsrng-server:latest",
-            "emu-webapp-server": "visp-emu-webapp:latest",
+            "emu-webapp-server": "visp-emu-webapp-server:latest",
             "EMU-webApp": "visp-emu-webapp:latest",
             "container-agent": "visp-operations-session:latest",  # bundled in session images
             "WhisperVault": "visp-whisperx:latest",
@@ -120,6 +122,8 @@ class DeployManager:
 
         # Try to get git commit label from image
         image_commit = self._get_image_label(image_name, "git.commit")
+        image_dirty = self._get_image_label(image_name, "git.dirty") == "true"
+        dirty_suffix = " ⚠️ DIRTY BUILD" if image_dirty else ""
 
         if not image_commit:
             return {
@@ -132,14 +136,16 @@ class DeployManager:
         # Compare commits
         if image_commit == current_commit:
             return {
-                "status": "✅ UP TO DATE",
+                "status": f"✅ UP TO DATE{dirty_suffix}",
                 "image_commit": image_commit[:8],
-                "needs_rebuild": False,
-                "recommendation": "Image matches source code",
+                "needs_rebuild": image_dirty,
+                "recommendation": "Image matches source code"
+                if not image_dirty
+                else "Image built from a dirty tree — rebuild from clean state recommended",
             }
         else:
             return {
-                "status": "⚠️ STALE",
+                "status": f"⚠️ STALE{dirty_suffix}",
                 "image_commit": image_commit[:8],
                 "needs_rebuild": True,
                 "recommendation": f"Image built from {image_commit[:8]}, source at {current_commit[:8]} - rebuild needed",
@@ -169,8 +175,9 @@ class DeployManager:
             has_changes = deployment_repo.is_dirty()
 
             # Calculate ahead/behind using the class method
-            behind_count = deployment_repo.count_commits_between(f"origin/{current_branch}", "HEAD")
-            ahead_count = deployment_repo.count_commits_between("HEAD", f"origin/{current_branch}")
+            # ahead = local commits not on remote (HEAD..origin = behind; origin..HEAD = ahead)
+            ahead_count = deployment_repo.count_commits_between(f"origin/{current_branch}", "HEAD")
+            behind_count = deployment_repo.count_commits_between("HEAD", f"origin/{current_branch}")
 
             deployment_repo_status = {
                 "Repository": "visible-speech-deployment (THIS REPO)",
@@ -273,8 +280,9 @@ class DeployManager:
                         # Check if remote branch exists
                         if repo.has_remote_branch(current_branch):
                             # Calculate ahead/behind using class methods
-                            behind_count = repo.count_commits_between(f"origin/{current_branch}", "HEAD")
-                            ahead_count = repo.count_commits_between("HEAD", f"origin/{current_branch}")
+                            # ahead = local commits not on remote (origin..HEAD = ahead; HEAD..origin = behind)
+                            ahead_count = repo.count_commits_between(f"origin/{current_branch}", "HEAD")
+                            behind_count = repo.count_commits_between("HEAD", f"origin/{current_branch}")
 
                             if ahead_count > 0:
                                 repos_ahead.append(repo_name)

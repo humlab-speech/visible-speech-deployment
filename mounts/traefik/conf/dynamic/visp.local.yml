@@ -25,3 +25,6 @@ http:
         passHostHeader: true
         servers:
           - url: "http://apache:80"
+  # WebSocket support configuration
+  # The Connection and Upgrade headers are automatically passed by Traefik v2+
+  # Just ensure the backend (Apache) is configured to handle WebSocket upgrades

@@ -622,6 +622,7 @@ BUILD_CONFIGS = {
         "context": ".",
         "dockerfile": "./docker/apache/Dockerfile",
         "image": "visp-apache",
+        "source_repo": "./external/webclient",  # git.commit label tracks webclient source
     },
     "session-manager": {
         "context": "./external/session-manager",
@@ -629,8 +630,8 @@ BUILD_CONFIGS = {
         "image": "visp-session-manager",
     },
     "emu-webapp": {
-        "context": "./docker/emu-webapp",
-        "dockerfile": "Dockerfile",
+        "context": "./external/EMU-webApp",
+        "dockerfile": "../../docker/emu-webapp/Dockerfile",
         "image": "visp-emu-webapp",
         "target": "production",
     },
@@ -668,6 +669,7 @@ BUILD_CONFIGS = {
         "image": "visp-operations-session",
         "description": "Operations session image (base for other sessions)",
         "prepare_context": "container-agent",  # Needs container-agent copied to build context
+        "source_repo": "./external/container-agent",  # git.commit label tracks container-agent source
     },
     "rstudio-session": {
         "context": "./docker/session-manager",

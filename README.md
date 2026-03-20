@@ -771,3 +771,39 @@ These are the steps performed by the install script:
 1. Install & build container-agent `cd container-agent && npm install && npm run build && cd ..`
 1. Install & build webclient `cd webclient && npm install && npm run build && cd ..`
 1. Install Session-Manager `git clone https://github.com/humlab-speech/session-manager`
+---
+
+## WSL-Specific: Port Forwarding Workaround
+
+If you're running VISP on **WSL2 with rootless Podman**, you may need to forward ports 80/443 from your Windows host to the Traefik ports (8080/8443) in WSL. Rootless Podman cannot bind to privileged ports (<1024) directly.
+
+**⚠️ Important**: Forward to the **WSL IP address** (e.g., `172.29.x.x`), NOT `127.0.0.1`. Using localhost will not work.
+
+**Setup** (run in PowerShell as Administrator on Windows):
+
+```powershell
+# Get your WSL IP address (from WSL terminal: hostname -I)
+$WSL_IP = "172.29.72.57"  # Replace with your actual WSL IP
+
+# Forward Windows port 80 → WSL port 8080
+netsh interface portproxy add v4tov4 listenport=80 listenaddress=0.0.0.0 connectport=8080 connectaddress=$WSL_IP
+
+# Forward Windows port 443 → WSL port 8443
+netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=8443 connectaddress=$WSL_IP
+
+# Verify the rules were added
+netsh interface portproxy show all
+```
+
+After this, you can access VISP from Windows at `https://visp.local` (using ports 80/443).
+
+**Cleanup** (if you need to remove the rules later):
+
+```powershell
+# Remove port forwarding rules
+netsh interface portproxy delete v4tov4 listenport=80 listenaddress=0.0.0.0
+netsh interface portproxy delete v4tov4 listenport=443 listenaddress=0.0.0.0
+
+# Verify they're removed
+netsh interface portproxy show all
+```
