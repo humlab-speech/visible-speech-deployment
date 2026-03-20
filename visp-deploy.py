@@ -594,8 +594,10 @@ def setup_env_file(auto_passwords=True, interactive=False):
 
     # 1. Set Basic Defaults (non-sensitive, goes to .env)
     defaults = {"ABS_ROOT_PATH": os.getcwd(), "ADMIN_EMAIL": "admin@visp.local"}
+    placeholder = "/your/path/to/visible-speech-deployment"
     for key, value in defaults.items():
-        if not env.get(key):
+        current = env.get(key)
+        if not current or current == placeholder:
             env.set(key, value)
 
     # 2. Check MongoDB Special Case
