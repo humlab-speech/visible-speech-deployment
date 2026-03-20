@@ -695,8 +695,8 @@ To update the system components:
 
 This project uses pre-commit hooks to maintain code quality. The hooks are automatically installed when you first commit, and they will run on every commit to ensure:
 
-- Python code is formatted with Black
-- Python code passes Flake8 linting (line length 120, excludes generated files)
+- Python code is formatted with ruff (replaces Black)
+- Python code passes ruff linting (replaces Flake8, line length 120)
 - No trailing whitespace
 - Files end with newlines
 - YAML files are valid (excluding problematic third-party files)

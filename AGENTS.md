@@ -388,6 +388,9 @@ automatically, but `createProjects` is **not** set — it must be granted explic
   teardown.
 - Do not hard-code `Requires=whisperx.service` in `session-manager.container` — whisperx is
   optional and transcription must fail gracefully when it is not running.
+- Do not use `Requires=session-manager.service` in `apache.container` — use `Wants=` instead.
+  `Requires=` causes Apache to be stopped/restarted whenever session-manager is restarted or
+  temporarily unavailable (e.g. due to podman socket issues on WSL).
 - Do not add files to `external/` by hand — use `visp-deploy.py update`.
 - Do not commit `.env`, `.env.secrets`, `mounts/mongo/data/`, `backups/`, or `.venv/`.
 - **WSL-specific**: Do not use `127.0.0.1` in netsh portproxy commands — use the actual WSL IP
