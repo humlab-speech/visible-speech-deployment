@@ -53,7 +53,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 # init_mongodb helper (kept in base so both dev/prod have it)
 WORKDIR /init_mongodb
-COPY ./init_mongodb.js /init_mongodb/
+COPY ./docker/apache/init_mongodb.js /init_mongodb/
 COPY ./docker/apache/package.json /init_mongodb/
 RUN npm install --legacy-peer-deps && npm update --legacy-peer-deps
 
@@ -73,7 +73,7 @@ ARG WEBCLIENT_BUILD=visp-dev
 ENV WEBCLIENT_BUILD=${WEBCLIENT_BUILD}
 
 # Optional cache-bust so you can force a fresh git clone when desired
-ARG WEBCLIENT_GIT_REF=main
+ARG WEBCLIENT_GIT_REF=master
 ARG CACHE_BUST=0
 
 WORKDIR /webclient
@@ -120,7 +120,7 @@ FROM base AS development
 # NOTE:
 # In dev, you will usually bind-mount your local repo to /webclient,
 # so the clone below is only a fallback to make the image runnable standalone.
-ARG WEBCLIENT_GIT_REF=main
+ARG WEBCLIENT_GIT_REF=master
 ARG CACHE_BUST=0
 
 WORKDIR /webclient
