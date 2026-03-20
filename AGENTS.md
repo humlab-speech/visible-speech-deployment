@@ -72,13 +72,77 @@ visible-speech-deployment/
 
 ---
 
+## Service Architecture
+
+**Important:** Not everything in `external/` is a separate Podman container. The deployment uses a layered approach:
+
+### Separate Podman Containers (their own quadlets)
+- **traefik** — Edge router (ports 8080/8443)
+- **apache** — Web server + Shibboleth + PHP authentication
+- **session-manager** — Spawns and manages user session containers (RStudio, Jupyter, etc.)
+- **mongo** — MongoDB database
+- **emu-webapp-server** — EMU backend
+- **emu-webapp** — EMU web interface
+- **octra** — Transcription tool
+- **wsrng-server** — Web Speech Recorder server
+- **whisperx** (optional) — Speech-to-text transcription service
+
+### Services Inside Apache Container (NOT separate containers)
+- **webapi** — PHP REST API (`external/webapi/api.php`)
+  - Accessed at `/api/v1/...` routes through Apache rewrite rules
+  - Mounted into Apache at `/var/www/webapi` and `/var/www/html/api`
+  - Communicates with session-manager via HTTP to manage sessions
+  - Communicates with MongoDB for persistence
+- **webclient** — Angular SPA (TypeScript + compiled JavaScript)
+  - Angular source in `external/webclient/src`
+  - Built by Node.js containerized build → `dist/` folder
+  - Served from `/` by Apache (mounted at `/var/www/html`)
+  - In dev mode: mounted as bind volume for hot reload
+  - In prod mode: baked into Apache image
+
+### WebSocket Architecture
+- **Client:** Angular in browser connects to `wss://BASE_DOMAIN/` (or `ws://` in dev)
+- **Apache:** Intercepts WebSocket upgrade requests via rewrite rule:
+  ```
+  RewriteCond %{HTTP:Upgrade} websocket
+  RewriteRule /(.*) ws://session-manager:8020/$1 [P,L]
+  ```
+- **Session-Manager:** Listens on port 8020 for WebSocket connections
+  - Maintains connection state for user sessions
+  - Routes container management commands
+  - Broadcasts container events back to clients
+
+### Why This Architecture?
+- **Apache as gateway** — Single HTTPS entry point, handles auth (Shibboleth), routes traffic
+- **webapi in Apache** — PHP code benefits from Apache's request handling, session management
+- **Session-manager separate** — Needs to spawn/manage containers independently
+- **WebSocket proxying** — Apache efficiently proxies WebSocket to session-manager's Node.js server
+
+---
+
 ## Managing the system — always use `visp-podman.py`
 
 `visp-podman.py` is the single entry point for all operational tasks. Keep it up to date
 whenever images, quadlets, or service names change.
 
 > **Note:** Node.js projects are built inside containers (no host `npm`/`node` needed).
-> `./visp-podman.py build <project>` runs `npm install`/`npm run build` inside a container (see `vispctl/build.py`).
+>
+> **Build system:** `./visp-podman.py build <project>` intelligently routes the build:
+> - **For container images** (Apache, EMU-webapp, etc.): Runs `podman build` with Dockerfile
+> - **For Node.js projects** (webclient, container-agent): Runs containerized build using `build_node_project()`
+>   - Mounts source directory as read-only to container (`/src`)
+>   - Mounts output directory as writable (`/output`)
+>   - Runs `npm install` + `npm run build` inside Node container
+>   - Copies built artifacts back to host's output directory
+>   - Fixes permissions automatically so host user can access files
+>   - See `NODE_BUILD_CONFIGS` in `visp-podman.py` and `vispctl/build.py` for details
+>
+> **Building specific projects:**
+> ```bash
+> ./visp-podman.py build apache           # Container image build (uses Dockerfile)
+> ./visp-podman.py build webclient        # Node.js containerized build (updates dist/)
+> ./visp-podman.py build container-agent  # Node.js containerized build (updates container-agent/dist)
+> ```
 >
 > **Tip:** If you need to fix filesystem ownership on bind mounts (e.g. `node_modules`), prefer
 > `podman unshare chown ...` so changes occur in the same user namespace the container runs under.
@@ -265,6 +329,55 @@ netsh interface portproxy delete v4tov4 listenport=443 listenaddress=0.0.0.0
 ```powershell
 netsh interface portproxy show all
 ```
+
+**Podman socket stability (WSL):**
+
+By default, `podman.socket` is socket-activated (lazy-load). Under load it can become
+unavailable mid-request, causing session-manager to crash with
+`Error: connect ENOENT /run/user/1000/podman/podman.sock`, which also takes down Apache
+(because of `Requires=session-manager.service`). Fix: keep `podman.service` always running:
+
+```bash
+systemctl --user enable --now podman.service
+```
+
+This only needs to be run once; the unit persists across reboots.
+
+---
+
+## User management — post-install checklist
+
+After a fresh install or when a new user logs in for the first time, their MongoDB
+document is created automatically by `index.php` with **no privileges**. You must
+grant the necessary privileges manually using `visp-users.py`.
+
+```bash
+# See all users and their current privileges
+python3 visp-users.py list
+
+# Show details for a specific user
+python3 visp-users.py show <username>   # username = eppn with @ → _at_ and . → _dot_
+
+# Grant project-creation rights (required to use the app meaningfully)
+python3 visp-users.py grant <username> createProjects
+
+# Grant invite-code creation (optional, admin users only)
+python3 visp-users.py grant <username> createInviteCodes
+
+# Activate / deactivate login entirely
+python3 visp-users.py activate <username>
+python3 visp-users.py deactivate <username>
+```
+
+**⚠️ After any fresh deployment / first login, always run:**
+```bash
+python3 visp-users.py list
+```
+…and confirm the test user (and any real users) have `createProjects` granted.
+Without it, users can log in but cannot create or access projects.
+
+Test user created by `?login=<TEST_USER_LOGIN_KEY>` gets `loginAllowed: true`
+automatically, but `createProjects` is **not** set — it must be granted explicitly.
 
 ---
 

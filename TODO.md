@@ -249,6 +249,33 @@
 
 ## Medium Priority
 
+- [ ] **Per-project network isolation for session containers** 🔒
+  - **Current behaviour**: `Session.class.js` attaches every spawned container (Jupyter,
+    RStudio, etc.) to the shared `systemd-visp-net` network. This means containers from
+    different projects and different users can reach each other over the internal network.
+  - **Desired behaviour**: Each project (or each session) should get its own isolated Podman
+    network so that a container in project A cannot talk to a container in project B.
+    session-manager already communicates with spawned containers through the Docker API
+    (not through the network), so isolation at the network level is feasible without breaking
+    the management plane.
+  - **Approach**:
+    1. In `session-manager`, when creating a session container, call
+       `docker.createNetwork({ Name: 'visp-project-<projectId>' })` (if it doesn't already
+       exist) and attach the container to that network instead of `systemd-visp-net`.
+    2. The project network only needs to be reachable by the Apache proxy for the user's
+       WebSocket/HTTP session — Traefik or Apache would need to be able to reach it too, or
+       alternatively the session container gets a port exposed on `systemd-visp-net` only for
+       the proxy tunnel.
+    3. On session teardown, remove the container's network if no other containers use it
+       (reference-count by project).
+    4. Consider whether containers within the *same* project should be able to talk to each
+       other (probably yes — a Jupyter notebook calling an R script, etc.) or whether
+       per-session isolation is needed.
+  - **Blocking concern**: The current `VISP_NETWORK_NAME` env var selects a single shared
+    network. This needs to become dynamic, not a static environment variable.
+  - **Note**: This is a deeper change to `session-manager` source code in `external/` — needs
+    coordination with the upstream repo.
+
 - [ ] **Merge visp-deploy.py into visp-podman.py as subcommand** 🔄
   - **Why**: Two separate scripts is confusing, visp-deploy.py functionality should be part of main tool
   - **Current state**:
