@@ -46,14 +46,14 @@ fix_ownership() {
     local uid="$2"
     local gid="$3"
     local description="$4"
-    
+
     if [ ! -e "$path" ]; then
         echo "  ⚠️  Skipping $path (does not exist)"
         return
     fi
-    
+
     echo "  → $description"
-    
+
     if [ "$USE_UNSHARE" = true ]; then
         # Use podman unshare to set ownership in the user namespace
         podman unshare chown -R "$uid:$gid" "$path"

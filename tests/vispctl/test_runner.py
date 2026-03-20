@@ -1,5 +1,6 @@
-from vispctl.runner import Runner
 import types
+
+from vispctl.runner import Runner
 
 
 class FakeRes:

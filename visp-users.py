@@ -186,21 +186,13 @@ def cmd_list(args):
         print("No users found.")
         return
 
-    print(
-        color(
-            f"{'Username':<35} {'Name':<25} {'Active':<8} {'Privileges'}", Colors.CYAN
-        )
-    )
+    print(color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'Privileges'}", Colors.CYAN))
     print("-" * 100)
 
     for user in users:
         username = user.get("username", "N/A")[:34]
         name = user.get("fullName", "N/A")[:24]
-        active = (
-            color("Yes", Colors.GREEN)
-            if user.get("loginAllowed")
-            else color("No", Colors.RED)
-        )
+        active = color("Yes", Colors.GREEN) if user.get("loginAllowed") else color("No", Colors.RED)
 
         privs = user.get("privileges", {})
         priv_list = [k for k, v in privs.items() if v]
@@ -223,11 +215,7 @@ def cmd_show(args):
     print(f"  {'Full Name:':<20} {user.get('fullName', 'N/A')}")
     print(f"  {'Email:':<20} {user.get('email', 'N/A')}")
     print(f"  {'EPPN:':<20} {user.get('eppn', 'N/A')}")
-    login_status = (
-        color("Yes", Colors.GREEN)
-        if user.get("loginAllowed")
-        else color("No", Colors.RED)
-    )
+    login_status = color("Yes", Colors.GREEN) if user.get("loginAllowed") else color("No", Colors.RED)
     print(f"  {'Login Allowed:':<20} {login_status}")
     print()
     print(color("  Privileges:", Colors.YELLOW))
@@ -283,9 +271,7 @@ def cmd_create(args):
 def cmd_activate(args):
     """Enable login for user."""
     username = args.username
-    result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: true}}}})"
-    )
+    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: true}}}})")
 
     if result.get("matchedCount", 0) == 0:
         print(color(f"User not found: {username}", Colors.RED))
@@ -298,9 +284,7 @@ def cmd_activate(args):
 def cmd_deactivate(args):
     """Disable login for user."""
     username = args.username
-    result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: false}}}})"
-    )
+    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: false}}}})")
 
     if result.get("matchedCount", 0) == 0:
         print(color(f"User not found: {username}", Colors.RED))
@@ -431,23 +415,17 @@ Privileges:
     )
 
     # activate
-    p_activate = subparsers.add_parser(
-        "activate", aliases=["enable"], help="Enable user login"
-    )
+    p_activate = subparsers.add_parser("activate", aliases=["enable"], help="Enable user login")
     p_activate.add_argument("username", help="Username to activate")
 
     # deactivate
-    p_deactivate = subparsers.add_parser(
-        "deactivate", aliases=["disable"], help="Disable user login"
-    )
+    p_deactivate = subparsers.add_parser("deactivate", aliases=["disable"], help="Disable user login")
     p_deactivate.add_argument("username", help="Username to deactivate")
 
     # grant
     p_grant = subparsers.add_parser("grant", help="Grant privilege to user")
     p_grant.add_argument("username", help="Username")
-    p_grant.add_argument(
-        "privilege", help="Privilege to grant (createProjects, createInviteCodes)"
-    )
+    p_grant.add_argument("privilege", help="Privilege to grant (createProjects, createInviteCodes)")
 
     # revoke
     p_revoke = subparsers.add_parser("revoke", help="Revoke privilege from user")
@@ -457,9 +435,7 @@ Privileges:
     # delete
     p_delete = subparsers.add_parser("delete", aliases=["rm"], help="Delete user")
     p_delete.add_argument("username", help="Username to delete")
-    p_delete.add_argument(
-        "--force", "-f", action="store_true", help="Skip confirmation"
-    )
+    p_delete.add_argument("--force", "-f", action="store_true", help="Skip confirmation")
 
     args = parser.parse_args()
 

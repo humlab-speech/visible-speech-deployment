@@ -1,12 +1,10 @@
-import types
 import importlib.util
+import types
 from pathlib import Path
 
 
 def load_visp_module():
-    spec = importlib.util.spec_from_file_location(
-        "vp", str(Path.cwd() / "visp-podman.py")
-    )
+    spec = importlib.util.spec_from_file_location("vp", str(Path.cwd() / "visp-podman.py"))
     vp = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(vp)
     return vp
@@ -36,15 +34,11 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
     monkeypatch.setattr(vp, "BuildManager", FakeBM)
 
     # Test node target
-    args = types.SimpleNamespace(
-        service="container-agent", list=False, no_cache=False, pull=False, config=None
-    )
+    args = types.SimpleNamespace(service="container-agent", list=False, no_cache=False, pull=False, config=None)
     vp.cmd_build(args)
     assert called.get("node")[0] == "container-agent"
 
     # Test image build path
-    args2 = types.SimpleNamespace(
-        service="apache", list=False, no_cache=False, pull=False, config=None
-    )
+    args2 = types.SimpleNamespace(service="apache", list=False, no_cache=False, pull=False, config=None)
     vp.cmd_build(args2)
     assert "apache" in called.get("images", [])

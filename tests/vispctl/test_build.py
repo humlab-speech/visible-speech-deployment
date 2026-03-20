@@ -53,9 +53,7 @@ def test_build_node_project_invokes_podman_run(tmp_path):
     }
 
     runner = FakeRunner()
-    bm = BuildManager(
-        runner, build_configs={}, node_configs={"container-agent": {"source": "no"}}
-    )
+    bm = BuildManager(runner, build_configs={}, node_configs={"container-agent": {"source": "no"}})
 
     success = bm.build_node_project("container-agent", config, no_cache=True)
     assert success is True

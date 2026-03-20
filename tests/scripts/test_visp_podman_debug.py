@@ -11,9 +11,7 @@ def load_visp_module():
     if proj not in sys.path:
         sys.path.insert(0, proj)
 
-    spec = importlib.util.spec_from_file_location(
-        "vp", str(Path.cwd() / "visp-podman.py")
-    )
+    spec = importlib.util.spec_from_file_location("vp", str(Path.cwd() / "visp-podman.py"))
     vp = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(vp)
     return vp

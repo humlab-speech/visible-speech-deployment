@@ -1,5 +1,5 @@
-from vispctl.service_manager import ServiceManager
 from vispctl.service import load_default_services
+from vispctl.service_manager import ServiceManager
 
 
 class FakeRunner:

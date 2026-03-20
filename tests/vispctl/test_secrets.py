@@ -32,9 +32,7 @@ def test_load_and_merge_envs(tmp_path):
     env = p / ".env"
     env.write_text("BASE_DOMAIN=example.com\nMONGO_ROOT_PASSWORD=pass1\n")
     secrets = p / ".env.secrets"
-    secrets.write_text(
-        "MONGO_ROOT_PASSWORD=secretpass\nVISP_API_ACCESS_TOKEN=token123\n"
-    )
+    secrets.write_text("MONGO_ROOT_PASSWORD=secretpass\nVISP_API_ACCESS_TOKEN=token123\n")
 
     sm = SecretManager(FakeRunner(), project_dir=p)
     all_env = sm.load_all()

@@ -38,10 +38,7 @@ def test_ensure_networks_create_missing():
     ok = nm.ensure_networks_exist()
     assert ok is True
     # Ensure we attempted to create networks
-    found = any(
-        cmd and cmd[0] == "podman" and cmd[1] == "network" and "create" in cmd
-        for cmd in fr.commands
-    )
+    found = any(cmd and cmd[0] == "podman" and cmd[1] == "network" and "create" in cmd for cmd in fr.commands)
     assert found is True
 
 
@@ -98,9 +95,5 @@ def test_migrate_to_netavark_calls_system_reset(tmp_path):
     ok = nm.migrate_to_netavark()
     assert ok is True
     # ensure podman system reset was called
-    assert any(
-        cmd[:3] == ["podman", "system", "reset"]
-        or cmd[:3] == ["podman", "system", "reset"]
-        for cmd in calls
-    )
+    assert any(cmd[:3] == ["podman", "system", "reset"] or cmd[:3] == ["podman", "system", "reset"] for cmd in calls)
     assert any("system" in c and "reset" in c for c in calls)
