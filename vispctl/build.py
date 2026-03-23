@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 from pathlib import Path
 from typing import Any, Dict
@@ -187,10 +186,14 @@ class BuildManager:
                 elif item.is_dir():
                     shutil.rmtree(item)
 
-        uid = os.getuid()
-        gid = os.getgid()
-
         # Build command using podman run (mirrors original strategy)
+        # Note on chown: inside the container (rootless Podman), UID 0 = host user (tomas),
+        # so `chown -R 0:0 /output` correctly gives ownership to the host user.
+        # Using os.getuid() (e.g. 1000) inside the container would map to a high UID in the
+        # subuid range (~100999), which is wrong.
+        # Note on cp: we copy into /output without pre-clearing it to avoid a brief window
+        # where Apache would see an empty document root mid-build. Old files from previous
+        # builds linger but are harmless (Angular uses content-hashed filenames).
         cmd = [
             "podman",
             "run",
@@ -204,7 +207,7 @@ class BuildManager:
             "-c",
             (
                 f"cp -r /src /build && cd /build && npm install --legacy-peer-deps && "
-                f"{build_cmd} && chmod -R 777 /output && rm -rf /output/* && cp -r dist/* /output/ && chown -R {uid}:{gid} /output"
+                f"{build_cmd} && chmod -R 777 /output && cp -rf dist/. /output/ && chown -R 0:0 /output"
             ),
         ]
 
