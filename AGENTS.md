@@ -171,6 +171,61 @@ whenever images, quadlets, or service names change.
 ./visp-podman.py deploy status          # compare image labels vs repo HEAD
 ```
 
+---
+
+## Debugging & Logs
+
+### session-manager (separate container)
+
+session-manager runs as its own Podman container and logs via systemd journal:
+
+```bash
+./visp-podman.py logs session-manager -f   # follow live
+./visp-podman.py logs session-manager      # recent history
+# or directly:
+journalctl --user -u session-manager -f
+```
+
+### webclient (Angular SPA — runs inside the Apache container)
+
+The webclient is a compiled Angular app served as static files from `/var/www/html`
+(bind-mounted from `external/webclient/dist/`). It has **no server-side logs of its own**.
+Errors appear in **two places**:
+
+1. **Browser console** — JavaScript errors, WebSocket failures, auth problems.
+   Always check the browser dev tools console first when the UI misbehaves.
+
+2. **Apache access/error logs** — HTTP-level errors (404, 403, 500) for asset requests:
+   ```bash
+   # Inside the container (not bind-mounted to host):
+   podman exec apache tail -f /var/log/apache2/visp.local-error.log
+   podman exec apache tail -f /var/log/apache2/visp.local-access.log
+   # Or via visp-podman.py (shows the systemd journal for the container):
+   ./visp-podman.py logs apache -f
+   ```
+
+### webapi (PHP REST API — runs inside the Apache container)
+
+webapi (`external/webapi/api.php`) is served by Apache under `/api/v1/...` and writes
+its own application-level logs to files inside the container:
+
+| Log file | Contents |
+|----------|----------|
+| `/var/log/api/webapi.log` | INFO and above — normal request logging |
+| `/var/log/api/webapi.debug.log` | DEBUG and above — verbose, includes all requests |
+| `/var/log/api/php_error.log` | PHP runtime errors / uncaught exceptions |
+
+```bash
+# Tail webapi logs from the host:
+podman exec apache tail -f /var/log/api/webapi.log
+podman exec apache tail -f /var/log/api/webapi.debug.log
+podman exec apache tail -f /var/log/api/php_error.log
+```
+
+> **Note:** These log files are inside the container and are **not** bind-mounted to the
+> host by default. They are lost when the container is recreated. To persist them, add a
+> bind mount for `/var/log/api/` in the apache quadlet.
+
 When adding a new service or renaming an existing one, update **all** of the following:
 
 1. `vispctl/versions.py` — add an entry to `DEFAULT_VERSIONS_CONFIG` if it is an external repo
