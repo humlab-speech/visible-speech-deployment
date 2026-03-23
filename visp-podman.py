@@ -691,7 +691,7 @@ BUILD_CONFIGS = {
 NODE_BUILD_CONFIGS = {
     "container-agent": {
         "source": "./external/container-agent",
-        "output": "./container-agent/dist",
+        "output": "./external/container-agent/dist",
         "description": "Container management agent (webpack build)",
         "build_cmd": "npm run build",
         "verify_file": "main.js",
@@ -705,7 +705,7 @@ NODE_BUILD_CONFIGS = {
         # Use npx to invoke the locally installed ng binary.
         "build_cmd": "npx ng build --configuration={config} --output-path dist",
         "default_config": "visp.dev",
-        "verify_file": "index.html",
+        "verify_file": "index.php",
         # Angular needs more memory and uses node:20 (not alpine) for better compatibility
         "container_image": "node:20",
     },

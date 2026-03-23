@@ -338,6 +338,33 @@ class DeployManager:
                     }
                 )
 
+        # Check Node.js build output files exist on disk
+        # (these are bind-mounted at runtime and must be present regardless of image labels)
+        node_build_warnings = []
+        try:
+            import importlib.util
+            import sys
+
+            # Load NODE_BUILD_CONFIGS from visp-podman.py via importlib
+            sys.path.insert(0, str(self.basedir))
+            spec = importlib.util.spec_from_file_location("visp_podman", str(self.basedir / "visp-podman.py"))
+            if spec and spec.loader:
+                vp = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(vp)  # type: ignore[union-attr]
+                node_configs = getattr(vp, "NODE_BUILD_CONFIGS", {})
+                for build_name, node_cfg in node_configs.items():
+                    output_dir = self.basedir / node_cfg["output"]
+                    verify = node_cfg.get("verify_file", "")
+                    verify_path = output_dir / verify if verify else output_dir
+                    if not verify_path.exists():
+                        node_build_warnings.append(
+                            f"  ❌ {build_name}: build output missing "
+                            f"({verify_path.relative_to(self.basedir)})\n"
+                            f"     Run: ./visp-podman.py build {build_name}"
+                        )
+        except Exception:  # noqa: BLE001
+            pass  # Non-fatal; skip the check if import fails
+
         # Print results
         print("\n" + "=" * 100)
         print("REPOSITORY STATUS CHECK")
@@ -384,10 +411,16 @@ class DeployManager:
             summary_lines.append(f"⬇️  Repositories behind remote: {', '.join(repos_behind)}")
             summary_lines.append(f"   Total: {len(repos_behind)} repo(s) need to pull")
 
-        if not repos_with_changes and not repos_ahead and not repos_behind:
+        if node_build_warnings:
+            summary_lines.append("\n❌ Node.js build outputs missing (bind-mounts will fail):")
+            for w in node_build_warnings:
+                summary_lines.append(w)
+
+        if not repos_with_changes and not repos_ahead and not repos_behind and not node_build_warnings:
             summary_lines.append("✅ All repositories are clean and synced!")
         else:
-            summary_lines.append("   Use 'git status' in each repo for details")
+            if repos_with_changes or repos_ahead or repos_behind:
+                summary_lines.append("   Use 'git status' in each repo for details")
 
         for line in summary_lines:
             print(line)

@@ -78,8 +78,11 @@ visible-speech-deployment/
 
 ### Separate Podman Containers (their own quadlets)
 - **traefik** — Edge router (ports 8080/8443)
-- **apache** — Web server + Shibboleth + PHP authentication
-- **session-manager** — Spawns and manages user session containers (RStudio, Jupyter, etc.)
+- **apache** — Web server + Shibboleth + PHP authentication; also hosts webapi and webclient (see below)
+- **session-manager** — Node.js WebSocket server (`external/session-manager`); separate container.
+  Manages the full lifecycle of user projects: receives `saveProject` commands from the webclient
+  over WebSocket, spawns short-lived `visp-operations-session` containers to run EMU-DB setup via
+  container-agent, and manages long-lived RStudio/Jupyter session containers. Source in `external/session-manager/`.
 - **mongo** — MongoDB database
 - **emu-webapp-server** — EMU backend
 - **emu-webapp** — EMU web interface
@@ -88,17 +91,29 @@ visible-speech-deployment/
 - **whisperx** (optional) — Speech-to-text transcription service
 
 ### Services Inside Apache Container (NOT separate containers)
-- **webapi** — PHP REST API (`external/webapi/api.php`)
+- **webapi** — PHP REST API (`external/webapi/api.php`); runs *inside* the Apache container.
   - Accessed at `/api/v1/...` routes through Apache rewrite rules
   - Mounted into Apache at `/var/www/webapi` and `/var/www/html/api`
   - Communicates with session-manager via HTTP to manage sessions
   - Communicates with MongoDB for persistence
-- **webclient** — Angular SPA (TypeScript + compiled JavaScript)
+- **webclient** — Angular SPA (TypeScript + compiled JavaScript); runs *inside* the Apache container.
   - Angular source in `external/webclient/src`
-  - Built by Node.js containerized build → `dist/` folder
-  - Served from `/` by Apache (mounted at `/var/www/html`)
-  - In dev mode: mounted as bind volume for hot reload
-  - In prod mode: baked into Apache image
+  - Built by containerized Node.js build (`./visp-podman.py build webclient`) → `external/webclient/dist/`
+  - Served from `/` by Apache (mounted at `/var/www/html` in dev; baked in prod)
+  - In dev mode: dist folder bind-mounted into Apache container for hot reload after rebuild
+  - In prod mode: dist is baked into the Apache image at build time
+
+### Build Artifacts Bind-Mounted at Runtime (NOT containers)
+- **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
+  - Built by `./visp-podman.py build container-agent` → output goes to `external/container-agent/dist/`
+  - session-manager mounts `external/container-agent/dist/` as `/container-agent` into each
+    short-lived `visp-operations-session` container it spawns (when `DEVELOPMENT_MODE=true`)
+  - In production (`DEVELOPMENT_MODE=false`), container-agent is baked into the
+    `visp-operations-session` image at build time instead
+  - **If `external/container-agent/dist/main.js` is missing**, project creation will hang on
+    "Creating EMU-DB" and crash session-manager — run `./visp-podman.py build container-agent`
+  - The quadlet files for session-manager do **not** need a container-agent volume entry;
+    session-manager mounts it dynamically via the Podman API using `ABS_ROOT_PATH` as the host-side prefix
 
 ### WebSocket Architecture
 - **Client:** Angular in browser connects to `wss://BASE_DOMAIN/` (or `ws://` in dev)

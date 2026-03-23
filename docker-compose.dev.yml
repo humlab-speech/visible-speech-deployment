@@ -101,6 +101,10 @@ services:
     volumes:
       # Source code mount for development hot-reload
       - "./external/session-manager:/session-manager:Z"
+      # NOTE: container-agent is NOT mounted here. session-manager mounts
+      # external/container-agent/dist into each operations container it spawns
+      # dynamically via the Docker/Podman API (using ABS_ROOT_PATH as prefix).
+      # Run: ./visp-podman.py build container-agent  to populate that dist folder.
       # Data volumes
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/logs:/session-manager/logs:Z"
