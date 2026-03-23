@@ -22,7 +22,7 @@ Build examples:
   ./visp-podman.py build                         # Build all services
   ./visp-podman.py build session-manager         # Build single service
   ./visp-podman.py build container-agent         # Build container-agent (Node.js)
-  ./visp-podman.py build webclient --config visp # Build webclient with visp config
+  ./visp-podman.py build webclient --config visp.dev # Build webclient with visp.dev config (default)
   ./visp-podman.py build --no-cache              # Clean rebuild (no cache)
   ./visp-podman.py build --list                  # List buildable services
 
@@ -704,7 +704,7 @@ NODE_BUILD_CONFIGS = {
         # Dockerfile installs PHP dependencies itself during image build.
         # Use npx to invoke the locally installed ng binary.
         "build_cmd": "npx ng build --configuration={config} --output-path dist",
-        "default_config": "visp",
+        "default_config": "visp.dev",
         "verify_file": "index.html",
         # Angular needs more memory and uses node:20 (not alpine) for better compatibility
         "container_image": "node:20",
@@ -837,6 +837,15 @@ def cmd_build(args):
         success = bm.build_node_project(service, config, no_cache, build_config)
         if success:
             print(color(f"\n✓ {service} build complete", Colors.GREEN))
+            # Automatically fix permissions on output directory after successful build
+            output_path = Path(config.get("output"))
+            if output_path.exists():
+                print(color(f"Fixing permissions on {output_path}...", Colors.YELLOW))
+                from vispctl.permissions import PermissionsManager
+
+                pm = PermissionsManager(Runner())
+                pm.apply_fix([output_path], recursive=True, host_owner=True)
+                print(color("✓ Permissions fixed", Colors.GREEN))
         else:
             print(color(f"\n✗ {service} build failed", Colors.RED))
         return
@@ -919,6 +928,15 @@ def cmd_build(args):
             success = bm.build_node_project(node_name, config, no_cache, build_config)
             if success:
                 results["success"].append(node_name)
+                # Automatically fix permissions on output directory after successful build
+                output_path = Path(config.get("output"))
+                if output_path.exists():
+                    print(color(f"  Fixing permissions on {output_path}...", Colors.YELLOW))
+                    from vispctl.permissions import PermissionsManager
+
+                    pm = PermissionsManager(Runner())
+                    pm.apply_fix([output_path], recursive=True, host_owner=True)
+                    print(color("  ✓ Permissions fixed", Colors.GREEN))
             else:
                 results["failed"].append(node_name)
             print()
