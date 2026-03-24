@@ -48,6 +48,10 @@ ENV LANG=C
 # log dir (permissions fix: directory should not be 0644)
 RUN mkdir -p /var/log/api && chmod 0755 /var/log/api && chown -R www-data:www-data /var/log/api
 
+# Increase PHP upload limits (default 2M/8M is far too small for audio files)
+RUN echo "upload_max_filesize = 2048M\npost_max_size = 2048M\nmemory_limit = 512M" \
+    > /etc/php/8.4/apache2/conf.d/99-visp-uploads.ini
+
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
