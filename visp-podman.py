@@ -1289,6 +1289,36 @@ def cmd_fix_permissions(args):
         )
 
 
+# === User Management Commands ===
+
+
+def cmd_users(args):
+    """Dispatch user management subcommands."""
+    from vispctl import users as users_mod
+
+    handler = users_mod.COMMANDS.get(args.users_command)
+    if handler:
+        handler(args)
+    else:
+        print("Unknown users command. Use --help for usage.")
+        sys.exit(1)
+
+
+# === Database Audit Commands ===
+
+
+def cmd_audit(args):
+    """Audit emuDB consistency: MongoDB ↔ disk ↔ bundle lists."""
+    from vispctl.audit import run_audit
+
+    issues = run_audit(
+        project_id=getattr(args, "project_id", None),
+        fix_cache=getattr(args, "fix_cache", False),
+    )
+    if issues:
+        sys.exit(1)
+
+
 # === Backup/Restore Commands ===
 
 
@@ -1572,6 +1602,49 @@ Examples:
     p_restore.add_argument("backup_file", help="Backup file to restore")
     p_restore.add_argument("--force", action="store_true", help="Skip confirmation prompt")
 
+    # users
+    p_users = subparsers.add_parser("users", help="Manage users in MongoDB")
+    p_users_sub = p_users.add_subparsers(dest="users_command", help="Users subcommands", required=True)
+
+    p_users_sub.add_parser("list", aliases=["ls"], help="List all users")
+
+    p_u_show = p_users_sub.add_parser("show", aliases=["get"], help="Show user details")
+    p_u_show.add_argument("username", help="Username to show")
+
+    p_u_create = p_users_sub.add_parser("create", aliases=["add"], help="Create new user")
+    p_u_create.add_argument("email", help="User email address")
+    p_u_create.add_argument("--first-name", "-f", help="First name")
+    p_u_create.add_argument("--last-name", "-l", help="Last name")
+    p_u_create.add_argument("--can-create-projects", "-p", action="store_true", help="Allow user to create projects")
+
+    p_u_activate = p_users_sub.add_parser("activate", aliases=["enable"], help="Enable user login")
+    p_u_activate.add_argument("username", help="Username to activate")
+
+    p_u_deactivate = p_users_sub.add_parser("deactivate", aliases=["disable"], help="Disable user login")
+    p_u_deactivate.add_argument("username", help="Username to deactivate")
+
+    p_u_grant = p_users_sub.add_parser("grant", help="Grant privilege to user")
+    p_u_grant.add_argument("username", help="Username")
+    p_u_grant.add_argument("privilege", help="Privilege (createProjects, createInviteCodes)")
+
+    p_u_revoke = p_users_sub.add_parser("revoke", help="Revoke privilege from user")
+    p_u_revoke.add_argument("username", help="Username")
+    p_u_revoke.add_argument("privilege", help="Privilege to revoke")
+
+    p_u_delete = p_users_sub.add_parser("delete", aliases=["rm"], help="Delete user")
+    p_u_delete.add_argument("username", help="Username to delete")
+    p_u_delete.add_argument("--force", "-F", action="store_true", help="Skip confirmation")
+
+    # audit
+    p_audit = subparsers.add_parser("audit", help="Audit emuDB consistency: MongoDB ↔ disk ↔ bundle lists")
+    p_audit.add_argument("project_id", nargs="?", help="Audit a specific project by ID (default: all)")
+    p_audit.add_argument(
+        "--fix-cache",
+        action="store_true",
+        dest="fix_cache",
+        help="Delete stale VISP_emuDBcache.sqlite files where found",
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -1615,6 +1688,8 @@ Examples:
         "fixperm": cmd_fix_permissions,
         "backup": cmd_backup,
         "restore": cmd_restore,
+        "users": cmd_users,
+        "audit": cmd_audit,
     }
 
     handler = cmd_map.get(args.command)

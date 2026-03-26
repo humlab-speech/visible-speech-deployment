@@ -2,6 +2,41 @@
 
 ## Immediate / Blocking
 
+- [ ] **DISK LEAK: Uploaded audio files accumulate forever in `mounts/apache/apache/uploads/`** 🐛💾
+  - **Severity**: Will fill the disk in production. Already 17 files on dev, including two
+    762 MB copies of `user_audio_2022-09-30.wav` from two separate `saveProject` attempts.
+  - **Root cause**: PHP writes uploaded files to
+    `mounts/apache/apache/uploads/<username>/<formContextId>/emudb-sessions/<sessionId>/<file>`.
+    session-manager mounts this directory into the ops container as `/home/uploads`, R's
+    `import_mediaFiles()` copies files into the EmuDB repository at
+    `mounts/repositories/<projectId>/Data/VISP_emuDB/<Session>_ses/<bundle>_bndl/`.
+    **Nothing ever deletes the original upload.** A new `formContextId` is generated for
+    every `saveProject`/`updateProject` call, so even re-saves of unchanged sessions
+    accumulate new copies.
+  - **Key code paths**:
+    - PHP upload handler: `external/webapi/api.php` — writes to `/tmp/uploads/<user>/<ctx>/...`
+      (container-internal), which maps to the bind-mounted host path above.
+    - session-manager cleanup point (none currently):
+      `external/session-manager/src/ApiServer.class.js` — `saveProject` / `updateProject`
+      methods, around line 3826 (`let context = projectFormData.formContextId`).
+      After the ops container finishes all commands successfully, `uploadsSrcDir` (the full
+      host path) is available and could be deleted with `fs.rmSync(uploadsSrcDir, {recursive:true})`.
+    - The upload directory variable is `uploadsSrcDir` (host path) and `uploadsSrcDirLocal`
+      (container-internal path `/tmp/uploads/...`); both point to the same bind-mounted dir.
+  - **Chosen approach: Option A + Option B**
+    - **A — Delete on success**: after the ops container finishes all steps without error,
+      delete the entire `formContextId` directory (`uploadsSrcDir`). This covers the normal
+      happy path immediately.
+    - **B — Lazy cleanup on next save**: at the start of each `saveProject`/`updateProject`,
+      scan `mounts/apache/apache/uploads/<username>/` and delete any `formContextId`
+      directories that are **not** the current one and are older than e.g. 24 h. This
+      catches cases where A couldn't run (crash, error, abandoned tab).
+  - **Note**: Option C/D (cron sweep) can be added on top later if needed for users who
+    never return, but A+B covers >95% of real cases without needing a scheduler.
+  - **Watch out for**: only delete after *all* container-agent commands succeed — not just
+    `emudb-create-sessions`. The delete should happen at the same point where
+    `Shuttting down container session` is logged (after the final command in the chain).
+
 - [ ] **Remove stale `whisper.container` symlink from `~/.config/containers/systemd/`** 🐛
   - `quadlets/dev/whisper.container` was renamed to `whisper.container.old` (via git mv) but
     the symlink in `~/.config/containers/systemd/whisper.container` was never removed
@@ -212,9 +247,9 @@
     - Improve webapi error propagation so move failures return meaningful errors to the UI instead of silent failures
   - **Recent improvements** ✅ (commits c703ab3, f79bc70, 7944407):
     - Added `set-unshare.sh` script for fixing UID/GID in mounted directories
-    - Expanded `fix-permissions.sh` with comprehensive ownership/mode fixes
+    - Expanded `fix-permissions` with comprehensive ownership/mode fixes (now `./visp-podman.py fixperm`)
     - Fixed file permissions on Apache vhost configs and SAML configs
-    - **Still needed**: Run `./fix-permissions.sh` post-deploy and verify uploads work
+    - **Still needed**: Run `./visp-podman.py fixperm --apply` post-deploy and verify uploads work
   - **Acceptance / next steps**:
     - Reproduce an upload while tailing Apache access+error logs and session-manager logs; capture the new upload id and verify files are present on the host
     - Add an automated test/CI check to verify uploads succeed under Podman with the configured mounts
