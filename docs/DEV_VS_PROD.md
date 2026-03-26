@@ -211,6 +211,10 @@ LOG_LEVEL=info
 - Strict authentication required
 - Production-grade security
 
+**Cleanup automation**:
+- Use `./visp-podman.py cleanup-containers` to remove stopped session containers.
+- The old legacy usage of `hsapp-session-*` is no longer required; session-manager now creates `visp-session-*` containers.
+
 ---
 
 ### 5. Container Restart Policies

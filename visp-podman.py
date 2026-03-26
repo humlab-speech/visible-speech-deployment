@@ -45,6 +45,7 @@ import sys
 from pathlib import Path
 
 from vispctl.build import BuildManager
+from vispctl.cleanup_containers import cleanup_containers
 from vispctl.images import ImageManager
 from vispctl.network import NetworkManager
 
@@ -613,6 +614,24 @@ def cmd_shell(args):
     container = f"systemd-{args.container}"
     shell = args.shell or "/bin/bash"
     run(["podman", "exec", "-it", container, shell], check=False)
+
+
+def cmd_cleanup_containers(args):
+    """Stop and remove session containers (legacy and current prefix)."""
+    try:
+        result = cleanup_containers(mode=args.mode or "stopped", yes=args.yes)
+        status = result.get("status", "error")
+        message = result.get("message", "")
+        removed = result.get("removed", 0)
+
+        if status == "ok":
+            print(color(f"Cleanup complete: removed {removed} session container(s)", Colors.GREEN))
+        elif status == "cancelled":
+            print(color("Cleanup cancelled by user.", Colors.YELLOW))
+        else:
+            print(color(f"Cleanup finished with status={status}: {message}", Colors.RED))
+    except Exception as e:
+        print(color(f"Error during cleanup-containers: {e}", Colors.RED))
 
 
 # Build configurations - maps service name to build info
@@ -1405,6 +1424,25 @@ Examples:
     p_shell.add_argument("container", help="Container name (without systemd- prefix)")
     p_shell.add_argument("--shell", default="/bin/bash", help="Shell to use (default: /bin/bash)")
 
+    # cleanup-containers
+    p_cleanup = subparsers.add_parser(
+        "cleanup-containers",
+        aliases=["cleanup"],
+        help="Stop and remove session containers (legacy and current naming)",
+    )
+    p_cleanup.add_argument(
+        "--mode",
+        choices=["all", "stopped", "running"],
+        default="stopped",
+        help="Which containers to target (default: stopped)",
+    )
+    p_cleanup.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Do not prompt for confirmation",
+    )
+
     # build
     p_build = subparsers.add_parser("build", aliases=["b"], help="Build container images")
     p_build.add_argument(
@@ -1563,6 +1601,8 @@ Examples:
         "e": cmd_exec,
         "shell": cmd_shell,
         "sh": cmd_shell,
+        "cleanup-containers": cmd_cleanup_containers,
+        "cleanup": cmd_cleanup_containers,
         "build": cmd_build,
         "b": cmd_build,
         "network": cmd_network,
