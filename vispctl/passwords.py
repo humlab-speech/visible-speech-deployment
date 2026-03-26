@@ -173,6 +173,13 @@ def setup_env_file(auto_passwords: bool = True, interactive: bool = False) -> No
             # Manual mode: skip
             print(f"⚠️  {var} not set (use --auto-passwords or --interactive-passwords)")
 
+    # 4. Remove any password variables from .env (they should only be in .env.secrets)
+    # This handles leftover keys from .env-example that were copied with empty values
+    for var in password_vars.keys():
+        if var in env.vars:
+            print(f"ℹ️  Removing {var} from .env (passwords belong in .env.secrets)")
+            del env.vars[var]
+
     # Save both files
     env.save()
     secrets.save()
