@@ -1,0 +1,253 @@
+# Matomo Analytics Integration
+
+This document describes how to add Matomo usage-tracking to the VISP platform
+using Podman Quadlets. It replaces the earlier Docker Compose setup and the
+broken `mod_substitute` injection approach.
+
+---
+
+## History & lessons learned
+
+| Date | What happened |
+|------|---------------|
+| 2022-03 | Matomo added via `docker-compose` (`matomo` + `matomo-db` services). Tracking script injected into every HTML response using Apache `mod_substitute` in `apache2.conf`. |
+| 2022-03 → 2025-11 | Various fixes (`52bb1a7`, `e2ec651`, `7cdb30d`, `a203b5f`). Cross-domain tracking added for sub-domains. |
+| 2025-11-28 | **Removed** (`1a2333b`): `mod_substitute` broke on updates — backslashes in multi-line JS were interpreted as substitute flags, producing *"Bad Substitute flag"* errors. The 20-line `<LocationMatch>` block was deleted. |
+| 2025-11 | Two WIP stashes created (`stash@{5}`, `stash@{6}`) with a bind-mount approach for `matomo-tracker.js`, but never applied. |
+| 2026-03 | Migration to Podman Quadlets. Docker Compose files are legacy. Matomo needs quadlets. |
+
+### Why `mod_substitute` broke
+
+Apache's `Substitute` directive uses `-` as a delimiter and treats certain
+characters (like `\`) as flag modifiers. Embedding multi-line JavaScript with
+escaped quotes and backslash-continuations inside a `Substitute` rule is
+fragile and breaks silently on Apache upgrades or config reloads.
+
+**Do not use `mod_substitute` for script injection.**
+
+---
+
+## Recommended approach: external tracker file
+
+Instead of injecting inline JS via Apache, serve a standalone `matomo-tracker.js`
+file and load it with a simple `<script>` tag. This is what the stashed work
+was moving toward.
+
+### How it works
+
+1. **`matomo-tracker.js`** — a small JS file on the host at
+   `mounts/apache/apache/matomo-tracker.js`. It contains the standard Matomo
+   tracking snippet and is configured via `.env` variables at generation time.
+
+2. **Bind-mounted** into the Apache container at `/var/www/html/matomo-tracker.js`
+   so it is served as a static file at `https://BASE_DOMAIN/matomo-tracker.js`.
+
+3. **Loaded by the webclient** — Angular's `index.html` includes:
+   ```html
+   <script src="/matomo-tracker.js" defer></script>
+   ```
+   This is the cleanest approach: one `<script>` tag, no Apache filter modules,
+   no regex substitution, and it survives Apache upgrades.
+
+4. **Alternative**: If modifying `index.html` is undesirable (it lives in
+   `external/webclient` and is rebuilt), the script tag can be added to the
+   Apache vhost via `mod_include` (SSI) or a small `Header append` directive.
+   But the `index.html` approach is simplest and most maintainable.
+
+---
+
+## Implementation plan
+
+### Phase 1: Quadlet files for Matomo services
+
+Create two new quadlet files (for both `dev/` and `prod/`):
+
+#### `quadlets/dev/matomo-db.container`
+
+```ini
+[Unit]
+Description=Matomo MariaDB Database
+After=network-online.target visp-net.service
+
+[Container]
+ContainerName=matomo-db
+Image=docker.io/library/mariadb:10.11
+Network=visp-net.network
+Environment=MYSQL_DATABASE=matomo_db
+Secret=visp_matomo_db_root_password,type=env,target=MYSQL_ROOT_PASSWORD
+Secret=visp_matomo_db_user,type=env,target=MYSQL_USER
+Secret=visp_matomo_db_password,type=env,target=MYSQL_PASSWORD
+Volume=%h/Projects/visible-speech-deployment/mounts/matomo-db/mysql:/var/lib/mysql:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=unless-stopped
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
+```
+
+#### `quadlets/dev/matomo.container`
+
+```ini
+[Unit]
+Description=Matomo Analytics
+After=network-online.target visp-net.service matomo-db.service
+Requires=matomo-db.service
+
+[Container]
+ContainerName=matomo
+Image=docker.io/library/matomo:5
+Network=visp-net.network
+Volume=%h/Projects/visible-speech-deployment/mounts/matomo/config:/var/www/html/config:rw,Z
+Volume=%h/Projects/visible-speech-deployment/mounts/matomo/logs:/var/www/html/logs:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/apache2:/external_logs:ro
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+PodmanArgs=--cgroups=disabled
+
+[Service]
+Restart=unless-stopped
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target
+```
+
+> **Note:** Matomo runs on `visp-net` so Apache can reverse-proxy to it
+> (via `matomo.vhost.conf` at `http://matomo/`). No separate network needed.
+
+### Phase 2: Podman secrets for Matomo credentials
+
+The following secrets need to be registered (handled by `vispctl/secrets.py`):
+
+| Secret name | Source `.env.secrets` key | Used by |
+|---|---|---|
+| `visp_matomo_db_root_password` | `MATOMO_DB_ROOT_PASSWORD` | matomo-db |
+| `visp_matomo_db_user` | `MATOMO_DB_USER` | matomo-db |
+| `visp_matomo_db_password` | `MATOMO_DB_PASSWORD` | matomo-db |
+
+These are already generated by `vispctl/passwords.py` — they just need to be
+added to the secrets mapping in `vispctl/secrets.py`.
+
+### Phase 3: Register in `visp-podman.py`
+
+Add to the `SERVICES` list in `visp-podman.py`:
+
+```python
+Service("matomo-db", "container", "matomo-db.container"),
+Service("matomo", "container", "matomo.container"),
+```
+
+Place them after `mongo` (database services together) and before `apache`.
+
+### Phase 4: Create the tracker file
+
+Generate `mounts/apache/apache/matomo-tracker.js` (either manually or via a
+helper script that reads `BASE_DOMAIN` from `.env`):
+
+```javascript
+// Matomo analytics tracker for VISP
+// Generated from BASE_DOMAIN — update if domain changes
+var _paq = window._paq = window._paq || [];
+_paq.push(['setDomains', [
+  '*.BASE_DOMAIN',
+  '*.app.BASE_DOMAIN',
+  '*.octra.BASE_DOMAIN',
+  '*.emu-webapp.BASE_DOMAIN'
+]]);
+_paq.push(['enableCrossDomainLinking']);
+_paq.push(['trackPageView']);
+_paq.push(['enableLinkTracking']);
+(function() {
+  var u = '//matomo.BASE_DOMAIN/';
+  _paq.push(['setTrackerUrl', u + 'matomo.php']);
+  _paq.push(['setSiteId', '1']);
+  var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+  g.async = true;
+  g.src = u + 'matomo.js';
+  s.parentNode.insertBefore(g, s);
+})();
+```
+
+Replace `BASE_DOMAIN` with the actual domain value. A template file
+(`mounts/apache/apache/matomo-tracker.js.template`) can be committed and
+expanded during `visp-podman.py install`.
+
+### Phase 5: Bind-mount the tracker into Apache
+
+Add one `Volume=` line to both `quadlets/dev/apache.container` and
+`quadlets/prod/apache.container`:
+
+```ini
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/matomo-tracker.js:/var/www/html/matomo-tracker.js:ro,Z
+```
+
+### Phase 6: Add `<script>` tag to webclient
+
+In `external/webclient/src/index.html`, add before `</head>`:
+
+```html
+<script src="/matomo-tracker.js" defer></script>
+```
+
+This is a one-line change in the webclient repo. If the file doesn't exist
+(e.g. Matomo is disabled), the browser simply gets a 404 on a deferred script —
+no errors, no broken page.
+
+### Phase 7: Apache vhost for Matomo UI
+
+The vhost already exists at `mounts/apache/apache/vhosts/matomo.vhost.conf`
+and proxies `matomo.${BASE_DOMAIN}` → `http://matomo/`. No changes needed.
+
+Traefik (dev mode) needs a routing rule for `matomo.${BASE_DOMAIN}`. This is
+handled by the dynamic config files in `mounts/traefik/conf/dynamic/`.
+
+---
+
+## Mount directories to create
+
+```bash
+mkdir -p mounts/matomo/{config,logs}
+mkdir -p mounts/matomo-db/mysql
+```
+
+These should be added to `create_required_directories()` in `visp-deploy.py`
+and/or documented in the install flow.
+
+---
+
+## `.env-example` changes
+
+The Matomo variables are already present in `.env-example`. However, the
+password variables (`MATOMO_DB_ROOT_PASSWORD`, `MATOMO_DB_USER`,
+`MATOMO_DB_PASSWORD`) should be **removed from `.env-example`** since they
+now belong in `.env.secrets` (generated automatically by `vispctl/passwords.py`).
+
+Only keep `MATOMO_DB_NAME=matomo_db` in `.env-example` (non-secret config).
+
+---
+
+## Checklist
+
+- [ ] Create `quadlets/dev/matomo-db.container`
+- [ ] Create `quadlets/dev/matomo.container`
+- [ ] Create `quadlets/prod/matomo-db.container`
+- [ ] Create `quadlets/prod/matomo.container`
+- [ ] Add Matomo secrets to `vispctl/secrets.py` mapping
+- [ ] Add `matomo-db` and `matomo` to `SERVICES` in `visp-podman.py`
+- [ ] Create `mounts/apache/apache/matomo-tracker.js.template`
+- [ ] Add template expansion to install flow (or document manual step)
+- [ ] Add `Volume=` for `matomo-tracker.js` to apache quadlets (dev + prod)
+- [ ] Add `<script src="/matomo-tracker.js" defer>` to webclient `index.html`
+- [ ] Verify `matomo.vhost.conf` works with container name resolution
+- [ ] Add Traefik routing for `matomo.BASE_DOMAIN` (dev mode)
+- [ ] Create `mounts/matomo/` and `mounts/matomo-db/` directories in install flow
+- [ ] Clean up `.env-example` — move password vars out, keep only `MATOMO_DB_NAME`
+- [ ] Update `AGENTS.md` service architecture section
+- [ ] Test: Matomo UI accessible at `https://matomo.BASE_DOMAIN`
+- [ ] Test: Tracker script loads on webclient pages
+- [ ] Test: Page views appear in Matomo dashboard
