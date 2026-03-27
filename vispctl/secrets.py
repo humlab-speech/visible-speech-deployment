@@ -49,6 +49,12 @@ class SecretManager:
             secrets["visp_test_user_login_key"] = env_vars["TEST_USER_LOGIN_KEY"]
         if "BASE_DOMAIN" in env_vars:
             secrets["visp_media_file_base_url"] = f"https://emu-webapp.{env_vars['BASE_DOMAIN']}"
+        if "MATOMO_DB_ROOT_PASSWORD" in env_vars:
+            secrets["visp_matomo_db_root_password"] = env_vars["MATOMO_DB_ROOT_PASSWORD"]
+        if "MATOMO_DB_USER" in env_vars:
+            secrets["visp_matomo_db_user"] = env_vars["MATOMO_DB_USER"]
+        if "MATOMO_DB_PASSWORD" in env_vars:
+            secrets["visp_matomo_db_password"] = env_vars["MATOMO_DB_PASSWORD"]
         return secrets
 
     def create_secrets(self, secrets: Dict[str, str]) -> None:

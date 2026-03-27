@@ -91,6 +91,8 @@ SERVICES = [
     Service("octra-net", "network", "octra-net.network"),
     # Then containers in dependency order
     Service("mongo", "container", "mongo.container"),
+    Service("matomo-db", "container", "matomo-db.container"),
+    Service("matomo", "container", "matomo.container"),
     Service("traefik", "container", "traefik.container"),
     Service("whisperx", "container", "whisperx.container"),
     Service("whisperx-nginx", "container", "whisperx-nginx.container"),
@@ -478,6 +480,25 @@ def cmd_install(args):
     print(color("Creating Podman secrets...", Colors.CYAN))
     secrets = sm.get_derived(env_vars)
     sm.create_secrets(secrets)
+    print()
+
+    # Ensure Matomo mount directories exist
+    project_dir = Path(__file__).parent
+    for d in ["mounts/matomo/config", "mounts/matomo/logs", "mounts/matomo-db/mysql"]:
+        (project_dir / d).mkdir(parents=True, exist_ok=True)
+
+    # Generate matomo-tracker.js from template if BASE_DOMAIN is set
+    tracker_template = project_dir / "mounts/apache/apache/matomo-tracker.js.template"
+    tracker_output = project_dir / "mounts/apache/apache/matomo-tracker.js"
+    if tracker_template.exists() and env_vars.get("BASE_DOMAIN"):
+        content = tracker_template.read_text()
+        content = content.replace("{{BASE_DOMAIN}}", env_vars["BASE_DOMAIN"])
+        tracker_output.write_text(content)
+        print(color(f"  ✓ Generated matomo-tracker.js for {env_vars['BASE_DOMAIN']}", Colors.GREEN))
+    elif not tracker_output.exists():
+        # Create a placeholder so the bind-mount doesn't fail
+        tracker_output.write_text("// Matomo tracker not configured — set BASE_DOMAIN and re-run install\n")
+        print(color("  ⚠ Created placeholder matomo-tracker.js (BASE_DOMAIN not set)", Colors.YELLOW))
     print()
 
     # Determine which services are available in this mode

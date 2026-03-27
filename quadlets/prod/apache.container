@@ -32,6 +32,7 @@ Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/envvars:/etc/a
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z
 # Production: Code is built into the image, but mount vendor for runtime dependencies
+Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/matomo-tracker.js:/var/www/html/matomo-tracker.js:ro,Z
 Volume=%h/Projects/visible-speech-deployment/external/webapi/vendor:/var/www/html/api/vendor:Z
 Volume=%h/Projects/visible-speech-deployment/external/webapi/vendor:/var/www/vendor:Z
 Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
