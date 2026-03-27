@@ -84,6 +84,12 @@ visible-speech-deployment/
   over WebSocket, spawns short-lived `visp-operations-session` containers to run EMU-DB setup via
   container-agent, and manages long-lived RStudio/Jupyter session containers. Source in `external/session-manager/`.
 - **mongo** — MongoDB database
+- **matomo** (optional) — Matomo analytics web interface (`docker.io/library/matomo:5`). Provides
+  usage tracking for the VISP platform. Accessed at `https://matomo.BASE_DOMAIN` via Apache
+  reverse proxy (`matomo.vhost.conf`). Requires first-time setup wizard — see
+  `docs/MATOMO_INTEGRATION.md`.
+- **matomo-db** (optional) — MariaDB database for Matomo (`docker.io/library/mariadb:10.11`).
+  Data stored in `mounts/matomo-db/mysql/`.
 - **emu-webapp-server** — EMU backend
 - **emu-webapp** — EMU web interface
 - **octra** — Transcription tool
@@ -355,7 +361,7 @@ docs(agents): add AGENTS.md with project conventions
 ## Network architecture
 
 ```
-systemd-visp-net      — main internal network (apache, session-manager, mongo, wsrng-server, …)
+systemd-visp-net      — main internal network (apache, session-manager, mongo, wsrng-server, matomo, matomo-db, …)
 systemd-whisper-net   — whisper isolation network (session-manager + whisperx, if sidecar used)
 systemd-octra-net     — octra isolation network
 ```

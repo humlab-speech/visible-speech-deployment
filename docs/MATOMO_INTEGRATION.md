@@ -233,21 +233,83 @@ Only keep `MATOMO_DB_NAME=matomo_db` in `.env-example` (non-secret config).
 
 ## Checklist
 
-- [ ] Create `quadlets/dev/matomo-db.container`
-- [ ] Create `quadlets/dev/matomo.container`
-- [ ] Create `quadlets/prod/matomo-db.container`
-- [ ] Create `quadlets/prod/matomo.container`
-- [ ] Add Matomo secrets to `vispctl/secrets.py` mapping
-- [ ] Add `matomo-db` and `matomo` to `SERVICES` in `visp-podman.py`
-- [ ] Create `mounts/apache/apache/matomo-tracker.js.template`
-- [ ] Add template expansion to install flow (or document manual step)
-- [ ] Add `Volume=` for `matomo-tracker.js` to apache quadlets (dev + prod)
-- [ ] Add `<script src="/matomo-tracker.js" defer>` to webclient `index.html`
+- [x] Create `quadlets/dev/matomo-db.container`
+- [x] Create `quadlets/dev/matomo.container`
+- [x] Create `quadlets/prod/matomo-db.container`
+- [x] Create `quadlets/prod/matomo.container`
+- [x] Add Matomo secrets to `vispctl/secrets.py` mapping
+- [x] Add `matomo-db` and `matomo` to `SERVICES` in `visp-podman.py`
+- [x] Create `mounts/apache/apache/matomo-tracker.js.template`
+- [x] Add template expansion to install flow
+- [x] Add `Volume=` for `matomo-tracker.js` to apache quadlets (dev + prod)
+- [x] Create `mounts/matomo/` and `mounts/matomo-db/` directories in install flow
+- [x] Clean up `.env-example` — move password vars out, keep only `MATOMO_DB_NAME`
+- [x] Update `AGENTS.md` service architecture section
+- [x] Update `docs/DEPLOYMENT_GUIDE.md` with first-time setup wizard instructions
+- [ ] Add `<script src="/matomo-tracker.js" defer>` to webclient `index.html` (webclient repo)
+- [ ] Add Traefik routing for `matomo.BASE_DOMAIN` (dev mode dynamic config)
 - [ ] Verify `matomo.vhost.conf` works with container name resolution
-- [ ] Add Traefik routing for `matomo.BASE_DOMAIN` (dev mode)
-- [ ] Create `mounts/matomo/` and `mounts/matomo-db/` directories in install flow
-- [ ] Clean up `.env-example` — move password vars out, keep only `MATOMO_DB_NAME`
-- [ ] Update `AGENTS.md` service architecture section
 - [ ] Test: Matomo UI accessible at `https://matomo.BASE_DOMAIN`
 - [ ] Test: Tracker script loads on webclient pages
 - [ ] Test: Page views appear in Matomo dashboard
+
+---
+
+## First-time Matomo setup
+
+After starting the containers for the first time, Matomo requires an interactive
+setup wizard. This is a one-time step — Matomo stores its configuration in
+`mounts/matomo/config/config.ini.php` which persists across container restarts.
+
+### Step 1: Access the wizard
+
+Open `https://matomo.BASE_DOMAIN` in your browser. Matomo will detect that no
+configuration exists and launch the setup wizard.
+
+### Step 2: Database connection
+
+Use the credentials auto-generated during `./visp-podman.py install`:
+
+| Field | Value |
+|-------|-------|
+| Database Server | `matomo-db` |
+| Login | Value of `MATOMO_DB_USER` from `.env.secrets` |
+| Password | Value of `MATOMO_DB_PASSWORD` from `.env.secrets` |
+| Database Name | `matomo_db` (from `.env`: `MATOMO_DB_NAME`) |
+| Table Prefix | `matomo_` (default) |
+
+To view the generated credentials:
+
+```bash
+grep -E 'MATOMO_DB_(USER|PASSWORD)' .env.secrets
+```
+
+### Step 3: Create super user
+
+Choose a Matomo admin username and password. This is the Matomo web UI login —
+it is separate from the database credentials and the VISP user system.
+
+| Field | Suggested value |
+|-------|----------------|
+| Super User Login | `admin` |
+| Password | Choose a strong password |
+| Email | Your admin email |
+
+### Step 4: Configure first website
+
+| Field | Value |
+|-------|-------|
+| Website name | `Visible Speech` |
+| Website URL | `https://BASE_DOMAIN` |
+| Website time zone | Your local timezone |
+| E-commerce | No |
+
+Matomo will assign **Site ID 1** to this website. The tracker template already
+uses `setSiteId('1')`, so no further configuration is needed.
+
+### Step 5: Verify tracking
+
+1. Confirm `matomo-tracker.js` loads: open `https://BASE_DOMAIN/matomo-tracker.js`
+   in your browser — you should see the tracking JavaScript.
+2. Browse the VISP webclient and check the Matomo dashboard for incoming visits.
+3. If no data appears, check the browser console for errors loading the script.

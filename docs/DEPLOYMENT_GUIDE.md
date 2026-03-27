@@ -566,15 +566,53 @@ db.users.updateOne(
 
 ### Configure Matomo Analytics (Optional)
 
-```bash
-# Access Matomo setup
-# URL: https://yourdomain.com/matomo
+Matomo runs as two Podman containers (`matomo` + `matomo-db`) managed by
+quadlets. The containers are started automatically after `./visp-podman.py install`
+and `./visp-podman.py start all`.
 
-# Database settings:
-# - Host: matomo-db
-# - Database: matomo_db (from .env: MATOMO_DB_NAME)
-# - Username: <MATOMO_DB_USER from .env>
-# - Password: <MATOMO_DB_PASSWORD from .env>
+**First-time setup wizard:**
+
+After starting the containers for the first time, complete the Matomo setup wizard:
+
+```bash
+# 1. Ensure containers are running
+./visp-podman.py status
+# Look for: matomo ✓, matomo-db ✓
+
+# 2. Open the Matomo setup wizard in your browser:
+#    https://matomo.BASE_DOMAIN  (or http://matomo.visp.local in dev)
+
+# 3. Database settings (from .env.secrets — auto-generated during install):
+#    - Database Server:   matomo-db
+#    - Login:             <MATOMO_DB_USER from .env.secrets>
+#    - Password:          <MATOMO_DB_PASSWORD from .env.secrets>
+#    - Database Name:     matomo_db  (from .env: MATOMO_DB_NAME)
+
+# 4. Create the Matomo admin user:
+#    - Super User Login:  admin  (or your preferred username)
+#    - Password:          <choose a strong password>
+#    - Email:             <your admin email>
+
+# 5. Configure the first website:
+#    - Website name:      Visible Speech
+#    - Website URL:       https://BASE_DOMAIN
+
+# 6. After setup, verify the tracking:
+#    - The webclient should load /matomo-tracker.js on every page
+#    - Check Matomo dashboard for incoming page views
+```
+
+**Tracking script:**
+
+The tracking script (`matomo-tracker.js`) is auto-generated from a template
+during `./visp-podman.py install` and bind-mounted into Apache. The webclient
+loads it via `<script src="/matomo-tracker.js" defer></script>` in `index.html`.
+
+To regenerate after changing `BASE_DOMAIN`:
+
+```bash
+./visp-podman.py install --force   # regenerates tracker + secrets
+./visp-podman.py reload
 ```
 
 ### Configure Reverse Proxy Headers
