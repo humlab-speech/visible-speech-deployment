@@ -31,6 +31,5 @@ The modern Dockerfile in the wsrng-server repo uses:
 
 ## See Also
 
-- `docs/FOLDER_STRUCTURE.md` - Explanation of directory structure
-- `docs/DOCKERFILE_AUDIT.md` - Complete Dockerfile analysis
+- `AGENTS.md` - Comprehensive project architecture reference
 - `external/wsrng-server/` - The actual service code and Dockerfile

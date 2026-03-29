@@ -35,6 +35,5 @@ The old Dockerfile that used to be here (which cloned from GitHub during build) 
 
 ## See Also
 
-- `docs/FOLDER_STRUCTURE.md` - Explanation of directory structure
-- `docs/DOCKERFILE_AUDIT.md` - Complete Dockerfile analysis
+- `AGENTS.md` - Comprehensive project architecture reference
 - `external/session-manager/` - The actual service code and Dockerfile

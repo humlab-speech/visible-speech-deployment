@@ -1,32 +1,18 @@
 # Visible Speech
 
-This is a collection of dockerized services which as a whole makes out the Visible Speech (VISP) system.
+A collection of containerised services that together form the **Visible Speech (VISP)** academic speech-annotation and transcription platform. Managed via **rootless Podman** with **systemd Quadlets**.
 
 ## 📚 Documentation
 
-- **[Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** - Comprehensive guide for dev and production deployments
-- **[Quick Reference Card](docs/QUICK_REFERENCE.md)** - Cheat sheet for common tasks and troubleshooting
-- **[Troubleshooting Decision Tree](docs/TROUBLESHOOTING.md)** - Step-by-step problem diagnosis and solutions
-- **[Webclient Build Configuration](docs/WEBCLIENT_BUILD_CONFIG.md)** - Understanding Angular environment configurations
-- **[Version Management](docs/VERSION_MANAGEMENT.md)** - Managing component versions
-- **[Folder Structure](docs/FOLDER_STRUCTURE.md)** - Understanding the project layout
-- **[Dev vs Prod](docs/DEV_VS_PROD.md)** - Differences between deployment modes
-- **[Podman Networks](docs/PODMAN_NETWORKS.md)** - Network configuration for Podman deployments
+- **[Version Management](docs/VERSION_MANAGEMENT.md)** - Managing component versions and locking
+- **[Podman Networks](docs/PODMAN_NETWORKS.md)** - Network configuration details
+- **[Netavark Migration](docs/NETAVARK_MIGRATION.md)** - CNI → netavark migration reference
+- **[Backup & Restore](docs/BACKUP_RESTORE.md)** - MongoDB backup and restore procedures
+- **[Matomo Integration](docs/MATOMO_INTEGRATION.md)** - Optional analytics setup
+- **[Version Checking](docs/VERSION_CHECKING.md)** - Image vs repo version comparison
+- **[AGENTS.md](AGENTS.md)** - Comprehensive project architecture reference for AI agents and developers
 
 ## Quick Start
-
-### ⚠️ Migration to Podman in Progress
-
-**Current Status**: This project is being migrated from Docker to Podman with systemd Quadlets.
-
-- ✅ Phase 1: Podman socket compatibility verified (node-docker-api works)
-- ✅ Phase 2: systemd enabled in WSL
-- ✅ Phase 3: Podman 4.6.2 installed with Quadlet support
-- ✅ Phase 4: Core services converted to Quadlets
-- ✅ Phase 5: Dev/Prod mode support added
-- 🔄 Phase 6: Testing and documentation (IN PROGRESS)
-
----
 
 ## 🦭 Podman Deployment (Recommended)
 
@@ -383,18 +369,24 @@ Monitor and audit container images:
 
 ```
 quadlets/
-├── dev/                    # Development mode quadlets
+├── dev/                           # Development mode quadlets
 │   ├── apache.container
-│   ├── session-manager.container
-│   ├── traefik.container   # Only in dev
+│   ├── emu-webapp.container
+│   ├── emu-webapp-server.container
+│   ├── matomo.container           # Optional analytics
+│   ├── matomo-db.container
 │   ├── mongo.container
-│   ├── whisper.container
+│   ├── octra.container
+│   ├── session-manager.container
+│   ├── traefik.container          # Only in dev (TLS termination)
+│   ├── whisperx.container         # Optional transcription
+│   ├── whisperx-nginx.container
 │   ├── wsrng-server.container
-│   └── *.network
-├── prod/                   # Production mode quadlets
-│   ├── apache.container    # MODE=prod, no Traefik
-│   ├── session-manager.container  # DEVELOPMENT_MODE=false
-│   └── ...
+│   ├── visp-net.network
+│   ├── whisper-net.network
+│   └── octra-net.network
+├── prod/                          # Production mode (no Traefik)
+│   └── (same services, DEVELOPMENT_MODE=false)
 ```
 
 ### Troubleshooting Podman
@@ -421,173 +413,46 @@ ls -la container-agent/dist/  # Should contain main.js
 
 ---
 
-### For Development (Local) - Docker Compose (Legacy)
+## Version Management
+
+Component versions can be **locked** (pinned to specific commits) or **unlocked** (tracking latest).
+Managed via `visp-deploy.py` (or `./visp-podman.py deploy`):
 
 ```bash
-git clone https://github.com/humlab-speech/visible-speech-deployment.git
-cd visible-speech-deployment
-sudo python3 visp-deploy.py install --mode=dev
-docker compose up -d
-```
+# Update all external repos to latest
+./visp-podman.py deploy update
 
-Access at: **https://visp.local** (add to `/etc/hosts`)
+# Check current versions
+./visp-podman.py deploy status
 
-### For Production (with DNS) - Podman Quadlets
-
-```bash
-git clone https://github.com/humlab-speech/visible-speech-deployment.git
-cd visible-speech-deployment
-
-# Edit .env file - CRITICAL: Set BASE_DOMAIN and WEBCLIENT_BUILD
-nano .env
-
-# Build required images
-./visp-podman.py build session-manager
-./visp-podman.py build apache
-
-# Install production quadlets
-./visp-podman.py install --mode prod
-
-# Start services
-./visp-podman.py reload
-./visp-podman.py start all
-```
-
-**⚠️ IMPORTANT**: The `WEBCLIENT_BUILD` setting in `.env` MUST match your `BASE_DOMAIN`. See the [Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md) for details.
-
-## Deployment Script
-
-The `visp-deploy.py` script automates installation, updates, and status checks:
-
-```bash
-# Install system (dev or prod mode)
-sudo python3 visp-deploy.py install --mode=dev
-
-# Check repository status, Docker images, and configuration
-python3 visp-deploy.py status
-
-# Update all repositories and components
-python3 visp-deploy.py update
-
-# Build session images
-python3 visp-deploy.py build                    # Build all (no cache)
-python3 visp-deploy.py build --cache            # Build all (with cache)
-python3 visp-deploy.py build operations         # Build only operations
-python3 visp-deploy.py build rstudio jupyter    # Build specific images
-
-# Version locking commands (see below)
-python3 visp-deploy.py lock <component>    # Lock to current version
-python3 visp-deploy.py unlock <component>  # Unlock to track latest
-python3 visp-deploy.py rollback <component> # Rollback to locked version
-```
-
-### Version Management
-
-Component versions can be **locked** (pinned to specific commits) or **unlocked** (tracking latest):
-
-- **Dev mode** (default): Installs unlocked - always pulls latest code
-- **Prod mode**: Installs locked - uses tested versions from `versions.json`
-
-**Testing updates in production:**
-```bash
-# 1. Unlock component to allow updates
-python3 visp-deploy.py unlock webclient
-
-# 2. Update to latest (shows commit dates and counts)
-python3 visp-deploy.py update
-
-# 3a. If update works - lock the new version
+# Lock a component to current tested version
 python3 visp-deploy.py lock webclient
 
-# 3b. If update breaks - rollback to previous version
-python3 visp-deploy.py rollback webclient
+# Unlock to track latest again
+python3 visp-deploy.py unlock webclient
 
-# 4. Commit locked versions for team
-git add versions.json && git commit -m "chore: lock webclient to new version"
+# Rollback to previously locked version
+python3 visp-deploy.py rollback webclient
 ```
 
-Use `--all` flag to operate on all components at once.
-
-### What the Install Script Does
-
-- ✅ Creates `.env` from template (non-sensitive configuration)
-- ✅ Creates `.env.secrets` with auto-generated passwords
-- ✅ Clones all required repositories
-- ✅ Builds Node.js components in Docker containers (no host Node.js needed)
-- ✅ Generates SSL certificates for local development
-- ✅ Creates required directories and log files
-- ✅ Sets proper file permissions
-- ✅ Configures docker-compose for dev or prod mode
-
-### Automated Demo Installation
-For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings. Node.js builds are performed in containers, so no host installation of Node.js is required.
-
-1. Enter into visible-speech-deployment directory.
-1. RUN `sudo python3 visp-deploy.py install --mode=dev` (fully automated for demo)
-1. The script will install dependencies, clone repositories, build components using Node.js containers, auto-generate passwords, and build Docker images in the background.
-1. Once complete, run `docker compose up -d`
-1. Follow the remaining manual steps for setup (MongoDB, etc.)
-
-**For complete instructions, see [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)**
+See [Version Management](docs/VERSION_MANAGEMENT.md) for details.
 
 ## Included Services
 
-- Traefik
-  - Edge router
+| Service | Description |
+|---------|-------------|
+| **Traefik** | Edge router / TLS termination (dev mode only) |
+| **Apache** | Web server + Shibboleth + PHP authentication; hosts webapi and webclient |
+| **Session Manager** | Spawns and manages session containers (RStudio, Jupyter) via WebSocket |
+| **MongoDB** | Database |
+| **EMU-webApp** | Web-based speech annotation tool |
+| **EMU-webApp Server** | EMU backend (Node.js, WebSocket + file API) |
+| **OCTRA** | Transcription annotation tool |
+| **wsrng-server** | Web Speech Recorder server |
+| **WhisperX** | Speech-to-text transcription (optional) |
+| **Matomo** | Usage analytics (optional) |
 
-- Webserver
-  - Apache + Shibboleth - Serves the main portal page and handles authentication via SWAMID
-
-- Session Manager - Spawns and manages session containers (such as RStudio and Jupyter) on request. Also handles dynamic routing of network traffic into these containers.
-
-- EMU-webApp - Web-based annotation tool
-
-- OCTRA - Local mode only (only hosted, not integrated)
-
-- LabJS - Standalone
-
-## Prerequisites & Installation
-
-See the **[Complete Deployment Guide](docs/DEPLOYMENT_GUIDE.md)** for:
-- Prerequisites and system requirements
-- Step-by-step installation for development and production
-- Configuring custom domains and SSL certificates
-- Adding new deployment domains to the webclient
-- Post-installation configuration
-- Comprehensive troubleshooting
-
-## Quick Installation Summary
-
-### Prerequisites
-
-A Linux environment based on Debian or Ubuntu.
-
-If you are using WSL2, you will run into issues if you put this project inside an NTFS mount, such as `/mnt/c`, use a location inside the WSL2 container instead, such as `~/`. Note that you need to have docker and docker-compose available.
-
-### Install System Dependencies
-
-```bash
-sudo apt install -y curl git openssl docker.io docker-compose python3 python3-pip
-sudo usermod -aG docker $USER
-```
-
-### Automated Installation
-
-**Development Mode:**
-```bash
-sudo python3 visp-deploy.py install --mode=dev
-docker compose up -d
-```
-
-**Production Mode:**
-```bash
-# Edit .env first! Set BASE_DOMAIN and WEBCLIENT_BUILD
-sudo python3 visp-deploy.py install --mode=prod
-docker compose build
-docker compose up -d
-```
-
-### Manual Steps After Installation
+## Post-Installation Steps
 
 1. Add to `/etc/hosts` (for local dev):
    ```
@@ -600,210 +465,70 @@ docker compose up -d
    https://visp.local/?login=<TEST_USER_LOGIN_KEY from .env.secrets>
    ```
 
-3. **Mongo Express** (Database Admin Interface):
-   - **Local:** https://visp.local:28084 or http://localhost:28084
-   - **Production:** https://me.yourdomain.com
-   - **Username:** `mongo`
-   - **Password:** Found in `.env.secrets` file as `MONGO_EXPRESS_PASSWORD`
-   - Use this to manage users, set privileges (like `createProjects`), and inspect database
-
-4. Configure MongoDB users as needed (see deployment guide)
+3. Grant user privileges (see `AGENTS.md` → User Management):
+   ```bash
+   python3 visp-users.py list
+   python3 visp-users.py grant <username> createProjects
+   ```
 
 ## Reverse Proxy Configuration (Production)
 
-For production deployments behind an nginx reverse proxy (common with load balancers), you need to configure nginx to handle all subdomains. The Apache container inside Docker serves multiple subdomains via VirtualHost configuration.
+For production deployments behind a host nginx reverse proxy, configure nginx to handle all subdomains. Apache inside the Podman container serves multiple subdomains via VirtualHost configuration.
 
 ### Required Subdomains
 
-- `yourdomain.com` (main VISP interface - **requires WebSocket support for login**)
-- `app.yourdomain.com` (application portal - **requires WebSocket support**)
-- `emu-webapp.yourdomain.com` (EMU annotation tool - separate WebSocket)
-- `labjs.yourdomain.com` (LabJS experiments)
-- `matomo.yourdomain.com` (analytics)
-- `me.yourdomain.com` (MongoDB admin)
+- `yourdomain.com` (main VISP interface — **requires WebSocket support**)
+- `app.yourdomain.com` (application portal — **requires WebSocket support**)
+- `emu-webapp.yourdomain.com` (EMU annotation tool)
+- `matomo.yourdomain.com` (analytics, optional)
 - `octra.yourdomain.com` (OCTRA transcription)
 - `recorder.yourdomain.com` (audio recorder)
 
-**⚠️ CRITICAL:** WebSocket support is **required** for the main domain and app subdomain. The VISP application uses WebSocket connections to `session-manager:8020` for user authentication and session management. Without WebSocket support, users cannot log in.
-
-### Quick Setup
-
-Pre-configured nginx configuration files are available in `nginx-configs-temp/`:
-
-```bash
-# 1. Request SSL certificates for all subdomains
-cd nginx-configs-temp/
-sudo ./request-certs.sh
-
-# 2. Install the nginx configuration
-sudo cp visp-demo-complete.conf /etc/nginx/sites-enabled/yourdomain.conf
-
-# 3. Edit the config to replace 'visp-demo.humlab.umu.se' with your domain
-sudo nano /etc/nginx/sites-enabled/yourdomain.conf
-
-# 4. Test and reload
-sudo nginx -t
-sudo systemctl reload nginx
-```
+**⚠️ CRITICAL:** WebSocket support is **required** for the main domain and app subdomain. Without it, users cannot log in.
 
 ### Key Configuration Points
 
-- **WebSocket Support**: **CRITICAL** - Required for main VISP application login and session management
-  - Main domain: WebSocket connects to session-manager:8020
-  - Without WebSocket: Login page will not function
+- **WebSocket Support**: Main domain routes WebSocket to `session-manager:8020`
 - **Proxy Headers**: Must include `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`
-- **Upgrade Headers**: Required for WebSocket connections (`Upgrade: websocket`, `Connection: upgrade`)
+- **Upgrade Headers**: Required for WebSocket (`Upgrade: websocket`, `Connection: upgrade`)
 - **Timeouts**: Long timeouts needed for annotation sessions (24 hours recommended)
 
-### Load Balancer Note
-
-If using a load balancer with SSL termination:
-- You can use Let's Encrypt certificates on the backend nginx (recommended for full encryption)
-- Or use self-signed certificates (simpler but less secure)
-- The nginx config provided uses Let's Encrypt for defense-in-depth security
-
-See `nginx-configs-temp/INSTRUCTIONS.md` for complete setup instructions.
-
-## INSTALLATION
-
-### Prerequisites
-
-A Linux environment based on Debian or Ubuntu.
-
-If you are using WSL2, you will run into issues if you put this project inside an NTFS mount, such as `/mnt/c`, use a location inside the WSL2 container instead, such as `~/`. Note that you need to have docker and docker-compose available.
-
-### Automated Demo Installation
-
-For demo deployments, run the automated installer which will set up everything with auto-generated passwords and default settings:
-
-1. Enter into visible-speech-deployment directory.
-1. RUN `sudo python3 visp-deploy.py install` (fully automated for demo)
-1. The script will install dependencies, clone repositories, build components, auto-generate passwords, and build Docker images in the background.
-1. Once complete, run `docker-compose up -d`
-1. Follow the remaining manual steps for setup (MongoDB, etc.)
-
-### Update System
-
-To update the system components:
-
-1. RUN `python3 visp-deploy.py update`
-1. This will update all repositories, rebuild components, and check Docker images.
-
-## DEVELOPMENT
+## Development
 
 ### Pre-commit Hooks
 
-This project uses pre-commit hooks to maintain code quality. The hooks are automatically installed when you first commit, and they will run on every commit to ensure:
+Pre-commit hooks run automatically on every commit:
 
-- Python code is formatted with ruff (replaces Black)
-- Python code passes ruff linting (replaces Flake8, line length 120)
-- No trailing whitespace
-- Files end with newlines
-- YAML files are valid (excluding problematic third-party files)
-- No large files are added
-- No merge conflicts exist
-- No debug statements in Python code
+- **ruff-format** — Python formatting
+- **ruff** — Python linting (line length 120)
+- **pytest** — Full test suite
+- **trailing-whitespace**, **end-of-file-fixer**, **check-yaml**, **check-merge-conflict**, **debug-statements**
 
-The pre-commit hooks are configured to avoid issues with third-party code in the `mounts/` directory and generated files.
+```bash
+pre-commit run --all-files   # Run manually
+```
 
 ### Node.js Builds
 
-All Node.js components (webclient, container-agent, session-manager, wsrng-server) are built using Docker containers, so no host installation of Node.js is required for development or deployment.
+All Node.js components are built inside containers — no host npm/Node.js installation required:
 
-### Python Environment
-
-The deployment script (`visp-deploy.py`) is written in Python 3 and handles all installation and update operations.
-
-## TROUBLESHOOTING
-
-### Permission Errors
-
-**Error:** `PermissionError: [Errno 1] Operation not permitted`
-
-**Cause:** Script trying to set file ownership to match current user's UID/GID.
-
-**Solutions:**
-- **Production deployments:** Run with `sudo python3 visp-deploy.py install`
-- **Development/demo:** Run without sudo - script shows warnings but continues successfully
-- **Why:** Script sets proper file ownership to match the current user for Docker container access
-
-### Missing Dependencies
-
-**Error:** `WARNING: Missing required dependencies`
-
-**Solution:**
 ```bash
-sudo apt install -y curl git openssl docker.io docker-compose
+./visp-podman.py build webclient        # Angular web interface
+./visp-podman.py build container-agent  # Required for dev mode
 ```
 
-### Python Library Errors
+## WSL-Specific: Port Forwarding
 
-**Error:** `tabulate library not found`
+When running VISP on **WSL2 with rootless Podman**, forward ports from Windows to WSL's Traefik (8080/8443).
 
-**Solution:**
-```bash
-pip3 install tabulate
-# Or for user-only installation:
-pip3 install --user tabulate
-```
-
-### Docker Permission Issues
-
-**Error:** `docker: permission denied`
-
-**Solutions:**
-```bash
-# Add user to docker group (logout/login required):
-sudo usermod -aG docker $USER
-
-# Or run with sudo (not recommended for development):
-sudo python3 visp-deploy.py install
-```
-
-## Manual installation
-
-These are the steps performed by the install script:
-
-1. Copy .env-example to .env and fill it out with appropriate information.
-1. Generate some local certificates. These would not be used in production, but we assume a local development installation here. `openssl req -x509 -newkey rsa:4096 -keyout certs/visp.local/c>1. Grab latest webclient `git clone https://github.com/humlab-speech/webclient`
-1. Grab latest webapi `git clone https://github.com/humlab-speech/webapi`
-1. Grab latest container-agent `git clone https://github.com/humlab-speech/container-agent`
-1. Install & build container-agent `cd container-agent && npm install && npm run build && cd ..`
-1. Install & build webclient `cd webclient && npm install && npm run build && cd ..`
-1. Install Session-Manager `git clone https://github.com/humlab-speech/session-manager`
----
-
-## WSL-Specific: Port Forwarding Workaround
-
-If you're running VISP on **WSL2 with rootless Podman**, you may need to forward ports 80/443 from your Windows host to the Traefik ports (8080/8443) in WSL. Rootless Podman cannot bind to privileged ports (<1024) directly.
-
-**⚠️ Important**: Forward to the **WSL IP address** (e.g., `172.29.x.x`), NOT `127.0.0.1`. Using localhost will not work.
-
-**Setup** (run in PowerShell as Administrator on Windows):
+**⚠️ Important**: Use the **WSL IP address** (e.g., `172.29.x.x`), NOT `127.0.0.1`.
 
 ```powershell
-# Get your WSL IP address (from WSL terminal: hostname -I)
-$WSL_IP = "172.29.72.57"  # Replace with your actual WSL IP
+# PowerShell as Administrator — get WSL IP from WSL terminal: hostname -I
+$WSL_IP = "172.29.72.57"  # Replace with actual WSL IP
 
-# Forward Windows port 80 → WSL port 8080
 netsh interface portproxy add v4tov4 listenport=80 listenaddress=0.0.0.0 connectport=8080 connectaddress=$WSL_IP
-
-# Forward Windows port 443 → WSL port 8443
 netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=8443 connectaddress=$WSL_IP
-
-# Verify the rules were added
-netsh interface portproxy show all
 ```
 
-After this, you can access VISP from Windows at `https://visp.local` (using ports 80/443).
-
-**Cleanup** (if you need to remove the rules later):
-
-```powershell
-# Remove port forwarding rules
-netsh interface portproxy delete v4tov4 listenport=80 listenaddress=0.0.0.0
-netsh interface portproxy delete v4tov4 listenport=443 listenaddress=0.0.0.0
-
-# Verify they're removed
-netsh interface portproxy show all
-```
+See `AGENTS.md` → WSL Deployment Notes for full details.

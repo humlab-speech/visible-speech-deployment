@@ -9,9 +9,7 @@
 #   ./scripts/download-fonts.sh
 #
 # After running, rebuild the Apache image to include fonts:
-#   podman build -t visp-apache -f docker/apache/Dockerfile .
-#
-# See docs/AIRGAP.md for more details.
+#   ./visp-podman.py build apache
 #
 
 set -e

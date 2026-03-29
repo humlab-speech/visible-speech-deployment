@@ -55,8 +55,8 @@ git log --oneline HEAD..origin/main  # See what commits are newer
 
 # 3. Update just that component
 python3 visp_deploy.py update  # Will checkout the new version
-docker compose build webclient  # Rebuild if needed
-docker compose up -d           # Test it
+./visp-podman.py build webclient  # Rebuild if needed
+./visp-podman.py restart apache   # Pick up new dist/
 
 # 4a. If it works, update locked_version to the new SHA
 # 4b. If it breaks, revert version back to locked_version
@@ -91,8 +91,8 @@ python3 visp_deploy.py update
 cd session-manager
 git checkout ee3bf558  # Use locked_version SHA
 cd ..
-docker compose build session-manager
-docker compose up -d session-manager
+./visp-podman.py build session-manager
+./visp-podman.py restart session-manager
 ```
 
 ## Version String Formats

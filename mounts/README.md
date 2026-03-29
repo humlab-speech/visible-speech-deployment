@@ -1,10 +1,10 @@
 # Runtime Mount Points
 
-This directory contains host filesystem paths that are mounted into Docker containers for persistent storage and runtime data.
+This directory contains host filesystem paths that are bind-mounted into Podman containers for persistent storage and runtime data.
 
 ## Purpose
 
-Docker containers are ephemeral - data inside them is lost when containers are recreated. Volumes in this directory provide:
+Containers are ephemeral — data inside them is lost when containers are recreated. Volumes in this directory provide:
 - **Persistent storage** (databases, user files)
 - **Log access** from host system
 - **Runtime configuration** without rebuilding images
@@ -45,19 +45,16 @@ This directory structure is tracked in git, but:
 - Only directory structure and essential templates are committed
 - User data and logs are excluded
 
-## Usage in Docker Compose
+## Usage in Quadlets
 
-```yaml
-# Example from docker-compose.yml
-volumes:
-  # Log file mount
-  - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
+Volumes are specified in quadlet `.container` files under `quadlets/dev/` and `quadlets/prod/`:
 
-  # Data directory mount
-  - "./mounts/repositories:/repositories:Z"
-
-  # Database mount (persistent!)
-  - "./mounts/mongo/data:/data/db:Z"
+```ini
+# Example from a .container quadlet file
+[Container]
+Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
+Volume=%h/Projects/visible-speech-deployment/mounts/mongo/data:/data/db:Z
 ```
 
 The `:Z` suffix is for SELinux contexts (required on RHEL/Fedora).
@@ -72,7 +69,7 @@ The `:Z` suffix is for SELinux contexts (required on RHEL/Fedora).
 ## Relationship to Other Directories
 
 - **`external/`**: Contains **source code** (what the app IS)
-- **`docker/`**: Contains **build instructions** (how to create containers)
+- **`docker/`**: Contains **build instructions** (Dockerfiles/Containerfiles)
 - **`mounts/`**: Contains **runtime data** (what the app PRODUCES)
 
 In development mode:
@@ -97,5 +94,4 @@ rm mounts/*/logs/*
 
 ## See Also
 
-- `docs/FOLDER_STRUCTURE.md` - Complete explanation of directory structure
-- `docs/DEV_VS_PROD.md` - How mounts are used in dev vs prod modes
+- `AGENTS.md` - Comprehensive project architecture reference

@@ -1,6 +1,6 @@
-# Docker Build Contexts
+# Container Build Contexts
 
-This directory contains Dockerfiles and build support files for all VISP containerized services.
+This directory contains Dockerfiles/Containerfiles and build support files for VISP containerised services.
 
 ## Purpose
 
@@ -50,19 +50,16 @@ RUN git clone https://github.com/humlab-speech/webclient
 
 ## Usage
 
-### Manual Build
+### Build via visp-podman.py (recommended)
 ```bash
 # Build a single service
-docker compose build session-manager
+./visp-podman.py build session-manager
 
 # Build all services
-docker compose build
-```
+./visp-podman.py build
 
-### Via visp_deploy.py
-```bash
-# Builds all containerized services
-python3 visp_deploy.py install
+# List all buildable targets
+./visp-podman.py build --list
 ```
 
 ## Relationship to Other Directories
@@ -77,5 +74,4 @@ Think of it this way:
 
 ## See Also
 
-- `docs/FOLDER_STRUCTURE.md` - Complete explanation of directory structure
-- `docs/DEV_VS_PROD.md` - Build behavior in dev vs prod modes
+- `AGENTS.md` - Comprehensive project architecture reference
