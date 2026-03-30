@@ -109,8 +109,16 @@ FROM base AS production
 
 WORKDIR /var/www/html
 
-# Copy prebuilt frontend artifacts
+# Copy prebuilt frontend artifacts (webclient SPA + index.php + vendor)
 COPY --from=webclient-build /out/ /var/www/html/
+
+# Copy webapi to the path the Apache vhost Alias expects (/api → /var/www/webapi).
+# The Angular build includes webapi PHP files in dist/api/, and composer vendor
+# is at dist/vendor/. api.php uses `require 'vendor/autoload.php'` (relative),
+# so vendor must live alongside the PHP files at /var/www/webapi/vendor/.
+# In dev mode, this directory is overlaid by a bind-mount of external/webapi/.
+COPY --from=webclient-build /out/api/ /var/www/webapi/
+COPY --from=webclient-build /out/vendor/ /var/www/webapi/vendor/
 
 # Start shibd + apache (no watcher)
 CMD ["bash", "-lc", "/etc/init.d/shibd start -w 3600 && exec /usr/sbin/apache2 -DFOREGROUND"]
