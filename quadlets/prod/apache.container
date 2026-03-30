@@ -38,7 +38,6 @@ Volume=@@PROJECT_DIR@@/external/webapi/vendor:/var/www/vendor:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z
-Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
 Volume=@@PROJECT_DIR@@/certs:/etc/certs:Z
 Volume=@@PROJECT_DIR@@/certs/letsencrypt:/certs/letsencrypt:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/uploads:/tmp/uploads:Z

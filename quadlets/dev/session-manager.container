@@ -22,7 +22,7 @@ Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/uploads:/tmp/uploads:Z
 Volume=@@PROJECT_DIR@@/mounts/session-manager/logs:/session-manager/logs:Z
 Volume=@@PROJECT_DIR@@/mounts/session-manager/unimported_audio:/unimported_audio:Z
-Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
+Volume=/run/user/@@UID@@/podman/podman.sock:/var/run/docker.sock:Z
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 Volume=@@PROJECT_DIR@@/mounts/repository-template:/repository-template:Z
 Volume=@@PROJECT_DIR@@/mounts/transcription-queued:/transcription-queued:Z

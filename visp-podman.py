@@ -40,6 +40,7 @@ Mode examples:
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -60,6 +61,14 @@ QUADLETS_BASE_DIR = Path(__file__).parent / "quadlets"
 SYSTEMD_QUADLETS_DIR = Path.home() / ".config/containers/systemd"
 CONTAINERS_CONF = Path.home() / ".config/containers/containers.conf"
 MODE_FILE = Path(__file__).parent / ".visp-mode"
+
+
+def render_quadlet_template(content: str) -> str:
+    """Replace template placeholders with actual system values."""
+    content = content.replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
+    content = content.replace("@@UID@@", str(os.getuid()))
+    return content
+
 
 # Default mode
 DEFAULT_MODE = "dev"
@@ -217,7 +226,7 @@ def cmd_status(args):
         elif link_path.exists():
             # Rendered file (new-style template install) — check for drift
             if target_path.exists():
-                expected = target_path.read_text().replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
+                expected = render_quadlet_template(target_path.read_text())
                 installed = link_path.read_text()
                 if installed == expected:
                     symbol = color("✓", Colors.GREEN)
@@ -576,10 +585,10 @@ def cmd_install(args):
                 continue
             target.unlink()
 
-        # Render template: replace @@PROJECT_DIR@@ with actual project path
+        # Render template: replace placeholders with actual system values
         try:
             content = source.read_text()
-            rendered = content.replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
+            rendered = render_quadlet_template(content)
             target.write_text(rendered)
             print(color(f"  ✓ {svc.file}: installed", Colors.GREEN))
         except Exception as e:
