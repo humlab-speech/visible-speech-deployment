@@ -506,14 +506,37 @@ def cmd_install(args):
     sm.create_secrets(secrets)
     print()
 
-    # Ensure Matomo mount directories exist
-    project_dir = Path(__file__).parent
-    for d in ["mounts/matomo/config", "mounts/matomo/logs", "mounts/matomo-db/mysql"]:
-        (project_dir / d).mkdir(parents=True, exist_ok=True)
+    # Ensure all mount directories referenced by quadlets exist.
+    # Parsed dynamically from Volume= lines so the list never goes stale.
+    print(color("Creating mount directories...", Colors.CYAN))
+    created = 0
+    for quadlet_file in sorted(quadlets_dir.glob("*.container")):
+        for line in quadlet_file.read_text().splitlines():
+            line = line.strip()
+            if line.startswith("#") or not line.startswith("Volume=@@PROJECT_DIR@@/mounts/"):
+                continue
+            # Extract source path (before the first ":")
+            rel_path = line.split("=", 1)[1].split(":")[0].replace("@@PROJECT_DIR@@/", "")
+            target = PROJECT_DIR / rel_path
+            if target.exists():
+                continue
+            # If the leaf name has a dot, it's likely a file — ensure its parent exists
+            if "." in Path(rel_path).name:
+                if not target.parent.exists():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    created += 1
+            else:
+                target.mkdir(parents=True, exist_ok=True)
+                created += 1
+    if created:
+        print(f"  Created {created} missing mount directories")
+    else:
+        print("  All mount directories already exist")
+    print()
 
     # Generate matomo-tracker.js from template if BASE_DOMAIN is set
-    tracker_template = project_dir / "mounts/apache/apache/matomo-tracker.js.template"
-    tracker_output = project_dir / "mounts/apache/apache/matomo-tracker.js"
+    tracker_template = PROJECT_DIR / "mounts/apache/apache/matomo-tracker.js.template"
+    tracker_output = PROJECT_DIR / "mounts/apache/apache/matomo-tracker.js"
     if tracker_template.exists() and env_vars.get("BASE_DOMAIN"):
         content = tracker_template.read_text()
         content = content.replace("{{BASE_DOMAIN}}", env_vars["BASE_DOMAIN"])
