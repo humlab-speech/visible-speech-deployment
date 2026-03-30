@@ -8,13 +8,13 @@ Image=docker.io/library/traefik:v3.3
 Network=visp-net.network
 PublishPort=8080:80
 PublishPort=8443:443
-EnvironmentFile=%h/Projects/visible-speech-deployment/.env
-Volume=%h/Projects/visible-speech-deployment/mounts/traefik/conf:/etc/traefik:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/traefik/acme:/acme:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/traefik/log:/var/log:Z
+EnvironmentFile=@@PROJECT_DIR@@/.env
+Volume=@@PROJECT_DIR@@/mounts/traefik/conf:/etc/traefik:Z
+Volume=@@PROJECT_DIR@@/mounts/traefik/acme:/acme:Z
+Volume=@@PROJECT_DIR@@/mounts/traefik/log:/var/log:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
-Volume=%h/Projects/visible-speech-deployment/certs:/certs:ro
+Volume=@@PROJECT_DIR@@/certs:/certs:ro
 PodmanArgs=--cgroups=disabled
 
 [Service]

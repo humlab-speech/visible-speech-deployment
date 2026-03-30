@@ -8,7 +8,7 @@ Image=localhost/visp-whisperx:latest
 # Network-isolated: zero internet access after model download
 Network=none
 # Models mounted read-only; socket dir mounted read-write
-Volume=%h/Projects/visible-speech-deployment/mounts/whisper/models:/models/extra:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/whisper/models:/models/extra:ro,Z
 Volume=/tmp/whisperx-api:/run/api:Z
 # Model and language configuration
 Environment=WHISPERX_MODEL=/models/extra/kb-whisper-large-ct2

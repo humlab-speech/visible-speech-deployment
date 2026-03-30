@@ -9,7 +9,7 @@ Image=localhost/visp-session-manager:latest
 Network=visp-net.network
 Network=whisper-net.network
 # Port 8020 not published - accessed via Apache proxy on internal network
-EnvironmentFile=%h/Projects/visible-speech-deployment/.env
+EnvironmentFile=@@PROJECT_DIR@@/.env
 Environment=LOG_LEVEL=info
 Environment=DEVELOPMENT_MODE=false
 Environment=VISP_NETWORK_NAME=systemd-visp-net
@@ -18,13 +18,13 @@ Environment=DOCKER_SOCKET_PATH=/var/run/docker.sock
 Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN
 Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
-Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/uploads:/tmp/uploads:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/logs:/session-manager/logs:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/session-manager/unimported_audio:/unimported_audio:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/apache/uploads:/tmp/uploads:Z
+Volume=@@PROJECT_DIR@@/mounts/session-manager/logs:/session-manager/logs:Z
+Volume=@@PROJECT_DIR@@/mounts/session-manager/unimported_audio:/unimported_audio:Z
 Volume=/run/user/1000/podman/podman.sock:/var/run/docker.sock:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/repositories:/repositories:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/repository-template:/repository-template:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/transcription-queued:/transcription-queued:Z
+Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
+Volume=@@PROJECT_DIR@@/mounts/repository-template:/repository-template:Z
+Volume=@@PROJECT_DIR@@/mounts/transcription-queued:/transcription-queued:Z
 PodmanArgs=--cgroups=disabled --dns=10.89.1.1 --dns=10.89.0.1
 
 [Service]

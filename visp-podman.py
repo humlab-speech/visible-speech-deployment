@@ -55,6 +55,7 @@ from vispctl.service import Service
 from vispctl.service_manager import ServiceManager
 
 # Configuration
+PROJECT_DIR = Path(__file__).parent.resolve()
 QUADLETS_BASE_DIR = Path(__file__).parent / "quadlets"
 SYSTEMD_QUADLETS_DIR = Path.home() / ".config/containers/systemd"
 CONTAINERS_CONF = Path.home() / ".config/containers/containers.conf"
@@ -192,6 +193,7 @@ def cmd_status(args):
     print(f"  Mode: {color(current_mode, Colors.MAGENTA)}")
     print()
 
+    drift_warnings = []
     for svc in SERVICES:
         link_path = SYSTEMD_QUADLETS_DIR / svc.file
         target_path = quadlets_dir / svc.file
@@ -213,13 +215,35 @@ def cmd_status(args):
                 symbol = color("!", Colors.YELLOW)
                 status = color(f"linked (unknown: {actual_target})", Colors.YELLOW)
         elif link_path.exists():
-            symbol = color("!", Colors.YELLOW)
-            status = color("exists (not a symlink)", Colors.YELLOW)
+            # Rendered file (new-style template install) — check for drift
+            if target_path.exists():
+                expected = target_path.read_text().replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
+                installed = link_path.read_text()
+                if installed == expected:
+                    symbol = color("✓", Colors.GREEN)
+                    status = color("installed", Colors.GREEN)
+                else:
+                    symbol = color("!", Colors.YELLOW)
+                    status = color("installed (out of date — run install --force)", Colors.YELLOW)
+                    drift_warnings.append(svc.file)
+            else:
+                symbol = color("✓", Colors.GREEN)
+                status = color("installed", Colors.GREEN)
         else:
             symbol = color("○", Colors.RED)
-            status = color("not linked", Colors.RED)
+            status = color("not installed", Colors.RED)
 
         print(f"  {symbol} {svc.file}: {status}")
+
+    if drift_warnings:
+        print()
+        print(
+            color(
+                f"  ⚠ {len(drift_warnings)} quadlet(s) differ from templates. "
+                "Run './visp-podman.py install --force && ./visp-podman.py reload' to update.",
+                Colors.YELLOW,
+            )
+        )
 
     print()
     print(color("=== Container Status ===", Colors.CYAN))
@@ -526,9 +550,11 @@ def cmd_install(args):
                 continue
             target.unlink()
 
-        # Create symlink to source quadlet
+        # Render template: replace @@PROJECT_DIR@@ with actual project path
         try:
-            target.symlink_to(source.resolve())
+            content = source.read_text()
+            rendered = content.replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
+            target.write_text(rendered)
             print(color(f"  ✓ {svc.file}: installed", Colors.GREEN))
         except Exception as e:
             print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
@@ -558,11 +584,9 @@ def cmd_uninstall(args):
     for svc in services:
         target = SYSTEMD_QUADLETS_DIR / svc.file
 
-        if target.is_symlink():
+        if target.is_symlink() or target.exists():
             target.unlink()
             print(color(f"  ✓ {svc.file}: removed", Colors.GREEN))
-        elif target.exists():
-            print(color(f"  ! {svc.file}: not a symlink, skipping", Colors.YELLOW))
         else:
             print(f"  ○ {svc.file}: not installed")
 

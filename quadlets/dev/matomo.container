@@ -7,9 +7,9 @@ Requires=matomo-db.service
 ContainerName=matomo
 Image=docker.io/library/matomo:5
 Network=visp-net.network
-Volume=%h/Projects/visible-speech-deployment/mounts/matomo/config:/var/www/html/config:rw,Z
-Volume=%h/Projects/visible-speech-deployment/mounts/matomo/logs:/var/www/html/logs:Z
-Volume=%h/Projects/visible-speech-deployment/mounts/apache/apache/logs/apache2:/external_logs:ro
+Volume=@@PROJECT_DIR@@/mounts/matomo/config:/var/www/html/config:rw,Z
+Volume=@@PROJECT_DIR@@/mounts/matomo/logs:/var/www/html/logs:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/external_logs:ro
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 PodmanArgs=--cgroups=disabled

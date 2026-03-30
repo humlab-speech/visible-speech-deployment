@@ -10,7 +10,7 @@ Environment=MYSQL_DATABASE=matomo_db
 Secret=visp_matomo_db_root_password,type=env,target=MYSQL_ROOT_PASSWORD
 Secret=visp_matomo_db_user,type=env,target=MYSQL_USER
 Secret=visp_matomo_db_password,type=env,target=MYSQL_PASSWORD
-Volume=%h/Projects/visible-speech-deployment/mounts/matomo-db/mysql:/var/lib/mysql:Z
+Volume=@@PROJECT_DIR@@/mounts/matomo-db/mysql:/var/lib/mysql:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 PodmanArgs=--cgroups=disabled
