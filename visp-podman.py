@@ -721,6 +721,8 @@ BUILD_CONFIGS = {
         "context": ".",
         "dockerfile": "./docker/apache/Dockerfile",
         "image": "visp-apache",
+        "target": "production",
+        "build_args": {"WEBCLIENT_BUILD": "visp-build"},
         "source_repo": "./external/webclient",  # git.commit label tracks webclient source
     },
     "session-manager": {

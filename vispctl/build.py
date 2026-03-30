@@ -87,6 +87,10 @@ class BuildManager:
         if target:
             cmd.extend(["--target", target])
 
+        # Pass build arguments (e.g. WEBCLIENT_BUILD)
+        for key, value in config.get("build_args", {}).items():
+            cmd.extend(["--build-arg", f"{key}={value}"])
+
         # Add git commit label if we're building from a git repo
         import subprocess
         from pathlib import Path
