@@ -391,6 +391,77 @@ class DeployManager:
         print("📚 EXTERNAL COMPONENT REPOSITORIES")
         print("-" * 100)
         print(tabulate(status_results, headers="keys", tablefmt="grid"))
+
+        # Check derived images (images that depend on other images, e.g. rstudio/jupyter → operations-session)
+        derived_image_warnings = []
+        try:
+            import importlib.util
+            import sys
+
+            sys.path.insert(0, str(self.basedir))
+            spec = importlib.util.spec_from_file_location("visp_podman", str(self.basedir / "visp-podman.py"))
+            if spec and spec.loader:
+                vp = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(vp)  # type: ignore[union-attr]
+                build_configs = getattr(vp, "BUILD_CONFIGS", {})
+
+                for build_name, cfg in build_configs.items():
+                    parent_name = cfg.get("depends_on")
+                    if not parent_name or not self.runner:
+                        continue
+
+                    parent_cfg = build_configs.get(parent_name, {})
+                    child_image = f"{cfg['image']}:latest"
+                    parent_image = f"{parent_cfg['image']}:latest"
+
+                    # Get build timestamps
+                    child_ts = self._get_image_label(child_image, "build.timestamp")
+                    parent_ts = self._get_image_label(parent_image, "build.timestamp")
+
+                    if not child_ts and self._check_image_exists(child_image):
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": parent_name,
+                                "Status": "⚠️ NO TIMESTAMP",
+                                "Detail": "Rebuild recommended (no build.timestamp label)",
+                            }
+                        )
+                    elif not child_ts:
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": parent_name,
+                                "Status": "❌ NOT BUILT",
+                                "Detail": f"Run: ./visp-podman.py build {build_name}",
+                            }
+                        )
+                    elif parent_ts and child_ts < parent_ts:
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": parent_name,
+                                "Status": "⚠️ STALE",
+                                "Detail": f"Built {child_ts[:19]}, parent rebuilt {parent_ts[:19]}",
+                            }
+                        )
+                    elif parent_ts:
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": parent_name,
+                                "Status": "✅ UP TO DATE",
+                                "Detail": f"Built {child_ts[:19]}",
+                            }
+                        )
+        except Exception:  # noqa: BLE001
+            pass  # Non-fatal
+
+        if derived_image_warnings:
+            print("\n🔗 DERIVED IMAGES (depend on other images)")
+            print("-" * 100)
+            print(tabulate(derived_image_warnings, headers="keys", tablefmt="grid"))
+
         print("=" * 100)
 
         # Summary
@@ -427,7 +498,26 @@ class DeployManager:
             for w in node_build_warnings:
                 summary_lines.append(w)
 
-        if not repos_with_changes and not repos_ahead and not repos_behind and not node_build_warnings:
+        # Add derived image warnings to summary
+        stale_derived = [d for d in derived_image_warnings if d["Status"].startswith("⚠️ STALE")]
+        not_built_derived = [d for d in derived_image_warnings if d["Status"].startswith("❌ NOT BUILT")]
+        if stale_derived:
+            names = [d["Image"] for d in stale_derived]
+            summary_lines.append(f"⚠️  Derived images need rebuild (parent changed): {', '.join(names)}")
+        if not_built_derived:
+            names = [d["Image"] for d in not_built_derived]
+            summary_lines.append(f"❌ Derived images not built: {', '.join(names)}")
+
+        if (
+            not repos_with_changes
+            and not repos_ahead
+            and not repos_behind
+            and not node_build_warnings
+            and not needs_rebuild
+            and not not_built
+            and not stale_derived
+            and not not_built_derived
+        ):
             summary_lines.append("✅ All repositories are clean and synced!")
         else:
             if repos_with_changes or repos_ahead or repos_behind:
