@@ -489,12 +489,6 @@ DEFAULT_VERSIONS_CONFIG = {
         "npm_install": True,
         "npm_build": False,
     },
-    "webapi": {
-        "version": "latest",
-        "url": None,
-        "npm_install": False,
-        "npm_build": False,
-    },
     "wsrng-server": {
         "version": "latest",
         "url": None,
@@ -525,7 +519,6 @@ COMPONENTS_WITH_PERMISSIONS = [
     "webclient",
     "certs",
     "container-agent",
-    "webapi",
     "wsrng-server",
     "session-manager",
     "emu-webapp-server",
@@ -839,7 +832,6 @@ def create_required_directories():
         print("   → For development: this warning is OK, continuing...")
         print()
 
-    os.makedirs("mounts/webapi", exist_ok=True)
     os.makedirs("mounts/apache/apache/uploads", exist_ok=True)
     os.makedirs("mounts/mongo/logs", exist_ok=True)
     # Only create mongodb.log if it doesn't exist (avoid permission issues with running containers)

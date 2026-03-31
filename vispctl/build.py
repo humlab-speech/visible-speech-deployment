@@ -131,7 +131,7 @@ class BuildManager:
                     build_time = datetime.now().isoformat()
                     cmd.extend(["--label", f"build.timestamp={build_time}"])
 
-            # Add labels for extra source repos (e.g. webapi embedded in apache image)
+            # Add labels for extra source repos (if multiple repos are embedded in one image)
             for name, repo_path in config.get("extra_source_repos", {}).items():
                 extra_path = Path(repo_path).resolve()
                 extra_check = subprocess.run(

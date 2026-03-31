@@ -10,7 +10,6 @@ The `versions.json` file controls which versions of external components are used
 ## Current Locked Versions (as of 2025-12-01)
 ```
 webclient:         e7d7b780 - removed lock file
-webapi:            127e3630 - refactor: remove GitLab integration
 container-agent:   d98ef9da - security updates
 wsrng-server:      a8dcb4d2 - Fix: set correct file ownership for node user
 session-manager:   ee3bf558 - Refactor: improve code organization
@@ -70,7 +69,7 @@ When you want to pull latest versions of everything:
 python3 visp_deploy.py update
 
 # After testing, record the working commits as locked_version:
-for dir in webclient webapi container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
   if [ -d "$dir/.git" ]; then
     echo "$dir: $(cd $dir && git rev-parse HEAD)"
   fi
@@ -160,7 +159,7 @@ git commit -m "Update webclient to abc123 - fixes XYZ issue"
 ```bash
 #!/bin/bash
 # lock-versions.sh - Lock all components to current commits
-for dir in webclient webapi container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
   if [ -d "$dir/.git" ]; then
     sha=$(cd $dir && git rev-parse HEAD)
     msg=$(cd $dir && git log -1 --format="%s")
@@ -174,7 +173,7 @@ done
 ```bash
 #!/bin/bash
 # check-updates.sh - See what's new in each repo
-for dir in webclient webapi container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
   if [ -d "$dir/.git" ]; then
     cd $dir
     git fetch -q

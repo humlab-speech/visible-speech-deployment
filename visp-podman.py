@@ -123,8 +123,8 @@ NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
 # Format: service_name -> list of (label, container_path) tuples.
 CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
     "apache": [
-        ("webapi", "/var/log/api/webapi.log"),
-        ("webapi-debug", "/var/log/api/webapi.debug.log"),
+        ("api", "/var/log/api/webapi.log"),
+        ("api-debug", "/var/log/api/webapi.debug.log"),
         ("php-errors", "/var/log/api/php_error.log"),
         ("apache-error", "/var/log/apache2/visp.local-error.log"),
         ("octra-error", "/var/log/apache2/octra-error.log"),
@@ -872,9 +872,6 @@ BUILD_CONFIGS = {
         "target": "production",
         "build_args": {"WEBCLIENT_BUILD": "visp-build"},
         "source_repo": "./external/webclient",  # git.commit label tracks webclient source
-        "extra_source_repos": {
-            "webapi": "./external/webapi",  # additional git.commit.webapi label
-        },
     },
     "session-manager": {
         "context": "./external/session-manager",

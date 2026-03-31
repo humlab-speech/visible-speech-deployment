@@ -31,11 +31,10 @@ Volume=@@PROJECT_DIR@@/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z
 # DEV MODE: Mount source code for hot-reload development
 Volume=@@PROJECT_DIR@@/external/webclient/dist:/var/www/html:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/matomo-tracker.js:/var/www/html/matomo-tracker.js:ro,Z
-Volume=@@PROJECT_DIR@@/external/webapi:/var/www/webapi:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z
-# Podman socket removed - webapi uses HTTP API to session-manager, not Docker socket
+# Podman socket removed - PHP API uses HTTP to session-manager, not Docker socket
 Volume=@@PROJECT_DIR@@/certs:/etc/certs:Z
 Volume=@@PROJECT_DIR@@/certs/letsencrypt:/certs/letsencrypt:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/uploads:/tmp/uploads:Z

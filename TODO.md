@@ -14,7 +14,7 @@
     every `saveProject`/`updateProject` call, so even re-saves of unchanged sessions
     accumulate new copies.
   - **Key code paths**:
-    - PHP upload handler: `external/webapi/api.php` — writes to `/tmp/uploads/<user>/<ctx>/...`
+    - PHP upload handler: `external/webclient/api/api.php` — writes to `/tmp/uploads/<user>/<ctx>/...`
       (container-internal), which maps to the bind-mounted host path above.
     - session-manager cleanup point (none currently):
       `external/session-manager/src/ApiServer.class.js` — `saveProject` / `updateProject`
@@ -243,8 +243,8 @@
     - **Note:** `./visp-podman.py logs <service>` can fail with an "unhashable type: 'list'" argument error; use `podman logs <container>` instead until fixed.
   - **Immediate mitigation / recommended fix**:
     - Make upload tree group-owned by `www-data` and group-writable (e.g., `chgrp -R www-data mounts/apache/apache/uploads && find mounts/apache/apache/uploads -type d -exec chmod 2775 {} + && find mounts/apache/apache/uploads -type f -exec chmod 664 {} +`)
-    - Ensure PHP/webapi creates directories with group-write (e.g., `mkdir(..., 0o2775)` or set proper umask) and consider using setgid for inheritance
-    - Improve webapi error propagation so move failures return meaningful errors to the UI instead of silent failures
+    - Ensure PHP api.php creates directories with group-write (e.g., `mkdir(..., 0o2775)` or set proper umask) and consider using setgid for inheritance
+    - Improve api.php error propagation so move failures return meaningful errors to the UI instead of silent failures
   - **Recent improvements** ✅ (commits c703ab3, f79bc70, 7944407):
     - Added `set-unshare.sh` script for fixing UID/GID in mounted directories
     - Expanded `fix-permissions` with comprehensive ownership/mode fixes (now `./visp-podman.py fixperm`)
@@ -286,12 +286,12 @@
 
 - [ ] **Review security of 777 permissions on container-writable bind mounts** 🔒
   - **Introduced by**: `201ab6a` (visp-podman.py install auto-fix),
-    `78b51ec` (webapi `createDirectory()` mkdir 0777), and the `fix-permissions`
+    `78b51ec` (api.php `createDirectory()` mkdir 0777), and the `fix-permissions`
     command default paths update (same branch, covers uploads + logs + repositories)
   - **Context**: `visp-podman.py install` now sets `chmod 777` on several bind-mounted
     directories (`mounts/apache/apache/uploads/`, `mounts/repositories/`, log directories)
     so that Apache's `www-data` (UID 33) and session-manager's `root` (UID 0, mapped from
-    host user) can both write to them. The webapi `createDirectory()` also uses `mkdir 0777`.
+    host user) can both write to them. The api.php `createDirectory()` also uses `mkdir 0777`.
   - **Concern**: World-writable directories on the host could be exploited by other local
     users or processes. On a single-user server this is low risk, but on shared systems
     it could be problematic.

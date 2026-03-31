@@ -44,7 +44,6 @@ visible-speech-deployment/
 ├── external/                 # ⚠️  GITIGNORED — populated by `visp-deploy.py update`
 │   ├── session-manager/      # humlab-speech/session-manager
 │   ├── webclient/            # humlab-speech/webclient
-│   ├── webapi/               # humlab-speech/webapi
 │   ├── wsrng-server/         # humlab-speech/wsrng-server
 │   ├── emu-webapp-server/    # humlab-speech/emu-webapp-server
 │   ├── EMU-webApp/           # humlab-speech/EMU-webApp
@@ -78,7 +77,7 @@ visible-speech-deployment/
 
 ### Separate Podman Containers (their own quadlets)
 - **traefik** — Edge router (ports 8080/8443)
-- **apache** — Web server + Shibboleth + PHP authentication; also hosts webapi and webclient (see below)
+- **apache** — Web server + Shibboleth + PHP authentication; also hosts the PHP API and webclient (see below)
 - **session-manager** — Node.js WebSocket server (`external/session-manager`); separate container.
   Manages the full lifecycle of user projects: receives `saveProject` commands from the webclient
   over WebSocket, spawns short-lived `visp-operations-session` containers to run EMU-DB setup via
@@ -97,53 +96,21 @@ visible-speech-deployment/
 - **whisperx** (optional) — Speech-to-text transcription service
 
 ### Services Inside Apache Container (NOT separate containers)
-- **webapi** — PHP REST API (`external/webapi/api.php`); runs *inside* the Apache container.
-  - Accessed at `/api/v1/...` routes through Apache rewrite rules
-  - Mounted into Apache at `/var/www/webapi` and `/var/www/html/api`
+- **PHP API** — REST API (`external/webclient/api/api.php`); runs *inside* the Apache container.
+  - Single source of truth: `external/webclient/api/api.php` (~1700 lines)
+  - Accessed at `/api/v1/...` routes through Apache `Alias /api /var/www/html/api` + RewriteRule
+  - Also handles `?f=session` session validation (called by session-manager)
+  - Includes file download handler (`getFileDownload`, `getOctraTask`) for Octra
+  - Uses MongoDB-based `userHasProjectAuthorization()` for project access checks
   - Communicates with session-manager via HTTP to manage sessions
-  - Communicates with MongoDB for persistence
+  - Application logs written to `/var/log/api/webapi.log` and `/var/log/api/webapi.debug.log`
+  - ERROR-level messages also forwarded to stderr (visible in `./visp-podman.py logs apache`)
 - **webclient** — Angular SPA (TypeScript + compiled JavaScript); runs *inside* the Apache container.
   - Angular source in `external/webclient/src`
   - Built by containerized Node.js build (`./visp-podman.py build webclient`) → `external/webclient/dist/`
   - Served from `/` by Apache (mounted at `/var/www/html` in dev; baked in prod)
   - In dev mode: dist folder bind-mounted into Apache container for hot reload after rebuild
   - In prod mode: dist is baked into the Apache image at build time
-
-#### ⚠️  The Two api.php Files (IMPORTANT)
-
-There are **two separate copies** of `api.php` inside the Apache container, from two
-different repos, with **different feature sets**:
-
-| Container path | Source repo | Key features |
-|---|---|---|
-| `/var/www/webapi/api.php` | `external/webapi/` (humlab-speech/webapi) | Auth, sessions, cookie handling, file upload handler, user management. **No file download handler.** |
-| `/var/www/html/api/api.php` | `external/webclient/api/` (humlab-speech/webclient) | Auth, sessions, file upload handler, **plus file download** (`getFileDownload`, `getOctraTask`), Octra virtual tasks. ~1684 lines vs ~1478 lines. |
-
-**Which one handles which requests:**
-
-The main vhost has both `Alias /api /var/www/webapi` and a RewriteRule
-`^/api/v1/(.*)$ /api/api.php [L]`. These interact in a non-obvious way:
-
-- **`/api/v1/...` routes** (most API calls): `mod_rewrite` fires first and resolves
-  via **DocumentRoot** (`/var/www/html`), NOT via Alias → hits `/var/www/html/api/api.php`
-  → **webclient copy**.
-- **`/api/api.php?f=session`** (session validation, called by session-manager): Does NOT
-  match `^/api/v1/`, so `Alias` applies → `/var/www/webapi/api.php` → **webapi copy**.
-- **Octra subdomain** (`octra.visp-demo.humlab.umu.se`): Has its own vhost with
-  `Alias /api /var/www/html/api` → explicitly routes to the **webclient copy**.
-
-In practice, the webapi copy is only used for the `?f=session` endpoint. All
-`/api/v1/...` traffic goes to the webclient copy via mod_rewrite.
-
-**Common pitfalls:**
-- Fixing a bug in one copy but not the other (they diverge easily).
-- The webclient copy is also in `external/webclient/dist/api/api.php` (gitignored by the
-  webclient repo). Changes to `external/webclient/api/api.php` take effect on next
-  `./visp-podman.py build webclient` or `./visp-podman.py build apache`. For quick testing
-  in dev mode, also update the `dist/` copy manually.
-- **Long-term goal**: Merge into a single api.php in the webapi repo. Cleanest path:
-  port missing features (file download, all session types, improved regex) from the
-  webclient copy into the webapi repo, then stop bundling api.php in the webclient.
 
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
@@ -171,7 +138,7 @@ In practice, the webapi copy is only used for the `?f=session` endpoint. All
 
 ### Why This Architecture?
 - **Apache as gateway** — Single HTTPS entry point, handles auth (Shibboleth), routes traffic
-- **webapi in Apache** — PHP code benefits from Apache's request handling, session management
+- **PHP API in Apache** — PHP code benefits from Apache's request handling, session management
 - **Session-manager separate** — Needs to spawn/manage containers independently
 - **WebSocket proxying** — Apache efficiently proxies WebSocket to session-manager's Node.js server
 
@@ -261,10 +228,10 @@ Errors appear in **two places**:
    ./visp-podman.py logs apache -f
    ```
 
-### webapi (PHP REST API — runs inside the Apache container)
+### PHP API (REST API — runs inside the Apache container)
 
-webapi (`external/webapi/api.php`) is served by Apache under `/api/v1/...` and writes
-its own application-level logs to files inside the container:
+The PHP API (`external/webclient/api/api.php`) is served by Apache under `/api/v1/...`
+and writes its own application-level logs to files inside the container:
 
 | Log file | Contents |
 |----------|----------|
@@ -273,7 +240,7 @@ its own application-level logs to files inside the container:
 | `/var/log/api/php_error.log` | PHP runtime errors / uncaught exceptions |
 
 ```bash
-# Tail webapi logs from the host:
+# Tail API logs from the host:
 podman exec apache tail -f /var/log/api/webapi.log
 podman exec apache tail -f /var/log/api/webapi.debug.log
 podman exec apache tail -f /var/log/api/php_error.log
@@ -284,7 +251,7 @@ podman exec apache tail -f /var/log/api/php_error.log
 > bind mount for `/var/log/api/` in the apache quadlet.
 
 **Stderr forwarding:** ERROR-level messages from `addLog()` are also written to
-`/dev/stderr` with a `[webapi]` prefix so they appear in `./visp-podman.py logs apache`
+`/dev/stderr` with an `[api]` prefix so they appear in `./visp-podman.py logs apache`
 (journalctl). This catches critical issues like permission failures without needing to
 `podman exec` into the container.
 

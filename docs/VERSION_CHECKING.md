@@ -242,7 +242,7 @@ The system compares the **image commit** with the **current source commit**:
 ⚠️ Components need rebuild (source changed): session-manager
    Run: ./visp-podman.py build session-manager
 
-⚠️ Repositories with uncommitted changes: webclient, webapi
+⚠️ Repositories with uncommitted changes: webclient
    Total: 2 repo(s) have local changes
 
 🚀 Repositories ahead of remote: webclient
@@ -267,7 +267,6 @@ The system knows which external repo builds into which container image:
 | `emu-webapp-server` | `visp-emu-webapp:latest` | Direct mapping |
 | `EMU-webApp` | `visp-emu-webapp:latest` | Same image as server |
 | `container-agent` | `visp-operations-session:latest` | Bundled into session images |
-| `webapi` | N/A | Not containerized (STALE/DEPRECATED) |
 
 This mapping is defined in `vispctl/deploy.py` in the `_get_build_status()` method.
 
@@ -398,7 +397,7 @@ git branch
 
 ### Problem: Image exists but Build Status is "N/A"
 
-**Cause**: Component is not mapped to an image (like `webapi` which is deprecated)
+**Cause**: Component is not mapped to an image.
 
 **Solution**: This is expected for non-containerized components.
 

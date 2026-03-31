@@ -313,7 +313,7 @@ VISP uses three categories of container images:
 systemctl --user restart apache         # Pick up new dist/
 # Refresh browser
 
-# Edit PHP code (webapi)
+# Edit PHP code (api.php)
 # Just refresh browser - mounted, auto-detected
 ```
 
@@ -442,7 +442,7 @@ See [Version Management](docs/VERSION_MANAGEMENT.md) for details.
 | Service | Description |
 |---------|-------------|
 | **Traefik** | Edge router / TLS termination (dev mode only) |
-| **Apache** | Web server + Shibboleth + PHP authentication; hosts webapi and webclient |
+| **Apache** | Web server + Shibboleth + PHP authentication; hosts the PHP API and webclient |
 | **Session Manager** | Spawns and manages session containers (RStudio, Jupyter) via WebSocket |
 | **MongoDB** | Database |
 | **EMU-webApp** | Web-based speech annotation tool |

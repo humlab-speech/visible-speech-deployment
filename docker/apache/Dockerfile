@@ -84,7 +84,7 @@ COPY ./external/webclient/ /webclient/
 
 RUN npm install --legacy-peer-deps
 
-# Composer dependencies (for webapi PHP files bundled in webclient)
+# Composer dependencies (for PHP api.php bundled in webclient)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
 RUN echo "Building webclient with build target: ${WEBCLIENT_BUILD}" && \
@@ -92,21 +92,6 @@ RUN echo "Building webclient with build target: ${WEBCLIENT_BUILD}" && \
 
 # Put build output in a neutral path we can copy from
 RUN mkdir -p /out && cp -r dist/* /out/
-
-
-# ------------------------------------------------------------
-# webapi-build: install composer deps for webapi PHP files
-# Source: external/webapi/ (managed by visp-deploy.py update)
-# ------------------------------------------------------------
-FROM base AS webapi-build
-
-WORKDIR /webapi
-
-# Copy local webapi source (single source of truth from external/)
-COPY ./external/webapi/ /webapi/
-
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-reqs && \
-    rm -rf .git .gitignore README.md composer.phar webapi.code-workspace test.php
 
 
 # ------------------------------------------------------------
@@ -123,10 +108,9 @@ WORKDIR /var/www/html
 # Copy prebuilt frontend artifacts (webclient SPA + index.php)
 COPY --from=webclient-build /out/ /var/www/html/
 
-# Copy webapi PHP files with vendor/ from the webapi-build stage.
-# api.php uses `require 'vendor/autoload.php'` (relative to CWD set by Apache Alias).
-# In dev mode, this directory is overlaid by a bind-mount of external/webapi/.
-COPY --from=webapi-build /webapi/ /var/www/webapi/
+# Copy PHP vendor dependencies (composer.json is at webclient root,
+# api.php uses require __DIR__ . '/../vendor/autoload.php')
+COPY --from=webclient-build /webclient/vendor/ /var/www/html/vendor/
 
 # Start shibd + apache (no watcher)
 CMD ["bash", "-lc", "/etc/init.d/shibd start -w 3600 && exec /usr/sbin/apache2 -DFOREGROUND"]

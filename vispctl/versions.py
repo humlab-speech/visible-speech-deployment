@@ -20,12 +20,6 @@ DEFAULT_VERSIONS_CONFIG = {
         "npm_install": True,
         "npm_build": False,
     },
-    "webapi": {
-        "version": "latest",
-        "url": None,
-        "npm_install": False,
-        "npm_build": False,
-    },
     "wsrng-server": {
         "version": "latest",
         "url": None,

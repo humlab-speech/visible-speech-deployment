@@ -31,7 +31,7 @@ Volume=@@PROJECT_DIR@@/mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/sh
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/envvars:/etc/apache2/envvars:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z
-# Production: webapi + vendor are baked into the image (no source mounts needed)
+# Production: webclient + api.php + vendor are baked into the image (no source mounts needed)
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/matomo-tracker.js:/var/www/html/matomo-tracker.js:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
