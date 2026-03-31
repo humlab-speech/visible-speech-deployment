@@ -37,16 +37,13 @@
     `emudb-create-sessions`. The delete should happen at the same point where
     `Shuttting down container session` is logged (after the final command in the chain).
 
-- [ ] **Remove stale `whisper.container` symlink from `~/.config/containers/systemd/`** 🐛
+- [x] **Remove stale `whisper.container` symlink from `~/.config/containers/systemd/`** ✅
   - `quadlets/dev/whisper.container` was renamed to `whisper.container.old` (via git mv) but
     the symlink in `~/.config/containers/systemd/whisper.container` was never removed
-  - systemd tries to start `whisper.service`, fails (broken symlink / missing image), and
-    keeps restarting it every few seconds — noise in logs and wasted restart budget
-  - Fix: `rm ~/.config/containers/systemd/whisper.container && systemctl --user daemon-reload`
+  - Fixed: Cleaned up during `visp-podman.py uninstall`/`install` cycles
 
-- [ ] **Build missing `visp-emu-webapp-server` image**
-  - `podman images | grep visp` shows it is absent; `emu-webapp-server.service` will fail at start
-  - Fix: `./visp-podman.py build emu-webapp-server`
+- [x] **Build missing `visp-emu-webapp-server` image** ✅
+  - Built and running. Also committed WebSocket cookie fix (commit `3b73022`).
 
 ## High Priority
 
@@ -240,7 +237,7 @@
     - Apache access log: `mounts/apache/apache/logs/apache2/visp.local-access.log` (search for `POST /api/v1/upload`)
     - Upload staging path: `mounts/apache/apache/uploads/<gitlabUserId>/<upload-id>/...` (bind-mounted into container at `/tmp/uploads`)
     - Session-manager logs: use `./visp-logs.sh session-manager` — look for `Converting all files in /tmp/uploads` and `No audio files found` messages
-    - **Note:** `./visp-podman.py logs <service>` can fail with an "unhashable type: 'list'" argument error; use `podman logs <container>` instead until fixed.
+    - ~~**Note:** `./visp-podman.py logs <service>` previously had an "unhashable type: 'list'" argument error — **fixed**.~~
   - **Immediate mitigation / recommended fix**:
     - Make upload tree group-owned by `www-data` and group-writable (e.g., `chgrp -R www-data mounts/apache/apache/uploads && find mounts/apache/apache/uploads -type d -exec chmod 2775 {} + && find mounts/apache/apache/uploads -type f -exec chmod 664 {} +`)
     - Ensure PHP api.php creates directories with group-write (e.g., `mkdir(..., 0o2775)` or set proper umask) and consider using setgid for inheritance
@@ -588,7 +585,7 @@
   - **Priority levels**:
     - 🔴 **Critical**: `rocker/rstudio:4` → `rocker/rstudio:4.3.2` (R version changes break packages)
     - 🟡 **High**: debian:bookworm, node:20-bookworm-slim (add dated snapshots)
-    - 🟢 **Done**: octra (node:20.5.1 ✅), jupyter (r-4.3.3 ✅)
+    - 🟢 **Done**: octra (node:20.5.1 ✅), jupyter (r-4.3.3 ✅), wsrng-server (node:20.20.0-alpine3.22 ✅)
   - **Implementation steps**:
     1. Document current working versions: `podman inspect <image> | grep -A5 RepoDigests`
     2. Test builds with pinned versions
@@ -834,7 +831,7 @@
       - Internal=true broke DNS → now works perfectly
     - **Remaining work**:
       - [ ] Update installation guide with netavark requirement
-      - [ ] Add network creation to visp-podman.py (quadlet .network files don't auto-create with netavark)
+      - [x] Add network creation to visp-podman.py (`./visp-podman.py network ensure`) ✅
       - [ ] Test migration procedure on fresh install
       - [ ] Document in DEPLOYMENT_GUIDE.md
     - See: [docs/PODMAN_NETWORKS.md](docs/PODMAN_NETWORKS.md)
@@ -903,8 +900,8 @@
       - `visp-podman.py backup` - Backup MongoDB and external repos
       - `visp-podman.py restore` - Restore from backup
       - `visp-podman.py fix-permissions` - Fix file permissions for mounted volumes
-    - [ ] TODO: Add `build` command integration with visp-deploy.py
-    - [ ] TODO: Add `update` command to pull latest images
+    - [x] TODO: Add `build` command integration with visp-deploy.py ✅
+    - [x] TODO: Add `update` command (`./visp-podman.py deploy update`) ✅
     - [ ] TODO: Consider adding bash completion
     - [ ] **Optional: Remove networks during `uninstall`** (`--remove-networks`)
       - **Why**: Provide an opt-in full teardown (useful for ephemeral/dev/CI) while avoiding accidental network removal on shared hosts.
