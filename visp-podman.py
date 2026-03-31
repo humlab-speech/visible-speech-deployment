@@ -546,6 +546,34 @@ def cmd_install(args):
         print("  All mount directories already exist")
     print()
 
+    # Ensure container-writable directories have correct permissions.
+    # In rootless Podman the host user maps to UID 0 inside the container,
+    # so directories owned by the host user are root:root (755) in the
+    # container — Apache's www-data (UID 33) cannot write to them.
+    # We fix this by making specific directories world-writable (777).
+    print(color("Fixing container-writable directory permissions...", Colors.CYAN))
+    writable_dirs = [
+        PROJECT_DIR / "mounts/apache/apache/uploads",
+        PROJECT_DIR / "mounts/repositories",
+        PROJECT_DIR / "mounts/webapi/logs",
+        PROJECT_DIR / "mounts/apache/apache/logs/apache2",
+        PROJECT_DIR / "mounts/apache/apache/logs/shibboleth",
+        PROJECT_DIR / "mounts/session-manager/logs",
+    ]
+    perm_fixed = 0
+    for d in writable_dirs:
+        if not d.exists():
+            continue
+        current_mode = d.stat().st_mode & 0o777
+        if current_mode != 0o777:
+            d.chmod(0o777)
+            perm_fixed += 1
+    if perm_fixed:
+        print(f"  Fixed permissions on {perm_fixed} directories (set to 777)")
+    else:
+        print("  All container-writable directories already have correct permissions")
+    print()
+
     # Generate matomo-tracker.js from template if BASE_DOMAIN is set
     tracker_template = PROJECT_DIR / "mounts/apache/apache/matomo-tracker.js.template"
     tracker_output = PROJECT_DIR / "mounts/apache/apache/matomo-tracker.js"
