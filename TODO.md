@@ -2,40 +2,17 @@
 
 ## Immediate / Blocking
 
-- [ ] **DISK LEAK: Uploaded audio files accumulate forever in `mounts/apache/apache/uploads/`** 🐛💾
-  - **Severity**: Will fill the disk in production. Already 17 files on dev, including two
-    762 MB copies of `user_audio_2022-09-30.wav` from two separate `saveProject` attempts.
-  - **Root cause**: PHP writes uploaded files to
-    `mounts/apache/apache/uploads/<username>/<formContextId>/emudb-sessions/<sessionId>/<file>`.
-    session-manager mounts this directory into the ops container as `/home/uploads`, R's
-    `import_mediaFiles()` copies files into the EmuDB repository at
-    `mounts/repositories/<projectId>/Data/VISP_emuDB/<Session>_ses/<bundle>_bndl/`.
-    **Nothing ever deletes the original upload.** A new `formContextId` is generated for
-    every `saveProject`/`updateProject` call, so even re-saves of unchanged sessions
-    accumulate new copies.
-  - **Key code paths**:
-    - PHP upload handler: `external/webclient/api/api.php` — writes to `/tmp/uploads/<user>/<ctx>/...`
-      (container-internal), which maps to the bind-mounted host path above.
-    - session-manager cleanup point (none currently):
-      `external/session-manager/src/ApiServer.class.js` — `saveProject` / `updateProject`
-      methods, around line 3826 (`let context = projectFormData.formContextId`).
-      After the ops container finishes all commands successfully, `uploadsSrcDir` (the full
-      host path) is available and could be deleted with `fs.rmSync(uploadsSrcDir, {recursive:true})`.
-    - The upload directory variable is `uploadsSrcDir` (host path) and `uploadsSrcDirLocal`
-      (container-internal path `/tmp/uploads/...`); both point to the same bind-mounted dir.
-  - **Chosen approach: Option A + Option B**
-    - **A — Delete on success**: after the ops container finishes all steps without error,
-      delete the entire `formContextId` directory (`uploadsSrcDir`). This covers the normal
-      happy path immediately.
-    - **B — Lazy cleanup on next save**: at the start of each `saveProject`/`updateProject`,
-      scan `mounts/apache/apache/uploads/<username>/` and delete any `formContextId`
-      directories that are **not** the current one and are older than e.g. 24 h. This
-      catches cases where A couldn't run (crash, error, abandoned tab).
-  - **Note**: Option C/D (cron sweep) can be added on top later if needed for users who
-    never return, but A+B covers >95% of real cases without needing a scheduler.
-  - **Watch out for**: only delete after *all* container-agent commands succeed — not just
-    `emudb-create-sessions`. The delete should happen at the same point where
-    `Shuttting down container session` is logged (after the final command in the chain).
+- [x] **DISK LEAK: Uploaded audio files accumulate forever in `mounts/apache/apache/uploads/`** ✅
+  - **Fixed** in session-manager commit `f7603b3` (pushed to GitHub).
+  - **Option A** (delete on success): After all container-agent commands complete and the
+    operations session is torn down, the `formContextId` upload directory is removed via
+    `fs.removeSync()`.
+  - **Option B** (lazy cleanup): At the start of each `saveProjectEmuDb()` call, stale
+    upload directories (>24h old, not the current formContextId) are scanned and removed.
+  - Both are non-fatal — failures logged as warnings.
+  - **Note**: Existing accumulated uploads (2.2 GB on dev) will be cleaned up on the next
+    `saveProject` call per Option B, or can be manually removed:
+    `rm -rf mounts/apache/apache/uploads/*/`
 
 - [x] **Remove stale `whisper.container` symlink from `~/.config/containers/systemd/`** ✅
   - `quadlets/dev/whisper.container` was renamed to `whisper.container.old` (via git mv) but
