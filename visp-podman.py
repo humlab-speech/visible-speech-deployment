@@ -376,7 +376,7 @@ def cmd_logs(args):
         for svc in CONTAINER_SERVICES:
             units.extend(["-u", f"{svc.name}.service"])
         print(color("=== Viewing logs for all VISP services ===", Colors.CYAN))
-        journalctl(*units, *extra_args)
+        journalctl(*units, "--no-pager", *extra_args)
     else:
         service = args.service
         has_app_logs = service in CONTAINER_LOG_FILES
@@ -409,7 +409,7 @@ def cmd_logs(args):
         else:
             # Snapshot mode: show journal, then container logs
             print(color(f"=== Viewing logs for {service} ===", Colors.CYAN))
-            journalctl("-u", f"{service}.service", *extra_args)
+            journalctl("-u", f"{service}.service", "--no-pager", *extra_args)
 
             if has_app_logs and not journal_only:
                 lines = args.lines if args.lines else 30
