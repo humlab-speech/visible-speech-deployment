@@ -284,6 +284,30 @@
 
 ## Medium Priority
 
+- [ ] **Review security of 777 permissions on container-writable bind mounts** 🔒
+  - **Introduced by**: `201ab6a` (visp-podman.py install auto-fix),
+    `78b51ec` (webapi `createDirectory()` mkdir 0777), and the `fix-permissions`
+    command default paths update (same branch, covers uploads + logs + repositories)
+  - **Context**: `visp-podman.py install` now sets `chmod 777` on several bind-mounted
+    directories (`mounts/apache/apache/uploads/`, `mounts/repositories/`, log directories)
+    so that Apache's `www-data` (UID 33) and session-manager's `root` (UID 0, mapped from
+    host user) can both write to them. The webapi `createDirectory()` also uses `mkdir 0777`.
+  - **Concern**: World-writable directories on the host could be exploited by other local
+    users or processes. On a single-user server this is low risk, but on shared systems
+    it could be problematic.
+  - **Possible solutions**:
+    - Use `podman unshare chown 33:33` to make directories owned by www-data inside the
+      user namespace, then use `770` or `775` instead of `777`. session-manager (running as
+      root in its container, mapped from the host user) would still have access.
+    - Use Podman's `--userns=keep-id` or `uidmap`/`gidmap` options to align UIDs so the
+      host user directly maps to www-data, avoiding the permission gap entirely.
+    - Use named Podman volumes instead of bind mounts for ephemeral data (uploads, logs)
+      — Podman manages ownership automatically for named volumes.
+    - Set a restrictive umask on the host and rely on ACLs (`setfacl`) to grant www-data
+      write access without making directories world-writable.
+  - **Action**: Research which approach is best for both dev (WSL) and prod (Linux server)
+    environments and implement a more restrictive permission scheme.
+
 - [ ] **Per-project network isolation for session containers** 🔒
   - **Current behaviour**: `Session.class.js` attaches every spawned container (Jupyter,
     RStudio, etc.) to the shared `systemd-visp-net` network. This means containers from

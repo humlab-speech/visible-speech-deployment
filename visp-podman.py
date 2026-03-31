@@ -1313,10 +1313,18 @@ def cmd_fix_permissions(args):
     """Fix file ownership and permissions using 'podman unshare'."""
     from vispctl.permissions import PermissionsManager
 
-    # Default target path if none provided: common repositories mount
-    paths = (
-        [Path(p) for p in getattr(args, "paths", [])] if getattr(args, "paths", None) else [Path("mounts/repositories")]
-    )
+    # Default target paths if none provided: all container-writable directories
+    if getattr(args, "paths", None):
+        paths = [Path(p) for p in args.paths]
+    else:
+        paths = [
+            Path("mounts/repositories"),
+            Path("mounts/apache/apache/uploads"),
+            Path("mounts/webapi/logs"),
+            Path("mounts/apache/apache/logs/apache2"),
+            Path("mounts/apache/apache/logs/shibboleth"),
+            Path("mounts/session-manager/logs"),
+        ]
 
     existing = [p for p in paths if p.exists()]
     missing = [p for p in paths if not p.exists()]
@@ -1675,7 +1683,10 @@ Examples:
         "-p",
         dest="paths",
         action="append",
-        help=("Path to fix (can be specified multiple times). " "Default: mounts/repositories"),
+        help=(
+            "Path to fix (can be specified multiple times). "
+            "Default: all container-writable dirs (uploads, repositories, logs)"
+        ),
     )
     p_fix.add_argument(
         "-r",
