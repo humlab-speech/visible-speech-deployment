@@ -43,6 +43,7 @@ import argparse
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 from vispctl.build import BuildManager
@@ -116,6 +117,22 @@ SERVICES = [
 
 CONTAINER_SERVICES = [s for s in SERVICES if s.type == "container"]
 NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
+
+# Container-internal log files that are NOT visible in journalctl.
+# These are files inside the container that must be read via `podman exec`.
+# Format: service_name -> list of (label, container_path) tuples.
+CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
+    "apache": [
+        ("webapi", "/var/log/api/webapi.log"),
+        ("webapi-debug", "/var/log/api/webapi.debug.log"),
+        ("php-errors", "/var/log/api/php_error.log"),
+        ("apache-error", "/var/log/apache2/visp.local-error.log"),
+        ("octra-error", "/var/log/apache2/octra-error.log"),
+        ("emu-error", "/var/log/apache2/emu-webapp-error.log"),
+        ("shibboleth", "/var/log/shibboleth/shibd.log"),
+        ("shibboleth-warn", "/var/log/shibboleth/shibd_warn.log"),
+    ],
+}
 
 
 # Colors
@@ -269,9 +286,78 @@ def cmd_status(args):
 # === Log Commands ===
 
 
+def _tail_container_logs(service: str, lines: int = 50, follow: bool = False, stop_event: threading.Event = None):
+    """Tail container-internal log files via podman exec.
+
+    For services that write to log files inside the container (not stdout),
+    this reads those files so they appear alongside journalctl output.
+    """
+    log_files = CONTAINER_LOG_FILES.get(service)
+    if not log_files:
+        return
+
+    container = service
+
+    # Check if container is running
+    rc, _, _ = run_quiet(["podman", "inspect", "--format", "{{.State.Status}}", container])
+    if rc != 0:
+        print(color(f"  Container {container} not running — skipping app logs", Colors.YELLOW))
+        return
+
+    if follow:
+        # Follow mode: spawn tail -f processes and stream output with prefixes
+        processes = []
+        for label, path in log_files:
+            cmd = ["podman", "exec", container, "tail", "-n", "0", "-f", path]
+            try:
+                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                processes.append((label, proc))
+            except OSError:
+                pass
+
+        def _stream_output(lbl, proc):
+            try:
+                for line in proc.stdout:
+                    if stop_event and stop_event.is_set():
+                        break
+                    print(f"{color(f'[{lbl}]', Colors.MAGENTA)} {line}", end="")
+            except (OSError, ValueError):
+                pass
+
+        threads = []
+        for label, proc in processes:
+            t = threading.Thread(target=_stream_output, args=(label, proc), daemon=True)
+            t.start()
+            threads.append(t)
+
+        # Wait for stop signal (KeyboardInterrupt handled by caller)
+        try:
+            if stop_event:
+                stop_event.wait()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            for _, proc in processes:
+                proc.terminate()
+            for _, proc in processes:
+                proc.wait()
+    else:
+        # Snapshot mode: show last N lines from each log file
+        for label, path in log_files:
+            cmd = ["podman", "exec", container, "tail", "-n", str(lines), path]
+            rc, stdout, stderr = run_quiet(cmd)
+            if rc == 0 and stdout.strip():
+                print(color(f"\n--- {label} ({path}) ---", Colors.MAGENTA))
+                print(stdout)
+            elif rc != 0 and "No such file" not in stderr:
+                # File doesn't exist yet — that's fine, skip silently
+                pass
+
+
 def cmd_logs(args):
     """View logs from services."""
     extra_args = []
+    journal_only = args.journal_only
 
     if args.follow:
         extra_args.append("-f")
@@ -285,16 +371,50 @@ def cmd_logs(args):
         extra_args.extend(["-p", args.priority])
 
     if args.service == "all" or not args.service:
-        # All services
+        # All services — journal only (too noisy to mix all container logs)
         units = []
         for svc in CONTAINER_SERVICES:
             units.extend(["-u", f"{svc.name}.service"])
         print(color("=== Viewing logs for all VISP services ===", Colors.CYAN))
         journalctl(*units, *extra_args)
     else:
-        # Single service
-        print(color(f"=== Viewing logs for {args.service} ===", Colors.CYAN))
-        journalctl("-u", f"{args.service}.service", *extra_args)
+        service = args.service
+        has_app_logs = service in CONTAINER_LOG_FILES
+
+        if args.follow:
+            # Follow mode: run journalctl and container log tailers concurrently
+            print(color(f"=== Following logs for {service} ===", Colors.CYAN))
+            if has_app_logs and not journal_only:
+                print(color("  (including container app logs — use --journal-only to hide)", Colors.CYAN))
+
+            stop_event = threading.Event()
+
+            # Start container log tailers in background threads
+            if has_app_logs and not journal_only:
+                log_thread = threading.Thread(
+                    target=_tail_container_logs,
+                    args=(service,),
+                    kwargs={"follow": True, "stop_event": stop_event},
+                    daemon=True,
+                )
+                log_thread.start()
+
+            # Run journalctl in foreground (blocks until Ctrl+C)
+            try:
+                journalctl("-u", f"{service}.service", *extra_args)
+            except KeyboardInterrupt:
+                pass
+            finally:
+                stop_event.set()
+        else:
+            # Snapshot mode: show journal, then container logs
+            print(color(f"=== Viewing logs for {service} ===", Colors.CYAN))
+            journalctl("-u", f"{service}.service", *extra_args)
+
+            if has_app_logs and not journal_only:
+                lines = args.lines if args.lines else 30
+                print(color(f"\n=== Container app logs (last {lines} lines each) ===", Colors.CYAN))
+                _tail_container_logs(service, lines=lines)
 
 
 # === Service Control Commands ===
@@ -713,13 +833,13 @@ def cmd_mode(args):
 
 def cmd_exec(args):
     """Execute command in container."""
-    container = f"systemd-{args.container}"
-    run(["podman", "exec", "-it", container, *args.command], check=False)
+    container = args.container
+    run(["podman", "exec", "-it", container, *args.exec_command], check=False)
 
 
 def cmd_shell(args):
     """Open shell in container."""
-    container = f"systemd-{args.container}"
+    container = args.container
     shell = args.shell or "/bin/bash"
     run(["podman", "exec", "-it", container, shell], check=False)
 
@@ -1151,7 +1271,7 @@ def cmd_debug(args):
 
     # Check if container exists
     print(color("Container Info:", Colors.YELLOW))
-    container = f"systemd-{service}"
+    container = service
     rc, stdout, stderr = run_quiet(["podman", "inspect", container])
     if rc == 0:
         run(
@@ -1525,6 +1645,9 @@ Examples:
     p_logs.add_argument("-n", "--lines", type=int, help="Number of lines to show")
     p_logs.add_argument("--since", help="Show logs since TIME (e.g., '1 hour ago')")
     p_logs.add_argument("-p", "--priority", help="Filter by priority")
+    p_logs.add_argument(
+        "--journal-only", action="store_true", help="Show only journalctl output, skip container app logs"
+    )
 
     # start
     p_start = subparsers.add_parser("start", help="Start service(s)")
@@ -1567,12 +1690,12 @@ Examples:
 
     # exec
     p_exec = subparsers.add_parser("exec", aliases=["e"], help="Execute command in container")
-    p_exec.add_argument("container", help="Container name (without systemd- prefix)")
-    p_exec.add_argument("command", nargs="+", help="Command to run")
+    p_exec.add_argument("container", help="Container name (e.g. apache, session-manager)")
+    p_exec.add_argument("exec_command", nargs="+", help="Command to run")
 
     # shell
     p_shell = subparsers.add_parser("shell", aliases=["sh"], help="Open shell in container")
-    p_shell.add_argument("container", help="Container name (without systemd- prefix)")
+    p_shell.add_argument("container", help="Container name (e.g. apache, session-manager)")
     p_shell.add_argument("--shell", default="/bin/bash", help="Shell to use (default: /bin/bash)")
 
     # cleanup-containers
