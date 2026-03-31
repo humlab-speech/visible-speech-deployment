@@ -69,6 +69,7 @@ EXPOSE 80 443
 
 # ------------------------------------------------------------
 # webclient-build: builds the Angular webclient once (prod artifact)
+# Source: external/webclient/ (managed by visp-deploy.py update)
 # ------------------------------------------------------------
 FROM base AS webclient-build
 
@@ -76,19 +77,14 @@ FROM base AS webclient-build
 ARG WEBCLIENT_BUILD=visp-dev
 ENV WEBCLIENT_BUILD=${WEBCLIENT_BUILD}
 
-# Optional cache-bust so you can force a fresh git clone when desired
-ARG WEBCLIENT_GIT_REF=master
-ARG CACHE_BUST=0
-
 WORKDIR /webclient
 
-# Clone and build
-RUN echo "CACHE_BUST=$CACHE_BUST" && \
-    git clone --depth 1 --branch "${WEBCLIENT_GIT_REF}" https://github.com/humlab-speech/webclient /webclient
+# Copy local webclient source (single source of truth from external/)
+COPY ./external/webclient/ /webclient/
 
 RUN npm install --legacy-peer-deps
 
-# Composer dependencies (reproducible)
+# Composer dependencies (for webapi PHP files bundled in webclient)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
 RUN echo "Building webclient with build target: ${WEBCLIENT_BUILD}" && \
@@ -99,17 +95,17 @@ RUN mkdir -p /out && cp -r dist/* /out/
 
 
 # ------------------------------------------------------------
-# webapi-build: clone webapi + install composer deps independently
+# webapi-build: install composer deps for webapi PHP files
+# Source: external/webapi/ (managed by visp-deploy.py update)
 # ------------------------------------------------------------
 FROM base AS webapi-build
 
-ARG WEBAPI_GIT_REF=main
-ARG CACHE_BUST=0
-
 WORKDIR /webapi
-RUN echo "CACHE_BUST=$CACHE_BUST" && \
-    git clone --depth 1 --branch "${WEBAPI_GIT_REF}" https://github.com/humlab-speech/webapi /webapi && \
-    composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-reqs && \
+
+# Copy local webapi source (single source of truth from external/)
+COPY ./external/webapi/ /webapi/
+
+RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --ignore-platform-reqs && \
     rm -rf .git .gitignore README.md composer.phar webapi.code-workspace test.php
 
 
@@ -127,9 +123,8 @@ WORKDIR /var/www/html
 # Copy prebuilt frontend artifacts (webclient SPA + index.php)
 COPY --from=webclient-build /out/ /var/www/html/
 
-# Copy webapi from its own repo (not from the webclient's bundled copy).
-# api.php uses `require 'vendor/autoload.php'` (relative), so vendor/
-# must live alongside the PHP files at /var/www/webapi/vendor/.
+# Copy webapi PHP files with vendor/ from the webapi-build stage.
+# api.php uses `require 'vendor/autoload.php'` (relative to CWD set by Apache Alias).
 # In dev mode, this directory is overlaid by a bind-mount of external/webapi/.
 COPY --from=webapi-build /webapi/ /var/www/webapi/
 
@@ -143,14 +138,13 @@ CMD ["bash", "-lc", "/etc/init.d/shibd start -w 3600 && exec /usr/sbin/apache2 -
 FROM base AS development
 
 # NOTE:
-# In dev, you will usually bind-mount your local repo to /webclient,
-# so the clone below is only a fallback to make the image runnable standalone.
-ARG WEBCLIENT_GIT_REF=master
-ARG CACHE_BUST=0
+# In dev, the local webclient repo is bind-mounted over /webclient,
+# so the COPY below is only a fallback to make the image runnable standalone.
 
 WORKDIR /webclient
-RUN echo "CACHE_BUST=$CACHE_BUST" && \
-    git clone --depth 1 --branch "${WEBCLIENT_GIT_REF}" https://github.com/humlab-speech/webclient /webclient
+
+# Copy local webclient source (same as prod, but will be overlaid by bind-mount in dev)
+COPY ./external/webclient/ /webclient/
 
 RUN npm install --legacy-peer-deps
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction

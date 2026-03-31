@@ -724,6 +724,9 @@ BUILD_CONFIGS = {
         "target": "production",
         "build_args": {"WEBCLIENT_BUILD": "visp-build"},
         "source_repo": "./external/webclient",  # git.commit label tracks webclient source
+        "extra_source_repos": {
+            "webapi": "./external/webapi",  # additional git.commit.webapi label
+        },
     },
     "session-manager": {
         "context": "./external/session-manager",

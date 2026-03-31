@@ -94,12 +94,19 @@ class DeployManager:
         # Map component names to image names
         component_to_image = {
             "webclient": "visp-apache:latest",  # webclient is in apache
+            "webapi": "visp-apache:latest",  # webapi is also baked into apache
             "session-manager": "visp-session-manager:latest",
             "wsrng-server": "visp-wsrng-server:latest",
             "emu-webapp-server": "visp-emu-webapp-server:latest",
             "EMU-webApp": "visp-emu-webapp:latest",
             "container-agent": "visp-operations-session:latest",  # bundled in session images
             "WhisperVault": "visp-whisperx:latest",
+        }
+
+        # Components that use a named label instead of the default git.commit label
+        # (when multiple repos are baked into one image)
+        component_label_override = {
+            "webapi": "git.commit.webapi",
         }
 
         image_name = component_to_image.get(component)
@@ -121,8 +128,12 @@ class DeployManager:
             }
 
         # Try to get git commit label from image
-        image_commit = self._get_image_label(image_name, "git.commit")
-        image_dirty = self._get_image_label(image_name, "git.dirty") == "true"
+        # Some components use a named label (e.g. git.commit.webapi) when multiple
+        # repos are baked into one image
+        commit_label = component_label_override.get(component, "git.commit")
+        dirty_label = commit_label.replace("git.commit", "git.dirty")
+        image_commit = self._get_image_label(image_name, commit_label)
+        image_dirty = self._get_image_label(image_name, dirty_label) == "true"
         dirty_suffix = " ⚠️ DIRTY BUILD" if image_dirty else ""
 
         if not image_commit:

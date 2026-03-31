@@ -130,6 +130,28 @@ class BuildManager:
 
                     build_time = datetime.now().isoformat()
                     cmd.extend(["--label", f"build.timestamp={build_time}"])
+
+            # Add labels for extra source repos (e.g. webapi embedded in apache image)
+            for name, repo_path in config.get("extra_source_repos", {}).items():
+                extra_path = Path(repo_path).resolve()
+                extra_check = subprocess.run(
+                    ["git", "rev-parse", "--git-dir"], cwd=extra_path, capture_output=True, check=False
+                )
+                if extra_check.returncode == 0:
+                    extra_commit = subprocess.run(
+                        ["git", "rev-parse", "HEAD"], cwd=extra_path, capture_output=True, text=True, check=False
+                    )
+                    if extra_commit.returncode == 0:
+                        cmd.extend(["--label", f"git.commit.{name}={extra_commit.stdout.strip()}"])
+                    extra_dirty = subprocess.run(
+                        ["git", "status", "--porcelain"],
+                        cwd=extra_path,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    if extra_dirty.returncode == 0 and extra_dirty.stdout.strip():
+                        cmd.extend(["--label", f"git.dirty.{name}=true"])
         except Exception:
             # If git info fails, just continue without labels
             pass
