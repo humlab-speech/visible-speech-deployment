@@ -109,6 +109,42 @@ visible-speech-deployment/
   - In dev mode: dist folder bind-mounted into Apache container for hot reload after rebuild
   - In prod mode: dist is baked into the Apache image at build time
 
+#### ⚠️  The Two api.php Files (IMPORTANT)
+
+There are **two separate copies** of `api.php` inside the Apache container, from two
+different repos, with **different feature sets**:
+
+| Container path | Source repo | Key features |
+|---|---|---|
+| `/var/www/webapi/api.php` | `external/webapi/` (humlab-speech/webapi) | Auth, sessions, cookie handling, file upload handler, user management. **No file download handler.** |
+| `/var/www/html/api/api.php` | `external/webclient/api/` (humlab-speech/webclient) | Auth, sessions, file upload handler, **plus file download** (`getFileDownload`, `getOctraTask`), Octra virtual tasks. ~1684 lines vs ~1478 lines. |
+
+**Which one handles which requests:**
+
+The main vhost has both `Alias /api /var/www/webapi` and a RewriteRule
+`^/api/v1/(.*)$ /api/api.php [L]`. These interact in a non-obvious way:
+
+- **`/api/v1/...` routes** (most API calls): `mod_rewrite` fires first and resolves
+  via **DocumentRoot** (`/var/www/html`), NOT via Alias → hits `/var/www/html/api/api.php`
+  → **webclient copy**.
+- **`/api/api.php?f=session`** (session validation, called by session-manager): Does NOT
+  match `^/api/v1/`, so `Alias` applies → `/var/www/webapi/api.php` → **webapi copy**.
+- **Octra subdomain** (`octra.visp-demo.humlab.umu.se`): Has its own vhost with
+  `Alias /api /var/www/html/api` → explicitly routes to the **webclient copy**.
+
+In practice, the webapi copy is only used for the `?f=session` endpoint. All
+`/api/v1/...` traffic goes to the webclient copy via mod_rewrite.
+
+**Common pitfalls:**
+- Fixing a bug in one copy but not the other (they diverge easily).
+- The webclient copy is also in `external/webclient/dist/api/api.php` (gitignored by the
+  webclient repo). Changes to `external/webclient/api/api.php` take effect on next
+  `./visp-podman.py build webclient` or `./visp-podman.py build apache`. For quick testing
+  in dev mode, also update the `dist/` copy manually.
+- **Long-term goal**: Merge into a single api.php in the webapi repo. Cleanest path:
+  port missing features (file download, all session types, improved regex) from the
+  webclient copy into the webapi repo, then stop bundling api.php in the webclient.
+
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
   - Built by `./visp-podman.py build container-agent` → output goes to `external/container-agent/dist/`
@@ -246,6 +282,44 @@ podman exec apache tail -f /var/log/api/php_error.log
 > **Note:** These log files are inside the container and are **not** bind-mounted to the
 > host by default. They are lost when the container is recreated. To persist them, add a
 > bind mount for `/var/log/api/` in the apache quadlet.
+
+**Stderr forwarding:** ERROR-level messages from `addLog()` are also written to
+`/dev/stderr` with a `[webapi]` prefix so they appear in `./visp-podman.py logs apache`
+(journalctl). This catches critical issues like permission failures without needing to
+`podman exec` into the container.
+
+### File Upload Pipeline (common debugging target)
+
+The upload pipeline spans three services and is a frequent source of bugs:
+
+```
+Browser (Angular) → Apache (PHP api.php) → Host filesystem → Session-manager → Operations container (R script)
+```
+
+**Step by step:**
+1. **Webclient** drops a file → immediately POSTs to `/api/v1/upload` with
+   `fileMeta.group = "emudb-sessions/<sessionId>"`. This happens **on file drop**, not on
+   form submit. Errors are logged to browser console but the UI may not show them.
+2. **PHP `handleUpload()`** saves to `/tmp/uploads/<username>/<formContextId>/emudb-sessions/<sessionId>/<filename>`
+   (container path). This maps to `mounts/apache/apache/uploads/...` on the host via bind mount.
+3. **Session-manager** (on form submit, via WebSocket `saveProject`) reads from the same
+   directory via its own bind mount of `mounts/apache/apache/uploads` → `/tmp/uploads`.
+   Calls `convertAllInDirectoryToWav()` which expects the `emudb-sessions/` subdirectory.
+4. **Operations container** (container-agent + R) is spawned with the uploads dir mounted
+   as `/home/uploads`. R script `createSessions.R` calls `import_mediaFiles()` from
+   `/home/uploads/emudb-sessions/<sessionId>/`.
+
+**Known failure modes:**
+- **Permission denied on uploads dir**: In rootless Podman, `mounts/apache/apache/uploads/`
+  must be `chmod 777` so Apache's `www-data` (UID 33) can create subdirectories. The
+  `./visp-podman.py install` command now does this automatically, but on existing deployments
+  run: `chmod 777 mounts/apache/apache/uploads/`
+- **Silent upload failure**: If the upload POST fails (auth, permissions, etc.), the webclient
+  Angular code has minimal error reporting — the user can still click Save, and the project
+  is created without any audio files. Check `webapi.debug.log` for upload entries.
+- **"Upload directory does not exist"**: Session-manager logs this at WARNING level
+  when `emudb-sessions/` is missing. The pipeline continues and creates a project skeleton
+  with no audio. This is the most common symptom of upload failures.
 
 When adding a new service or renaming an existing one, update **all** of the following:
 
