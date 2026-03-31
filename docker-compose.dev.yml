@@ -45,7 +45,7 @@ services:
       - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
       - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #GENERAL
-      - "./mounts/webapi/logs:/var/log/api:Z"
+      - "./mounts/api-logs/logs:/var/log/api:Z"
       - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"

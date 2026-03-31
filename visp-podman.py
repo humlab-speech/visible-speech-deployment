@@ -675,7 +675,7 @@ def cmd_install(args):
     writable_dirs = [
         PROJECT_DIR / "mounts/apache/apache/uploads",
         PROJECT_DIR / "mounts/repositories",
-        PROJECT_DIR / "mounts/webapi/logs",
+        PROJECT_DIR / "mounts/api-logs/logs",
         PROJECT_DIR / "mounts/apache/apache/logs/apache2",
         PROJECT_DIR / "mounts/apache/apache/logs/shibboleth",
         PROJECT_DIR / "mounts/session-manager/logs",
@@ -1437,7 +1437,7 @@ def cmd_fix_permissions(args):
         paths = [
             Path("mounts/repositories"),
             Path("mounts/apache/apache/uploads"),
-            Path("mounts/webapi/logs"),
+            Path("mounts/api-logs/logs"),
             Path("mounts/apache/apache/logs/apache2"),
             Path("mounts/apache/apache/logs/shibboleth"),
             Path("mounts/session-manager/logs"),
