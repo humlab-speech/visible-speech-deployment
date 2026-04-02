@@ -334,7 +334,7 @@ whenever images, quadlets, or service names change.
 
 # Version management
 ./visp-podman.py deploy update          # pull latest external repos
-./visp-podman.py deploy status          # compare image labels vs repo HEAD
+./visp-podman.py deploy status          # comprehensive check: repos, images, third-party
 ```
 
 ---
