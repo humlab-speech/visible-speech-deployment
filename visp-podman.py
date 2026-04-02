@@ -693,7 +693,18 @@ def cmd_install(args):
             continue
         current_mode = d.stat().st_mode & 0o777
         if current_mode != 0o777:
-            d.chmod(0o777)
+            try:
+                d.chmod(0o777)
+            except PermissionError:
+                # Directory is owned by a subuid from rootless Podman — use podman unshare
+                result = subprocess.run(
+                    ["podman", "unshare", "chmod", "777", str(d)],
+                    capture_output=True,
+                    text=True,
+                )
+                if result.returncode != 0:
+                    print(color(f"  ✗ Failed to fix permissions on {d}: {result.stderr.strip()}", Colors.RED))
+                    continue
             perm_fixed += 1
     if perm_fixed:
         print(f"  Fixed permissions on {perm_fixed} directories (set to 777)")
