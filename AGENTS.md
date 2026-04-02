@@ -144,6 +144,148 @@ visible-speech-deployment/
 
 ---
 
+## WhisperVault Transcription Integration
+
+VISP uses **WhisperVault** (`external/WhisperVault/`) for speech-to-text transcription.
+WhisperVault is a FastAPI server that runs whisperx inside a fully network-isolated
+container (`--network=none`, `HF_HUB_OFFLINE=1`), communicating via a **Unix Domain Socket**.
+
+### Three-layer architecture
+
+```
+Webclient (Angular)  ──WebSocket──▶  Session-manager (Node.js)  ──UDS──▶  WhisperVault (Python/FastAPI)
+  UI controls                          Queue + orchestration                 ASR + alignment + diarization
+```
+
+1. **Webclient** (`external/webclient/src/app/components/transcribe-dialog/`):
+   - `transcribe-dialog.component.html` — UI: model dropdown, language dropdown, diarize
+     checkbox, collapsible "Advanced Options" panel
+   - `transcribe-dialog.component.ts` — sends `cmd: "transcribe"` over WebSocket with:
+     `{ project, session, bundle, language, model, diarize, advancedOptions: { beamSize,
+     repetitionPenalty, vad, vadOnset, conditionOnPreviousText } }`
+   - `app.module.ts` — must import both `ReactiveFormsModule` AND `FormsModule` (the
+     latter is needed for `ngModel` bindings in the advanced options panel)
+
+2. **Session-manager** (`external/session-manager/src/WhisperService.class.js`):
+   - Manages a MongoDB-backed transcription queue
+   - Stores items in `TranscriptionQueueItem` collection (schema in `ApiServer.class.js`)
+   - Converts language names → ISO 639-1 codes before sending to WhisperVault
+   - Calls `ensureModelPackage()` which may trigger a model reload
+   - Sends multipart `POST /transcribe` to WhisperVault over UDS
+
+3. **WhisperVault** (`external/WhisperVault/container/server.py`):
+   - Socket: host `mounts/whisper/api/whisperx.sock` → container `/run/api/whisperx.sock`
+   - Key endpoints: `GET /health`, `POST /reload`, `POST /transcribe`, `GET /packages`
+   - Uses `packages.json` for named model bundles
+
+### Parameter classification — reload-time vs per-request
+
+This is the **single most important thing** to understand. Some parameters are baked into the
+ASR model at load time (via `_build_asr_options()` → `_load_asr_model()`), and changing them
+requires a full `POST /reload` (takes 3–17s). Others are per-request and passed in the
+`POST /transcribe` params JSON.
+
+| Parameter | Type | Where set | Notes |
+|-----------|------|-----------|-------|
+| `beam_size` | **reload-time** | `_build_asr_options()` | Clamped 5–10 in session-manager |
+| `repetition_penalty` | **reload-time** | `_build_asr_options()` | Default 1.3 |
+| `condition_on_previous_text` | **reload-time** | `_build_asr_options()` | Default false |
+| `vad_method` | **reload-time** | `_load_asr_model(vad_method=)` | `"pyannote"` or `"none"` |
+| `vad_onset` | **reload-time** | `_load_asr_model(vad_options=)` | Default 0.3 |
+| `model` (path) | **reload-time** | `_load_asr_model()` | Switched via package name |
+| `language` | **per-request** | `/transcribe` params | ISO 639-1 code or null (auto) |
+| `diarize` | **per-request** | `/transcribe` params | Boolean |
+| `batch_size` | **per-request** | `/transcribe` params | |
+| `output_format` | **per-request** | `/transcribe` params | `["srt", "txt"]` |
+
+### Model switching via packages.json
+
+`mounts/whisper/models/packages.json` defines named model bundles:
+
+```json
+{
+    "sv-standard": {
+        "model": "/models/extra/kb-whisper-large-ct2",
+        "align_model": "/models/extra/wav2vec2-large-voxrex-swedish",
+        "diarize_model": "/models/extra/pyannote-speaker-diarization",
+        "language": "sv", "compute_type": "float32"
+    },
+    "multilingual": {
+        "model": "/models/extra/faster-whisper-large-v3-ct2",
+        "align_model": null,
+        "diarize_model": "/models/extra/pyannote-speaker-diarization",
+        "language": null, "compute_type": "float32"
+    }
+}
+```
+
+Session-manager's `ensureModelPackage(modelId, advancedOptions)`:
+- Maps `"kb-whisper"` → package `"sv-standard"`, `"whisper"` → `"multilingual"`
+- Merges reload-time advanced options (`beam_size`, `repetition_penalty`, etc.) into the
+  `/reload` body alongside the package name
+- Tracks both `currentPackage` AND `currentOverridesKey` (JSON hash of the overrides) to
+  skip unnecessary reloads — a reload only happens when either changes
+- WhisperVault's `/reload` endpoint expands the package, then applies inline overrides on top
+
+### Language handling — name-to-ISO mapping
+
+The webclient sends full English names (e.g. `"Swedish"`, `"English"`). WhisperVault expects
+ISO 639-1 codes (`"sv"`, `"en"`). The conversion happens in session-manager:
+
+- `this.languageToIso` — a complete name→code map in `WhisperService.class.js` constructor
+  (matches whisperx's `LANGUAGES` dict in `whisperx/utils.py`)
+- `"Automatic Detection"` → `null` (WhisperVault auto-detects)
+- If a name is not found in the map, the raw lowercased value is passed through (fallback)
+
+⚠️ If you add a new language, update BOTH:
+1. `availableLanguages` in webclient's `transcribe-dialog.component.ts`
+2. `this.languageToIso` in session-manager's `WhisperService.class.js`
+
+### Mongoose schema gotcha
+
+The `TranscriptionQueueItem` schema in `ApiServer.class.js` uses Mongoose **strict mode**
+(the default). Any field NOT declared in the schema is **silently stripped** on save. If you
+add a new field to the transcription pipeline (like `diarize` or `advancedOptions`), you MUST
+add it to ALL of:
+
+1. **Mongoose schema** (`ApiServer.class.js` → `TranscriptionQueueItem`)
+2. **Queue item creation** (new items in `WhisperService.class.js`)
+3. **Queue item re-queue** (existing items re-queued for re-transcription)
+4. **`initTranscription()`** where the queue item is read and params are built
+
+### Alignment model constraints (offline mode)
+
+WhisperVault runs with `HF_HUB_OFFLINE=1` — it cannot download models at runtime.
+Alignment model availability by language:
+
+| Language | Alignment | Source |
+|----------|-----------|--------|
+| Swedish (`sv`) | ✅ local wav2vec2-voxrex-swedish | Declared in `packages.json` |
+| English (`en`) | ✅ torchaudio built-in | Cached in `torch/hub/` |
+| Other languages | ❌ fails offline | HuggingFace models need download |
+
+For unsupported languages, transcription still works but without word-level alignment.
+The server returns HTTP 422 with a hint to pass `no_align=true`. This could be handled
+automatically in session-manager in the future.
+
+### Diarization
+
+Speaker diarization uses pyannote-speaker-diarization (language-agnostic, acoustic features).
+It is a **per-request** param (`diarize: true` in `/transcribe` params). The diarization
+pipeline is lazily loaded on first use and cached. SRT output includes `[SPEAKER_00]` etc.
+labels when diarization is enabled.
+
+### Idle unload behaviour
+
+WhisperVault automatically unloads all models after `WHISPERX_IDLE_TIMEOUT_SECONDS` (default
+120s) of inactivity to free memory. On the next `/transcribe` request it auto-reloads from
+the saved config. This means the first transcription after idle takes longer (model load time).
+Session-manager's `currentPackage` / `currentOverridesKey` tracking handles this correctly —
+WhisperVault reloads from its own saved config, and session-manager will re-issue a `/reload`
+if needed on the next request.
+
+---
+
 ## Managing the system — always use `visp-podman.py`
 
 `visp-podman.py` is the single entry point for all operational tasks. Keep it up to date

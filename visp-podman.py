@@ -98,7 +98,6 @@ def get_quadlets_dir(mode: str = None) -> Path:
 SERVICES = [
     # Networks first
     Service("visp-net", "network", "visp-net.network"),
-    Service("whisper-net", "network", "whisper-net.network"),
     Service("octra-net", "network", "octra-net.network"),
     # Then containers in dependency order
     Service("mongo", "container", "mongo.container"),
@@ -106,7 +105,6 @@ SERVICES = [
     Service("matomo", "container", "matomo.container"),
     Service("traefik", "container", "traefik.container"),
     Service("whisperx", "container", "whisperx.container"),
-    Service("whisperx-nginx", "container", "whisperx-nginx.container"),
     Service("wsrng-server", "container", "wsrng-server.container"),
     Service("session-manager", "container", "session-manager.container"),
     Service("emu-webapp", "container", "emu-webapp.container"),
@@ -666,6 +664,15 @@ def cmd_install(args):
         print("  All mount directories already exist")
     print()
 
+    # Ensure the WhisperVault Unix socket directory exists.
+    # Both whisperx and session-manager mount /tmp/whisperx-api; Podman
+    # refuses to start if the host path does not exist.
+    whisper_sock_dir = Path("/tmp/whisperx-api")
+    if not whisper_sock_dir.exists():
+        whisper_sock_dir.mkdir(parents=True, exist_ok=True)
+        print(color("  ✓ Created /tmp/whisperx-api (WhisperVault socket directory)", Colors.GREEN))
+    print()
+
     # Ensure container-writable directories have correct permissions.
     # In rootless Podman the host user maps to UID 0 inside the container,
     # so directories owned by the host user are root:root (755) in the
@@ -904,12 +911,6 @@ BUILD_CONFIGS = {
         "dockerfile": "container/Containerfile",
         "image": "visp-whisperx",
         "description": "WhisperX transcription server (network-isolated, communicates via Unix socket)",
-    },
-    "whisperx-nginx": {
-        "context": "./external/WhisperVault/container/nginx",
-        "dockerfile": "Containerfile",
-        "image": "visp-whisperx-nginx",
-        "description": "nginx sidecar that proxies whisperx Unix socket to TCP for other containers",
     },
     # Session images - used by session-manager to spawn user sessions
     "operations-session": {

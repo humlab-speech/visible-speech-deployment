@@ -23,7 +23,6 @@ class NetworkManager:
     def ensure_networks_exist(self) -> bool:
         required_networks = [
             {"name": "systemd-visp-net", "internal": False},
-            {"name": "systemd-whisper-net", "internal": True},
             {"name": "systemd-octra-net", "internal": True},
         ]
 

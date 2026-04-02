@@ -1,3 +1,0 @@
-[Network]
-Internal=true
-# Netavark backend supports DNS with Internal=true (unlike CNI)
