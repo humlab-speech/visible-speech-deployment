@@ -444,6 +444,7 @@ class DeployManager:
         print(tabulate(status_results, headers="keys", tablefmt="grid"))
 
         # Check derived images (images that depend on other images, e.g. rstudio/jupyter → operations-session)
+        # Also check composite images like apache (embeds webclient in prod mode)
         derived_image_warnings = []
         try:
             import importlib.util
@@ -455,6 +456,66 @@ class DeployManager:
                 vp = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(vp)  # type: ignore[union-attr]
                 build_configs = getattr(vp, "BUILD_CONFIGS", {})
+
+                # Check images with source_repo (e.g. apache embeds webclient)
+                for build_name, cfg in build_configs.items():
+                    source_repo = cfg.get("source_repo")
+                    if not source_repo or not self.runner:
+                        continue
+
+                    image_name = f"{cfg['image']}:latest"
+                    source_path = self.basedir / source_repo
+                    source_repo_name = Path(source_repo).name
+
+                    if not self._check_image_exists(image_name):
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": source_repo_name,
+                                "Status": "❌ NOT BUILT",
+                                "Detail": f"Run: ./visp-podman.py build {build_name}",
+                            }
+                        )
+                        continue
+
+                    image_commit = self._get_image_label(image_name, "git.commit")
+                    image_ts = self._get_image_label(image_name, "build.timestamp")
+                    try:
+                        repo = GitRepository(str(source_path))
+                        source_commit = repo.get_current_commit()
+                    except Exception:  # noqa: BLE001
+                        source_commit = None
+
+                    if not image_commit:
+                        detail = f"Built {image_ts[:19]}" if image_ts else "No labels"
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": source_repo_name,
+                                "Status": "⚠️ NO LABEL",
+                                "Detail": f"{detail} — rebuild recommended",
+                            }
+                        )
+                    elif source_commit and image_commit == source_commit:
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": source_repo_name,
+                                "Status": "✅ UP TO DATE",
+                                "Detail": f"Built {image_ts[:19]}" if image_ts else f"Commit {image_commit[:8]}",
+                            }
+                        )
+                    elif source_commit:
+                        derived_image_warnings.append(
+                            {
+                                "Image": build_name,
+                                "Parent": source_repo_name,
+                                "Status": "⚠️ STALE (prod rebuild needed)",
+                                "Detail": f"Image has {image_commit[:8]}, source at {source_commit[:8]}",
+                            }
+                        )
+
+                # Check images with depends_on (e.g. rstudio/jupyter → operations-session)
 
                 for build_name, cfg in build_configs.items():
                     parent_name = cfg.get("depends_on")
