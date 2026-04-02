@@ -157,6 +157,18 @@ class BuildManager:
                     )
                     if extra_dirty.returncode == 0 and extra_dirty.stdout.strip():
                         cmd.extend(["--label", f"git.dirty.{name}=true"])
+
+            # When source_repo is set, git.commit tracks the external source but
+            # Dockerfile/config changes live in the deployment repo.  Record the
+            # deployment repo commit too so deploy status can detect stale images
+            # when only the Dockerfile changed.
+            if source_repo:
+                deploy_path = Path(__file__).parent.parent.resolve()
+                deploy_commit = subprocess.run(
+                    ["git", "rev-parse", "HEAD"], cwd=deploy_path, capture_output=True, text=True, check=False
+                )
+                if deploy_commit.returncode == 0:
+                    cmd.extend(["--label", f"git.commit.deploy={deploy_commit.stdout.strip()}"])
         except Exception:
             # If git info fails, just continue without labels
             pass

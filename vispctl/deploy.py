@@ -511,6 +511,17 @@ class DeployManager:
                         except Exception:  # noqa: BLE001
                             source_commit = None
 
+                        # Also check if the deployment repo (Dockerfiles, configs) changed
+                        deploy_label = self._get_image_label(image_name, "git.commit.deploy")
+                        try:
+                            deploy_repo = GitRepository(str(self.basedir))
+                            deploy_commit = deploy_repo.get_current_commit()
+                        except Exception:  # noqa: BLE001
+                            deploy_commit = None
+
+                        source_stale = source_commit and image_commit and image_commit != source_commit
+                        deploy_stale = deploy_commit and deploy_label and deploy_label != deploy_commit
+
                         if not image_commit:
                             image_status_rows.append(
                                 {
@@ -520,22 +531,41 @@ class DeployManager:
                                     "Detail": f"{built_str} — rebuild recommended" if built_str else "No labels",
                                 }
                             )
-                        elif source_commit and image_commit == source_commit:
+                        elif source_stale and deploy_stale:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ STALE",
+                                    "Detail": f"Source ({image_commit[:8]}→{source_commit[:8]}) "
+                                    f"+ Dockerfile ({deploy_label[:8]}→{deploy_commit[:8]})",
+                                }
+                            )
+                        elif source_stale:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ STALE",
+                                    "Detail": f"Source: image has {image_commit[:8]}, now at {source_commit[:8]}",
+                                }
+                            )
+                        elif deploy_stale:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ STALE",
+                                    "Detail": f"Dockerfile/config changed ({deploy_label[:8]}→{deploy_commit[:8]})",
+                                }
+                            )
+                        else:
                             image_status_rows.append(
                                 {
                                     "Image": build_name,
                                     "Tracks": parent,
                                     "Status": "✅ UP TO DATE",
                                     "Detail": built_str or f"Commit {image_commit[:8]}",
-                                }
-                            )
-                        elif source_commit:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ STALE",
-                                    "Detail": f"Image has {image_commit[:8]}, source at {source_commit[:8]}",
                                 }
                             )
 
@@ -575,15 +605,43 @@ class DeployManager:
                             )
 
                     # Standalone images (no source_repo, no depends_on) — e.g. octra
+                    # These have Dockerfiles in the deployment repo, so git.commit
+                    # tracks the deployment repo HEAD at build time.
                     else:
-                        image_status_rows.append(
-                            {
-                                "Image": build_name,
-                                "Tracks": parent,
-                                "Status": "✅ BUILT",
-                                "Detail": built_str or "No build timestamp",
-                            }
-                        )
+                        image_commit = self._get_image_label(image_name, "git.commit")
+                        try:
+                            deploy_repo = GitRepository(str(self.basedir))
+                            deploy_commit = deploy_repo.get_current_commit()
+                        except Exception:  # noqa: BLE001
+                            deploy_commit = None
+
+                        if image_commit and deploy_commit and image_commit == deploy_commit:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": "deployment repo",
+                                    "Status": "✅ UP TO DATE",
+                                    "Detail": built_str or f"Commit {image_commit[:8]}",
+                                }
+                            )
+                        elif image_commit and deploy_commit and image_commit != deploy_commit:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": "deployment repo",
+                                    "Status": "⚠️ STALE",
+                                    "Detail": f"Image has {image_commit[:8]}, repo at {deploy_commit[:8]}",
+                                }
+                            )
+                        else:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": "deployment repo",
+                                    "Status": "✅ BUILT",
+                                    "Detail": built_str or "No build label",
+                                }
+                            )
 
         except Exception:  # noqa: BLE001
             pass  # Non-fatal
@@ -592,6 +650,35 @@ class DeployManager:
             print("\n🐳 CONTAINER IMAGES (non-repo builds)")
             print("-" * 100)
             print(tabulate(image_status_rows, headers="keys", tablefmt="grid"))
+
+        # Show third-party (pulled) images — these are pinned in quadlet files
+        third_party_rows = []
+        try:
+            # Find Image= lines in quadlets that reference registries (not localhost/)
+            import glob
+
+            mode = "dev"  # TODO: detect current mode
+            quadlet_dir = self.basedir / "quadlets" / mode
+            for qfile in sorted(glob.glob(str(quadlet_dir / "*.container"))):
+                with open(qfile) as f:
+                    for line in f:
+                        if line.startswith("Image=") and "localhost/" not in line:
+                            image_ref = line.strip().split("=", 1)[1]
+                            svc_name = Path(qfile).stem
+                            # Check if image is pulled locally
+                            if self.runner:
+                                exists = self._check_image_exists(image_ref)
+                                status = "✅ Pulled" if exists else "❌ Not pulled"
+                            else:
+                                status = "?"
+                            third_party_rows.append({"Service": svc_name, "Image": image_ref, "Status": status})
+        except Exception:  # noqa: BLE001
+            pass
+
+        if third_party_rows:
+            print("\n📦 THIRD-PARTY IMAGES (from registries)")
+            print("-" * 100)
+            print(tabulate(third_party_rows, headers="keys", tablefmt="grid"))
 
         print("=" * 100)
 
