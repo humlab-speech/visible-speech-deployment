@@ -652,5 +652,7 @@ automatically, but `createProjects` is **not** set — it must be granted explic
   temporarily unavailable (e.g. due to podman socket issues on WSL).
 - Do not add files to `external/` by hand — use `visp-deploy.py update`.
 - Do not commit `.env`, `.env.secrets`, `mounts/mongo/data/`, `backups/`, or `.venv/`.
+- **Never `git push`** unless the user explicitly asks you to. You may commit freely, but
+  pushing is the user's decision.
 - **WSL-specific**: Do not use `127.0.0.1` in netsh portproxy commands — use the actual WSL IP
   address (e.g., `172.29.72.57`). Localhost forwarding does not work for rootless Podman on WSL.
