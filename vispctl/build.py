@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import json
 import shutil
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
 from .runner import Colors, Runner, color
+
+NODE_BUILD_MARKER = ".build-marker"
 
 
 class BuildManager:
@@ -244,6 +249,7 @@ class BuildManager:
             if res.returncode == 0:
                 verify_path = output_dir / verify_file
                 if verify_path.exists() or any(output_dir.iterdir()):
+                    self._write_node_build_marker(source_dir, output_dir)
                     print(color(f"  ✓ {name} built successfully", Colors.GREEN))
                     return True
                 print(color(f"  ✗ Build completed but {verify_file} not found", Colors.RED))
@@ -253,3 +259,36 @@ class BuildManager:
         except Exception as e:
             print(color(f"  ✗ {name} build error: {e}", Colors.RED))
             return False
+
+    @staticmethod
+    def _write_node_build_marker(source_dir: Path, output_dir: Path) -> None:
+        """Write a .build-marker JSON file into the output directory.
+
+        This records the source git commit so that deploy status can check
+        whether the build output matches the current source without relying
+        on container image labels (node builds don't produce images).
+        """
+        marker: dict[str, Any] = {"build_timestamp": datetime.now(timezone.utc).isoformat()}
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=source_dir,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                marker["git_commit"] = result.stdout.strip()
+            dirty = subprocess.run(
+                ["git", "diff", "--quiet"],
+                cwd=source_dir,
+                capture_output=True,
+                check=False,
+            )
+            marker["git_dirty"] = dirty.returncode != 0
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            (output_dir / NODE_BUILD_MARKER).write_text(json.dumps(marker, indent=2) + "\n")
+        except Exception:  # noqa: BLE001
+            pass

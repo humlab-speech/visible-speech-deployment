@@ -80,6 +80,51 @@ class DeployManager:
         rc, _, _ = self.runner.run_quiet(["podman", "image", "exists", image_name])
         return rc == 0
 
+    @staticmethod
+    def _get_node_build_status(component: str, current_commit: str, output_dir: Path) -> dict:
+        """Check build status for a Node.js component using its .build-marker file."""
+        from .build import NODE_BUILD_MARKER
+
+        marker_path = output_dir / NODE_BUILD_MARKER
+        if not output_dir.exists() or not marker_path.exists():
+            return {
+                "status": "❌ NOT BUILT",
+                "image_commit": "N/A",
+                "needs_rebuild": True,
+                "recommendation": f"Run: ./visp-podman.py build {component}",
+            }
+        try:
+            import json
+
+            marker = json.loads(marker_path.read_text())
+        except Exception:  # noqa: BLE001
+            return {
+                "status": "⚠️ UNKNOWN",
+                "image_commit": "N/A (bad marker)",
+                "needs_rebuild": None,
+                "recommendation": f"Rebuild recommended: ./visp-podman.py build {component}",
+            }
+
+        build_commit = marker.get("git_commit", "")
+        build_dirty = marker.get("git_dirty", False)
+        dirty_suffix = " ⚠️ DIRTY BUILD" if build_dirty else ""
+
+        if build_commit == current_commit:
+            return {
+                "status": f"✅ UP TO DATE{dirty_suffix}",
+                "image_commit": build_commit[:8],
+                "needs_rebuild": build_dirty,
+                "recommendation": "Build output matches source code"
+                if not build_dirty
+                else "Built from a dirty tree — rebuild from clean state recommended",
+            }
+        return {
+            "status": f"⚠️ STALE{dirty_suffix}",
+            "image_commit": build_commit[:8] if build_commit else "N/A",
+            "needs_rebuild": True,
+            "recommendation": f"Built from {build_commit[:8]}, source at {current_commit[:8]} - rebuild needed",
+        }
+
     def _get_build_status(self, component: str, current_commit: str) -> dict:
         """
         Check build status for a component.
@@ -91,9 +136,19 @@ class DeployManager:
         Returns:
             Dict with build_status, image_commit, and recommendation
         """
+        # Components built as Node.js projects (output to disk, no container image).
+        # These use a .build-marker file in the output directory.
+        node_build_output = {
+            "webclient": "external/webclient/dist",
+            "container-agent": "external/container-agent/dist",
+        }
+
+        marker_dir = node_build_output.get(component)
+        if marker_dir:
+            return self._get_node_build_status(component, current_commit, self.basedir / marker_dir)
+
         # Map component names to image names
         component_to_image = {
-            "webclient": "visp-apache:latest",  # webclient is in apache
             "session-manager": "visp-session-manager:latest",
             "wsrng-server": "visp-wsrng-server:latest",
             "emu-webapp-server": "visp-emu-webapp-server:latest",
