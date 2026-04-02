@@ -443,9 +443,14 @@ class DeployManager:
         print("-" * 100)
         print(tabulate(status_results, headers="keys", tablefmt="grid"))
 
-        # Check derived images (images that depend on other images, e.g. rstudio/jupyter → operations-session)
-        # Also check composite images like apache (embeds webclient in prod mode)
-        derived_image_warnings = []
+        # Check ALL container images from BUILD_CONFIGS
+        # This covers: images with source_repo (apache, operations-session),
+        # images with depends_on (rstudio, jupyter), and standalone images (octra).
+        # Images whose source is an external repo (session-manager, wsrng-server, etc.)
+        # are already tracked in the external repos table above — we skip those here
+        # to avoid duplication.
+        image_status_rows = []
+        external_repo_names = {name for name, _ in self.config.get_components()}
         try:
             import importlib.util
             import sys
@@ -457,122 +462,136 @@ class DeployManager:
                 spec.loader.exec_module(vp)  # type: ignore[union-attr]
                 build_configs = getattr(vp, "BUILD_CONFIGS", {})
 
-                # Check images with source_repo (e.g. apache embeds webclient)
                 for build_name, cfg in build_configs.items():
-                    source_repo = cfg.get("source_repo")
-                    if not source_repo or not self.runner:
+                    if not self.runner:
+                        continue
+
+                    # Skip images that are directly tracked as external repos
+                    # (their build context IS the external repo)
+                    context = cfg.get("context", "")
+                    is_external = any(
+                        context.rstrip("/").endswith(f"/{repo_name}") for repo_name in external_repo_names
+                    )
+                    if is_external and not cfg.get("source_repo") and not cfg.get("depends_on"):
                         continue
 
                     image_name = f"{cfg['image']}:latest"
-                    source_path = self.basedir / source_repo
-                    source_repo_name = Path(source_repo).name
+                    source_repo = cfg.get("source_repo")
+                    depends_on = cfg.get("depends_on")
+                    image_exists = self._check_image_exists(image_name)
+                    image_ts = self._get_image_label(image_name, "build.timestamp") if image_exists else None
+                    built_str = f"Built {image_ts[:19]}" if image_ts else ""
 
-                    if not self._check_image_exists(image_name):
-                        derived_image_warnings.append(
+                    # Determine what this image depends on (for display)
+                    if source_repo:
+                        parent = Path(source_repo).name
+                    elif depends_on:
+                        parent = depends_on
+                    else:
+                        parent = "—"
+
+                    if not image_exists:
+                        image_status_rows.append(
                             {
                                 "Image": build_name,
-                                "Parent": source_repo_name,
+                                "Tracks": parent,
                                 "Status": "❌ NOT BUILT",
                                 "Detail": f"Run: ./visp-podman.py build {build_name}",
                             }
                         )
                         continue
 
-                    image_commit = self._get_image_label(image_name, "git.commit")
-                    image_ts = self._get_image_label(image_name, "build.timestamp")
-                    try:
-                        repo = GitRepository(str(source_path))
-                        source_commit = repo.get_current_commit()
-                    except Exception:  # noqa: BLE001
-                        source_commit = None
+                    # Check source_repo match (e.g. apache tracks webclient, operations-session tracks container-agent)
+                    if source_repo:
+                        source_path = self.basedir / source_repo
+                        image_commit = self._get_image_label(image_name, "git.commit")
+                        try:
+                            repo = GitRepository(str(source_path))
+                            source_commit = repo.get_current_commit()
+                        except Exception:  # noqa: BLE001
+                            source_commit = None
 
-                    if not image_commit:
-                        detail = f"Built {image_ts[:19]}" if image_ts else "No labels"
-                        derived_image_warnings.append(
+                        if not image_commit:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ NO LABEL",
+                                    "Detail": f"{built_str} — rebuild recommended" if built_str else "No labels",
+                                }
+                            )
+                        elif source_commit and image_commit == source_commit:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "✅ UP TO DATE",
+                                    "Detail": built_str or f"Commit {image_commit[:8]}",
+                                }
+                            )
+                        elif source_commit:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ STALE",
+                                    "Detail": f"Image has {image_commit[:8]}, source at {source_commit[:8]}",
+                                }
+                            )
+
+                    # Check depends_on (e.g. rstudio → operations-session)
+                    elif depends_on:
+                        parent_cfg = build_configs.get(depends_on, {})
+                        parent_image = f"{parent_cfg['image']}:latest"
+                        child_ts = image_ts
+                        parent_ts = self._get_image_label(parent_image, "build.timestamp")
+
+                        if not child_ts:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ NO TIMESTAMP",
+                                    "Detail": "Rebuild recommended",
+                                }
+                            )
+                        elif parent_ts and child_ts < parent_ts:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "⚠️ STALE",
+                                    "Detail": f"Built {child_ts[:19]}, parent rebuilt {parent_ts[:19]}",
+                                }
+                            )
+                        else:
+                            image_status_rows.append(
+                                {
+                                    "Image": build_name,
+                                    "Tracks": parent,
+                                    "Status": "✅ UP TO DATE",
+                                    "Detail": built_str,
+                                }
+                            )
+
+                    # Standalone images (no source_repo, no depends_on) — e.g. octra
+                    else:
+                        image_status_rows.append(
                             {
                                 "Image": build_name,
-                                "Parent": source_repo_name,
-                                "Status": "⚠️ NO LABEL",
-                                "Detail": f"{detail} — rebuild recommended",
-                            }
-                        )
-                    elif source_commit and image_commit == source_commit:
-                        derived_image_warnings.append(
-                            {
-                                "Image": build_name,
-                                "Parent": source_repo_name,
-                                "Status": "✅ UP TO DATE",
-                                "Detail": f"Built {image_ts[:19]}" if image_ts else f"Commit {image_commit[:8]}",
-                            }
-                        )
-                    elif source_commit:
-                        derived_image_warnings.append(
-                            {
-                                "Image": build_name,
-                                "Parent": source_repo_name,
-                                "Status": "⚠️ STALE (prod rebuild needed)",
-                                "Detail": f"Image has {image_commit[:8]}, source at {source_commit[:8]}",
+                                "Tracks": parent,
+                                "Status": "✅ BUILT",
+                                "Detail": built_str or "No build timestamp",
                             }
                         )
 
-                # Check images with depends_on (e.g. rstudio/jupyter → operations-session)
-
-                for build_name, cfg in build_configs.items():
-                    parent_name = cfg.get("depends_on")
-                    if not parent_name or not self.runner:
-                        continue
-
-                    parent_cfg = build_configs.get(parent_name, {})
-                    child_image = f"{cfg['image']}:latest"
-                    parent_image = f"{parent_cfg['image']}:latest"
-
-                    # Get build timestamps
-                    child_ts = self._get_image_label(child_image, "build.timestamp")
-                    parent_ts = self._get_image_label(parent_image, "build.timestamp")
-
-                    if not child_ts and self._check_image_exists(child_image):
-                        derived_image_warnings.append(
-                            {
-                                "Image": build_name,
-                                "Parent": parent_name,
-                                "Status": "⚠️ NO TIMESTAMP",
-                                "Detail": "Rebuild recommended (no build.timestamp label)",
-                            }
-                        )
-                    elif not child_ts:
-                        derived_image_warnings.append(
-                            {
-                                "Image": build_name,
-                                "Parent": parent_name,
-                                "Status": "❌ NOT BUILT",
-                                "Detail": f"Run: ./visp-podman.py build {build_name}",
-                            }
-                        )
-                    elif parent_ts and child_ts < parent_ts:
-                        derived_image_warnings.append(
-                            {
-                                "Image": build_name,
-                                "Parent": parent_name,
-                                "Status": "⚠️ STALE",
-                                "Detail": f"Built {child_ts[:19]}, parent rebuilt {parent_ts[:19]}",
-                            }
-                        )
-                    elif parent_ts:
-                        derived_image_warnings.append(
-                            {
-                                "Image": build_name,
-                                "Parent": parent_name,
-                                "Status": "✅ UP TO DATE",
-                                "Detail": f"Built {child_ts[:19]}",
-                            }
-                        )
         except Exception:  # noqa: BLE001
             pass  # Non-fatal
 
-        if derived_image_warnings:
-            print("\n🔗 DERIVED IMAGES (depend on other images)")
+        if image_status_rows:
+            print("\n🐳 CONTAINER IMAGES (non-repo builds)")
             print("-" * 100)
-            print(tabulate(derived_image_warnings, headers="keys", tablefmt="grid"))
+            print(tabulate(image_status_rows, headers="keys", tablefmt="grid"))
 
         print("=" * 100)
 
@@ -610,15 +629,15 @@ class DeployManager:
             for w in node_build_warnings:
                 summary_lines.append(w)
 
-        # Add derived image warnings to summary
-        stale_derived = [d for d in derived_image_warnings if d["Status"].startswith("⚠️ STALE")]
-        not_built_derived = [d for d in derived_image_warnings if d["Status"].startswith("❌ NOT BUILT")]
-        if stale_derived:
-            names = [d["Image"] for d in stale_derived]
-            summary_lines.append(f"⚠️  Derived images need rebuild (parent changed): {', '.join(names)}")
-        if not_built_derived:
-            names = [d["Image"] for d in not_built_derived]
-            summary_lines.append(f"❌ Derived images not built: {', '.join(names)}")
+        # Add container image warnings to summary
+        stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠️ STALE")]
+        not_built_images = [d for d in image_status_rows if d["Status"].startswith("❌ NOT BUILT")]
+        if stale_images:
+            names = [d["Image"] for d in stale_images]
+            summary_lines.append(f"⚠️  Container images need rebuild: {', '.join(names)}")
+        if not_built_images:
+            names = [d["Image"] for d in not_built_images]
+            summary_lines.append(f"❌ Container images not built: {', '.join(names)}")
 
         if (
             not repos_with_changes
@@ -627,8 +646,8 @@ class DeployManager:
             and not node_build_warnings
             and not needs_rebuild
             and not not_built
-            and not stale_derived
-            and not not_built_derived
+            and not stale_images
+            and not not_built_images
         ):
             summary_lines.append("✅ All repositories are clean and synced!")
         else:
