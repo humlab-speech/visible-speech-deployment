@@ -25,7 +25,7 @@ Volume=/run/user/@@UID@@/podman/podman.sock:/var/run/docker.sock:Z
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 Volume=@@PROJECT_DIR@@/mounts/repository-template:/repository-template:Z
 Volume=@@PROJECT_DIR@@/mounts/transcription-queued:/transcription-queued:Z
-Volume=/tmp/whisperx-api:/run/whisperx:ro,z
+Volume=@@PROJECT_DIR@@/mounts/whisper/api:/run/whisperx:ro,z
 PodmanArgs=--cgroups=disabled --dns=10.89.1.1 --dns=10.89.0.1
 
 [Service]

@@ -37,7 +37,7 @@
     network: `GRADIO_WHISPERX_ENDPOINT=http://whisper:7860`
   - WhisperVault's transcription container runs with `--network=none` — it **cannot** be on
     any network. The only IPC path is a Unix Domain Socket at
-    `/tmp/whisperx-api/whisperx.sock` on the host.
+    `mounts/whisper/api/whisperx.sock` on the host.
   - `session-manager` is also a container — it cannot reach a host socket directly unless
     the socket directory is bind-mounted into it.
 
@@ -48,14 +48,14 @@
   option — no extra packages, no extra container, no extra moving part.
 
   ```
-  [whisperx]   --network=none  ←→  /tmp/whisperx-api/whisperx.sock
+  [whisperx]   --network=none  ←→  mounts/whisper/api/whisperx.sock
                                           ↑ bind-mounted into session-manager
   [session-manager]  →  http.request({ socketPath: '/run/whisperx/whisperx.sock',
                                         path: '/transcribe', method: 'POST', ... })
   ```
 
   - `whisperx` stays `Network=none` — fully air-gapped
-  - `/tmp/whisperx-api` on the host is bind-mounted into both containers
+  - `mounts/whisper/api` on the host is bind-mounted into both containers
     (`/run/api` in whisperx, `/run/whisperx` in session-manager)
   - No network interface involved at any point; socket never leaves the host
   - `whisper-net` Podman network is no longer needed for whisper
@@ -107,7 +107,7 @@
        Image=localhost/visp-whisperx:latest
        Network=none                          # air-gapped
        Volume=%h/.../mounts/whisper/models:/models/extra:ro,Z
-       Volume=/tmp/whisperx-api:/run/api:Z   # socket dir
+       Volume=%h/.../mounts/whisper/api:/run/api:Z   # socket dir
        Environment=WHISPERX_MODEL=/models/extra/kb-whisper-large-ct2
        Environment=WHISPERX_LANGUAGE=sv
        Environment=WHISPERX_DEVICE=cpu
@@ -119,7 +119,7 @@
        ContainerName=whisperx-nginx
        Image=localhost/visp-whisperx-nginx:latest
        Network=whisper-net.network
-       Volume=/tmp/whisperx-api:/run/api:ro,z  # read-only access to socket
+       Volume=%h/.../mounts/whisper/api:/run/api:ro,z  # read-only access to socket
        ```
 
   4. **Update `session-manager` quadlet**:
@@ -178,7 +178,7 @@
     After=... whisperx.service mongo.service
     # No Requires= for whisperx — transcription must fail gracefully if whisper not running
     Environment=WHISPERX_SOCKET_PATH=/run/whisperx/whisperx.sock
-    Volume=/tmp/whisperx-api:/run/whisperx:ro,Z
+    Volume=%h/.../mounts/whisper/api:/run/whisperx:ro,Z
     ```
     Removed `GRADIO_WHISPERX_ENDPOINT`, `BASIC_AUTH_USERNAME`, `BASIC_AUTH_PASSWORD`.
     Note: session-manager quadlets still have the old `whisperx-nginx` references from the

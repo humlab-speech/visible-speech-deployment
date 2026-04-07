@@ -665,12 +665,12 @@ def cmd_install(args):
     print()
 
     # Ensure the WhisperVault Unix socket directory exists.
-    # Both whisperx and session-manager mount /tmp/whisperx-api; Podman
+    # Both whisperx and session-manager mount mounts/whisper/api; Podman
     # refuses to start if the host path does not exist.
-    whisper_sock_dir = Path("/tmp/whisperx-api")
+    whisper_sock_dir = PROJECT_DIR / "mounts" / "whisper" / "api"
     if not whisper_sock_dir.exists():
         whisper_sock_dir.mkdir(parents=True, exist_ok=True)
-        print(color("  ✓ Created /tmp/whisperx-api (WhisperVault socket directory)", Colors.GREEN))
+        print(color("  ✓ Created mounts/whisper/api/ (WhisperVault socket directory)", Colors.GREEN))
     print()
 
     # Ensure container-writable directories have correct permissions.
