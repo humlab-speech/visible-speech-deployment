@@ -33,12 +33,14 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
     # Monkeypatch BuildManager in the loaded module
     monkeypatch.setattr(vp, "BuildManager", FakeBM)
 
-    # Test node target
-    args = types.SimpleNamespace(service="container-agent", list=False, no_cache=False, pull=False, config=None)
+    # Test node target (single service)
+    args = types.SimpleNamespace(
+        services=["container-agent"], list=False, no_cache=False, pull=False, config=None, force=True
+    )
     vp.cmd_build(args)
     assert called.get("node")[0] == "container-agent"
 
-    # Test image build path
-    args2 = types.SimpleNamespace(service="apache", list=False, no_cache=False, pull=False, config=None)
+    # Test image build path (single service)
+    args2 = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True)
     vp.cmd_build(args2)
     assert "apache" in called.get("images", [])

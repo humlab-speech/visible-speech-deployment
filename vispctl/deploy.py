@@ -689,42 +689,98 @@ class DeployManager:
         needs_rebuild = [r for r in status_results if r.get("Build Status", "").startswith("⚠️ STALE")]
         not_built = [r for r in status_results if r.get("Build Status", "").startswith("❌ NOT BUILT")]
 
+        # Add container image warnings to summary
+        stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠️ STALE")]
+        not_built_images = [d for d in image_status_rows if d["Status"].startswith("❌ NOT BUILT")]
+
+        # ── Situation overview ────────────────────────────────────────
+        if repos_with_changes:
+            summary_lines.append(f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}")
+
+        if repos_ahead:
+            summary_lines.append(f"🚀 Repositories ahead of remote: {', '.join(repos_ahead)}")
+
+        if repos_behind:
+            summary_lines.append(f"⬇️  Repositories behind remote: {', '.join(repos_behind)}")
+
         if not_built:
             names = [r["Repository"] for r in not_built]
             summary_lines.append(f"❌ Components not built: {', '.join(names)}")
-            summary_lines.append("   Run: ./visp-podman.py build all")
 
         if needs_rebuild:
             names = [r["Repository"] for r in needs_rebuild]
             summary_lines.append(f"⚠️  Components need rebuild (source changed): {', '.join(names)}")
-            summary_lines.append("   Run: ./visp-podman.py build <component>")
 
-        if repos_with_changes:
-            summary_lines.append(f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}")
-            summary_lines.append(f"   Total: {len(repos_with_changes)} repo(s) have local changes")
-
-        if repos_ahead:
-            summary_lines.append(f"🚀 Repositories ahead of remote: {', '.join(repos_ahead)}")
-            summary_lines.append(f"   Total: {len(repos_ahead)} repo(s) need to push")
-
-        if repos_behind:
-            summary_lines.append(f"⬇️  Repositories behind remote: {', '.join(repos_behind)}")
-            summary_lines.append(f"   Total: {len(repos_behind)} repo(s) need to pull")
-
-        if node_build_warnings:
-            summary_lines.append("\n❌ Node.js build outputs missing (bind-mounts will fail):")
-            for w in node_build_warnings:
-                summary_lines.append(w)
-
-        # Add container image warnings to summary
-        stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠️ STALE")]
-        not_built_images = [d for d in image_status_rows if d["Status"].startswith("❌ NOT BUILT")]
-        if stale_images:
-            names = [d["Image"] for d in stale_images]
-            summary_lines.append(f"⚠️  Container images need rebuild: {', '.join(names)}")
         if not_built_images:
             names = [d["Image"] for d in not_built_images]
             summary_lines.append(f"❌ Container images not built: {', '.join(names)}")
+
+        if stale_images:
+            names = [d["Image"] for d in stale_images]
+            summary_lines.append(f"⚠️  Container images need rebuild: {', '.join(names)}")
+
+        if node_build_warnings:
+            summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
+            for w in node_build_warnings:
+                summary_lines.append(w)
+
+        # ── Recommended actions (copy-pasteable) ──────────────────────
+        actions: list[str] = []
+
+        if repos_behind:
+            actions.append("./visp-podman.py deploy update")
+
+        # Collect everything that needs building into one command
+        to_build: list[str] = []
+        if not_built:
+            to_build.extend(r["Repository"] for r in not_built)
+        if needs_rebuild:
+            to_build.extend(r["Repository"] for r in needs_rebuild)
+        if not_built_images:
+            to_build.extend(d["Image"] for d in not_built_images)
+        if stale_images:
+            to_build.extend(d["Image"] for d in stale_images)
+        # Node build warnings already recommend per-service builds
+        if node_build_warnings:
+            try:
+                import importlib.util as _ilu
+                import sys as _sys
+
+                _sys.path.insert(0, str(self.basedir))
+                _spec = _ilu.spec_from_file_location("_vp", str(self.basedir / "visp-podman.py"))
+                if _spec and _spec.loader:
+                    _vp = _ilu.module_from_spec(_spec)
+                    _spec.loader.exec_module(_vp)
+                    for nb_name, nb_cfg in getattr(_vp, "NODE_BUILD_CONFIGS", {}).items():
+                        output_dir = self.basedir / nb_cfg["output"]
+                        verify = nb_cfg.get("verify_file", "")
+                        verify_path = output_dir / verify if verify else output_dir
+                        if not verify_path.exists() and nb_name not in to_build:
+                            to_build.append(nb_name)
+            except Exception:  # noqa: BLE001
+                pass
+
+        # De-duplicate while preserving order
+        seen: set[str] = set()
+        unique_builds: list[str] = []
+        for name in to_build:
+            if name not in seen:
+                seen.add(name)
+                unique_builds.append(name)
+
+        if unique_builds:
+            actions.append(f"./visp-podman.py build {' '.join(unique_builds)}")
+
+        # If any images were rebuilt, suggest restart
+        restart_candidates: list[str] = []
+        if needs_rebuild:
+            restart_candidates.extend(r["Repository"] for r in needs_rebuild)
+        if stale_images:
+            restart_candidates.extend(d["Image"] for d in stale_images)
+        if restart_candidates:
+            seen_r: set[str] = set()
+            unique_restarts = [n for n in restart_candidates if n not in seen_r and not seen_r.add(n)]  # type: ignore[func-returns-value]
+            actions.append(f"./visp-podman.py restart {' '.join(unique_restarts)}")
 
         if (
             not repos_with_changes
@@ -737,9 +793,11 @@ class DeployManager:
             and not not_built_images
         ):
             summary_lines.append("✅ All repositories are clean and synced!")
-        else:
-            if repos_with_changes or repos_ahead or repos_behind:
-                summary_lines.append("   Use 'git status' in each repo for details")
+        elif actions:
+            summary_lines.append("")
+            summary_lines.append("Recommended actions:")
+            for i, cmd in enumerate(actions, 1):
+                summary_lines.append(f"  {i}. {cmd}")
 
         for line in summary_lines:
             print(line)

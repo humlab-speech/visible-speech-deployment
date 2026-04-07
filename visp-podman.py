@@ -979,6 +979,66 @@ BUILDABLE_SERVICES = list(BUILD_CONFIGS.keys())
 ALL_BUILDABLE = BUILDABLE_SERVICES + list(NODE_BUILD_CONFIGS.keys())
 
 
+def _resolve_build_order(requested: list[str]) -> tuple[list[str], list[str]]:
+    """Resolve build dependencies and return services in correct build order.
+
+    Returns (ordered_list, auto_added_list).  Node builds come before container
+    builds so that artifacts (e.g. container-agent/dist) are ready when images
+    that need them are built.  Within each group, dependencies are respected
+    via topological sort; ties are broken alphabetically.
+    """
+    # Collect dependency edges from build configs
+    deps: dict[str, list[str]] = {}
+    for name, cfg in BUILD_CONFIGS.items():
+        d = []
+        if cfg.get("depends_on"):
+            d.append(cfg["depends_on"])
+        if cfg.get("prepare_context") and cfg["prepare_context"] in NODE_BUILD_CONFIGS:
+            d.append(cfg["prepare_context"])
+        if d:
+            deps[name] = d
+
+    # Expand requested set with transitive dependencies
+    original = set(requested)
+    needed: set[str] = set()
+
+    def _add(name: str) -> None:
+        if name in needed:
+            return
+        needed.add(name)
+        for dep in deps.get(name, []):
+            _add(dep)
+
+    for name in requested:
+        _add(name)
+
+    auto_added = sorted(needed - original)
+
+    # Topological sort with tie-breaking: node builds first, then alphabetical
+    node_names = set(NODE_BUILD_CONFIGS.keys())
+
+    in_deg = {n: 0 for n in needed}
+    fwd: dict[str, list[str]] = {n: [] for n in needed}
+    for n in needed:
+        for dep in deps.get(n, []):
+            if dep in needed:
+                fwd[dep].append(n)
+                in_deg[n] += 1
+
+    ready = [n for n in needed if in_deg[n] == 0]
+    result: list[str] = []
+    while ready:
+        ready.sort(key=lambda n: (0 if n in node_names else 1, n))
+        n = ready.pop(0)
+        result.append(n)
+        for dependent in fwd[n]:
+            in_deg[dependent] -= 1
+            if in_deg[dependent] == 0:
+                ready.append(dependent)
+
+    return result, auto_added
+
+
 def prepare_build_context(name: str, config: dict) -> bool:
     """
     Prepare the build context for images that need extra files copied in.
@@ -1000,10 +1060,12 @@ def build_node_project(name: str, config: dict, no_cache: bool = False, build_co
 
 
 def cmd_build(args):
-    """Build container images.
+    """Build container images and node projects.
 
-    Delegates image and node builds to BuildManager.
-    Checks version drift before building.
+    Accepts one or more service names (or 'all').  Dependencies are
+    automatically added and the build order is resolved via topological
+    sort — node builds before container images, and base images before
+    those that depend on them.
     """
     # Handle --list flag
     if getattr(args, "list", False):
@@ -1012,37 +1074,47 @@ def cmd_build(args):
 
     no_cache = getattr(args, "no_cache", False)
     pull = getattr(args, "pull", False)
-    service = getattr(args, "service", "all")
+    raw_services = getattr(args, "services", ["all"])
     build_config = getattr(args, "config", None)
     force = getattr(args, "force", False)
 
-    # Check version drift before building (unless --force)
-    if not force:
-        from pathlib import Path
+    # Resolve "all" → full list; otherwise validate names
+    if "all" in raw_services:
+        requested = list(ALL_BUILDABLE)
+    else:
+        unknown = [s for s in raw_services if s not in ALL_BUILDABLE]
+        if unknown:
+            print(color(f"Error: Unknown service(s): {', '.join(unknown)}", Colors.RED))
+            print(f"Buildable services: {', '.join(ALL_BUILDABLE)}")
+            return
+        requested = list(raw_services)
 
+    ordered, auto_added = _resolve_build_order(requested)
+
+    if auto_added:
+        print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
+        print()
+
+    # Check version drift before building (unless --force)
+    node_names = set(NODE_BUILD_CONFIGS.keys())
+    if not force:
         from vispctl.git_repo import GitRepository
         from vispctl.versions import ComponentConfig
 
-        config = ComponentConfig()
+        comp_config = ComponentConfig()
         mode = get_current_mode()
 
-        # Determine which services need version checks
-        services_to_check = []
-        if service == "all":
-            # Check all node builds that correspond to external repos
-            services_to_check = [s for s in NODE_BUILD_CONFIGS.keys() if s in dict(config.get_components())]
-        elif service in NODE_BUILD_CONFIGS and service in dict(config.get_components()):
-            services_to_check = [service]
+        # Only check node builds that correspond to external repos
+        services_to_check = [s for s in ordered if s in node_names and s in dict(comp_config.get_components())]
 
-        # Check for version drift
         version_warnings = []
         for svc_name in services_to_check:
-            comp_data = config.get_component(svc_name)
+            comp_data = comp_config.get_component(svc_name)
             if not comp_data:
                 continue
 
             version = comp_data.get("version", "latest")
-            is_locked = config.is_locked(svc_name)
+            is_locked = comp_config.is_locked(svc_name)
 
             repo_path = Path.cwd() / "external" / svc_name
             if not repo_path.exists():
@@ -1057,7 +1129,6 @@ def cmd_build(args):
             if not current_commit:
                 continue
 
-            # In prod mode (locked), check if current commit matches locked version
             if mode == "prod" and is_locked:
                 if current_commit != version:
                     version_warnings.append(
@@ -1065,9 +1136,8 @@ def cmd_build(args):
                         f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
                         f"      Run: ./visp-podman.py deploy update"
                     )
-            # In dev mode (unlocked), just warn if there's drift from locked version
             elif mode == "dev" and not is_locked:
-                locked_version = config.get_locked_version(svc_name)
+                locked_version = comp_config.get_locked_version(svc_name)
                 if locked_version and locked_version != "N/A" and current_commit != locked_version:
                     version_warnings.append(
                         f"  ℹ️  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
@@ -1092,105 +1162,31 @@ def cmd_build(args):
 
     bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
 
-    # Node build target
-    if service in NODE_BUILD_CONFIGS:
-        config = NODE_BUILD_CONFIGS[service]
-        success = bm.build_node_project(service, config, no_cache, build_config)
-        if success:
-            print(color(f"\n✓ {service} build complete", Colors.GREEN))
-            # Automatically fix permissions on output directory after successful build
-            output_path = Path(config.get("output"))
-            if output_path.exists():
-                print(color(f"Fixing permissions on {output_path}...", Colors.YELLOW))
-                from vispctl.permissions import PermissionsManager
-
-                pm = PermissionsManager(Runner())
-                pm.apply_fix([output_path], recursive=True, host_owner=True)
-                print(color("✓ Permissions fixed", Colors.GREEN))
-        else:
-            print(color(f"\n✗ {service} build failed", Colors.RED))
-        return
-
-    # Determine which services to build
-    if service == "all":
-        services_to_build = BUILDABLE_SERVICES
-        node_builds_to_do = list(NODE_BUILD_CONFIGS.keys())
-    elif service in BUILD_CONFIGS:
-        services_to_build = [service]
-        node_builds_to_do = []
-    else:
-        print(color(f"Error: Unknown service '{service}'", Colors.RED))
-        print(f"Buildable services: {', '.join(ALL_BUILDABLE)}")
-        return
-
-    print(color("=== Building VISP Container Images ===", Colors.CYAN))
+    print(color("=== Building VISP Services ===", Colors.CYAN))
+    print(f"  Order: {' → '.join(ordered)}")
     print()
 
     if no_cache:
         print(color("Building with --no-cache (clean rebuild)", Colors.YELLOW))
     if pull:
         print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
-    print()
+    if no_cache or pull:
+        print()
 
     results = {"success": [], "failed": [], "skipped": []}
 
-    for svc_name in services_to_build:
-        config = BUILD_CONFIGS[svc_name]
-        description = config.get("description", "")
-        target = config.get("target")
+    for svc_name in ordered:
+        if svc_name in node_names:
+            # ── Node.js build (containerized) ──────────────────────────
+            cfg = NODE_BUILD_CONFIGS[svc_name]
+            print(color(f"Building {svc_name} (node)...", Colors.BLUE))
+            print(f"  Source: {cfg['source']}")
+            print(f"  Output: {cfg['output']}")
 
-        print(color(f"Building {svc_name}...", Colors.BLUE))
-        print(f"  Image: {config['image']}:latest")
-        print(f"  Context: {config['context']}")
-        if description:
-            print(f"  Description: {description}")
-        if target:
-            print(f"  Target: {target}")
-
-        depends_on = config.get("depends_on")
-        if depends_on and depends_on not in results["success"]:
-            rc, _, _ = run_quiet(
-                [
-                    "podman",
-                    "image",
-                    "exists",
-                    f"{BUILD_CONFIGS[depends_on]['image']}:latest",
-                ]
-            )
-            if rc != 0 and service != "all":
-                print(color(f"  ✗ Requires {depends_on} to be built first", Colors.RED))
-                print(f"    Run: ./visp-podman.py build {depends_on}")
-                results["skipped"].append(svc_name)
-                print()
-                continue
-
-        # Prepare context and build using BuildManager
-        if config.get("prepare_context"):
-            if not bm.prepare_build_context(svc_name, config):
-                results["failed"].append(svc_name)
-                print()
-                continue
-
-        ok = bm.build_image(svc_name, config, no_cache=no_cache, pull=pull)
-        if ok:
-            results["success"].append(svc_name)
-        else:
-            results["failed"].append(svc_name)
-
-        print()
-
-    # Build Node.js projects if requested
-    if node_builds_to_do:
-        print()
-        print(color("=== Building Node.js Projects (containerized) ===", Colors.CYAN))
-        print()
-        for node_name in node_builds_to_do:
-            config = NODE_BUILD_CONFIGS[node_name]
-            success = bm.build_node_project(node_name, config, no_cache, build_config)
+            success = bm.build_node_project(svc_name, cfg, no_cache, build_config)
             if success:
-                results["success"].append(node_name)
-                # Automatically fix permissions on output directory after successful build
-                output_path = Path(config.get("output"))
+                results["success"].append(svc_name)
+                output_path = Path(cfg.get("output"))
                 if output_path.exists():
                     print(color(f"  Fixing permissions on {output_path}...", Colors.YELLOW))
                     from vispctl.permissions import PermissionsManager
@@ -1199,8 +1195,43 @@ def cmd_build(args):
                     pm.apply_fix([output_path], recursive=True, host_owner=True)
                     print(color("  ✓ Permissions fixed", Colors.GREEN))
             else:
-                results["failed"].append(node_name)
-            print()
+                results["failed"].append(svc_name)
+        else:
+            # ── Container image build ──────────────────────────────────
+            cfg = BUILD_CONFIGS[svc_name]
+            description = cfg.get("description", "")
+            target = cfg.get("target")
+
+            print(color(f"Building {svc_name}...", Colors.BLUE))
+            print(f"  Image: {cfg['image']}:latest")
+            print(f"  Context: {cfg['context']}")
+            if description:
+                print(f"  Description: {description}")
+            if target:
+                print(f"  Target: {target}")
+
+            depends_on = cfg.get("depends_on")
+            if depends_on and depends_on not in results["success"]:
+                rc, _, _ = run_quiet(["podman", "image", "exists", f"{BUILD_CONFIGS[depends_on]['image']}:latest"])
+                if rc != 0:
+                    print(color(f"  ✗ Requires {depends_on} image — not built and not present", Colors.RED))
+                    results["skipped"].append(svc_name)
+                    print()
+                    continue
+
+            if cfg.get("prepare_context"):
+                if not bm.prepare_build_context(svc_name, cfg):
+                    results["failed"].append(svc_name)
+                    print()
+                    continue
+
+            ok = bm.build_image(svc_name, cfg, no_cache=no_cache, pull=pull)
+            if ok:
+                results["success"].append(svc_name)
+            else:
+                results["failed"].append(svc_name)
+
+        print()
 
     # Summary
     print(color("=== Build Summary ===", Colors.CYAN))
@@ -1561,6 +1592,9 @@ def cmd_doctor(args):
     """Tree-view project health overview with full consistency checks."""
     from vispctl.doctor import run_doctor
 
+    only_raw = getattr(args, "only", None)
+    only_ids = set(only_raw.split(",")) if only_raw else None
+
     issues = run_doctor(
         project_id=getattr(args, "project_id", None),
         show_files=not getattr(args, "no_files", False),
@@ -1569,6 +1603,10 @@ def cmd_doctor(args):
         json_output=getattr(args, "json", False),
         fix_cache=getattr(args, "fix_cache", False),
         fix=getattr(args, "fix", False),
+        apply=getattr(args, "apply", False),
+        only_ids=only_ids,
+        session_filter=getattr(args, "session", None),
+        bundle_filter=getattr(args, "bundle", None),
     )
     if issues:
         sys.exit(1)
@@ -1734,10 +1772,10 @@ Examples:
     # build
     p_build = subparsers.add_parser("build", aliases=["b"], help="Build container images")
     p_build.add_argument(
-        "service",
-        default="all",
-        nargs="?",
-        help=f"Service to build or 'all' (options: {', '.join(ALL_BUILDABLE)})",
+        "services",
+        nargs="*",
+        default=["all"],
+        help=f"Services to build (default: all). Options: {', '.join(ALL_BUILDABLE)}",
     )
     p_build.add_argument(
         "--no-cache",
@@ -1928,7 +1966,27 @@ Examples:
     p_doctor.add_argument(
         "--fix",
         action="store_true",
-        help="Fix issues: prune stale bundle list entries, move orphan bundles to _lost+found/",
+        help="Show fixable issues and what would change (dry-run). Combine with --apply to perform.",
+    )
+    p_doctor.add_argument(
+        "--apply",
+        action="store_true",
+        help="Actually apply fixes (requires --fix). Without this, --fix is dry-run.",
+    )
+    p_doctor.add_argument(
+        "--only",
+        metavar="IDS",
+        help="Comma-separated fix IDs to apply (e.g. 'a3f1,b2e4'). Others are skipped.",
+    )
+    p_doctor.add_argument(
+        "--session",
+        metavar="NAME",
+        help="Restrict to a specific session name (e.g. 'Session_1')",
+    )
+    p_doctor.add_argument(
+        "--bundle",
+        metavar="NAME",
+        help="Restrict to a specific bundle name (e.g. 'my_recording')",
     )
 
     args = parser.parse_args()
