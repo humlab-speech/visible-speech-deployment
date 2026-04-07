@@ -4,6 +4,7 @@ Shows a tree-like overview of every user's projects, their sessions, bundles,
 and audio files, cross-referencing MongoDB ↔ disk ↔ emuDB bundle lists.
 """
 
+import hashlib
 import json
 import subprocess
 from datetime import datetime, timezone
@@ -16,6 +17,17 @@ REPOS_PATH = _PROJECT_ROOT / "mounts" / "repositories"
 EMU_DB_NAME = "VISP_emuDB"
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg"}
 LOST_FOUND_DIR = "_lost+found"
+
+
+def _fix_id(*parts: str) -> str:
+    """Deterministic 4-char hex ID from descriptive parts (stable across runs)."""
+    key = ":".join(parts)
+    return hashlib.sha256(key.encode()).hexdigest()[:4]
+
+
+def _add_fix(fixes: list[dict], fix_id: str, desc: str, status: str) -> None:
+    """Append a structured fix entry."""
+    fixes.append({"id": fix_id, "desc": desc, "status": status})
 
 
 # ── Colour / symbol helpers ────────────────────────────────────────────────────
@@ -164,8 +176,19 @@ def _podman_write(path: Path, content: str) -> bool:
     return result.returncode == 0
 
 
-def _fix_stale_bundle_list_entries(project_id: str, db_path: Path, fixes: list[str]) -> None:
-    """Remove bundle list entries that reference missing sessions or bundles on disk."""
+def _fix_stale_bundle_list_entries(
+    project_id: str,
+    db_path: Path,
+    fixes: list[dict],
+    *,
+    dry_run: bool = True,
+    only_ids: set[str] | None = None,
+) -> None:
+    """Remove bundle list entries that reference missing sessions or bundles on disk.
+
+    When *dry_run* is True (the default) only reports what would change.
+    When *only_ids* is set, only fixes whose ID is in the set are applied.
+    """
     bl_dir = db_path / "bundleLists"
     if not bl_dir.exists():
         return
@@ -183,23 +206,36 @@ def _fix_stale_bundle_list_entries(project_id: str, db_path: Path, fixes: list[s
             continue
 
         kept = []
-        removed = []
+        to_remove = []  # (entry, fix_id)
         for entry in entries:
             ses = entry.get("session", "")
             bndl = entry.get("name", "")
             ses_dir = db_path / f"{ses}_ses"
             bndl_dir = ses_dir / f"{bndl}_bndl"
 
-            if not ses_dir.exists():
-                removed.append(entry)
-            elif not bndl_dir.exists():
-                removed.append(entry)
+            if not ses_dir.exists() or not bndl_dir.exists():
+                fid = _fix_id("stale_bl", project_id, bl_file.name, ses, bndl)
+                to_remove.append((entry, fid))
             else:
                 kept.append(entry)
 
-        if removed:
+        if not to_remove:
+            continue
+
+        # Determine which removals to actually perform
+        active = []  # entries to remove
+        for entry, fid in to_remove:
+            desc = f"Prune from {bl_file.name}: session '{entry.get('session')}' bundle '{entry.get('name')}' — missing on disk"
+            if dry_run:
+                _add_fix(fixes, fid, desc, "would")
+            elif only_ids is not None and fid not in only_ids:
+                _add_fix(fixes, fid, desc, "skipped")
+                kept.append(entry)  # keep it — user didn't select this fix
+            else:
+                active.append((entry, fid, desc))
+
+        if active:
             new_content = json.dumps(kept, indent=2) + "\n"
-            # Try direct write first, fall back to podman unshare
             try:
                 bl_file.write_text(new_content)
                 written = True
@@ -207,54 +243,118 @@ def _fix_stale_bundle_list_entries(project_id: str, db_path: Path, fixes: list[s
                 written = _podman_write(bl_file, new_content)
 
             if written:
-                for entry in removed:
-                    reason = f"Pruned from {bl_file.name}: session '{entry.get('session')}' bundle '{entry.get('name')}' — referenced session/bundle missing on disk"
-                    fixes.append(reason)
-                    _append_manifest(repo_path, reason)
+                for entry, fid, desc in active:
+                    _add_fix(fixes, fid, desc, "applied")
+                    _append_manifest(repo_path, f"[{fid}] {desc}")
             else:
-                fixes.append(f"FAILED to write {bl_file.name} (permission denied)")
+                for entry, fid, desc in active:
+                    _add_fix(fixes, fid, desc, "failed")
 
 
-def _fix_orphan_bundles(project_id: str, db_path: Path, mongo_sessions: dict, fixes: list[str]) -> None:
-    """Move bundles that exist on disk but not in MongoDB to _lost+found/."""
+def _fix_orphan_bundles(
+    project_id: str,
+    db_path: Path,
+    mongo_sessions: dict,
+    fixes: list[dict],
+    *,
+    dry_run: bool = True,
+    only_ids: set[str] | None = None,
+) -> None:
+    """Move orphan sessions/bundles to _lost+found/.
+
+    - Entire sessions not in MongoDB → move the whole ``*_ses/`` directory
+      (including ``.meta_json`` and all bundles inside it).
+    - Individual bundles not in MongoDB (but session is valid) → move just
+      the ``*_bndl/`` directory.
+
+    When *dry_run* is True (the default) only reports what would change.
+    When *only_ids* is set, only fixes whose ID is in the set are applied.
+    """
     disk_ses = _disk_sessions(project_id)
     repo_path = REPOS_PATH / project_id
     lf_base = db_path / LOST_FOUND_DIR
 
     for ses_name, ses_path in disk_ses.items():
-        # Determine which bundles MongoDB expects in this session
+        if ses_name not in mongo_sessions:
+            # ── Whole session is orphaned — move entire directory ───────
+            fid = _fix_id("orphan_session", project_id, ses_name)
+            desc = (
+                f"Move orphan session '{ses_name}' to "
+                f"{LOST_FOUND_DIR}/{ses_name}_ses/ — "
+                f"entire session on disk but not in MongoDB"
+            )
+
+            if dry_run:
+                _add_fix(fixes, fid, desc, "would")
+            elif only_ids is not None and fid not in only_ids:
+                _add_fix(fixes, fid, desc, "skipped")
+            else:
+                dest = lf_base / f"{ses_name}_ses"
+                if dest.exists():
+                    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                    dest = lf_base / f"{ses_name}_ses_{ts}"
+
+                moved = _podman_move(ses_path, dest)
+                if moved:
+                    _add_fix(fixes, fid, desc, "applied")
+                    _append_manifest(repo_path, f"[{fid}] {desc}")
+                else:
+                    _add_fix(fixes, fid, f"Move orphan session '{ses_name}'", "failed")
+            continue  # Don't also process individual bundles
+
+        # ── Session is in MongoDB — check individual bundles ───────────
         mongo_files = set()
-        if ses_name in mongo_sessions:
-            for f in mongo_sessions[ses_name].get("files", []):
-                mongo_files.add(_file_to_bundle_name(f["name"]))
+        for f in mongo_sessions[ses_name].get("files", []):
+            mongo_files.add(_file_to_bundle_name(f["name"]))
 
         for bndl_name, bndl_path in _disk_bundles(ses_path).items():
             if bndl_name not in mongo_files:
-                # This bundle is orphaned — move to lost+found
-                dest = lf_base / f"{ses_name}_ses" / f"{bndl_name}_bndl"
-                if dest.exists():
-                    # Avoid collision — append timestamp
-                    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-                    dest = lf_base / f"{ses_name}_ses" / f"{bndl_name}_bndl_{ts}"
+                fid = _fix_id("orphan_bundle", project_id, ses_name, bndl_name)
+                desc = (
+                    f"Move orphan bundle '{bndl_name}' from '{ses_name}' to "
+                    f"{LOST_FOUND_DIR}/{ses_name}_ses/{bndl_name}_bndl/ — "
+                    f"exists on disk but not in MongoDB"
+                )
 
-                moved = _podman_move(bndl_path, dest)
-                if moved:
-                    reason = (
-                        f"Moved orphan bundle '{bndl_name}' from '{ses_name}' to "
-                        f"{LOST_FOUND_DIR}/{ses_name}_ses/{bndl_name}_bndl/ — "
-                        f"exists on disk but not in MongoDB"
-                    )
-                    fixes.append(reason)
-                    _append_manifest(repo_path, reason)
+                if dry_run:
+                    _add_fix(fixes, fid, desc, "would")
+                elif only_ids is not None and fid not in only_ids:
+                    _add_fix(fixes, fid, desc, "skipped")
                 else:
-                    fixes.append(f"FAILED to move orphan bundle '{bndl_name}' in '{ses_name}' (permission denied)")
+                    dest = lf_base / f"{ses_name}_ses" / f"{bndl_name}_bndl"
+                    if dest.exists():
+                        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                        dest = lf_base / f"{ses_name}_ses" / f"{bndl_name}_bndl_{ts}"
+
+                    moved = _podman_move(bndl_path, dest)
+                    if moved:
+                        _add_fix(fixes, fid, desc, "applied")
+                        _append_manifest(repo_path, f"[{fid}] {desc}")
+                    else:
+                        _add_fix(fixes, fid, f"Move orphan bundle '{bndl_name}' in '{ses_name}'", "failed")
 
 
 # ── Project health diagnosis ──────────────────────────────────────────────────
 
 
-def _diagnose_project(project: dict, fix_cache: bool = False, fix: bool = False) -> dict:
-    """Diagnose a project's health. Returns a structured report."""
+def _diagnose_project(
+    project: dict,
+    fix_cache: bool = False,
+    fix: bool = False,
+    apply: bool = False,
+    only_ids: set[str] | None = None,
+    session_filter: str | None = None,
+    bundle_filter: str | None = None,
+) -> dict:
+    """Diagnose a project's health. Returns a structured report.
+
+    *fix*    — enable fix mode (dry-run: show what would change).
+    *apply*  — actually perform the fixes (requires *fix* to also be True).
+    *only_ids* — when applying, only fix items whose ID is in this set.
+    *session_filter* / *bundle_filter* — restrict diagnosis to a specific
+    session or bundle (name, not suffixed).  Filtering narrows the scope of
+    both diagnosis and fixes.
+    """
     pid = project["id"]
     pname = project.get("name", "?")
     report = {
@@ -305,8 +405,10 @@ def _diagnose_project(project: dict, fix_cache: bool = False, fix: bool = False)
     disk_sessions = _disk_sessions(pid)
     bundle_lists = _bundle_list_entries(pid)
 
-    # Combine the union of session names
+    # Combine the union of session names, optionally filtered
     all_session_names = sorted(set(mongo_sessions.keys()) | set(disk_sessions.keys()))
+    if session_filter:
+        all_session_names = [n for n in all_session_names if n == session_filter]
 
     for ses_name in all_session_names:
         in_mongo = ses_name in mongo_sessions
@@ -333,8 +435,10 @@ def _diagnose_project(project: dict, fix_cache: bool = False, fix: bool = False)
                 bndl_name = _file_to_bundle_name(f["name"])
                 mongo_files[bndl_name] = f
 
-        # Union of bundle names
+        # Union of bundle names, optionally filtered
         all_bundle_names = sorted(set(disk_bndls.keys()) | set(mongo_files.keys()))
+        if bundle_filter:
+            all_bundle_names = [n for n in all_bundle_names if n == bundle_filter]
 
         for bndl_name in all_bundle_names:
             bndl_on_disk = bndl_name in disk_bndls
@@ -441,11 +545,12 @@ def _diagnose_project(project: dict, fix_cache: bool = False, fix: bool = False)
 
     # ── Apply fixes if requested ───────────────────────────────────────────────
     if fix and db_path.exists():
+        dry_run = not apply
         # Move orphan bundles first, then prune bundle lists (order matters:
         # moving orphans creates new stale bundle list entries that the
         # prune step should clean up in the same pass)
-        _fix_orphan_bundles(pid, db_path, mongo_sessions, report["fixes"])
-        _fix_stale_bundle_list_entries(pid, db_path, report["fixes"])
+        _fix_orphan_bundles(pid, db_path, mongo_sessions, report["fixes"], dry_run=dry_run, only_ids=only_ids)
+        _fix_stale_bundle_list_entries(pid, db_path, report["fixes"], dry_run=dry_run, only_ids=only_ids)
 
     return report
 
@@ -543,8 +648,19 @@ def _render_tree(reports: list[dict], show_files: bool = True, show_healthy: boo
                 print(f"{child_prefix}{_FAIL} {_C.RED}{issue}{_C.NC}")
             for warn in proj["warnings"]:
                 print(f"{child_prefix}{_WARN} {_C.YELLOW}{warn}{_C.NC}")
-            for fixed in proj.get("fixes", []):
-                print(f"{child_prefix}{_PASS} {_C.GREEN}FIXED: {fixed}{_C.NC}")
+            for fx in proj.get("fixes", []):
+                fid = fx["id"]
+                desc = fx["desc"]
+                st = fx["status"]
+                tag = f"{_C.BOLD}[{fid}]{_C.NC}"
+                if st == "would":
+                    print(f"{child_prefix}{_C.CYAN}🔧 {tag} {_C.CYAN}{desc}{_C.NC}")
+                elif st == "applied":
+                    print(f"{child_prefix}{_PASS} {tag} {_C.GREEN}FIXED: {desc}{_C.NC}")
+                elif st == "skipped":
+                    print(f"{child_prefix}{_C.DIM}⊘  {tag} Skipped: {desc}{_C.NC}")
+                elif st == "failed":
+                    print(f"{child_prefix}{_FAIL} {tag} {_C.RED}FAILED: {desc}{_C.NC}")
 
             # Sessions tree
             if show_files and proj["sessions"]:
@@ -619,6 +735,10 @@ def run_doctor(
     json_output: bool = False,
     fix_cache: bool = False,
     fix: bool = False,
+    apply: bool = False,
+    only_ids: set[str] | None = None,
+    session_filter: str | None = None,
+    bundle_filter: str | None = None,
 ) -> int:
     """Run the doctor check. Returns the total number of issues (errors, not warnings)."""
 
@@ -637,7 +757,18 @@ def run_doctor(
         return 0
 
     # Diagnose each project
-    reports = [_diagnose_project(p, fix_cache=fix_cache, fix=fix) for p in projects]
+    reports = [
+        _diagnose_project(
+            p,
+            fix_cache=fix_cache,
+            fix=fix,
+            apply=apply,
+            only_ids=only_ids,
+            session_filter=session_filter,
+            bundle_filter=bundle_filter,
+        )
+        for p in projects
+    ]
 
     # Check for disk orphans
     mongo_ids = {p["id"] for p in projects}
@@ -654,6 +785,7 @@ def run_doctor(
                 "total_audio_files": sum(r["stats"]["audio_files"] for r in reports),
                 "total_audio_bytes": sum(r["stats"]["total_audio_bytes"] for r in reports),
                 "total_fixes": sum(len(r.get("fixes", [])) for r in reports),
+                "fixes": [fx for r in reports for fx in r.get("fixes", [])],
             },
         }
         print(json.dumps(output, indent=2))
@@ -678,7 +810,12 @@ def run_doctor(
     # Final summary
     total_issues = sum(len(r["issues"]) for r in reports)
     total_warnings = sum(len(r["warnings"]) for r in reports)
-    total_fixes = sum(len(r.get("fixes", [])) for r in reports)
+    all_fixes = [fx for r in reports for fx in r.get("fixes", [])]
+    total_dry = sum(1 for fx in all_fixes if fx["status"] == "would")
+    total_applied = sum(1 for fx in all_fixes if fx["status"] == "applied")
+    total_failed = sum(1 for fx in all_fixes if fx["status"] == "failed")
+    total_skipped = sum(1 for fx in all_fixes if fx["status"] == "skipped")
+    dry_ids = [fx["id"] for fx in all_fixes if fx["status"] == "would"]
 
     if total_issues == 0 and total_warnings == 0 and not disk_orphans:
         print(f"{_PASS} {_C.GREEN}{_C.BOLD}All projects are healthy!{_C.NC}\n")
@@ -688,10 +825,21 @@ def run_doctor(
             parts.append(f"{_C.RED}{total_issues} error(s){_C.NC}")
         if total_warnings:
             parts.append(f"{_C.YELLOW}{total_warnings} warning(s){_C.NC}")
-        if total_fixes:
-            parts.append(f"{_C.GREEN}{total_fixes} fix(es) applied{_C.NC}")
+        if total_applied:
+            parts.append(f"{_C.GREEN}{total_applied} fix(es) applied{_C.NC}")
+        if total_dry:
+            parts.append(f"{_C.CYAN}{total_dry} fix(es) available{_C.NC}")
+        if total_skipped:
+            parts.append(f"{_C.DIM}{total_skipped} skipped{_C.NC}")
+        if total_failed:
+            parts.append(f"{_C.RED}{total_failed} fix(es) failed{_C.NC}")
         if disk_orphans:
             parts.append(f"{_C.YELLOW}{len(disk_orphans)} orphaned dir(s){_C.NC}")
-        print(f"Summary: {', '.join(parts)}\n")
+        print(f"Summary: {', '.join(parts)}")
+        if dry_ids:
+            all_ids = ",".join(dry_ids)
+            print(f"{_C.DIM}Apply all:      --fix --apply{_C.NC}")
+            print(f"{_C.DIM}Apply specific:  --fix --apply --only {all_ids}{_C.NC}")
+        print()
 
     return total_issues
