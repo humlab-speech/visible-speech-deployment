@@ -1557,12 +1557,16 @@ def cmd_users(args):
 # === Database Audit Commands ===
 
 
-def cmd_audit(args):
-    """Audit emuDB consistency: MongoDB ↔ disk ↔ bundle lists."""
-    from vispctl.audit import run_audit
+def cmd_doctor(args):
+    """Tree-view project health overview with full consistency checks."""
+    from vispctl.doctor import run_doctor
 
-    issues = run_audit(
+    issues = run_doctor(
         project_id=getattr(args, "project_id", None),
+        show_files=not getattr(args, "no_files", False),
+        show_healthy=not getattr(args, "problems_only", False),
+        problems_only=getattr(args, "problems_only", False),
+        json_output=getattr(args, "json", False),
         fix_cache=getattr(args, "fix_cache", False),
     )
     if issues:
@@ -1891,10 +1895,30 @@ Examples:
     p_u_delete.add_argument("username", help="Username to delete")
     p_u_delete.add_argument("--force", "-F", action="store_true", help="Skip confirmation")
 
-    # audit
-    p_audit = subparsers.add_parser("audit", help="Audit emuDB consistency: MongoDB ↔ disk ↔ bundle lists")
-    p_audit.add_argument("project_id", nargs="?", help="Audit a specific project by ID (default: all)")
-    p_audit.add_argument(
+    # doctor (replaces old 'audit' command — 'audit' kept as alias)
+    p_doctor = subparsers.add_parser(
+        "doctor",
+        aliases=["audit"],
+        help="Project health overview: tree view + emuDB consistency checks",
+    )
+    p_doctor.add_argument("project_id", nargs="?", help="Check a specific project by ID (default: all)")
+    p_doctor.add_argument(
+        "--no-files",
+        action="store_true",
+        help="Hide per-session/bundle file details (compact view)",
+    )
+    p_doctor.add_argument(
+        "--problems",
+        action="store_true",
+        dest="problems_only",
+        help="Only show projects with issues",
+    )
+    p_doctor.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON (for scripting)",
+    )
+    p_doctor.add_argument(
         "--fix-cache",
         action="store_true",
         dest="fix_cache",
@@ -1945,7 +1969,8 @@ Examples:
         "backup": cmd_backup,
         "restore": cmd_restore,
         "users": cmd_users,
-        "audit": cmd_audit,
+        "doctor": cmd_doctor,
+        "audit": cmd_doctor,
     }
 
     handler = cmd_map.get(args.command)
