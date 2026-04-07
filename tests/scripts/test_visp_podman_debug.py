@@ -23,7 +23,7 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     # Stub podman inspect to return not-found (so it prints container-not-found)
     monkeypatch.setattr(vp, "run_quiet", lambda cmd: (1, "", ""))
 
-    # Replace SYSTEMD_QUADLETS_DIR with a temp dir and create a symlink
+    # Replace SYSTEMD_QUADLETS_DIR with a temp dir and create a rendered file
     sys_dir = tmp_path / "systemd"
     quad_dir = tmp_path / "quadlets" / "dev"
     quad_dir.mkdir(parents=True)
@@ -33,7 +33,7 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     source = quad_dir / svc_file
     source.write_text("content")
     target = sys_dir / svc_file
-    target.symlink_to(source)
+    target.write_text("content")  # rendered template (not a symlink)
 
     monkeypatch.setattr(vp, "SYSTEMD_QUADLETS_DIR", sys_dir)
 
@@ -42,6 +42,5 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     vp.cmd_debug(args)
 
     out = capsys.readouterr().out
-    assert "Quadlet Link:" in out
-    # Symlink printed as 'link -> target'
+    assert "Quadlet File:" in out
     assert str(target) in out

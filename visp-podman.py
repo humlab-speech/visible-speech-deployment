@@ -1297,15 +1297,15 @@ def cmd_debug(args):
         print(color(f"Container not found: {container}", Colors.RED))
     print()
 
-    # Check quadlet link
-    print(color("Quadlet Link:", Colors.YELLOW))
+    # Check quadlet file
+    print(color("Quadlet File:", Colors.YELLOW))
     svc_info = next((s for s in SERVICES if s.name == service), None)
     if svc_info:
         link_path = SYSTEMD_QUADLETS_DIR / svc_info.file
         if link_path.is_symlink():
-            print(f"  {link_path} -> {link_path.resolve()}")
+            print(color(f"  {link_path} -> {link_path.resolve()} (legacy symlink)", Colors.YELLOW))
         elif link_path.exists():
-            print(color(f"  {link_path} exists but is not a symlink", Colors.YELLOW))
+            print(f"  {link_path} (rendered template)")
         else:
             print(color(f"  {link_path} does not exist", Colors.RED))
 
