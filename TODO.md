@@ -1043,6 +1043,25 @@
 
 ## Low Priority
 
+### Repair Session / Re-import Bundle
+- [ ] **Add `repair-session` command to re-run emuDB import for a single session**
+  - **Problem**: When a bundle's audio file goes missing from disk but the session still exists
+    in MongoDB, there is no way to re-run the emuDB import without deleting and re-creating the
+    session. The R/emuR import pipeline (`import_mediaFiles`, `_annot.json` generation) only
+    runs during initial project creation inside a `visp-operations-session` container.
+  - **Current workaround**: User must delete the broken session in the web UI, re-upload the
+    audio file as a new session, and re-create. This loses the session name, any annotation
+    progress, and transcription results.
+  - **Desired feature**: `./visp-podman.py repair-session <project_id> <session_name>` that:
+    - Accepts a pre-placed `.wav` file in the session's bundle directory
+    - Spawns a `visp-operations-session` container for just that session
+    - Re-runs emuDB import (creates `_bndl/`, `_annot.json`, updates `bundleLists/`)
+    - Preserves existing MongoDB session metadata
+  - **Complexity**: Moderate — needs to replicate part of the `saveProjectEmuDb()` pipeline
+    from session-manager, but for a single session rather than the full project
+  - **Detection**: `./visp-podman.py doctor` already flags this as
+    `"Bundle '...' in session '...' in MongoDB but missing on disk"`
+
 ### Session Recovery
 - [ ] **Investigate crash recovery for running sessions**
   - **Current State**: If session-manager crashes, running Jupyter/RStudio containers are orphaned with no way to reconnect
