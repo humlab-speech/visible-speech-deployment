@@ -6,6 +6,7 @@ and audio files, cross-referencing MongoDB ↔ disk ↔ emuDB bundle lists.
 
 import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .mongo import mongosh_json
@@ -14,6 +15,7 @@ _PROJECT_ROOT = Path(__file__).parent.parent
 REPOS_PATH = _PROJECT_ROOT / "mounts" / "repositories"
 EMU_DB_NAME = "VISP_emuDB"
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg"}
+LOST_FOUND_DIR = "_lost+found"
 
 
 # ── Colour / symbol helpers ────────────────────────────────────────────────────
@@ -109,18 +111,159 @@ def _file_to_bundle_name(filename: str) -> str:
     return stem.replace(" ", "_")
 
 
+# ── Fix helpers ────────────────────────────────────────────────────────────────
+
+
+def _append_manifest(project_path: Path, message: str) -> None:
+    """Append a timestamped line to the project's _lost+found/manifest.txt."""
+    lf = project_path / "Data" / EMU_DB_NAME / LOST_FOUND_DIR
+    manifest = lf / "manifest.txt"
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    line = f"[{ts}] {message}\n"
+    try:
+        lf.mkdir(parents=True, exist_ok=True)
+        with manifest.open("a") as f:
+            f.write(line)
+    except PermissionError:
+        subprocess.run(
+            ["podman", "unshare", "mkdir", "-p", str(lf)],
+            capture_output=True,
+            check=False,
+        )
+        subprocess.run(
+            ["podman", "unshare", "bash", "-c", f"cat >> {manifest}"],
+            input=line.encode(),
+            capture_output=True,
+            check=False,
+        )
+
+
+def _podman_move(src: Path, dst: Path) -> bool:
+    """Move a path using podman unshare (files are container-owned)."""
+    subprocess.run(
+        ["podman", "unshare", "mkdir", "-p", str(dst.parent)],
+        capture_output=True,
+        check=False,
+    )
+    result = subprocess.run(
+        ["podman", "unshare", "mv", str(src), str(dst)],
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _podman_write(path: Path, content: str) -> bool:
+    """Write content to a container-owned file via podman unshare."""
+    result = subprocess.run(
+        ["podman", "unshare", "bash", "-c", f"cat > {path}"],
+        input=content.encode(),
+        capture_output=True,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _fix_stale_bundle_list_entries(project_id: str, db_path: Path, fixes: list[str]) -> None:
+    """Remove bundle list entries that reference missing sessions or bundles on disk."""
+    bl_dir = db_path / "bundleLists"
+    if not bl_dir.exists():
+        return
+
+    repo_path = REPOS_PATH / project_id
+
+    for bl_file in sorted(bl_dir.glob("*.json")):
+        try:
+            raw = bl_file.read_text()
+            entries = json.loads(raw)
+        except (json.JSONDecodeError, PermissionError):
+            continue
+
+        if not isinstance(entries, list):
+            continue
+
+        kept = []
+        removed = []
+        for entry in entries:
+            ses = entry.get("session", "")
+            bndl = entry.get("name", "")
+            ses_dir = db_path / f"{ses}_ses"
+            bndl_dir = ses_dir / f"{bndl}_bndl"
+
+            if not ses_dir.exists():
+                removed.append(entry)
+            elif not bndl_dir.exists():
+                removed.append(entry)
+            else:
+                kept.append(entry)
+
+        if removed:
+            new_content = json.dumps(kept, indent=2) + "\n"
+            # Try direct write first, fall back to podman unshare
+            try:
+                bl_file.write_text(new_content)
+                written = True
+            except PermissionError:
+                written = _podman_write(bl_file, new_content)
+
+            if written:
+                for entry in removed:
+                    reason = f"Pruned from {bl_file.name}: session '{entry.get('session')}' bundle '{entry.get('name')}' — referenced session/bundle missing on disk"
+                    fixes.append(reason)
+                    _append_manifest(repo_path, reason)
+            else:
+                fixes.append(f"FAILED to write {bl_file.name} (permission denied)")
+
+
+def _fix_orphan_bundles(project_id: str, db_path: Path, mongo_sessions: dict, fixes: list[str]) -> None:
+    """Move bundles that exist on disk but not in MongoDB to _lost+found/."""
+    disk_ses = _disk_sessions(project_id)
+    repo_path = REPOS_PATH / project_id
+    lf_base = db_path / LOST_FOUND_DIR
+
+    for ses_name, ses_path in disk_ses.items():
+        # Determine which bundles MongoDB expects in this session
+        mongo_files = set()
+        if ses_name in mongo_sessions:
+            for f in mongo_sessions[ses_name].get("files", []):
+                mongo_files.add(_file_to_bundle_name(f["name"]))
+
+        for bndl_name, bndl_path in _disk_bundles(ses_path).items():
+            if bndl_name not in mongo_files:
+                # This bundle is orphaned — move to lost+found
+                dest = lf_base / f"{ses_name}_ses" / f"{bndl_name}_bndl"
+                if dest.exists():
+                    # Avoid collision — append timestamp
+                    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                    dest = lf_base / f"{ses_name}_ses" / f"{bndl_name}_bndl_{ts}"
+
+                moved = _podman_move(bndl_path, dest)
+                if moved:
+                    reason = (
+                        f"Moved orphan bundle '{bndl_name}' from '{ses_name}' to "
+                        f"{LOST_FOUND_DIR}/{ses_name}_ses/{bndl_name}_bndl/ — "
+                        f"exists on disk but not in MongoDB"
+                    )
+                    fixes.append(reason)
+                    _append_manifest(repo_path, reason)
+                else:
+                    fixes.append(f"FAILED to move orphan bundle '{bndl_name}' in '{ses_name}' (permission denied)")
+
+
 # ── Project health diagnosis ──────────────────────────────────────────────────
 
 
-def _diagnose_project(project: dict, fix_cache: bool = False) -> dict:
+def _diagnose_project(project: dict, fix_cache: bool = False, fix: bool = False) -> dict:
     """Diagnose a project's health. Returns a structured report."""
     pid = project["id"]
+    pname = project.get("name", "?")
     report = {
         "id": pid,
-        "name": project.get("name", "?"),
+        "name": pname,
         "members": project.get("members", []),
         "issues": [],
         "warnings": [],
+        "fixes": [],
         "sessions": [],
         "stats": {"audio_files": 0, "total_audio_bytes": 0, "bundles": 0, "transcriptions": 0},
     }
@@ -296,6 +439,14 @@ def _diagnose_project(project: dict, fix_cache: bool = False) -> dict:
                         else:
                             seen[item_id] = level_name
 
+    # ── Apply fixes if requested ───────────────────────────────────────────────
+    if fix and db_path.exists():
+        # Move orphan bundles first, then prune bundle lists (order matters:
+        # moving orphans creates new stale bundle list entries that the
+        # prune step should clean up in the same pass)
+        _fix_orphan_bundles(pid, db_path, mongo_sessions, report["fixes"])
+        _fix_stale_bundle_list_entries(pid, db_path, report["fixes"])
+
     return report
 
 
@@ -387,11 +538,13 @@ def _render_tree(reports: list[dict], show_files: bool = True, show_healthy: boo
             # Stats line
             print(f"{child_prefix}{_C.DIM}{stat_str}{_C.NC}")
 
-            # Issues/warnings summary
+            # Issues/warnings/fixes summary
             for issue in proj["issues"]:
                 print(f"{child_prefix}{_FAIL} {_C.RED}{issue}{_C.NC}")
             for warn in proj["warnings"]:
                 print(f"{child_prefix}{_WARN} {_C.YELLOW}{warn}{_C.NC}")
+            for fixed in proj.get("fixes", []):
+                print(f"{child_prefix}{_PASS} {_C.GREEN}FIXED: {fixed}{_C.NC}")
 
             # Sessions tree
             if show_files and proj["sessions"]:
@@ -465,6 +618,7 @@ def run_doctor(
     problems_only: bool = False,
     json_output: bool = False,
     fix_cache: bool = False,
+    fix: bool = False,
 ) -> int:
     """Run the doctor check. Returns the total number of issues (errors, not warnings)."""
 
@@ -483,7 +637,7 @@ def run_doctor(
         return 0
 
     # Diagnose each project
-    reports = [_diagnose_project(p, fix_cache=fix_cache) for p in projects]
+    reports = [_diagnose_project(p, fix_cache=fix_cache, fix=fix) for p in projects]
 
     # Check for disk orphans
     mongo_ids = {p["id"] for p in projects}
@@ -499,6 +653,7 @@ def run_doctor(
                 "total_warnings": sum(len(r["warnings"]) for r in reports),
                 "total_audio_files": sum(r["stats"]["audio_files"] for r in reports),
                 "total_audio_bytes": sum(r["stats"]["total_audio_bytes"] for r in reports),
+                "total_fixes": sum(len(r.get("fixes", [])) for r in reports),
             },
         }
         print(json.dumps(output, indent=2))
@@ -523,6 +678,7 @@ def run_doctor(
     # Final summary
     total_issues = sum(len(r["issues"]) for r in reports)
     total_warnings = sum(len(r["warnings"]) for r in reports)
+    total_fixes = sum(len(r.get("fixes", [])) for r in reports)
 
     if total_issues == 0 and total_warnings == 0 and not disk_orphans:
         print(f"{_PASS} {_C.GREEN}{_C.BOLD}All projects are healthy!{_C.NC}\n")
@@ -532,6 +688,8 @@ def run_doctor(
             parts.append(f"{_C.RED}{total_issues} error(s){_C.NC}")
         if total_warnings:
             parts.append(f"{_C.YELLOW}{total_warnings} warning(s){_C.NC}")
+        if total_fixes:
+            parts.append(f"{_C.GREEN}{total_fixes} fix(es) applied{_C.NC}")
         if disk_orphans:
             parts.append(f"{_C.YELLOW}{len(disk_orphans)} orphaned dir(s){_C.NC}")
         print(f"Summary: {', '.join(parts)}\n")

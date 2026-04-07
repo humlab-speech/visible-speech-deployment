@@ -112,6 +112,32 @@ visible-speech-deployment/
   - In dev mode: dist folder bind-mounted into Apache container for hot reload after rebuild
   - In prod mode: dist is baked into the Apache image at build time
 
+### Dev vs Prod: PHP API file serving (important!)
+
+The PHP API lives at `external/webclient/api/api.php` (source) but Angular's `angular.json`
+also copies `api/**/*` into `dist/api/` at build time as an "asset". This means `dist/`
+contains a **stale copy** of the PHP files after every Angular build.
+
+**Dev mode** (two separate bind-mounts in `quadlets/dev/apache.container`):
+```
+Volume=…/external/webclient/dist:/var/www/html:Z      ← Angular compiled JS
+Volume=…/external/webclient/api:/var/www/html/api:Z    ← PHP source (overlays dist/api/)
+```
+The second mount overlays `dist/api/` with the live source, so PHP edits are **instant** —
+no build step needed. Only Angular/TypeScript changes require `./visp-podman.py build webclient`.
+
+**Prod mode** (single `COPY` in Dockerfile):
+```
+COPY dist/ /var/www/html/
+```
+Everything — compiled Angular JS *and* the PHP API copy from `dist/api/` — is baked into the
+image. A full `build webclient` + `build apache` is needed for any change.
+
+⚠️ **Common debugging pitfall:** If you edit `external/webclient/api/api.php` and the change
+isn't visible inside the Apache container, check which directory is mounted at `/var/www/html/api`.
+In dev mode it should be the source `external/webclient/api/`, NOT `external/webclient/dist/api/`.
+Run: `podman inspect apache --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\\n"}}{{end}}' | grep api`
+
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
   - Built by `./visp-podman.py build container-agent` → output goes to `external/container-agent/dist/`

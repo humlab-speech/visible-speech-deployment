@@ -1568,6 +1568,7 @@ def cmd_doctor(args):
         problems_only=getattr(args, "problems_only", False),
         json_output=getattr(args, "json", False),
         fix_cache=getattr(args, "fix_cache", False),
+        fix=getattr(args, "fix", False),
     )
     if issues:
         sys.exit(1)
@@ -1923,6 +1924,11 @@ Examples:
         action="store_true",
         dest="fix_cache",
         help="Delete stale VISP_emuDBcache.sqlite files where found",
+    )
+    p_doctor.add_argument(
+        "--fix",
+        action="store_true",
+        help="Fix issues: prune stale bundle list entries, move orphan bundles to _lost+found/",
     )
 
     args = parser.parse_args()
