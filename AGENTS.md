@@ -654,5 +654,9 @@ automatically, but `createProjects` is **not** set — it must be granted explic
 - Do not commit `.env`, `.env.secrets`, `mounts/mongo/data/`, `backups/`, or `.venv/`.
 - **Never `git push`** unless the user explicitly asks you to. You may commit freely, but
   pushing is the user's decision.
+- **Always anonymize real user data** in commit messages, code comments, documentation, and
+  examples. Replace real file names, usernames, project names, and session names with generic
+  placeholders (e.g. `my_recording.wav`, `Session_1`, `some_user`). This applies to TODO.md,
+  AGENTS.md, commit history, and any other tracked file.
 - **WSL-specific**: Do not use `127.0.0.1` in netsh portproxy commands — use the actual WSL IP
   address (e.g., `172.29.72.57`). Localhost forwarding does not work for rootless Podman on WSL.

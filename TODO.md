@@ -982,6 +982,41 @@
 
 ## Medium Priority
 
+### Data Integrity — Bundle-Level Orphan Detection & Quarantine
+
+- [x] **Detect orphaned bundles on project load** ✅
+  - **Problem**: The session-level health check catches orphaned `_ses` dirs and ghost DB
+    sessions, but misses orphaned **bundles** — `_bndl` dirs on disk within a valid session
+    that have no corresponding entry in `Project.sessions[].files[]` in MongoDB. These
+    bundles are invisible to the UI but consume disk space and cause file-count mismatches.
+  - **Example**: `Session_2_ses/my_recording_bndl/` exists on disk but `my_recording.wav` is
+    not in that session's `files` array in MongoDB.
+  - **Mapping**: `file.name` (e.g. `my_recording.wav`) → strip extension → `my_recording` →
+    append `_bndl` → `my_recording_bndl/` on disk. Spaces are replaced with underscores.
+  - **Fix**: Extended `getProjectHealthStatus()` in session-manager to list `_bndl` dirs
+    per `_ses` dir and compare against `session.files[]`. Reports orphaned bundles in
+    `health.orphanedBundles[]` and adds a human-readable issue string.
+  - **Committed**: session-manager (not yet pushed)
+
+- [ ] **Quarantine orphaned bundles via explicit user action** 🔄
+  - **Goal**: Let users move orphaned `_bndl` dirs to a quarantine folder instead of
+    deleting them, preserving data until the admin confirms it's safe to remove.
+  - **Proposed approach**:
+    1. Add `quarantineOrphanedBundles(projectId)` in session-manager (similar pattern
+       to `cleanupOrphanedSessions`)
+    2. Move orphaned `_bndl` dirs to `VISP_emuDB/_quarantine/{Session}_ses/{Bundle}_bndl/`
+    3. Also remove matching entries from `BundleList.bundles[]` if present
+    4. Triggered by user click on warning badge — **not** automatically on project load
+    5. Webclient: add a distinct action button or extend the existing cleanup dialog
+  - **Why not auto-move on load**: Risk of false positives if detection logic has a bug;
+    conflates read path with write path; user would not know files were moved.
+  - **Three-way sync note**: Detection currently covers disk ↔ MongoDB. The third layer
+    (BundleList in MongoDB + `bundleLists/*.json` on disk + `VISP_DBconfig.json`) is a
+    deeper consistency problem — a bundle could be on disk AND in `sessions[].files[]`
+    but missing from `BundleList.bundles[]`, making it invisible to EMU-webApp. This
+    could be tackled as a separate "full consistency audit" feature.
+  - **Depends on**: bundle-level detection (done above)
+
 ### Code Organization
 - [x] **Consolidate duplicate configuration** ✅ COMPLETE
   - ✅ Split `.env` into non-sensitive config and `.env.secrets` for passwords
