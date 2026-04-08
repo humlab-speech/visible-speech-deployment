@@ -42,8 +42,7 @@ kc-realm-export.json
 #docker/session-manager/scripts/container-agent/main.js
 mounts/mongo/data/
 mounts/mongo/logs/
-mounts/matomo/config
-mounts/matomo/logs
+mounts/matomo/
 mounts/matomo-db/
 mounts/apache/apache/matomo-tracker.js
 mounts/session-manager

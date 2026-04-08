@@ -12,11 +12,13 @@ _paq.push(['enableCrossDomainLinking']);
 _paq.push(['trackPageView']);
 _paq.push(['enableLinkTracking']);
 (function() {
-  var u = '//matomo.{{BASE_DOMAIN}}/';
-  _paq.push(['setTrackerUrl', u + 'matomo.php']);
+  // Served via Apache reverse proxy (same origin) to avoid cross-domain
+  // cert issues and ad-blocker interference. Apache proxies these paths
+  // to the Matomo container internally.
+  _paq.push(['setTrackerUrl', '/vt']);
   _paq.push(['setSiteId', '1']);
   var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
   g.async = true;
-  g.src = u + 'matomo.js';
+  g.src = '/vt.js';
   s.parentNode.insertBefore(g, s);
 })();

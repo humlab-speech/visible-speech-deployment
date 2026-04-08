@@ -16,7 +16,7 @@ Volume=/etc/localtime:/etc/localtime:ro
 PodmanArgs=--cgroups=disabled
 
 [Service]
-Restart=unless-stopped
+Restart=on-failure
 TimeoutStartSec=300
 
 [Install]

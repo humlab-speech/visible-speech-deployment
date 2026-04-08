@@ -669,6 +669,10 @@ automatically, but `createProjects` is **not** set — it must be granted explic
 
 ## Things to avoid
 
+- **Never use Podman named volumes** — all persistent data uses host bind mounts under
+  `mounts/`. This simplifies backups (just `rsync` or `tar` the `mounts/` tree) and makes
+  data visible without `podman volume inspect`. If an upstream image expects a named volume
+  (e.g. Matomo's `/var/www/html`), mount a host directory instead.
 - Do not run `podman stop` or `systemctl --user stop` on a service and assume it stays
   stopped — systemd will restart it. Always use `./visp.py uninstall` for a full
   teardown.
