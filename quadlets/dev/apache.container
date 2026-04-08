@@ -17,10 +17,11 @@ Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD
 Secret=visp_test_user_login_key,type=env,target=TEST_USER_LOGIN_KEY
 PodmanArgs=--cgroups=disabled
 
-# SWAMID volumes (commented out - configure if needed)
-#Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/YOUR_DOMAIN/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z
-#Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z
-#Volume=@@PROJECT_DIR@@/certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z
+# SWAMID Shibboleth volumes (@@BASE_DOMAIN@@ resolved from .env at install time)
+Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/@@BASE_DOMAIN@@/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/swamid-idp.xml:/etc/shibboleth/swamid-idp.xml:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z
+Volume=@@PROJECT_DIR@@/certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z
 
 # General volumes
 Volume=@@PROJECT_DIR@@/mounts/api-logs/logs:/var/log/api:Z

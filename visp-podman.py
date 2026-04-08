@@ -68,6 +68,10 @@ def render_quadlet_template(content: str) -> str:
     """Replace template placeholders with actual system values."""
     content = content.replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
     content = content.replace("@@UID@@", str(os.getuid()))
+    # Substitute @@BASE_DOMAIN@@ from .env (used in SWAMID shibboleth mounts)
+    env_vars = load_env_vars(PROJECT_DIR / ".env")
+    base_domain = env_vars.get("BASE_DOMAIN", "")
+    content = content.replace("@@BASE_DOMAIN@@", base_domain)
     return content
 
 
@@ -637,13 +641,15 @@ def cmd_install(args):
     # Parsed dynamically from Volume= lines so the list never goes stale.
     print(color("Creating mount directories...", Colors.CYAN))
     created = 0
+    project_dir_str = str(PROJECT_DIR)
     for quadlet_file in sorted(quadlets_dir.glob("*.container")):
-        for line in quadlet_file.read_text().splitlines():
+        rendered_content = render_quadlet_template(quadlet_file.read_text())
+        for line in rendered_content.splitlines():
             line = line.strip()
-            if line.startswith("#") or not line.startswith("Volume=@@PROJECT_DIR@@/"):
+            if line.startswith("#") or not line.startswith(f"Volume={project_dir_str}/"):
                 continue
             # Extract source path (before the first ":")
-            rel_path = line.split("=", 1)[1].split(":")[0].replace("@@PROJECT_DIR@@/", "")
+            rel_path = line.split("=", 1)[1].split(":")[0].replace(f"{project_dir_str}/", "")
             # Skip external/ — those are managed by visp-deploy.py
             if rel_path.startswith("external/"):
                 continue
