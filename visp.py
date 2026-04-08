@@ -356,10 +356,53 @@ def _tail_container_logs(service: str, lines: int = 50, follow: bool = False, st
                 pass
 
 
+def _show_debug_info(service: str):
+    """Show diagnostic info for a service: systemd status, container state, quadlet file."""
+    service_name = f"{service}.service"
+
+    # Service status
+    print(color("Service Status:", Colors.YELLOW))
+    systemctl("status", service_name)
+    print()
+
+    # Container info
+    print(color("Container Info:", Colors.YELLOW))
+    container = service
+    rc, stdout, stderr = run_quiet(["podman", "inspect", container])
+    if rc == 0:
+        run(
+            [
+                "podman",
+                "inspect",
+                container,
+                "--format",
+                "Name: {{.Name}}\nState: {{.State.Status}}\nStarted: {{.State.StartedAt}}\nImage: {{.Image}}",
+            ],
+            check=False,
+        )
+    else:
+        print(color(f"Container not found: {container}", Colors.RED))
+    print()
+
+    # Quadlet file
+    print(color("Quadlet File:", Colors.YELLOW))
+    svc_info = next((s for s in SERVICES if s.name == service), None)
+    if svc_info:
+        link_path = SYSTEMD_QUADLETS_DIR / svc_info.file
+        if link_path.is_symlink():
+            print(color(f"  {link_path} -> {link_path.resolve()} (legacy symlink)", Colors.YELLOW))
+        elif link_path.exists():
+            print(f"  {link_path} (rendered template)")
+        else:
+            print(color(f"  {link_path} does not exist", Colors.RED))
+    print()
+
+
 def cmd_logs(args):
-    """View logs from services."""
+    """View logs from services (and optionally debug diagnostics)."""
     extra_args = []
-    journal_only = args.journal_only
+    journal_only = getattr(args, "journal_only", False)
+    debug = getattr(args, "debug", False)
 
     if args.follow:
         extra_args.append("-f")
@@ -367,9 +410,9 @@ def cmd_logs(args):
         extra_args.extend(["-n", str(args.lines)])
     elif not args.follow:
         extra_args.extend(["-n", "100"])  # Default
-    if args.since:
+    if hasattr(args, "since") and args.since:
         extra_args.extend(["--since", args.since])
-    if args.priority:
+    if hasattr(args, "priority") and args.priority:
         extra_args.extend(["-p", args.priority])
 
     if args.service == "all" or not args.service:
@@ -382,6 +425,11 @@ def cmd_logs(args):
     else:
         service = args.service
         has_app_logs = service in CONTAINER_LOG_FILES
+
+        if debug:
+            print(color(f"=== Debug info for {service} ===", Colors.CYAN))
+            print()
+            _show_debug_info(service)
 
         if args.follow:
             # Follow mode: run journalctl and container log tailers concurrently
@@ -1349,53 +1397,24 @@ def cmd_build_list(args):
 
 
 def cmd_debug(args):
-    """Debug startup issues for a service."""
-    service = args.service
-    service_name = f"{service}.service"
+    """Shorthand for 'logs [service] --debug'. Shows diagnostics + logs."""
+    # Build an args namespace compatible with cmd_logs
+    args.debug = True
+    args.follow = False
+    args.lines = None
+    args.since = None
+    args.priority = None
+    args.journal_only = False
 
-    print(color(f"=== Debug info for {service} ===", Colors.CYAN))
-    print()
-
-    # Service status
-    print(color("Service Status:", Colors.YELLOW))
-    systemctl("status", service_name)
-    print()
-
-    # Recent logs
-    print(color("Recent Logs (last 50 lines):", Colors.YELLOW))
-    journalctl("-u", service_name, "-n", "50", "--no-pager")
-    print()
-
-    # Check if container exists
-    print(color("Container Info:", Colors.YELLOW))
-    container = service
-    rc, stdout, stderr = run_quiet(["podman", "inspect", container])
-    if rc == 0:
-        run(
-            [
-                "podman",
-                "inspect",
-                container,
-                "--format",
-                "Name: {{.Name}}\nState: {{.State.Status}}\nStarted: {{.State.StartedAt}}\nImage: {{.Image}}",
-            ],
-            check=False,
-        )
+    if args.service == "all":
+        # Show debug info for all running container services
+        for svc in CONTAINER_SERVICES:
+            args.service = svc.name
+            print(color(f"\n{'=' * 60}", Colors.CYAN))
+            cmd_logs(args)
+        args.service = "all"
     else:
-        print(color(f"Container not found: {container}", Colors.RED))
-    print()
-
-    # Check quadlet file
-    print(color("Quadlet File:", Colors.YELLOW))
-    svc_info = next((s for s in SERVICES if s.name == service), None)
-    if svc_info:
-        link_path = SYSTEMD_QUADLETS_DIR / svc_info.file
-        if link_path.is_symlink():
-            print(color(f"  {link_path} -> {link_path.resolve()} (legacy symlink)", Colors.YELLOW))
-        elif link_path.exists():
-            print(f"  {link_path} (rendered template)")
-        else:
-            print(color(f"  {link_path} does not exist", Colors.RED))
+        cmd_logs(args)
 
 
 # === Network Info ===
@@ -1757,6 +1776,9 @@ Examples:
     p_logs.add_argument(
         "--journal-only", action="store_true", help="Show only journalctl output, skip container app logs"
     )
+    p_logs.add_argument(
+        "--debug", action="store_true", help="Include service status, container info, and quadlet diagnostics"
+    )
 
     # start
     p_start = subparsers.add_parser("start", help="Start service(s)")
@@ -1794,8 +1816,8 @@ Examples:
     )
 
     # debug
-    p_debug = subparsers.add_parser("debug", aliases=["d"], help="Debug startup issues")
-    p_debug.add_argument("service", help="Service to debug")
+    p_debug = subparsers.add_parser("debug", aliases=["d"], help="Shorthand for 'logs --debug'")
+    p_debug.add_argument("service", nargs="?", default="all", help="Service name or 'all' (default: all)")
 
     # exec
     p_exec = subparsers.add_parser("exec", aliases=["e"], help="Execute command in container")
