@@ -9,7 +9,7 @@
 #   ./scripts/download-fonts.sh
 #
 # After running, rebuild the Apache image to include fonts:
-#   ./visp-podman.py build apache
+#   ./visp.py build apache
 #
 
 set -e

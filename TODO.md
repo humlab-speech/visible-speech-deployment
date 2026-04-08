@@ -17,7 +17,7 @@
 - [x] **Remove stale `whisper.container` symlink from `~/.config/containers/systemd/`** ✅
   - `quadlets/dev/whisper.container` was renamed to `whisper.container.old` (via git mv) but
     the symlink in `~/.config/containers/systemd/whisper.container` was never removed
-  - Fixed: Cleaned up during `visp-podman.py uninstall`/`install` cycles
+  - Fixed: Cleaned up during `visp.py uninstall`/`install` cycles
 
 - [x] **Build missing `visp-emu-webapp-server` image** ✅
   - Built and running. Also committed WebSocket cookie fix (commit `3b73022`).
@@ -93,7 +93,7 @@
      }
      ```
 
-  2. **Update `BUILD_CONFIGS` in `visp-podman.py`**:
+  2. **Update `BUILD_CONFIGS` in `visp.py`**:
      - Remove/replace `"whisper"` entry
      - Add `"whisperx"` entry pointing to `external/WhisperVault` with
        `dockerfile: "container/Containerfile"`, `image: "visp-whisperx"`
@@ -143,7 +143,7 @@
      Check whether existing `mounts/whisper/models/` already has any of these from
      the previous whisper setup.
 
-  6. **`visp-podman.py deploy update`** — add WhisperVault to `versions.json` component list
+  6. **`visp.py deploy update`** — add WhisperVault to `versions.json` component list
      so `deploy update` clones it and `deploy status` tracks its version.
 
   7. **Startup ordering note** — WhisperVault loads the model at container start and the
@@ -156,7 +156,7 @@
   - `docker/whisper/Dockerfile` → can be deleted (replaced by WhisperVault Containerfile)
   - `quadlets/dev/whisper.container` → replaced by `whisperx.container` + `whisperx-nginx.container`
   - `quadlets/prod/whisper.container` → same
-  - `visp-podman.py` → BUILD_CONFIGS update
+  - `visp.py` → BUILD_CONFIGS update
   - `external/WhisperVault/` → new clone
   - `mounts/whisper/` → model directory structure update
 
@@ -189,19 +189,13 @@
     - Health check: `GET /health` → `{ "ready": true, ... }`
     - See full API docs in `external/WhisperVault/README.md`
 
-- [ ] **Integrate version checking into visp-podman.py build** 🔒
-  - **Problem**: visp-podman.py doesn't check versions.json, risk of stale builds in production
-  - **Current**: visp-deploy.py has lock/unlock commands, but visp-podman.py is unaware
-  - **Risk**: Developer builds apache without rebuilding webclient, deploys old version
-  - **Solution**: Add version awareness to visp-podman.py
-  - **Implementation**:
-    - Read versions.json before building
-    - Check if external/{component} is at the expected version (locked_version for prod)
-    - Warn if mismatch: "⚠️  webclient is at abc123 but versions.json expects def456"
+- [x] **Integrate version checking into visp.py build** ✅
+  - Implemented: `visp.py build` checks versions.json, warns/fails on drift
+  - `visp.py deploy status` shows build staleness
     - For Node.js builds: Check if dist/ is older than source code timestamp
     - Add `--force` flag to skip checks
   - **Acceptance criteria**:
-    - `./visp-podman.py build webclient` checks git HEAD vs versions.json
+    - `./visp.py build webclient` checks git HEAD vs versions.json
     - Production mode (when locked): Fails if version mismatch
     - Dev mode (when unlocked): Warns but continues
     - Add to status command: Show version drift
@@ -214,16 +208,16 @@
     - Apache access log: `mounts/apache/apache/logs/apache2/visp.local-access.log` (search for `POST /api/v1/upload`)
     - Upload staging path: `mounts/apache/apache/uploads/<gitlabUserId>/<upload-id>/...` (bind-mounted into container at `/tmp/uploads`)
     - Session-manager logs: use `./visp-logs.sh session-manager` — look for `Converting all files in /tmp/uploads` and `No audio files found` messages
-    - ~~**Note:** `./visp-podman.py logs <service>` previously had an "unhashable type: 'list'" argument error — **fixed**.~~
+    - ~~**Note:** `./visp.py logs <service>` previously had an "unhashable type: 'list'" argument error — **fixed**.~~
   - **Immediate mitigation / recommended fix**:
     - Make upload tree group-owned by `www-data` and group-writable (e.g., `chgrp -R www-data mounts/apache/apache/uploads && find mounts/apache/apache/uploads -type d -exec chmod 2775 {} + && find mounts/apache/apache/uploads -type f -exec chmod 664 {} +`)
     - Ensure PHP api.php creates directories with group-write (e.g., `mkdir(..., 0o2775)` or set proper umask) and consider using setgid for inheritance
     - Improve api.php error propagation so move failures return meaningful errors to the UI instead of silent failures
   - **Recent improvements** ✅ (commits c703ab3, f79bc70, 7944407):
     - Added `set-unshare.sh` script for fixing UID/GID in mounted directories
-    - Expanded `fix-permissions` with comprehensive ownership/mode fixes (now `./visp-podman.py fixperm`)
+    - Expanded `fix-permissions` with comprehensive ownership/mode fixes (now `./visp.py fixperm`)
     - Fixed file permissions on Apache vhost configs and SAML configs
-    - **Still needed**: Run `./visp-podman.py fixperm --apply` post-deploy and verify uploads work
+    - **Still needed**: Run `./visp.py fixperm --apply` post-deploy and verify uploads work
   - **Acceptance / next steps**:
     - Reproduce an upload while tailing Apache access+error logs and session-manager logs; capture the new upload id and verify files are present on the host
     - Add an automated test/CI check to verify uploads succeed under Podman with the configured mounts
@@ -233,8 +227,8 @@
   - **Status**: ✅ Infrastructure mostly complete, docs partially done
   - **Completed**:
     - [x] README.md - Added netavark prerequisite and migration info
-    - [x] visp-podman.py - Added automatic netavark detection and configuration
-    - [x] visp-podman.py - Added automatic network creation (quadlets don't auto-create)
+    - [x] visp.py - Added automatic netavark detection and configuration
+    - [x] visp.py - Added automatic network creation (quadlets don't auto-create)
     - [x] Automation Features: Detects CNI, configures netavark, auto-creates networks, validates backend
   - **Still needed**:
     - [ ] DEPLOYMENT_GUIDE.md - Add detailed migration procedure
@@ -259,10 +253,10 @@
 ## Medium Priority
 
 - [ ] **Review security of 777 permissions on container-writable bind mounts** 🔒
-  - **Introduced by**: `201ab6a` (visp-podman.py install auto-fix),
+  - **Introduced by**: `201ab6a` (visp.py install auto-fix),
     `78b51ec` (api.php `createDirectory()` mkdir 0777), and the `fix-permissions`
     command default paths update (same branch, covers uploads + logs + repositories)
-  - **Context**: `visp-podman.py install` now sets `chmod 777` on several bind-mounted
+  - **Context**: `visp.py install` now sets `chmod 777` on several bind-mounted
     directories (`mounts/apache/apache/uploads/`, `mounts/repositories/`, log directories)
     so that Apache's `www-data` (UID 33) and session-manager's `root` (UID 0, mapped from
     host user) can both write to them. The api.php `createDirectory()` also uses `mkdir 0777`.
@@ -309,210 +303,12 @@
   - **Note**: This is a deeper change to `session-manager` source code in `external/` — needs
     coordination with the upstream repo.
 
-- [ ] **Merge visp-deploy.py into visp-podman.py as subcommand** 🔄
-  - **Why**: Two separate scripts is confusing, visp-deploy.py functionality should be part of main tool
-  - **Current state**:
-    - visp-deploy.py handles: status, lock/unlock versions, update repos, install (legacy Docker Compose)
-    - visp-podman.py handles: build, start/stop, logs, install (Podman Quadlets)
-    - Overlapping functionality causes confusion about which tool to use
-  - **Proposed structure**:
-    - `./visp-podman.py deploy status` - Show git repo versions and drift
-    - `./visp-podman.py deploy lock <component>` - Lock version in versions.json
-    - `./visp-podman.py deploy unlock <component>` - Unlock version
-    - `./visp-podman.py deploy update` - Update external repos to locked/latest versions
-    - Keep visp-deploy.py as thin wrapper for backward compatibility
-  - **Benefits**:
-    - Single tool for all operations
-    - Natural integration with build command (can check versions before building)
-    - Cleaner user experience
-
-  #### What needs to work after merge:
-
-  ##### 1. Git Repository Management
-  - [ ] **GitRepository class** (currently in visp-deploy.py)
-    - Clone repos from Git URLs
-    - Fetch updates from remote
-    - Checkout specific commits/branches
-    - Get current commit, branch, dirty status
-    - Count commits ahead/behind remote
-    - Check for uncommitted changes
-    - **Migration**: Move to `vispctl/git_repo.py` or `vispctl/deploy.py`
-
-  ##### 2. Version Lock/Unlock System
-  - [ ] **versions.json management**
-    - Read current locked/unlocked versions
-    - Lock component to current git commit
-    - Unlock component to track latest
-    - Rollback to locked version
-    - Store metadata: commit hash, date, author, message
-    - **Current location**: `visp-deploy.py` functions around line 500-800
-    - **Needs**: Integration with build command (check version before build)
-
-  ##### 3. Repository Status & Drift Detection
-  - [ ] **Status command** (`visp-deploy.py status`)
-    - Show all external repos and their git status
-    - Detect uncommitted changes
-    - Check commits ahead/behind origin
-    - Compare current checkout vs versions.json (locked version)
-    - Display as table with color coding
-    - **Format**: Current vs Expected, Branch, Status (clean/dirty/ahead/behind)
-    - **Must preserve**: Existing tabular output format
-
-  ##### 4. Update System
-  - [ ] **Update command** (`visp-deploy.py update`)
-    - Update external repos to latest (if unlocked) or locked version
-    - Handle merge conflicts gracefully
-    - Optionally rebuild images if source changed
-    - Force flag to override uncommitted changes
-    - **Complexity**: Must coordinate with build system
-    - **Risk**: Changes to external/ might require rebuilds
-
-  ##### 5. Initial Installation & Setup
-  - [ ] **Install command password generation**
-    - Auto-generate secure passwords (visp-deploy.py currently does this)
-    - Write to private/ directory and .env files
-    - **Passwords needed**: MongoDB, Matomo DB, JWT secrets, session keys
-    - **Current location**: `visp-deploy.py` install_system() function
-    - **Security**: Ensure private/ is in .gitignore
-    - **Migration**: visp-podman.py install needs this functionality
-
-  - [ ] **Initial repo cloning**
-    - Clone all external repos on first install
-    - Checkout locked versions if in prod mode
-    - Checkout latest/main if in dev mode
-    - **Currently**: visp-deploy.py does this, visp-podman.py assumes repos exist
-
-  - [ ] **Environment file generation**
-    - Generate .env files from templates
-    - Substitute passwords and configuration
-    - Write to mounts/ directories for containers
-    - **Currently**: visp-deploy.py handles this
-    - **Files affected**: apache .env, session-manager .env, etc.
-
-  ##### 6. Build Integration
-  - [ ] **Version checking before build**
-    - Before building, check if external/{component} is at expected version
-    - Warn if git repo doesn't match versions.json
-    - Fail in prod mode (locked), warn in dev mode (unlocked)
-    - Check if source code newer than built image
-    - **Currently**: visp-podman.py build doesn't check versions
-    - **Needed**: Read versions.json in build command
-
-  - [ ] **Rebuild detection**
-    - Detect if source changed since last build
-    - Compare timestamps: dist/ vs src/ for Node.js builds
-    - Check git commits: last built commit vs current
-    - **Use case**: Avoid unnecessary rebuilds, warn about stale builds
-
-  ##### 7. Backward Compatibility & Migration
-  - [ ] **Keep visp-deploy.py as wrapper**
-    - `visp-deploy.py status` → `visp-podman.py deploy status`
-    - `visp-deploy.py lock` → `visp-podman.py deploy lock`
-    - Add deprecation warning: "visp-deploy.py is deprecated, use visp-podman.py deploy"
-    - **Timeline**: Keep wrapper for 2-3 releases, then remove
-
-  - [ ] **Update all documentation**
-    - README.md - Replace visp-deploy.py examples
-    - DEPLOYMENT_GUIDE.md - Update workflow steps
-    - QUICK_REFERENCE.md - Update command cheatsheet
-    - TODO.md - Update references in other tasks
-
-  ##### 8. Code Organization
-  - [ ] **File structure**
-    ```
-    vispctl/
-      __init__.py
-      deploy.py          # DeployManager class
-      git_repo.py        # GitRepository class (or keep in deploy.py)
-      versions.py        # VersionManager for versions.json
-      passwords.py       # Password generation utilities
-    visp-podman.py       # Add deploy subcommand, import from vispctl.deploy
-    visp-deploy.py       # Thin wrapper (deprecated)
-    ```
-
-  - [ ] **Shared utilities**
-    - Git operations (fetch, checkout, status)
-    - versions.json read/write
-    - Color/formatting utilities (already shared)
-    - Table printing (deploy uses tabulate, podman uses manual)
-
-  ##### 9. Testing & Validation
-  - [ ] **Test scenarios**
-    - Fresh install: Clone repos, generate passwords, build images
-    - Update unlocked: Pull latest, rebuild if needed
-    - Update locked: Checkout specific commit
-    - Lock component: Write to versions.json
-    - Status with drift: Show repo out of sync with versions.json
-    - Build with version mismatch: Warn or fail
-
-  - [ ] **Regression testing**
-    - Ensure existing visp-deploy.py workflows still work via wrapper
-    - Test both dev and prod modes
-    - Verify password generation creates all required files
-
-  ##### 10. Edge Cases & Error Handling
-  - [ ] **Handle missing repos**
-    - If external/{component} doesn't exist, offer to clone
-    - Don't fail hard, show clear error message
-
-  - [ ] **Handle dirty repos**
-    - Warn if uncommitted changes during update
-    - Require --force flag to override
-    - Show what files are modified
-
-  - [ ] **Handle network errors**
-    - Git fetch/clone failures
-    - Retry logic or clear error messages
-    - Graceful degradation (use cached state if fetch fails)
-
-  - [ ] **Handle merge conflicts**
-    - Detect conflicts during git pull
-    - Provide clear instructions to user
-    - Option to abort and manual resolve
-
-  #### Implementation Plan:
-  1. ✅ Extract GitRepository class to vispctl/git_repo.py
-  2. ✅ Extract version management to vispctl/versions.py
-  3. ✅ Extract password generation to vispctl/passwords.py
-  4. ✅ Create vispctl/deploy.py with DeployManager class
-  5. ✅ Add `deploy` subcommand to visp-podman.py argument parser
-  6. ✅ Implement cmd_deploy() dispatcher for status/lock/unlock/update
-  7. ✅ Update cmd_build() to check versions before building
-  8. ✅ Update cmd_install() to use password generation from vispctl
-  9. [ ] Create visp-deploy.py wrapper with deprecation warnings
-  10. ✅ Update all documentation references (VERSION_CHECKING.md created)
-  11. [ ] Test all workflows (install, update, lock, build, status)
-  12. [ ] Add to CHANGELOG and VERSION_MANAGEMENT.md
-
-  #### Progress Notes:
-  - **2026-02-09**: Created vispctl modules (git_repo.py, versions.py, passwords.py, deploy.py)
-    - GitRepository class: Full git operations without os.chdir()
-    - ComponentConfig class: versions.json management
-    - EnvFile class: .env file operations
-    - DeployManager class: status, lock, unlock, rollback, update commands
-    - Password generation utilities: generate_random_string(), setup_env_file()
-  - **2026-02-09**: Integrated deploy subcommand into visp-podman.py
-    - Added deploy argument parser with 5 subcommands (status/lock/unlock/rollback/update)
-    - Created dispatcher functions (cmd_deploy_status, cmd_deploy_lock, etc.)
-    - All deploy commands functional and tested
-    - Updated help examples to show deploy command usage
-  - **2026-02-09**: Enhanced build and install commands
-    - cmd_build(): Added version drift checking before builds
-      - Checks if current git commit matches versions.json
-      - In PROD mode with locked versions: fails build if mismatch (unless --force)
-      - In DEV mode: warns but continues if drift detected
-      - Added --force flag to skip version checks
-    - cmd_install(): Added automatic password generation
-      - Checks if .env/.env.secrets exist on first install
-      - Auto-generates passwords using vispctl.passwords.setup_env_file()
-      - Creates all required environment files with secure random passwords
-  - **2026-02-09**: Added comprehensive build status tracking
-    - Images now tagged with git.commit and build.timestamp labels during build
-    - deploy status shows Build Status column comparing image vs source
-    - Can detect: ✅ UP TO DATE, ⚠️ STALE, ❌ NOT BUILT, ⚠️ UNKNOWN
-    - Summary shows which components need rebuilding
-    - Created docs/VERSION_CHECKING.md with complete documentation
-  - **Next**: Create visp-deploy.py wrapper, test all workflows
+- [x] **Merge visp.py into visp.py as subcommand** ✅
+  - **Completed 2026-04-08**: All functionality migrated to `visp.py deploy` + `vispctl/`
+  - `visp.py` replaced with thin deprecation wrapper (original archived to `ARCHIVE/`)
+  - `setup_service_env_files()` ported to `_setup_service_env_files()` in `visp.py install`
+  - Docker Compose legacy code (install_system, docker-compose mode) dropped
+  - All documentation references updated
 
 ### Security Improvements
 - [ ] **Implement socket proxy for container management**
@@ -549,7 +345,7 @@
   - **Impact**: Non-reproducible builds, potential breakage from upstream changes
   - **Where versions are stored**: Currently hardcoded in each Dockerfile (no centralized config)
   - **Options for centralization**:
-    1. **ARG in Dockerfile + build-args from visp-podman.py** (flexible, requires code change)
+    1. **ARG in Dockerfile + build-args from visp.py** (flexible, requires code change)
        ```dockerfile
        ARG DEBIAN_VERSION=bookworm-20240101
        FROM debian:${DEBIAN_VERSION}
@@ -592,7 +388,7 @@
   - **Note**: As of 2024, Docker officially supports Containerfile, but verify on target systems
   - **Implementation**:
     - Rename all Dockerfile → Containerfile (`git mv` to preserve history)
-    - Update visp-podman.py BUILD_CONFIGS: `"dockerfile": "Containerfile"`
+    - Update visp.py BUILD_CONFIGS: `"dockerfile": "Containerfile"`
     - Update all documentation references
     - Test with both podman and docker (if docker is still used anywhere)
   - **Alternative**: Keep Dockerfile for now, rename when Docker support is universal
@@ -600,22 +396,11 @@
     - [Containerfile spec](https://github.com/containers/common/blob/main/docs/Containerfile.5.md)
     - [Docker Containerfile support](https://docs.docker.com/engine/reference/builder/)
 
-- [ ] **Add version drift detection to visp-deploy.py**
-  - ✅ Partially implemented: `visp-deploy.py status` now checks uncommitted changes
-  - ✅ Shows repository status: clean, has changes, ahead/behind remote
-  - [ ] TODO: Add explicit drift warnings with --strict flag
-  - Check if external repos have uncommitted local changes
-    - Use `git status --porcelain` to detect modified/staged files
-    - Warn: "external/session-manager has uncommitted changes - deploy may not be reproducible"
-  - Check how far behind/ahead repos are from remote
-    - Use `git fetch` + `git rev-list --count origin/main..HEAD`
-    - Warn: "external/wsrng-server is 3 commits behind origin/main"
-    - Warn: "external/webclient has 2 unpushed local commits"
-  - Compare deployed version vs versions.json
-    - Current checked out commit vs `locked_version` field
-    - Warn if mismatch: "external/session-manager is at abc123 but versions.json specifies def456"
-  - Add `--strict` flag to fail on any drift (for CI/CD)
-  - Already in `visp-deploy.py status` command (partially)
+- [x] **Add version drift detection to deploy status** ✅
+  - Implemented in `visp.py deploy status`
+  - Shows repository status, uncommitted changes, ahead/behind remote
+  - Build staleness tracking via git.commit image labels
+  - [ ] TODO: Add `--strict` flag to fail on any drift (for CI/CD)
 
 - [ ] **Audit Dockerfiles for version consistency**
   - Problem: Some Dockerfiles do `git clone` without specifying version
@@ -684,7 +469,7 @@
     - **Skip** if: Sessions are only used by trusted administrators
 
 - [ ] **MAYBE: Reconsider dev mode build strategy for webclient** 🔨
-  - **Current**: External build via `visp-podman.py build webclient`, mount dist/ directory
+  - **Current**: External build via `visp.py build webclient`, mount dist/ directory
   - **Previous**: In-container `ng build --watch` for hot-reload during development
   - **Issue**: Permission conflicts between mounted files and container build process
     - Container running as root couldn't overwrite nobody:nogroup owned files
@@ -740,14 +525,9 @@
        - Line 19: `docker ps -a --filter "name=hsapp-session-" --filter "name=visp-session-"`
        - Multiple `docker ps`, `docker exec` commands
        - **Action**: Replace with `podman` commands or use `docker` alias
-  4. **Python deployment script (visp-deploy.py)**
-     - File: [visp-deploy.py](visp-deploy.py)
-       - Line 1154-1162: `docker run --rm -v {comp_path}:/app -w /app node:20 ...`
-       - Used for building Node.js components in temporary containers
-       - Multiple references to "Docker Compose" and Docker images
-       - **Action**: Replace `docker run` → `podman run` in subprocess calls
-       - **Action**: Update docker-compose references to podman-compose
-       - **Action**: Test build workflow with Podman containers
+  4. **Python deployment script (visp.py)** — ✅ DONE
+     - Replaced with thin deprecation wrapper; original archived to `ARCHIVE/`
+     - All functionality migrated to `visp.py` + `vispctl/`
 
   5. **Documentation and user messaging**
      - Multiple files reference "docker compose", "Docker images", etc.
@@ -808,10 +588,9 @@
       - Internal=true broke DNS → now works perfectly
     - **Remaining work**:
       - [ ] Update installation guide with netavark requirement
-      - [x] Add network creation to visp-podman.py (`./visp-podman.py network ensure`) ✅
+      - [x] Add network creation to visp.py (`./visp.py network ensure`) ✅
       - [ ] Test migration procedure on fresh install
       - [ ] Document in DEPLOYMENT_GUIDE.md
-    - See: [docs/PODMAN_NETWORKS.md](docs/PODMAN_NETWORKS.md)
     - **CRITICAL ISSUE DISCOVERED**: CNI dnsname plugin DNS servers not running
       - **Impact**: Every DNS lookup takes 20-25 seconds (timeout)
       - **Symptoms**: 1+ minute login delays, slow page loads, timeouts everywhere
@@ -856,7 +635,7 @@
       - [ ] Proxy-only access pattern
 
   - [x] Phase 3d: Create unified management tool ✅ COMPLETE
-    - ✅ Created `visp-podman.py` - Python replacement for visp-logs.sh
+    - ✅ Created `visp.py` - Python replacement for visp-logs.sh
     - ✅ **Modularized with vispctl package** (commit 2472bf0, db12f52)
       - Extracted manager classes: ServiceManager, NetworkManager, QuadletManager
       - Created vispctl package with proper structure
@@ -864,21 +643,21 @@
       - Added fix-permissions command
       - All tests passing after refactor
     - **Commands available**:
-      - `visp-podman.py status` - Show service status, quadlet links, containers, networks
-      - `visp-podman.py logs [service] [-f]` - View/follow logs
-      - `visp-podman.py start/stop/restart [service|all]` - Service control
-      - `visp-podman.py install/uninstall [service|all]` - Manage quadlet symlinks
-      - `visp-podman.py reload` - Reload systemd daemon after quadlet changes
-      - `visp-podman.py debug <service>` - Debug startup issues
-      - `visp-podman.py shell <container>` - Open bash in container
-      - `visp-podman.py exec <container> <cmd>` - Run command in container
-      - `visp-podman.py network` - Show network backend and DNS status
-      - `visp-podman.py network ensure` - Create missing networks (commit 83b5d6e)
-      - `visp-podman.py backup` - Backup MongoDB and external repos
-      - `visp-podman.py restore` - Restore from backup
-      - `visp-podman.py fix-permissions` - Fix file permissions for mounted volumes
-    - [x] TODO: Add `build` command integration with visp-deploy.py ✅
-    - [x] TODO: Add `update` command (`./visp-podman.py deploy update`) ✅
+      - `visp.py status` - Show service status, quadlet links, containers, networks
+      - `visp.py logs [service] [-f]` - View/follow logs
+      - `visp.py start/stop/restart [service|all]` - Service control
+      - `visp.py install/uninstall [service|all]` - Manage quadlet symlinks
+      - `visp.py reload` - Reload systemd daemon after quadlet changes
+      - `visp.py debug <service>` - Debug startup issues
+      - `visp.py shell <container>` - Open bash in container
+      - `visp.py exec <container> <cmd>` - Run command in container
+      - `visp.py network` - Show network backend and DNS status
+      - `visp.py network ensure` - Create missing networks (commit 83b5d6e)
+      - `visp.py backup` - Backup MongoDB and external repos
+      - `visp.py restore` - Restore from backup
+      - `visp.py fix-permissions` - Fix file permissions for mounted volumes
+    - [x] TODO: Add `build` command integration with visp.py ✅
+    - [x] TODO: Add `update` command (`./visp.py deploy update`) ✅
     - [ ] TODO: Consider adding bash completion
     - [ ] **Optional: Remove networks during `uninstall`** (`--remove-networks`)
       - **Why**: Provide an opt-in full teardown (useful for ephemeral/dev/CI) while avoiding accidental network removal on shared hosts.
@@ -895,7 +674,7 @@
           - Inspect networks for attached containers before removing
           - Prompt for confirmation; accept `--force` to skip prompt
           - Abort if attached containers are found unless `--force` and explicit confirmation
-        - Documentation: Update `docs/PODMAN_NETWORKS.md` and `README.md`
+        - Documentation: Update `README.md`
       - **Acceptance Criteria / Tests**:
         - Manual tests:
           - `uninstall --remove-networks` removes networks when none attached
@@ -907,7 +686,7 @@
     - ✅ Created `.env.secrets` file for sensitive credentials (separate from `.env`)
     - ✅ Added `.env.secrets.template` for documentation
     - ✅ Updated `.gitignore` to exclude `.env.secrets`
-    - ✅ Implemented `load_all_env_vars()` in visp-podman.py to merge both files
+    - ✅ Implemented `load_all_env_vars()` in visp.py to merge both files
     - ✅ Created `get_derived_secrets()` to generate secrets from environment variables
     - ✅ Implemented `create_podman_secrets()` and `remove_podman_secrets()` functions
     - ✅ Updated `cmd_install()` to create Podman secrets automatically
@@ -930,7 +709,7 @@
     - ✅ Configuration split:
       - `.env` - Non-sensitive config (BASE_DOMAIN, ADMIN_EMAIL, etc.)
       - `.env.secrets` - Passwords and tokens (managed via Podman Secrets)
-    - ✅ Updated visp-deploy.py to generate passwords to `.env.secrets`
+    - ✅ Updated visp.py to generate passwords to `.env.secrets`
     - ✅ All containers load config from `.env` via `EnvironmentFile=` directive
     - ✅ Secrets override config values via `Secret=` directives
     - ✅ **Enhanced security loading** (commit bb24a1f)
@@ -939,13 +718,13 @@
     - **Security**: No container gets passwords it doesn't need
 
   - [x] Phase 3g: Naming consistency ✅ COMPLETE
-    - ✅ Renamed `visp_deploy.py` → `visp-deploy.py` (consistent with visp-podman.py)
+    - ✅ Renamed `visp_deploy.py` → `visp.py` (consistent with visp.py)
     - ✅ Used `git mv` to preserve history
     - ✅ Updated all references in documentation and scripts
 
   - [ ] Phase 4: Update scripts and tooling
     - Replace docker commands in .sh scripts
-    - Update visp-deploy.py subprocess calls
+    - Update visp.py subprocess calls
     - Add Podman detection/validation
     - Test full deployment workflow
 
@@ -1021,12 +800,12 @@
 - [x] **Consolidate duplicate configuration** ✅ COMPLETE
   - ✅ Split `.env` into non-sensitive config and `.env.secrets` for passwords
   - ✅ Removed all password variables from `.env`
-  - ✅ visp-deploy.py now generates passwords to `.env.secrets` only
+  - ✅ visp.py now generates passwords to `.env.secrets` only
   - ✅ Clean separation: configuration vs credentials
 
 - [x] **Create .env.example template** ✅ COMPLETE
   - ✅ Created `.env.secrets.template` with all password variables documented
-  - ✅ visp-deploy.py copies template to `.env.secrets` if not exists
+  - ✅ visp.py copies template to `.env.secrets` if not exists
   - ✅ All sensitive variables documented with descriptions
 
 ### Documentation
@@ -1039,7 +818,7 @@
   - Test that all services start successfully
   - Test that authentication works (both Shibboleth and test user)
   - Test that APIs are accessible
-  - Could integrate with `visp-deploy.py status` command
+  - Could integrate with `visp.py deploy status` command
 
 ## Low Priority
 
@@ -1052,14 +831,14 @@
   - **Current workaround**: User must delete the broken session in the web UI, re-upload the
     audio file as a new session, and re-create. This loses the session name, any annotation
     progress, and transcription results.
-  - **Desired feature**: `./visp-podman.py repair-session <project_id> <session_name>` that:
+  - **Desired feature**: `./visp.py repair-session <project_id> <session_name>` that:
     - Accepts a pre-placed `.wav` file in the session's bundle directory
     - Spawns a `visp-operations-session` container for just that session
     - Re-runs emuDB import (creates `_bndl/`, `_annot.json`, updates `bundleLists/`)
     - Preserves existing MongoDB session metadata
   - **Complexity**: Moderate — needs to replicate part of the `saveProjectEmuDb()` pipeline
     from session-manager, but for a single session rather than the full project
-  - **Detection**: `./visp-podman.py doctor` already flags this as
+  - **Detection**: `./visp.py doctor` already flags this as
     `"Bundle '...' in session '...' in MongoDB but missing on disk"`
 
 ### Session Recovery

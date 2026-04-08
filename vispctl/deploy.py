@@ -91,7 +91,7 @@ class DeployManager:
                 "status": "❌ NOT BUILT",
                 "image_commit": "N/A",
                 "needs_rebuild": True,
-                "recommendation": f"Run: ./visp-podman.py build {component}",
+                "recommendation": f"Run: ./visp.py build {component}",
             }
         try:
             import json
@@ -102,7 +102,7 @@ class DeployManager:
                 "status": "⚠️ UNKNOWN",
                 "image_commit": "N/A (bad marker)",
                 "needs_rebuild": None,
-                "recommendation": f"Rebuild recommended: ./visp-podman.py build {component}",
+                "recommendation": f"Rebuild recommended: ./visp.py build {component}",
             }
 
         build_commit = marker.get("git_commit", "")
@@ -176,7 +176,7 @@ class DeployManager:
                 "status": "❌ NOT BUILT",
                 "image_commit": "N/A",
                 "needs_rebuild": True,
-                "recommendation": f"Run: ./visp-podman.py build {component}",
+                "recommendation": f"Run: ./visp.py build {component}",
             }
 
         # Try to get git commit label from image
@@ -407,9 +407,9 @@ class DeployManager:
             import importlib.util
             import sys
 
-            # Load NODE_BUILD_CONFIGS from visp-podman.py via importlib
+            # Load NODE_BUILD_CONFIGS from visp.py via importlib
             sys.path.insert(0, str(self.basedir))
-            spec = importlib.util.spec_from_file_location("visp_podman", str(self.basedir / "visp-podman.py"))
+            spec = importlib.util.spec_from_file_location("visp", str(self.basedir / "visp.py"))
             if spec and spec.loader:
                 vp = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(vp)  # type: ignore[union-attr]
@@ -422,7 +422,7 @@ class DeployManager:
                         node_build_warnings.append(
                             f"  ❌ {build_name}: build output missing "
                             f"({verify_path.relative_to(self.basedir)})\n"
-                            f"     Run: ./visp-podman.py build {build_name}"
+                            f"     Run: ./visp.py build {build_name}"
                         )
         except Exception:  # noqa: BLE001
             pass  # Non-fatal; skip the check if import fails
@@ -456,7 +456,7 @@ class DeployManager:
             import sys
 
             sys.path.insert(0, str(self.basedir))
-            spec = importlib.util.spec_from_file_location("visp_podman", str(self.basedir / "visp-podman.py"))
+            spec = importlib.util.spec_from_file_location("visp", str(self.basedir / "visp.py"))
             if spec and spec.loader:
                 vp = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(vp)  # type: ignore[union-attr]
@@ -496,7 +496,7 @@ class DeployManager:
                                 "Image": build_name,
                                 "Tracks": parent,
                                 "Status": "❌ NOT BUILT",
-                                "Detail": f"Run: ./visp-podman.py build {build_name}",
+                                "Detail": f"Run: ./visp.py build {build_name}",
                             }
                         )
                         continue
@@ -728,7 +728,7 @@ class DeployManager:
         actions: list[str] = []
 
         if repos_behind:
-            actions.append("./visp-podman.py deploy update")
+            actions.append("./visp.py deploy update")
 
         # Collect everything that needs building into one command
         to_build: list[str] = []
@@ -747,7 +747,7 @@ class DeployManager:
                 import sys as _sys
 
                 _sys.path.insert(0, str(self.basedir))
-                _spec = _ilu.spec_from_file_location("_vp", str(self.basedir / "visp-podman.py"))
+                _spec = _ilu.spec_from_file_location("_vp", str(self.basedir / "visp.py"))
                 if _spec and _spec.loader:
                     _vp = _ilu.module_from_spec(_spec)
                     _spec.loader.exec_module(_vp)
@@ -769,7 +769,7 @@ class DeployManager:
                 unique_builds.append(name)
 
         if unique_builds:
-            actions.append(f"./visp-podman.py build {' '.join(unique_builds)}")
+            actions.append(f"./visp.py build {' '.join(unique_builds)}")
 
         # If any images were rebuilt, suggest restart
         restart_candidates: list[str] = []
@@ -780,7 +780,7 @@ class DeployManager:
         if restart_candidates:
             seen_r: set[str] = set()
             unique_restarts = [n for n in restart_candidates if n not in seen_r and not seen_r.add(n)]  # type: ignore[func-returns-value]
-            actions.append(f"./visp-podman.py restart {' '.join(unique_restarts)}")
+            actions.append(f"./visp.py restart {' '.join(unique_restarts)}")
 
         if (
             not repos_with_changes
@@ -818,8 +818,8 @@ class DeployManager:
             components = [name for name, _ in self.config.get_components()]
         elif not components:
             print("❌ Error: No components specified")
-            print("Usage: visp-podman.py deploy lock <component> [<component> ...]")
-            print("   or: visp-podman.py deploy lock --all")
+            print("Usage: visp.py deploy lock <component> [<component> ...]")
+            print("   or: visp.py deploy lock --all")
             return False
 
         print(f"🔒 Locking {len(components)} component(s)...\n")
@@ -892,8 +892,8 @@ class DeployManager:
             components = [name for name, _ in self.config.get_components()]
         elif not components:
             print("❌ Error: No components specified")
-            print("Usage: visp-podman.py deploy unlock <component> [<component> ...]")
-            print("   or: visp-podman.py deploy unlock --all")
+            print("Usage: visp.py deploy unlock <component> [<component> ...]")
+            print("   or: visp.py deploy unlock --all")
             return False
 
         print(f"🔓 Unlocking {len(components)} component(s)...\n")
@@ -926,7 +926,7 @@ class DeployManager:
                 self.config.save()
                 print(f"\n✅ Successfully unlocked {unlocked_count} component(s)")
                 print("   Changes saved to versions.json")
-                print("   Run 'visp-podman.py deploy update' to pull latest changes")
+                print("   Run 'visp.py deploy update' to pull latest changes")
                 return True
             except Exception as e:
                 print(f"\n❌ Failed to save versions.json: {e}")
@@ -950,8 +950,8 @@ class DeployManager:
             components = [name for name, _ in self.config.get_components()]
         elif not components:
             print("❌ Error: No components specified")
-            print("Usage: visp-podman.py deploy rollback <component> [<component> ...]")
-            print("   or: visp-podman.py deploy rollback --all")
+            print("Usage: visp.py deploy rollback <component> [<component> ...]")
+            print("   or: visp.py deploy rollback --all")
             return False
 
         print(f"⏮️  Rolling back {len(components)} component(s)...\n")
@@ -982,7 +982,7 @@ class DeployManager:
                 self.config.save()
                 print(f"\n✅ Successfully rolled back {rollback_count} component(s)")
                 print("   Changes saved to versions.json")
-                print("   Run 'visp-podman.py deploy update' to checkout rolled back versions")
+                print("   Run 'visp.py deploy update' to checkout rolled back versions")
                 return True
             except Exception as e:
                 print(f"\n❌ Failed to save versions.json: {e}")

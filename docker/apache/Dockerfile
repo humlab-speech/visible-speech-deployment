@@ -69,7 +69,7 @@ EXPOSE 80 443
 
 # ------------------------------------------------------------
 # webclient-build: builds the Angular webclient once (prod artifact)
-# Source: external/webclient/ (managed by visp-deploy.py update)
+# Source: external/webclient/ (managed by visp.py deploy update)
 # ------------------------------------------------------------
 FROM base AS webclient-build
 

@@ -50,7 +50,7 @@ This gives you a complete view of your deployment state from source code through
 
 ### The Status Check Process
 
-When you run `./visp-podman.py deploy status`:
+When you run `./visp.py deploy status`:
 
 1. **Checks the main deployment repository** (visible-speech-deployment)
    - Current branch
@@ -128,7 +128,7 @@ The main `visible-speech-deployment` repo is also checked:
 
 ### How Git Commits are Embedded in Images
 
-During `./visp-podman.py build <component>`:
+During `./visp.py build <component>`:
 
 ```python
 # In vispctl/build.py - build_image()
@@ -186,7 +186,7 @@ The system compares the **image commit** with the **current source commit**:
 ### Command
 
 ```bash
-./visp-podman.py deploy status [--no-fetch]
+./visp.py deploy status [--no-fetch]
 ```
 
 - Default: Fetches from remotes before checking (accurate but slower)
@@ -240,7 +240,7 @@ The system compares the **image commit** with the **current source commit**:
 ```
 ====================================
 ⚠️ Components need rebuild (source changed): session-manager
-   Run: ./visp-podman.py build session-manager
+   Run: ./visp.py build session-manager
 
 ⚠️ Repositories with uncommitted changes: webclient
    Total: 2 repo(s) have local changes
@@ -275,7 +275,7 @@ This mapping is defined in `vispctl/deploy.py` in the `_get_build_status()` meth
 ### Example 1: Check Current State
 
 ```bash
-$ ./visp-podman.py deploy status --no-fetch
+$ ./visp.py deploy status --no-fetch
 ```
 
 Instantly shows:
@@ -308,7 +308,7 @@ $ git add . && git commit -m "Fix cleanup bug"
 
 # 2. Check status
 $ cd ../..
-$ ./visp-podman.py deploy status
+$ ./visp.py deploy status
 
 # Output shows:
 # session-manager:
@@ -318,10 +318,10 @@ $ ./visp-podman.py deploy status
 #   Sync Status: 🚀 AHEAD (1 commit)
 
 # 3. Rebuild to match source
-$ ./visp-podman.py build session-manager
+$ ./visp.py build session-manager
 
 # 4. Verify
-$ ./visp-podman.py deploy status
+$ ./visp.py deploy status
 # Now shows: Build Status: ✅ UP TO DATE
 ```
 
@@ -329,20 +329,20 @@ $ ./visp-podman.py deploy status
 
 ```bash
 # 1. Lock current version for production
-$ ./visp-podman.py deploy lock webclient
+$ ./visp.py deploy lock webclient
 ✓ webclient: Locked to f23595ff
   Date: 2026-02-08
   Commit: Update Angular to v17
 
 # 2. Verify everything is consistent
-$ ./visp-podman.py deploy status
+$ ./visp.py deploy status
 # Should show:
 # - Current Commit matches Locked Version
 # - Build Status: ✅ UP TO DATE
 # - Status: ✅ CLEAN
 
 # 3. If not, rebuild from locked version
-$ ./visp-podman.py build webclient
+$ ./visp.py build webclient
 ```
 
 ## Troubleshooting
@@ -353,7 +353,7 @@ $ ./visp-podman.py build webclient
 
 **Solution**: Rebuild the image to add labels:
 ```bash
-./visp-podman.py build <component>
+./visp.py build <component>
 ```
 
 ### Problem: Build Status shows "⚠️ STALE" but source hasn't changed
@@ -383,7 +383,7 @@ git branch
 
 **Solution**: Run without `--no-fetch` to update remote tracking:
 ```bash
-./visp-podman.py deploy status
+./visp.py deploy status
 ```
 
 ### Problem: Can't tell if rebuild is needed
@@ -460,33 +460,33 @@ podman build --label git.commit=<hash> \
 
 1. **Always check status before building**
    ```bash
-   ./visp-podman.py deploy status
-   ./visp-podman.py build <component>
+   ./visp.py deploy status
+   ./visp.py build <component>
    ```
 
 2. **Lock versions in production**
    ```bash
-   ./visp-podman.py deploy lock --all
+   ./visp.py deploy lock --all
    ```
 
 3. **Rebuild after significant source changes**
    ```bash
    # After git pull
-   ./visp-podman.py deploy status  # Check what's stale
-   ./visp-podman.py build all      # Rebuild affected
+   ./visp.py deploy status  # Check what's stale
+   ./visp.py build all      # Rebuild affected
    ```
 
 4. **Use version checks in build command**
    ```bash
    # Build will warn about version mismatches in production
-   ./visp-podman.py build session-manager
+   ./visp.py build session-manager
    ```
 
 5. **Keep local repos clean**
    ```bash
    # Commit or stash changes before updating
    git stash
-   ./visp-podman.py deploy update
+   ./visp.py deploy update
    git stash pop
    ```
 

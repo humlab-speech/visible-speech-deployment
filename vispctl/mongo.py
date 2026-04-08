@@ -48,7 +48,7 @@ def find_mongo_container() -> str:
         if result.returncode == 0 and result.stdout.strip() == "true":
             return name
     print("Error: MongoDB container not running", file=sys.stderr)
-    print("Start it with: ./visp-podman.py start mongo", file=sys.stderr)
+    print("Start it with: ./visp.py start mongo", file=sys.stderr)
     sys.exit(1)
 
 

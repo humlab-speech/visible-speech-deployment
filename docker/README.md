@@ -50,16 +50,16 @@ RUN git clone https://github.com/humlab-speech/webclient
 
 ## Usage
 
-### Build via visp-podman.py (recommended)
+### Build via visp.py (recommended)
 ```bash
 # Build a single service
-./visp-podman.py build session-manager
+./visp.py build session-manager
 
 # Build all services
-./visp-podman.py build
+./visp.py build
 
 # List all buildable targets
-./visp-podman.py build --list
+./visp.py build --list
 ```
 
 ## Relationship to Other Directories

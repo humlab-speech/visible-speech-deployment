@@ -213,7 +213,7 @@ class ImageManager:
                     Colors.YELLOW,
                 )
             )
-            print("  ./visp-podman.py build all")
+            print("  ./visp.py build all")
         print()
 
     def display_network_info(self) -> None:

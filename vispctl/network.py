@@ -142,7 +142,7 @@ class NetworkManager:
             elif response in ["no", "n"]:
                 print()
                 print("Migration cancelled. VISP may not work correctly with CNI.")
-                print("You can migrate later by running: ./visp-podman.py install")
+                print("You can migrate later by running: ./visp.py install")
                 return False
             else:
                 print("Please answer 'yes' or 'no'")

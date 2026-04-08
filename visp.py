@@ -19,24 +19,24 @@ Commands:
   restore     Restore MongoDB database from backup
 
 Build examples:
-  ./visp-podman.py build                         # Build all services
-  ./visp-podman.py build session-manager         # Build single service
-  ./visp-podman.py build container-agent         # Build container-agent (Node.js)
-  ./visp-podman.py build webclient --config visp.dev # Build webclient with visp.dev config (default)
-  ./visp-podman.py build --no-cache              # Clean rebuild (no cache)
-  ./visp-podman.py build --list                  # List buildable services
+  ./visp.py build                         # Build all services
+  ./visp.py build session-manager         # Build single service
+  ./visp.py build container-agent         # Build container-agent (Node.js)
+  ./visp.py build webclient --config visp.dev # Build webclient with visp.dev config (default)
+  ./visp.py build --no-cache              # Clean rebuild (no cache)
+  ./visp.py build --list                  # List buildable services
 
 Backup/Restore examples:
-  ./visp-podman.py backup                        # Backup to current directory
-  ./visp-podman.py backup -o /backups/db.tar.gz  # Backup to specific path
-  ./visp-podman.py restore backup.tar.gz         # Restore with confirmation
-  ./visp-podman.py restore backup.tar.gz --force # Restore without confirmation
+  ./visp.py backup                        # Backup to current directory
+  ./visp.py backup -o /backups/db.tar.gz  # Backup to specific path
+  ./visp.py restore backup.tar.gz         # Restore with confirmation
+  ./visp.py restore backup.tar.gz --force # Restore without confirmation
 
 Mode examples:
-  ./visp-podman.py mode                          # Show current mode
-  ./visp-podman.py mode dev                      # Set to development mode
-  ./visp-podman.py mode prod                     # Set to production mode
-  ./visp-podman.py install --mode prod --force   # Install prod quadlets
+  ./visp.py mode                          # Show current mode
+  ./visp.py mode dev                      # Set to development mode
+  ./visp.py mode prod                     # Set to production mode
+  ./visp.py install --mode prod --force   # Install prod quadlets
 """
 
 import argparse
@@ -268,7 +268,7 @@ def cmd_status(args):
         print(
             color(
                 f"  ⚠ {len(drift_warnings)} quadlet(s) differ from templates. "
-                "Run './visp-podman.py install --force && ./visp-podman.py reload' to update.",
+                "Run './visp.py install --force && ./visp.py reload' to update.",
                 Colors.YELLOW,
             )
         )
@@ -507,7 +507,7 @@ def prompt_netavark_migration() -> bool:
         elif response in ["no", "n"]:
             print()
             print("Migration cancelled. VISP may not work correctly with CNI.")
-            print("You can migrate later by running: ./visp-podman.py install")
+            print("You can migrate later by running: ./visp.py install")
             return False
         else:
             print("Please answer 'yes' or 'no'")
@@ -531,6 +531,50 @@ def ensure_networks_exist() -> bool:
     runner = Runner()
     nm = NetworkManager(runner)
     return nm.ensure_networks_exist()
+
+
+def _setup_service_env_files():
+    """Create service-specific .env files from templates if they don't exist.
+
+    Sensitive values (MONGO_URI, MONGO_PASSWORD, MEDIA_FILE_BASE_URL) are injected
+    at runtime via Podman Secrets (see Secret= lines in the quadlet files), so this
+    function only copies the template with non-secret defaults.
+    """
+    print(color("Setting up service environment files...", Colors.CYAN))
+
+    # --- emu-webapp-server ---
+    emu_env_target = PROJECT_DIR / "mounts/emu-webapp-server/.env"
+    emu_env_example = PROJECT_DIR / "external/emu-webapp-server/.env-example"
+    if emu_env_target.exists():
+        print("  ○ mounts/emu-webapp-server/.env already exists")
+    elif emu_env_example.exists():
+        # Copy template and strip out secrets (they come via Podman Secrets now)
+        content = emu_env_example.read_text()
+        lines = []
+        secret_keys = {"MONGO_URI", "MONGO_ROOT_PASSWORD", "MEDIA_FILE_BASE_URL"}
+        for line in content.splitlines():
+            key = line.split("=", 1)[0].strip() if "=" in line else ""
+            if key not in secret_keys:
+                lines.append(line)
+        emu_env_target.parent.mkdir(parents=True, exist_ok=True)
+        emu_env_target.write_text("\n".join(lines) + "\n")
+        print(color("  ✓ Created mounts/emu-webapp-server/.env (secrets via Podman Secrets)", Colors.GREEN))
+    else:
+        print(color("  ⚠ external/emu-webapp-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
+
+    # --- wsrng-server ---
+    wsrng_env_target = PROJECT_DIR / "external/wsrng-server/.env"
+    wsrng_env_example = PROJECT_DIR / "external/wsrng-server/.env-example"
+    if wsrng_env_target.exists():
+        print("  ○ external/wsrng-server/.env already exists")
+    elif wsrng_env_example.exists():
+        # Copy template; MONGO_PASSWORD is overridden by Podman Secret at runtime
+        import shutil
+
+        shutil.copy(wsrng_env_example, wsrng_env_target)
+        print(color("  ✓ Created external/wsrng-server/.env (MONGO_PASSWORD via Podman Secret)", Colors.GREEN))
+    else:
+        print(color("  ⚠ external/wsrng-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
 
 
 # === Installation Commands ===
@@ -650,7 +694,7 @@ def cmd_install(args):
                 continue
             # Extract source path (before the first ":")
             rel_path = line.split("=", 1)[1].split(":")[0].replace(f"{project_dir_str}/", "")
-            # Skip external/ — those are managed by visp-deploy.py
+            # Skip external/ — those are managed by 'deploy update'
             if rel_path.startswith("external/"):
                 continue
             target = PROJECT_DIR / rel_path
@@ -732,6 +776,13 @@ def cmd_install(args):
         print(color("  ⚠ Created placeholder matomo-tracker.js (BASE_DOMAIN not set)", Colors.YELLOW))
     print()
 
+    # Setup service-specific .env files from templates.
+    # Sensitive values (MONGO_URI, MONGO_PASSWORD, MEDIA_FILE_BASE_URL) are
+    # injected via Podman Secrets (see Secret= lines in quadlets), so we only
+    # need to copy the templates with non-secret defaults.
+    _setup_service_env_files()
+    print()
+
     # Determine which services are available in this mode
     services = _resolve_services(args.service)
 
@@ -772,7 +823,7 @@ def cmd_install(args):
 
     print()
     print(f"Mode set to: {color(mode, Colors.MAGENTA)}")
-    print("Run './visp-podman.py reload' to apply changes.")
+    print("Run './visp.py reload' to apply changes.")
 
 
 def cmd_uninstall(args):
@@ -811,7 +862,7 @@ def cmd_uninstall(args):
         print("  No VISP secrets found")
     print()
     print()
-    print("Run './visp-podman.py reload' to apply changes.")
+    print("Run './visp.py reload' to apply changes.")
 
 
 def cmd_reload(args):
@@ -835,9 +886,9 @@ def cmd_mode(args):
         print(f"Mode changed from {color(old_mode, Colors.YELLOW)} to {color(new_mode, Colors.GREEN)}")
         print()
         print(color("To apply the new mode:", Colors.CYAN))
-        print(f"  1. ./visp-podman.py install --mode {new_mode} --force")
-        print("  2. ./visp-podman.py reload")
-        print("  3. ./visp-podman.py restart all")
+        print(f"  1. ./visp.py install --mode {new_mode} --force")
+        print("  2. ./visp.py reload")
+        print("  3. ./visp.py restart all")
     else:
         # Show current mode
         current = get_current_mode()
@@ -849,7 +900,7 @@ def cmd_mode(args):
         print("  dev      - Traefik proxy, source code mounts, container-agent mounted")
         print("  prod     - No Traefik, code baked into images, optimized for deployment")
         print()
-        print("  Change mode: ./visp-podman.py mode [dev|prod]")
+        print("  Change mode: ./visp.py mode [dev|prod]")
 
 
 # === Container Commands ===
@@ -1140,7 +1191,7 @@ def cmd_build(args):
                     version_warnings.append(
                         f"  ⚠️  {svc_name}: Version mismatch in PROD mode\n"
                         f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
-                        f"      Run: ./visp-podman.py deploy update"
+                        f"      Run: ./visp.py deploy update"
                     )
             elif mode == "dev" and not is_locked:
                 locked_version = comp_config.get_locked_version(svc_name)
@@ -1158,7 +1209,7 @@ def cmd_build(args):
             if mode == "prod" and any("Version mismatch" in w for w in version_warnings):
                 print(color("❌ Cannot build in PROD mode with version mismatches.", Colors.RED))
                 print("   Options:")
-                print("   1. Run: ./visp-podman.py deploy update")
+                print("   1. Run: ./visp.py deploy update")
                 print("   2. Use --force to override (not recommended)")
                 print()
                 return

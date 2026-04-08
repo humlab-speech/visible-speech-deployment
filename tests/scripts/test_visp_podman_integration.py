@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def load_visp_module():
-    spec = importlib.util.spec_from_file_location("vp", str(Path.cwd() / "visp-podman.py"))
+    spec = importlib.util.spec_from_file_location("vp", str(Path.cwd() / "visp.py"))
     vp = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(vp)
     return vp

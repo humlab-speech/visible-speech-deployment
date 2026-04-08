@@ -24,7 +24,7 @@ def color(text: str, c: str) -> str:
 class Runner:
     """Simple wrapper around subprocess calls. Tests can mock Runner methods easily.
 
-    This intentionally mirrors the small API used in `visp-podman.py`.
+    This intentionally mirrors the small API used in `visp.py`.
     """
 
     def run(self, cmd: List[str], capture: bool = False, check: bool = True, **kwargs) -> subprocess.CompletedProcess:

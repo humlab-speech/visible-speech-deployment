@@ -213,7 +213,7 @@ def cmd_delete(args) -> None:
         print(_color("Failed to delete user", _C.RED))
 
 
-# ── Dispatch map (used by visp-podman.py cmd_users) ───────────────────────────
+# ── Dispatch map (used by visp.py cmd_users) ───────────────────────────
 
 COMMANDS: dict = {
     "list": cmd_list,

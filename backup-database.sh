@@ -20,17 +20,17 @@ echo "Date: $(date)"
 echo "Target file: $OUT"
 echo
 
-# Locate visp-podman.py (allow running via python3 if not executable)
-PODMAN_SCRIPT="./visp-podman.py"
+# Locate visp.py (allow running via python3 if not executable)
+PODMAN_SCRIPT="./visp.py"
 if [ -x "$PODMAN_SCRIPT" ]; then
   BACKUP_CMD=("$PODMAN_SCRIPT" backup -o "$OUT")
 elif [ -f "$PODMAN_SCRIPT" ] && command -v python3 >/dev/null 2>&1; then
   BACKUP_CMD=(python3 "$PODMAN_SCRIPT" backup -o "$OUT")
-elif command -v visp-podman.py >/dev/null 2>&1; then
-  BACKUP_CMD=(visp-podman.py backup -o "$OUT")
+elif command -v visp.py >/dev/null 2>&1; then
+  BACKUP_CMD=(visp.py backup -o "$OUT")
 else
-  echo "✗ Could not find runnable visp-podman.py in repo root or PATH." >&2
-  echo "  Run this script from the repository root or ensure visp-podman.py is installed." >&2
+  echo "✗ Could not find runnable visp.py in repo root or PATH." >&2
+  echo "  Run this script from the repository root or ensure visp.py is installed." >&2
   exit 1
 fi
 
@@ -48,7 +48,7 @@ if [ -f "$OUT" ]; then
   echo
   echo "✓ Backup complete: $OUT (${size_mb} MB)"
   echo
-  echo "To restore: ./visp-podman.py restore $OUT"
+  echo "To restore: ./visp.py restore $OUT"
   exit 0
 else
   echo "✗ Backup command completed but $OUT not found" >&2

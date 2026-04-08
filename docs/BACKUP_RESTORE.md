@@ -18,7 +18,7 @@ visible-speech-deployment/
 ```bash
 # 1. Backup database
 cd ~/Projects/visible-speech-deployment
-./visp-podman.py backup -o ~/backups/visp_mongodb_$(date +%Y%m%d).tar.gz
+./visp.py backup -o ~/backups/visp_mongodb_$(date +%Y%m%d).tar.gz
 
 # 2. Backup repositories
 tar -czf ~/backups/visp_repositories_$(date +%Y%m%d).tar.gz \
@@ -81,20 +81,20 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 # All commands run as visp user (rootless Podman)
 
 # Build required images
-./visp-podman.py build session-manager
-./visp-podman.py build webclient
+./visp.py build session-manager
+./visp.py build webclient
 
 # Build session images (if using RStudio/Jupyter features)
-./visp-podman.py build operations-session
-./visp-podman.py build rstudio-session
-./visp-podman.py build jupyter-session
+./visp.py build operations-session
+./visp.py build rstudio-session
+./visp.py build jupyter-session
 
 # Install quadlets (netavark auto-configured)
-./visp-podman.py install --mode prod
+./visp.py install --mode prod
 
 # Start services
-./visp-podman.py reload
-./visp-podman.py start all
+./visp.py reload
+./visp.py start all
 ```
 
 ### Step 5: Restore Data (as visp user)
@@ -104,10 +104,10 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 sleep 10
 
 # Stop MongoDB temporarily
-./visp-podman.py stop mongo
+./visp.py stop mongo
 
 # Restore database
-./visp-podman.py restore ~/backups/visp_mongodb_YYYYMMDD.tar.gz --force
+./visp.py restore ~/backups/visp_mongodb_YYYYMMDD.tar.gz --force
 
 # Restore repositories
 cd ~/Projects/visible-speech-deployment
@@ -121,27 +121,27 @@ ls -la mounts/repositories/
 chown -R $(id -u):$(id -g) mounts/repositories/
 
 # Restart all services
-./visp-podman.py start all
+./visp.py start all
 ```
 
 ### Step 6: Verify
 
 ```bash
 # Check services
-./visp-podman.py status
+./visp.py status
 
 # Test web interface
 curl http://localhost:8081/
 
 # Check logs
-./visp-podman.py logs -n 50
+./visp.py logs -n 50
 ```
 
 ## Quick Reference
 
 ### Backup Everything
 ```bash
-./visp-podman.py backup -o ~/visp_db_$(date +%Y%m%d).tar.gz && \
+./visp.py backup -o ~/visp_db_$(date +%Y%m%d).tar.gz && \
 tar -czf ~/visp_repos_$(date +%Y%m%d).tar.gz mounts/repositories/
 ```
 
@@ -153,7 +153,7 @@ After restore, your system should look like:
 ~/Projects/visible-speech-deployment/
 ├── .env                          # Configuration (create manually)
 ├── .env.secrets                  # Auto-generated on install
-├── visp-podman.py               # Management script
+├── visp.py               # Management script
 ├── mounts/
 │   ├── repositories/            # ← RESTORED USER DATA
 │   │   ├── project1_repo/
@@ -175,9 +175,9 @@ After restore, your system should look like:
 ### Database restore fails
 ```bash
 # Check MongoDB is stopped
-./visp-podman.py stop mongo
+./visp.py stop mongo
 # Try restore again
-./visp-podman.py restore backup.tar.gz --force
+./visp.py restore backup.tar.gz --force
 ```
 
 ### Repositories not accessible
@@ -193,13 +193,13 @@ chown -R $(id -u):$(id -g) mounts/repositories/
 podman info | grep networkBackend  # Must be: netavark
 
 # Check logs
-./visp-podman.py logs -n 100
+./visp.py logs -n 100
 ```
 
 ### DNS resolution slow (20+ seconds)
 ```bash
 # You're on CNI backend, need to migrate
-./visp-podman.py install --mode prod --force
+./visp.py install --mode prod --force
 # Will prompt for netavark migration
 ```
 
@@ -216,7 +216,7 @@ mkdir -p "$BACKUP_DIR"
 cd ~/Projects/visible-speech-deployment
 
 # Backup database
-./visp-podman.py backup -o "$BACKUP_DIR/db_$DATE.tar.gz"
+./visp.py backup -o "$BACKUP_DIR/db_$DATE.tar.gz"
 
 # Backup repositories
 tar -czf "$BACKUP_DIR/repos_$DATE.tar.gz" mounts/repositories/

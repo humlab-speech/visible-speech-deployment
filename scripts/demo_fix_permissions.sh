@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Demo script for `visp-podman.py fix-permissions`
+# Demo script for `visp.py fix-permissions`
 # Behavior:
 # 1) create a demo directory and file as the current user
 # 2) corrupt ownership using `podman unshare chown 1000:1000` and restrictive mode
 # 3) show `ls`/`stat` so you can observe the broken state
-# 4) show a dry-run plan from `visp-podman.py fix-permissions`
+# 4) show a dry-run plan from `visp.py fix-permissions`
 # 5) apply the fix (no sudo used; uses podman unshare chown/chmod)
 # 6) show `ls`/`stat` after fix and remove the demo dir
 
 DEMO="mounts/apache/apache/uploads/demo-fix-perm-script"
-VISP_CMD="$(pwd)/visp-podman.py"
+VISP_CMD="$(pwd)/visp.py"
 
 if [ ! -x "$VISP_CMD" ]; then
-  echo "Error: $VISP_CMD not found or not executable. Run this script from the project root where visp-podman.py is located."
+  echo "Error: $VISP_CMD not found or not executable. Run this script from the project root where visp.py is located."
   exit 1
 fi
 

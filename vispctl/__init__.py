@@ -1,4 +1,4 @@
-"""vispctl - small modular library extracted from visp-podman.py
+"""vispctl - small modular library extracted from visp.py
 
 This package contains runner and manager abstractions used by the CLI.
 """
