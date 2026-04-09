@@ -219,6 +219,10 @@ class BuildManager:
             print(color(f"  ✗ Source directory not found: {source_dir}", Colors.RED))
             return False
 
+        # Run optional pre-build step (e.g. composer install for PHP dependencies)
+        if not self._run_pre_build(name, config, source_dir):
+            return False
+
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if no_cache:
@@ -270,6 +274,51 @@ class BuildManager:
             return False
         except Exception as e:
             print(color(f"  ✗ {name} build error: {e}", Colors.RED))
+            return False
+
+    def _run_pre_build(
+        self,
+        name: str,
+        config: Dict[str, Any],
+        source_dir: Path,
+    ) -> bool:
+        """Run an optional pre-build step in a separate container.
+
+        Used e.g. for `composer install` before the Angular build, so that
+        PHP vendor/ dependencies are present when the asset pipeline copies
+        them into dist/.
+        """
+        pre_build_cmd = config.get("pre_build_cmd")
+        if not pre_build_cmd:
+            return True
+
+        pre_build_image = config.get("pre_build_image", "docker.io/library/composer:2")
+        print(color(f"  Running pre-build step ({pre_build_image})...", Colors.CYAN))
+
+        cmd = [
+            "podman",
+            "run",
+            "--rm",
+            "--userns=keep-id",
+            "-v",
+            f"{source_dir.resolve()}:/app:rw,Z",
+            "-w",
+            "/app",
+            pre_build_image,
+            "sh",
+            "-c",
+            pre_build_cmd,
+        ]
+
+        try:
+            res = self.runner.run(cmd, check=False)
+            if res.returncode != 0:
+                print(color(f"  ✗ {name} pre-build step failed (exit code {res.returncode})", Colors.RED))
+                return False
+            print(color("  ✓ Pre-build step completed", Colors.GREEN))
+            return True
+        except Exception as e:
+            print(color(f"  ✗ {name} pre-build error: {e}", Colors.RED))
             return False
 
     @staticmethod

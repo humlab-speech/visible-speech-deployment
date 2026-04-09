@@ -1067,14 +1067,19 @@ NODE_BUILD_CONFIGS = {
         "source": "./external/webclient",
         "output": "./external/webclient/dist",
         "description": "Angular webclient (ng build)",
-        # Run ng build directly - skipping php:vendor (composer) since the Apache
-        # Dockerfile installs PHP dependencies itself during image build.
+        # Pre-build: install PHP dependencies so angular.json's asset pipeline
+        # can copy vendor/ into dist/. Uses --ignore-platform-reqs because the
+        # Composer container lacks ext-mongodb (only needed at PHP runtime).
+        "pre_build_cmd": "composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs",
+        "pre_build_image": "docker.io/library/composer:2",
         # Use npx to invoke the locally installed ng binary.
-        "build_cmd": "npx ng build --configuration={config} --output-path dist",
+        # Note: --output-path is NOT passed here; angular.json defines
+        # outputPath: {base:"dist", browser:""} which the application builder needs.
+        "build_cmd": "npx ng build --configuration={config}",
         "default_config": "visp.dev",
         "verify_file": "index.php",
-        # Angular needs more memory and uses node:20 (not alpine) for better compatibility
-        "container_image": "node:20",
+        # Angular 20 requires Node ^20.19 || ^22.12 || >=24
+        "container_image": "node:22",
     },
 }
 
