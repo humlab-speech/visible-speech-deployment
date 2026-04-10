@@ -35,7 +35,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     rm -rf /var/lib/apt/lists/*
 
 # Enable required Apache modules (including PHP)
-RUN a2enmod php8.4 proxy proxy_http ssl headers rewrite proxy_wstunnel
+# remoteip: resolve real client IP from X-Forwarded-For (behind nginx/Traefik)
+RUN a2enmod php8.4 proxy proxy_http ssl headers rewrite proxy_wstunnel remoteip
 
 ENV APACHE_RUN_USER=www-data
 ENV APACHE_RUN_GROUP=www-data

@@ -26,6 +26,7 @@ Volume=@@PROJECT_DIR@@/certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z
 # General volumes
 Volume=@@PROJECT_DIR@@/mounts/api-logs/logs:/var/log/api:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/apache/remoteip.conf:/etc/apache2/conf-enabled/remoteip.conf:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/envvars:/etc/apache2/envvars:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z

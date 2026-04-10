@@ -218,6 +218,43 @@ podman inspect matomo --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}
 - **Tracker** is a separate static JS file served by Apache, generated from
   a template during `./visp.py install`.
 
+### Real visitor IP (mod_remoteip)
+
+The request chain for tracking hits is:
+
+```
+Browser (real IP) → nginx/Traefik → Apache container → ProxyPass /vt → Matomo container
+```
+
+Without special configuration, Matomo sees the **Apache container's internal
+Podman network IP** (e.g. `10.89.0.x`) instead of the visitor's real IP. This
+causes all visits to appear as coming from a private network / incorrect country.
+
+The fix is Apache's `mod_remoteip`, which replaces `REMOTE_ADDR` with the real
+client IP from the `X-Forwarded-For` header before the request is proxied to
+Matomo. Configuration:
+
+1. **Dockerfile** — `a2enmod remoteip` (enabled at build time)
+2. **`remoteip.conf`** — bind-mounted into `/etc/apache2/conf-enabled/`:
+   - `RemoteIPHeader X-Forwarded-For`
+   - `RemoteIPInternalProxy 10.89.0.0/16` (Podman networks)
+   - `RemoteIPInternalProxy 172.16.0.0/12` (Docker/Podman bridge networks)
+3. **Matomo `config.ini.php`** — `proxy_client_headers[] = "HTTP_X_FORWARDED_FOR"`
+   (set during initial setup wizard, tells Matomo to trust the header)
+
+**Both** the Apache module AND the Matomo config setting are required. The upstream
+proxy (nginx in prod, Traefik in dev) must also set `X-Forwarded-For` — nginx does
+this via `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` in `nginx.conf`.
+
+If visitors still show internal IPs after this change, verify:
+```bash
+# Check mod_remoteip is loaded:
+podman exec apache apache2ctl -M | grep remoteip
+
+# Check the config is mounted:
+podman exec apache cat /etc/apache2/conf-enabled/remoteip.conf
+```
+
 ### Same-origin proxy (ad-blocker bypass)
 
 The Matomo tracker library (`matomo.js`) and collection endpoint (`matomo.php`)

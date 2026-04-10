@@ -689,6 +689,11 @@ automatically, but `createProjects` is **not** set — it must be granted explic
   examples. Replace real file names, usernames, project names, and session names with generic
   placeholders (e.g. `my_recording.wav`, `Session_1`, `some_user`). This applies to TODO.md,
   AGENTS.md, commit history, and any other tracked file.
+- **Anonymize public IP addresses** in committed files. Never include real public IPs
+  (university, home, VPN, etc.) in code, docs, or commit messages. Use RFC 5737 documentation
+  ranges (`192.0.2.x`, `198.51.100.x`, `203.0.113.x`) or generic placeholders like
+  `<SERVER_IP>` instead. Private/internal IPs (`10.x.x.x`, `172.16–31.x.x`, `192.168.x.x`,
+  `127.x.x.x`) are fine — they are not identifying.
 - **Be careful with Markdown documents** (`.md` files). The following tracked docs may be
   committed freely: `README.md`, `TODO.md`, `AGENTS.md`. All other `.md` files (especially
   those in `dev-notes/`, `docs/`, or newly created files) require explicit user approval
