@@ -4,7 +4,7 @@ This directory contains Dockerfiles/Containerfiles and build support files for V
 
 ## Purpose
 
-Dockerfiles define **how to build** container images. They are part of **this project**, not external dependencies.
+Dockerfiles/Containerfiles define **how to build** container images. They are part of **this project**, not external dependencies.
 
 ## Contents
 
@@ -21,7 +21,7 @@ Dockerfiles define **how to build** container images. They are part of **this pr
 
 ## What Belongs Here
 
-✅ **Dockerfiles** - Image build instructions
+✅ **Dockerfiles/Containerfiles** - Image build instructions
 ✅ **Build scripts** - Helper scripts for building images
 ✅ **Support files** - Config templates, build-time resources
 ✅ **Session templates** - RStudio/Jupyter/VS Code session configurations
@@ -33,11 +33,11 @@ Dockerfiles define **how to build** container images. They are part of **this pr
 
 ## How It Works
 
-Dockerfiles in this directory **reference** source code from `external/`:
+Build files in this directory **reference** source code from `external/`:
 
 ```dockerfile
 # Build context is ./external/session-manager
-# Dockerfile copies files from that context
+# Dockerfile/Containerfile copies files from that context
 COPY package.json ./
 COPY src/ ./src/
 ```
@@ -64,7 +64,7 @@ RUN git clone https://github.com/humlab-speech/webclient
 
 ## Relationship to Other Directories
 
-- **`external/`**: Contains **source code** that Dockerfiles build FROM
+- **`external/`**: Contains **source code** that build files reference
 - **`mounts/`**: Contains **runtime data** that containers write TO
 
 Think of it this way:

@@ -6,18 +6,19 @@
 
 Following the "single source of truth" principle: services we control should own their build process. This allows:
 - Independent development without this deployment project
-- Standalone builds: `cd external/wsrng-server && docker build .`
+- Standalone builds: `cd external/wsrng-server && podman build .`
 - Version control of Dockerfile with the code it builds
 - Reuse by other projects
 
-## Docker Compose Configuration
+## Build Configuration
 
-```yaml
-wsrng-server:
-  build:
-    context: ./external/wsrng-server
-    dockerfile: Dockerfile  # Uses external/wsrng-server/Dockerfile
+Built via `visp.py` using the Dockerfile in the wsrng-server repository:
+
+```bash
+./visp.py build wsrng-server
 ```
+
+The build context is `external/wsrng-server/` with `external/wsrng-server/Dockerfile`.
 
 ## Legacy Note
 

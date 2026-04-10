@@ -162,7 +162,7 @@ VISP supports two deployment modes with different configurations:
 
 # Image management
 ./visp.py images              # List VISP images, networks, and build status
-./visp.py images base         # Audit base images from Dockerfiles (version pinning check)
+./visp.py images base         # Audit base images from container build files (version pinning check)
 
 # Permissions
 ./visp.py fix-permissions     # Fix mount path permissions using podman unshare
@@ -344,12 +344,12 @@ Monitor and audit container images:
 # - VISP networks status
 # - Container network connections
 
-# Audit base images from Dockerfiles
+# Audit base images from Dockerfiles/Containerfiles
 ./visp.py images base
 # Shows:
-# - All base images used in Dockerfiles (debian, node, nginx, etc.)
+# - All base images used in Dockerfiles/Containerfiles (debian, node, nginx, etc.)
 # - Version pinning status (✓ pinned / ⚠️ unpinned)
-# - Which Dockerfiles use each base image
+# - Which build files use each base image
 # - Summary of unpinned images
 # Useful for:
 #   - Checking for outdated base images

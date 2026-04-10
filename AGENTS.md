@@ -689,9 +689,10 @@ automatically, but `createProjects` is **not** set — it must be granted explic
   examples. Replace real file names, usernames, project names, and session names with generic
   placeholders (e.g. `my_recording.wav`, `Session_1`, `some_user`). This applies to TODO.md,
   AGENTS.md, commit history, and any other tracked file.
-- **Never commit Markdown documents** (`.md` files) without explicit user approval. You may
-  create or edit them in the working tree, but do not `git add` or `git commit` any `.md` file
-  unless the user explicitly asks you to commit it. This prevents accidental commits of
-  temporary work documents, draft notes, or incomplete documentation.
+- **Be careful with Markdown documents** (`.md` files). The following tracked docs may be
+  committed freely: `README.md`, `TODO.md`, `AGENTS.md`. All other `.md` files (especially
+  those in `dev-notes/`, `docs/`, or newly created files) require explicit user approval
+  before committing. This prevents accidental commits of temporary work documents, draft
+  notes, or incomplete documentation.
 - **WSL-specific**: Do not use `127.0.0.1` in netsh portproxy commands — use the actual WSL IP
   address (e.g., `172.29.72.57`). Localhost forwarding does not work for rootless Podman on WSL.

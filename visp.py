@@ -909,6 +909,21 @@ def cmd_uninstall(args):
         sm.remove_secrets(visp_secrets)
     else:
         print("  No VISP secrets found")
+
+    # Optionally remove Podman networks
+    if getattr(args, "remove_networks", False):
+        print()
+        print(color("Removing Podman networks...", Colors.CYAN))
+        visp_networks = ["systemd-visp-net", "systemd-octra-net"]
+        for net_name in visp_networks:
+            rc, _, stderr = run_quiet(["podman", "network", "rm", net_name])
+            if rc == 0:
+                print(color(f"  ✓ {net_name}: removed", Colors.GREEN))
+            elif "no such network" in stderr.lower() or "not found" in stderr.lower():
+                print(f"  ○ {net_name}: not found")
+            else:
+                print(color(f"  ✗ {net_name}: {stderr.strip()}", Colors.RED))
+
     print()
     print()
     print("Run './visp.py reload' to apply changes.")
@@ -1497,7 +1512,12 @@ def cmd_deploy_status(args):
     from vispctl.deploy import DeployManager
 
     dm = DeployManager(runner=RUNNER)
-    dm.check_status(fetch=not getattr(args, "no_fetch", False))
+    all_clean = dm.check_status(fetch=not getattr(args, "no_fetch", False))
+
+    if getattr(args, "strict", False) and not all_clean:
+        print()
+        print(color("✗ Strict mode: version drift detected", Colors.RED))
+        sys.exit(1)
 
 
 def cmd_deploy_lock(args):
@@ -1808,6 +1828,7 @@ Examples:
     p_uninstall = subparsers.add_parser("uninstall", aliases=["u"], help="Remove quadlet links")
     p_uninstall.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_uninstall.add_argument("--keep-running", action="store_true", help="Don't stop services first")
+    p_uninstall.add_argument("--remove-networks", action="store_true", help="Also remove Podman networks")
 
     # reload
     subparsers.add_parser("reload", help="Reload systemd daemon")
@@ -1911,6 +1932,9 @@ Examples:
     p_deploy_status = p_deploy_sub.add_parser("status", help="Check repository status and version drift")
     p_deploy_status.add_argument(
         "--no-fetch", action="store_true", help="Skip fetching from remotes (use cached remote state)"
+    )
+    p_deploy_status.add_argument(
+        "--strict", action="store_true", help="Exit with code 1 if any version drift is detected (for CI/CD)"
     )
 
     # deploy lock

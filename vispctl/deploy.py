@@ -213,12 +213,15 @@ class DeployManager:
                 "recommendation": f"Image built from {image_commit[:8]}, source at {current_commit[:8]} - rebuild needed",
             }
 
-    def check_status(self, fetch: bool = True) -> None:
+    def check_status(self, fetch: bool = True) -> bool:
         """
         Check status of all repositories and report uncommitted changes.
 
         Args:
             fetch: Whether to fetch from remotes before checking status
+
+        Returns:
+            True if everything is clean and up-to-date, False if any drift detected.
         """
         print("🔍 Checking repository status...")
 
@@ -782,7 +785,7 @@ class DeployManager:
             unique_restarts = [n for n in restart_candidates if n not in seen_r and not seen_r.add(n)]  # type: ignore[func-returns-value]
             actions.append(f"./visp.py restart {' '.join(unique_restarts)}")
 
-        if (
+        all_clean = (
             not repos_with_changes
             and not repos_ahead
             and not repos_behind
@@ -791,7 +794,9 @@ class DeployManager:
             and not not_built
             and not stale_images
             and not not_built_images
-        ):
+        )
+
+        if all_clean:
             summary_lines.append("✅ All repositories are clean and synced!")
         elif actions:
             summary_lines.append("")
@@ -802,6 +807,8 @@ class DeployManager:
         for line in summary_lines:
             print(line)
         print("=" * 100)
+
+        return all_clean
 
     def lock_components(self, components: list[str], lock_all: bool = False) -> bool:
         """

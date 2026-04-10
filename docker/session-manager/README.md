@@ -1,6 +1,6 @@
-# Docker Session Containers
+# Session Containers
 
-This directory contains Dockerfiles for **user session containers** that are launched by the session-manager service.
+This directory contains container build files for **user session containers** that are launched by the session-manager service.
 
 ## What it builds:
 

@@ -238,7 +238,7 @@ Add to crontab: `crontab -e`
 
 ## Notes
 
-- **Images preserved**: Container images don't need backup (rebuilt from Dockerfiles)
+- **Images preserved**: Container images don't need backup (rebuilt from Dockerfiles/Containerfiles)
 - **Config not backed up**: `.env` file contains site-specific config, recreate on new machine
 - **Secrets auto-generated**: `.env.secrets` created automatically during install
 - **Netavark required**: System will auto-configure on first install
