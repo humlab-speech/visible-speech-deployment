@@ -34,7 +34,7 @@ Volume=@@PROJECT_DIR@@/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z
 Volume=@@PROJECT_DIR@@/external/webclient/dist:/var/www/html:Z
 # DEV MODE: Mount PHP API source directly so edits are instant (no build needed)
 Volume=@@PROJECT_DIR@@/external/webclient/api:/var/www/html/api:Z
-Volume=@@PROJECT_DIR@@/mounts/apache/apache/matomo-tracker.js:/var/www/html/matomo-tracker.js:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/apache/apache/vc.js:/var/www/html/vc.js:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/var/log/apache2:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z

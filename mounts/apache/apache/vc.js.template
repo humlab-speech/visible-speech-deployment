@@ -1,6 +1,5 @@
-// Matomo analytics tracker for VISP
-// This file is auto-generated from matomo-tracker.js.template
-// To regenerate: ./visp-podman.py matomo-generate-tracker
+// VISP visitor analytics configuration
+// Auto-generated from vc.js.template by ./visp.py install
 var _paq = window._paq = window._paq || [];
 _paq.push(['setDomains', [
   '*.{{BASE_DOMAIN}}',

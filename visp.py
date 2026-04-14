@@ -811,18 +811,18 @@ def cmd_install(args):
         print("  All container-writable directories already have correct permissions")
     print()
 
-    # Generate matomo-tracker.js from template if BASE_DOMAIN is set
-    tracker_template = PROJECT_DIR / "mounts/apache/apache/matomo-tracker.js.template"
-    tracker_output = PROJECT_DIR / "mounts/apache/apache/matomo-tracker.js"
+    # Generate vc.js (visitor analytics config) from template if BASE_DOMAIN is set
+    tracker_template = PROJECT_DIR / "mounts/apache/apache/vc.js.template"
+    tracker_output = PROJECT_DIR / "mounts/apache/apache/vc.js"
     if tracker_template.exists() and env_vars.get("BASE_DOMAIN"):
         content = tracker_template.read_text()
         content = content.replace("{{BASE_DOMAIN}}", env_vars["BASE_DOMAIN"])
         tracker_output.write_text(content)
-        print(color(f"  ✓ Generated matomo-tracker.js for {env_vars['BASE_DOMAIN']}", Colors.GREEN))
+        print(color(f"  ✓ Generated vc.js for {env_vars['BASE_DOMAIN']}", Colors.GREEN))
     elif not tracker_output.exists():
         # Create a placeholder so the bind-mount doesn't fail
-        tracker_output.write_text("// Matomo tracker not configured — set BASE_DOMAIN and re-run install\n")
-        print(color("  ⚠ Created placeholder matomo-tracker.js (BASE_DOMAIN not set)", Colors.YELLOW))
+        tracker_output.write_text("// Analytics not configured — set BASE_DOMAIN and re-run install\n")
+        print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
     print()
 
     # Setup service-specific .env files from templates.

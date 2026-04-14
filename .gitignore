@@ -44,7 +44,7 @@ mounts/mongo/data/
 mounts/mongo/logs/
 mounts/matomo/
 mounts/matomo-db/
-mounts/apache/apache/matomo-tracker.js
+mounts/apache/apache/vc.js
 mounts/session-manager
 restart-wsrng-server.sh
 run_git_clone_in_container.sh
