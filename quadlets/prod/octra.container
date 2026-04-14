@@ -11,7 +11,15 @@ Volume=@@PROJECT_DIR@@/mounts/octra/appconfig.json:/usr/local/apache2/htdocs/con
 Volume=@@PROJECT_DIR@@/mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
-PodmanArgs=--cgroups=disabled
+
+# Security hardening
+DropCapability=ALL
+AddCapability=SETGID SETUID NET_BIND_SERVICE
+NoNewPrivileges=true
+ReadOnly=true
+
+# Resource limits
+PodmanArgs=--memory=128m --cpus=0.25 --pids-limit=150 --tmpfs /tmp --tmpfs /run --tmpfs /usr/local/apache2/logs
 
 [Service]
 Restart=always

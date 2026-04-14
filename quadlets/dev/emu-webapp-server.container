@@ -19,7 +19,13 @@ Volume=@@PROJECT_DIR@@/external/emu-webapp-server/package.json:/home/node/app/pa
 Volume=@@PROJECT_DIR@@/external/emu-webapp-server/package-lock.json:/home/node/app/package-lock.json:ro,Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
-PodmanArgs=--cgroups=disabled
+
+# Security hardening
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
 
 [Service]
 Restart=unless-stopped

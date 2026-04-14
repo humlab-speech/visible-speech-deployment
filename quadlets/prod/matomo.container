@@ -15,7 +15,14 @@ Volume=@@PROJECT_DIR@@/mounts/matomo/config:/var/www/html/config:rw,Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/external_logs:ro
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
-PodmanArgs=--cgroups=disabled
+
+# Security hardening
+DropCapability=ALL
+AddCapability=CHOWN DAC_OVERRIDE FOWNER NET_BIND_SERVICE SETGID SETUID
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
 
 [Service]
 Restart=on-failure

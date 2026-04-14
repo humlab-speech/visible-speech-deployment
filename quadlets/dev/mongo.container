@@ -14,7 +14,14 @@ Volume=@@PROJECT_DIR@@/mounts/mongo/logs:/var/log/mongodb:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 Exec=--logpath /var/log/mongodb/mongodb.log
-PodmanArgs=--cgroups=disabled --userns=keep-id
+
+# Security hardening
+DropCapability=ALL
+AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--userns=keep-id --memory=512m --cpus=1.0 --pids-limit=200
 
 [Service]
 Restart=always

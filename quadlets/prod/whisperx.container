@@ -17,7 +17,12 @@ Environment=WHISPERX_DEVICE=cpu
 Environment=WHISPERX_COMPUTE_TYPE=float32
 # Diarization model (pyannote speaker diarization pipeline)
 Environment=WHISPERX_DIARIZE_MODEL=/models/extra/pyannote-speaker-diarization
-PodmanArgs=--cgroups=disabled --cap-drop=ALL --security-opt=no-new-privileges:true
+
+# Security hardening (no resource limits — CPU/memory-intensive workload)
+DropCapability=ALL
+NoNewPrivileges=true
+ReadOnly=true
+PodmanArgs=--tmpfs /tmp
 
 [Service]
 Restart=always

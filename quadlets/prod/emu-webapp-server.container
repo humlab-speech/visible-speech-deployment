@@ -18,7 +18,13 @@ Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 Volume=@@PROJECT_DIR@@/mounts/emu-webapp-server/logs:/home/node/app/logs:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
-PodmanArgs=--cgroups=disabled
+
+# Security hardening
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
 
 [Service]
 Restart=always

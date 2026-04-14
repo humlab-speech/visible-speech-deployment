@@ -13,7 +13,14 @@ Secret=visp_matomo_db_password,type=env,target=MYSQL_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/matomo-db/mysql:/var/lib/mysql:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
-PodmanArgs=--cgroups=disabled
+
+# Security hardening
+DropCapability=ALL
+AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
 
 [Service]
 Restart=on-failure

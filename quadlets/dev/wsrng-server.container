@@ -10,7 +10,13 @@ Network=visp-net.network
 EnvironmentFile=@@PROJECT_DIR@@/external/wsrng-server/.env
 Secret=visp_mongo_root_password,type=env,target=MONGO_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
-PodmanArgs=--cgroups=disabled
+
+# Security hardening
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
 
 [Service]
 Restart=always
