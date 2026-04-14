@@ -102,9 +102,9 @@ def test_build_node_project_runs_pre_build(tmp_path):
         "description": "test webclient",
         "build_cmd": "npx ng build",
         "verify_file": "index.php",
-        "container_image": "node:22",
+        "container_image": "node:22.22.2",
         "pre_build_cmd": "composer install --no-dev",
-        "pre_build_image": "docker.io/library/composer:2",
+        "pre_build_image": "docker.io/library/composer:2.9.5",
     }
 
     success = bm.build_node_project("webclient", config)
@@ -112,10 +112,10 @@ def test_build_node_project_runs_pre_build(tmp_path):
     # Should have run two podman commands: pre-build then main build
     assert len(commands) == 2
     # First command is the pre-build (composer)
-    assert "docker.io/library/composer:2" in commands[0]
+    assert "docker.io/library/composer:2.9.5" in commands[0]
     assert "composer install --no-dev" in " ".join(commands[0])
     # Second command is the main Node build
-    assert "node:22" in commands[1]
+    assert "node:22.22.2" in commands[1]
 
 
 def test_build_node_project_fails_on_pre_build_error(tmp_path):
@@ -151,7 +151,7 @@ def test_build_node_project_fails_on_pre_build_error(tmp_path):
         "build_cmd": "npm run build",
         "verify_file": "index.php",
         "pre_build_cmd": "composer install",
-        "pre_build_image": "docker.io/library/composer:2",
+        "pre_build_image": "docker.io/library/composer:2.9.5",
     }
 
     success = bm.build_node_project("webclient", config)

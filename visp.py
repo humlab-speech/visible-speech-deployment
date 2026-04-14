@@ -1086,7 +1086,7 @@ NODE_BUILD_CONFIGS = {
         # can copy vendor/ into dist/. Uses --ignore-platform-reqs because the
         # Composer container lacks ext-mongodb (only needed at PHP runtime).
         "pre_build_cmd": "composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs",
-        "pre_build_image": "docker.io/library/composer:2",
+        "pre_build_image": "docker.io/library/composer:2.9.5",
         # Use npx to invoke the locally installed ng binary.
         # Note: --output-path is NOT passed here; angular.json defines
         # outputPath: {base:"dist", browser:""} which the application builder needs.
@@ -1094,7 +1094,7 @@ NODE_BUILD_CONFIGS = {
         "default_config": "visp.dev",
         "verify_file": "index.php",
         # Angular 20 requires Node ^20.19 || ^22.12 || >=24
-        "container_image": "node:22",
+        "container_image": "node:22.22.2",
     },
 }
 

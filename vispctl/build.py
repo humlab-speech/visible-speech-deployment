@@ -292,7 +292,7 @@ class BuildManager:
         if not pre_build_cmd:
             return True
 
-        pre_build_image = config.get("pre_build_image", "docker.io/library/composer:2")
+        pre_build_image = config.get("pre_build_image", "docker.io/library/composer:2.9.5")
         print(color(f"  Running pre-build step ({pre_build_image})...", Colors.CYAN))
 
         cmd = [

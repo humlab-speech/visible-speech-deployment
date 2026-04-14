@@ -3,7 +3,7 @@
 # ------------------------------------------------------------
 # base: Apache + Shibboleth + PHP + Node + Composer
 # ------------------------------------------------------------
-FROM docker.io/library/debian:trixie AS base
+FROM docker.io/library/debian:trixie-20260406 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="Debian Apache + Shibboleth + PHP (Sury) + Node, for VISP webserver/router/auth layer"

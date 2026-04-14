@@ -4,7 +4,7 @@ After=network-online.target visp-net.service
 
 [Container]
 ContainerName=traefik
-Image=docker.io/library/traefik:v3.3
+Image=docker.io/library/traefik:v3.3.7
 Network=visp-net.network
 PublishPort=8080:80
 PublishPort=8443:443

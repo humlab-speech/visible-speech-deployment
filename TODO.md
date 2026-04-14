@@ -42,11 +42,6 @@
 
 ### Build & Images
 
-- [ ] **Pin base Docker images to specific versions**
-  - 🔴 Critical: `rocker/rstudio:4` → pinned version (R version changes break packages)
-  - 🟡 High: `debian:bookworm`, `node:20-bookworm-slim` (add dated snapshots)
-  - 🟢 Already pinned: octra, jupyter, wsrng-server
-
 - [ ] **Audit Dockerfiles for version consistency**
   - Some Dockerfiles do `git clone` without specifying version
   - Prefer using `external/` as build context (controlled by versions.json)

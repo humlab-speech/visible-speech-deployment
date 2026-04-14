@@ -1,4 +1,4 @@
-FROM docker.io/library/debian:bookworm-slim
+FROM docker.io/library/debian:bookworm-20260406-slim
 
 RUN apt-get update && \
     apt-get install -y curl git python3 python3-pip python3-venv tini && \

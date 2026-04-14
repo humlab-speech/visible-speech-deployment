@@ -5,7 +5,7 @@ Requires=matomo-db.service
 
 [Container]
 ContainerName=matomo
-Image=docker.io/library/matomo:5
+Image=docker.io/library/matomo:5.8.0
 Network=visp-net.network
 Environment=MATOMO_DATABASE_HOST=matomo-db
 Environment=MATOMO_DATABASE_DBNAME=matomo_db
