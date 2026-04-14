@@ -237,8 +237,9 @@ Matomo. Configuration:
 1. **Dockerfile** — `a2enmod remoteip` (enabled at build time)
 2. **`remoteip.conf`** — bind-mounted into `/etc/apache2/conf-enabled/`:
    - `RemoteIPHeader X-Forwarded-For`
-   - `RemoteIPInternalProxy 10.89.0.0/16` (Podman networks)
+   - `RemoteIPInternalProxy 10.0.0.0/8` (university LBs + Podman networks)
    - `RemoteIPInternalProxy 172.16.0.0/12` (Docker/Podman bridge networks)
+   - `RemoteIPInternalProxy 192.168.0.0/16` (local networks)
 3. **Matomo `config.ini.php`** — `proxy_client_headers[] = "HTTP_X_FORWARDED_FOR"`
    (set during initial setup wizard, tells Matomo to trust the header)
 
