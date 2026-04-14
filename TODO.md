@@ -2,20 +2,15 @@
 
 > Completed items have been removed — see `git log` for implementation details.
 > Key completions: Podman quadlet migration (phases 1–3g), WhisperVault integration,
-> netavark migration, Matomo analytics, Angular 18→20 upgrade, Podman secrets,
-> orphaned bundle detection, version drift tracking, disk leak fix.
+> netavark migration, Matomo analytics (ad-blocker-safe proxy rename), Angular 18→20
+> upgrade, Podman secrets, orphaned bundle detection, version drift tracking, disk leak
+> fix, path traversal protection (session-manager), SWAMID certificate deployment +
+> login verified, `deploy status --strict`, upload permission fixes.
 
 ## High Priority
 
-- [ ] **Register production domain with SWAMID IdP**
-  - Domain: `visp.pdf-server.humlab.umu.se`
-  - Required files: `shibboleth2.xml`, `attribute-map.xml`, `swamid-idp.xml`
-  - Contact: Umeå University IT department
-  - Currently using TEST_USER_LOGIN_KEY workaround for authentication
-
 - [ ] **Verify uploads work end-to-end in Podman**
-  - Recent fixes: `fix-permissions` command, `chmod 777` on uploads dir during install,
-    permission handling in api.php (commits c703ab3, f79bc70, 7944407)
+  - Upload permission fixes are in place (`fix-permissions`, `chmod 777`, api.php)
   - Still needed: reproduce an upload while tailing Apache + session-manager logs,
     verify files land on host at `mounts/apache/apache/uploads/`
   - See AGENTS.md "File Upload Pipeline" section for debugging guide
@@ -61,14 +56,8 @@
 ### Infrastructure
 
 - [ ] **Finish Podman migration cleanup**
-  - ~~Replace `docker` commands in remaining shell scripts~~ (done — no active scripts
-    use `docker` CLI; only `wsl/start-wsl-bridge.sh` intentionally uses Docker Desktop)
-  - ~~Update documentation (README, docs/) from Docker to Podman terminology~~ ✅ done
   - Test full deployment workflow on fresh install
   - Consider adding bash completion to `visp.py`
-  - ~~`uninstall --remove-networks` flag for full teardown~~ ✅ implemented
-
-- [x] **Add `--strict` flag to `deploy status`** for CI/CD (fail on any version drift)
 
 ### Data Integrity
 
