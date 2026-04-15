@@ -26,6 +26,7 @@ Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 Volume=@@PROJECT_DIR@@/mounts/repository-template:/repository-template:Z
 Volume=@@PROJECT_DIR@@/mounts/transcription-queued:/transcription-queued:Z
 Volume=@@PROJECT_DIR@@/mounts/whisper/api:/run/whisperx:ro,z
+Volume=@@PROJECT_DIR@@/mounts/sessions:/sessions:Z
 
 # Security hardening
 DropCapability=ALL

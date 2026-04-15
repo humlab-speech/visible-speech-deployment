@@ -1001,6 +1001,22 @@ def cmd_cleanup_containers(args):
         print(color(f"Error during cleanup-containers: {e}", Colors.RED))
 
 
+def cmd_session_doctor(args):
+    """Diagnose session containers, proxy sidecars, and socket directories."""
+    from vispctl.session_doctor import run_session_doctor
+
+    issues = run_session_doctor(
+        show_healthy=not getattr(args, "problems_only", False),
+        problems_only=getattr(args, "problems_only", False),
+        json_output=getattr(args, "json", False),
+        verbose=getattr(args, "verbose", False),
+        clean=getattr(args, "clean", False),
+        yes=getattr(args, "yes", False),
+    )
+    if issues:
+        sys.exit(1)
+
+
 # Build configurations - maps service name to build info
 # Format: {"context": path, "dockerfile": path (optional), "image": image_name, "target": target (optional)}
 BUILD_CONFIGS = {
@@ -1066,6 +1082,12 @@ BUILD_CONFIGS = {
         "image": "visp-jupyter-session",
         "description": "Jupyter session image",
         "depends_on": "operations-session",
+    },
+    "session-proxy": {
+        "context": "./docker/session-proxy",
+        "dockerfile": "Dockerfile",
+        "image": "visp-session-proxy",
+        "description": "Tinyproxy sidecar for network-isolated session containers",
     },
 }
 
@@ -1875,6 +1897,41 @@ Examples:
         help="Do not prompt for confirmation",
     )
 
+    # session-doctor
+    p_sdoctor = subparsers.add_parser(
+        "session-doctor",
+        aliases=["sd"],
+        help="Diagnose session containers, proxy sidecars, and socket dirs",
+    )
+    p_sdoctor.add_argument(
+        "--problems",
+        action="store_true",
+        dest="problems_only",
+        help="Only show sessions with issues",
+    )
+    p_sdoctor.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON (for scripting)",
+    )
+    p_sdoctor.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show extra details (image names, etc.)",
+    )
+    p_sdoctor.add_argument(
+        "--clean",
+        action="store_true",
+        help="Remove orphaned containers and stale socket directories",
+    )
+    p_sdoctor.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Do not prompt for confirmation (with --clean)",
+    )
+
     # build
     p_build = subparsers.add_parser("build", aliases=["b"], help="Build container images")
     p_build.add_argument(
@@ -2144,6 +2201,8 @@ Examples:
         "users": cmd_users,
         "doctor": cmd_doctor,
         "audit": cmd_doctor,
+        "session-doctor": cmd_session_doctor,
+        "sd": cmd_session_doctor,
     }
 
     handler = cmd_map.get(args.command)

@@ -18,7 +18,7 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
 RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
     apt update && apt upgrade -y && \
-    apt install -y ffmpeg zlib1g-dev nano npm curl nodejs libnode-dev r-cran-v8 libavfilter-dev cmake && \
+    apt install -y ffmpeg zlib1g-dev nano npm curl nodejs libnode-dev r-cran-v8 libavfilter-dev cmake socat && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -79,6 +79,10 @@ RUN chmod +x /usr/local/bin/whisperx_link_script.sh
 
 # Add cron job for jovyan user to run the script at reboot
 RUN echo "@reboot jovyan /usr/local/bin/whisperx_link_script.sh" >> /etc/crontab
+
+# UDS isolation wrapper: starts socat proxy bridge before Jupyter
+COPY ./files/jupyter-uds-wrapper.sh /usr/local/bin/jupyter-uds-wrapper.sh
+RUN chmod +x /usr/local/bin/jupyter-uds-wrapper.sh
 
 # Switch back to jovyan user
 USER jovyan
