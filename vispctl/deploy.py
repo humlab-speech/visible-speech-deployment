@@ -153,7 +153,7 @@ class DeployManager:
             "wsrng-server": "visp-wsrng-server:latest",
             "emu-webapp-server": "visp-emu-webapp-server:latest",
             "EMU-webApp": "visp-emu-webapp:latest",
-            "container-agent": "visp-operations-session:latest",  # bundled in session images
+            "container-agent": "visp-jupyter-session:latest",  # bundled in session image
             "WhisperVault": "visp-whisperx:latest",
         }
 
@@ -447,8 +447,8 @@ class DeployManager:
         print(tabulate(status_results, headers="keys", tablefmt="grid"))
 
         # Check ALL container images from BUILD_CONFIGS
-        # This covers: images with source_repo (apache, operations-session),
-        # images with depends_on (rstudio, jupyter), and standalone images (octra).
+        # This covers: images with source_repo (apache, jupyter-session),
+        # and standalone images (octra, session-proxy, etc.).
         # Images whose source is an external repo (session-manager, wsrng-server, etc.)
         # are already tracked in the external repos table above — we skip those here
         # to avoid duplication.
@@ -572,7 +572,7 @@ class DeployManager:
                                 }
                             )
 
-                    # Check depends_on (e.g. rstudio → operations-session)
+                    # Check depends_on chain
                     elif depends_on:
                         parent_cfg = build_configs.get(depends_on, {})
                         parent_image = f"{parent_cfg['image']}:latest"

@@ -155,8 +155,6 @@ class ImageManager:
                                     "final",
                                     "development",
                                     "production",
-                                    "visp-operations-session",
-                                    "container_agent_source",
                                     "container_agent_builder",
                                 ]:
                                     continue

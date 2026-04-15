@@ -133,7 +133,6 @@ def setup_env_file(auto_passwords: bool = True, interactive: bool = False) -> No
         "POSTGRES_PASSWORD": ("local", "PostgreSQL password"),
         "TEST_USER_LOGIN_KEY": ("local", "Test user login bypass key"),
         "VISP_API_ACCESS_TOKEN": ("local", "API access token"),
-        "RSTUDIO_PASSWORD": ("local", "RStudio password"),
         "MONGO_ROOT_PASSWORD": ("local", "MongoDB root password"),
         "ELASTIC_AGENT_FLEET_ENROLLMENT_TOKEN": (
             "local",

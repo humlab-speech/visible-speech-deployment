@@ -79,8 +79,9 @@ visible-speech-deployment/
 - **apache** — Web server + Shibboleth + PHP authentication; also hosts the PHP API and webclient (see below)
 - **session-manager** — Node.js WebSocket server (`external/session-manager`); separate container.
   Manages the full lifecycle of user projects: receives `saveProject` commands from the webclient
-  over WebSocket, spawns short-lived `visp-operations-session` containers to run EMU-DB setup via
-  container-agent, and manages long-lived RStudio/Jupyter session containers. Source in `external/session-manager/`.
+  over WebSocket, spawns short-lived operations containers (using `visp-jupyter-session` image)
+  to run EMU-DB setup via container-agent, and manages long-lived Jupyter session containers.
+  Source in `external/session-manager/`.
 - **mongo** — MongoDB database
 - **matomo** (optional) — Matomo analytics web interface (`docker.io/library/matomo:5`). Provides
   usage tracking for the VISP platform. Accessed at `https://matomo.BASE_DOMAIN` via Apache
@@ -140,10 +141,11 @@ Run: `podman inspect apache --format '{{range .Mounts}}{{.Source}} -> {{.Destina
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
   - Built by `./visp.py build container-agent` → output goes to `external/container-agent/dist/`
-  - session-manager mounts `external/container-agent/dist/` as `/container-agent` into each
-    short-lived `visp-operations-session` container it spawns (when `DEVELOPMENT_MODE=true`)
   - In production (`DEVELOPMENT_MODE=false`), container-agent is baked into the
-    `visp-operations-session` image at build time instead
+    `visp-jupyter-session` image at build time (multi-stage build)
+  - In development (`DEVELOPMENT_MODE=true`), session-manager mounts
+    `external/container-agent/dist/` as `/container-agent` into each short-lived operations
+    container it spawns, allowing changes without rebuilding the image
   - **If `external/container-agent/dist/main.js` is missing**, project creation will hang on
     "Creating EMU-DB" and crash session-manager — run `./visp.py build container-agent`
   - The quadlet files for session-manager do **not** need a container-agent volume entry;
@@ -166,6 +168,60 @@ Run: `podman inspect apache --format '{{range .Mounts}}{{.Source}} -> {{.Destina
 - **PHP API in Apache** — PHP code benefits from Apache's request handling, session management
 - **Session-manager separate** — Needs to spawn/manage containers independently
 - **WebSocket proxying** — Apache efficiently proxies WebSocket to session-manager's Node.js server
+
+### Session Container Architecture
+
+VISP uses a **single unified session image** (`visp-jupyter-session`) for all dynamic
+workloads: interactive Jupyter sessions, short-lived EMU-DB operations, and VSCode sessions
+(which have their own image). The previous three-image architecture (operations-session →
+rstudio-session → jupyter-session) was consolidated to simplify the build chain and reduce
+disk usage.
+
+**Session types** (defined in `external/session-manager/src/Sessions/`):
+
+| Type | Class | Image | User | Port | Network | Lifetime |
+|------|-------|-------|------|------|---------|----------|
+| `jupyter` | JupyterSession | visp-jupyter-session | jovyan | 8888 | `--network=none` + UDS | Long-lived |
+| `operations` | OperationsSession | visp-jupyter-session | jovyan | 8888 | Bridge (visp-net) | Short-lived |
+| `vscode` | VscodeSession | visp-vscode-session | abc | 8443 | Bridge (visp-net) | Long-lived |
+
+**Jupyter UDS network isolation:**
+
+Interactive Jupyter sessions run with `--network=none` for security — they have no direct
+network access. Instead, they communicate via Unix Domain Sockets:
+
+```
+Browser ─── WebSocket ──▶ session-manager ─── Podman API (exec) ──▶ jupyter container
+                                 │
+                          UDS proxy bridge
+                                 │
+                     visp-session-proxy sidecar
+                          (tinyproxy)
+                                 │
+                    ──── bridge network ────▶ internet (pip install, etc.)
+```
+
+- The session-manager creates a UDS pair for each Jupyter session
+- Jupyter binds to `/run/session/ui.sock` instead of TCP
+- A `visp-session-proxy` sidecar (tinyproxy) runs alongside, connected to the bridge network
+- The `jupyter-uds-wrapper.sh` script starts a socat bridge that proxies from
+  `localhost:3128` inside the container to the sidecar's tinyproxy
+- Standard proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`) are set so pip/conda/R use the proxy
+- Operations sessions do NOT use UDS — they run on bridge network since they only need
+  `podman exec` access and don't expose any server
+
+**container-agent inside session containers:**
+
+The `visp-jupyter-session` image includes container-agent (`/container-agent/main.js`), a
+Node.js CLI tool that runs R scripts for EMU-DB operations. Session-manager invokes it via
+`podman exec` with env vars like `PROJECT_PATH=/home/jovyan/project`. The R scripts are
+path-agnostic — they read `PROJECT_PATH` from the environment.
+
+**Session doctor (`./visp.py sd`):**
+
+A diagnostic tool for inspecting and cleaning up session containers. Detects orphaned
+containers, adrift sessions (missing from session-manager's tracking), resource usage,
+and provides cleanup options.
 
 ---
 
@@ -471,6 +527,8 @@ All VISP-built images use the `localhost/visp-<name>:latest` tag:
 ```
 localhost/visp-apache:latest
 localhost/visp-session-manager:latest
+localhost/visp-jupyter-session:latest   # Unified session image (Jupyter + R + container-agent)
+localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isolation
 localhost/visp-emu-webapp:latest
 localhost/visp-emu-webapp-server:latest
 localhost/visp-octra:latest

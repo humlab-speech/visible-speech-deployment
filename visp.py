@@ -1061,27 +1061,13 @@ BUILD_CONFIGS = {
         "description": "WhisperX transcription server (network-isolated, communicates via Unix socket)",
     },
     # Session images - used by session-manager to spawn user sessions
-    "operations-session": {
-        "context": "./docker/session-manager",
-        "dockerfile": "operations-session/Dockerfile",
-        "image": "visp-operations-session",
-        "description": "Operations session image (base for other sessions)",
-        "prepare_context": "container-agent",  # Needs container-agent copied to build context
-        "source_repo": "./external/container-agent",  # git.commit label tracks container-agent source
-    },
-    "rstudio-session": {
-        "context": "./docker/session-manager",
-        "dockerfile": "rstudio-session/Dockerfile",
-        "image": "visp-rstudio-session",
-        "description": "RStudio session image",
-        "depends_on": "operations-session",
-    },
     "jupyter-session": {
         "context": "./docker/session-manager",
         "dockerfile": "jupyter-session/Dockerfile",
         "image": "visp-jupyter-session",
-        "description": "Jupyter session image",
-        "depends_on": "operations-session",
+        "description": "Jupyter + R session image (also used for operations tasks)",
+        "prepare_context": "container-agent",  # Needs container-agent copied to build context
+        "source_repo": "./external/container-agent",  # git.commit label tracks container-agent source
     },
     "session-proxy": {
         "context": "./docker/session-proxy",
