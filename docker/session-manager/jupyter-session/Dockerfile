@@ -22,20 +22,26 @@ RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
     apt update && apt upgrade -y && \
     apt install -y ffmpeg zlib1g-dev nano npm curl nodejs libnode-dev r-cran-v8 \
-                   libavfilter-dev cmake socat rsync \
+                   libavfilter-dev cmake socat rsync build-essential gfortran \
                    libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
                    libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
                    libcurl4-openssl-dev && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
+
 WORKDIR /home/jovyan
 
 # Stage 3: R packages (emuR + dependencies for container-agent R scripts)
 FROM base AS r_packages
 
-# Relax compiler flags so older C code can compile
+# Fix: conda's cross-compiler (x86_64-conda-linux-gnu-cc) uses an older sysroot
+# that is incompatible with Ubuntu's system -dev package headers (__time64_t error).
+# Switch R to use the system compiler instead.
 RUN RHOME=$(R RHOME) && \
+    sed -i 's|x86_64-conda-linux-gnu-cc|gcc|g' $RHOME/etc/Makeconf && \
+    sed -i 's|x86_64-conda-linux-gnu-c++|g++|g' $RHOME/etc/Makeconf && \
+    sed -i 's|x86_64-conda-linux-gnu-gfortran|gfortran|g' $RHOME/etc/Makeconf && \
     sed -i 's/-Werror=format-security//g' $RHOME/etc/Makeconf && \
     sed -i 's/-Werror=implicit-function-declaration//g' $RHOME/etc/Makeconf
 
@@ -51,6 +57,9 @@ RUN R -e "options(repos = c(CRAN = '${CRAN_MIRROR}')); \
 
 # Stage 4: Final
 FROM r_packages AS final
+
+# session-manager execs container-agent via /usr/local/bin/node but apt installs to /usr/bin/node
+RUN ln -sf /usr/bin/node /usr/local/bin/node
 
 # Copy the pre-built container-agent from builder stage
 COPY --from=container_agent_builder /build/dist /container-agent
