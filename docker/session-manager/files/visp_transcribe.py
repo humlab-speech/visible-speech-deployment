@@ -46,6 +46,26 @@ Models
 Use list_models() to see what is installed on the server.  Common values:
   "whisper"    — Multilingual (faster-whisper large-v3)
   "kb-whisper" — Swedish (KB Whisper large)
+
+Advanced options
+----------------
+The ``advanced_options`` dict maps to WhisperVault reload-time parameters.
+Changing any of these causes the ASR model to reload (takes 3–17 s).
+
+  beam_size                  int, 5–10 (default 5)
+  repetition_penalty         float (default 1.3)
+  condition_on_previous_text bool (default False)
+  vad                        bool — enable voice-activity detection (default True)
+  vad_onset                  float, 0.0–1.0 — VAD sensitivity (default 0.3)
+
+Example::
+
+    result = transcribe(
+        "interview.wav",
+        model="kb-whisper",
+        language="Swedish",
+        advanced_options={"beam_size": 8, "repetition_penalty": 1.1},
+    )
 """
 
 import httpx
@@ -89,6 +109,7 @@ def transcribe(
     language=None,
     diarize=False,
     formats=None,
+    advanced_options=None,
 ):
     """
     Transcribe an audio file and return the transcript.
@@ -112,6 +133,20 @@ def transcribe(
     formats : list of str, optional
         Output formats to return.  Any combination of "txt" and "srt".
         Default ["txt"].
+    advanced_options : dict or None, optional
+        Fine-grained ASR parameters.  Changing these causes WhisperVault to
+        reload the model (adds ~3–17 s on first use).
+
+        beam_size (int, 5–10)
+            Beam search width.  Higher → more accurate but slower.
+        repetition_penalty (float)
+            Penalise repeated tokens.  Default 1.3; lower = less penalty.
+        condition_on_previous_text (bool)
+            Feed previous transcript as prompt context.  Default False.
+        vad (bool)
+            Enable voice-activity detection to skip silence.  Default True.
+        vad_onset (float, 0.0–1.0)
+            VAD sensitivity threshold.  Lower = more speech detected.
 
     Returns
     -------
@@ -134,6 +169,7 @@ def transcribe(
         "language": language or "Automatic Detection",
         "diarize": bool(diarize),
         "formats": formats,
+        "advancedOptions": _snake_to_camel(advanced_options or {}),
     }
 
     with _client() as c:
@@ -142,10 +178,24 @@ def transcribe(
         return resp.json()
 
 
+_CAMEL_MAP = {
+    "beam_size": "beamSize",
+    "repetition_penalty": "repetitionPenalty",
+    "condition_on_previous_text": "conditionOnPreviousText",
+    "vad": "vad",
+    "vad_onset": "vadOnset",
+}
+
+
+def _snake_to_camel(d):
+    """Convert snake_case advanced option keys to camelCase for the API."""
+    return {_CAMEL_MAP.get(k, k): v for k, v in d.items()}
+
+
 def _check(resp):
     if resp.status_code >= 400:
         try:
             detail = resp.json().get("error", resp.text)
-        except Exception:
+        except (ValueError, KeyError):
             detail = resp.text
         raise RuntimeError(f"VISP transcription error {resp.status_code}: {detail}")

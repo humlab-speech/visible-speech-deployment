@@ -90,6 +90,10 @@ COPY ./files/visp_transcribe.py /tmp/visp_transcribe.py
 RUN python -c "import site; print(site.getsitepackages()[0])" | xargs -I{} cp /tmp/visp_transcribe.py {}/visp_transcribe.py && \
     rm /tmp/visp_transcribe.py
 
+# Starter notebook — visible in JupyterLab immediately, explains all transcription options
+COPY ./files/Transcription.ipynb /home/jovyan/Transcription.ipynb
+RUN chown jovyan:users /home/jovyan/Transcription.ipynb
+
 # Ensure Jupyter runtime and local dirs exist and are owned
 # This prevents permission errors when the notebook server
 # tries to create /home/jovyan/.local/share/jupyter/runtime
