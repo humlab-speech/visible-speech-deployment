@@ -163,6 +163,29 @@ def transcribe(
     if formats is None:
         formats = ["txt"]
 
+    # Validate advanced_options before sending
+    if advanced_options:
+        ao = advanced_options
+        if "beam_size" in ao:
+            bs = ao["beam_size"]
+            if not isinstance(bs, int) or not (5 <= bs <= 10):
+                raise ValueError(f"beam_size must be an integer between 5 and 10, got {bs!r}")
+        if "repetition_penalty" in ao:
+            rp = float(ao["repetition_penalty"])
+            if not (0.5 <= rp <= 2.0):
+                raise ValueError(f"repetition_penalty must be between 0.5 and 2.0, got {rp!r}")
+        if "vad_onset" in ao:
+            vo = float(ao["vad_onset"])
+            if not (0.0 <= vo <= 1.0):
+                raise ValueError(f"vad_onset must be between 0.0 and 1.0, got {vo!r}")
+        if "condition_on_previous_text" in ao and not isinstance(ao["condition_on_previous_text"], bool):
+            raise ValueError("condition_on_previous_text must be True or False")
+        if "vad" in ao and not isinstance(ao["vad"], bool):
+            raise ValueError("vad must be True or False")
+        unknown = set(ao) - {"beam_size", "repetition_penalty", "condition_on_previous_text", "vad", "vad_onset"}
+        if unknown:
+            raise ValueError(f"Unknown advanced_options key(s): {', '.join(sorted(unknown))}")
+
     payload = {
         "file": file,
         "model": model,
