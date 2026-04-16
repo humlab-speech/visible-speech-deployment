@@ -784,6 +784,7 @@ def cmd_install(args):
         PROJECT_DIR / "mounts/apache/apache/logs/apache2",
         PROJECT_DIR / "mounts/apache/apache/logs/shibboleth",
         PROJECT_DIR / "mounts/session-manager/logs",
+        PROJECT_DIR / "mounts/sessions",
         PROJECT_DIR / "mounts/matomo/html",
     ]
     perm_fixed = 0
