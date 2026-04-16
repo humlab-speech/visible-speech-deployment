@@ -98,3 +98,4 @@ external/webclient/fonts/
 backups/
 COMMIT_MESSAGE.md
 NETAVARK_MIGRATION.md
+docker/session-manager/files/Transcription.ipynb

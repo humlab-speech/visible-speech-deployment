@@ -90,9 +90,13 @@ COPY ./files/visp_transcribe.py /tmp/visp_transcribe.py
 RUN python -c "import site; print(site.getsitepackages()[0])" | xargs -I{} cp /tmp/visp_transcribe.py {}/visp_transcribe.py && \
     rm /tmp/visp_transcribe.py
 
-# Starter notebook — visible in JupyterLab immediately, explains all transcription options
-COPY ./files/Transcription.ipynb /home/jovyan/Transcription.ipynb
-RUN chown jovyan:users /home/jovyan/Transcription.ipynb
+# Starter notebook — generated from Transcription.py (jupytext percent format) at build time.
+# Edit Transcription.py; the .ipynb is produced here and baked into the image.
+RUN pip install --quiet jupytext
+COPY ./files/Transcription.py /tmp/Transcription.py
+RUN jupytext --to notebook /tmp/Transcription.py -o /home/jovyan/Transcription.ipynb && \
+    chown jovyan:users /home/jovyan/Transcription.ipynb && \
+    rm /tmp/Transcription.py
 
 # Ensure Jupyter runtime and local dirs exist and are owned
 # This prevents permission errors when the notebook server
