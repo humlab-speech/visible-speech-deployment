@@ -196,6 +196,19 @@
   - Orphaned Jupyter/RStudio containers after session-manager crash
   - Label containers with metadata, reconstruct state on restart
 
+- [ ] **Session doctor: account for `api.sock` in socket dir checks**
+  - Currently the doctor only checks for `ui.sock` and `proxy.sock`
+  - Should also verify `api.sock` is present for UDS Jupyter sessions
+  - Missing `api.sock` means notebook transcription is unavailable but session
+    otherwise works fine — worth surfacing as a warning, not a hard error
+
+- [ ] **`visp_transcribe`: reconnect / retry on api.sock connection failure**
+  - If session-manager is restarted while a Jupyter session is running, the
+    `api.sock` is recreated but the notebook kernel still has the old client
+  - Could implement transparent retry in `_client()`: attempt the call, and if
+    connection is refused try once more after a short delay (the socket may be
+    transiently unavailable during session-manager restart)
+
 
 - [ ] **MAYBE: Reconsider dev mode build strategy for webclient**
   - Current: external build via `visp.py build webclient`, mount `dist/`
