@@ -83,6 +83,13 @@ WORKDIR /home/jovyan/project
 COPY ./files/jupyter-uds-wrapper.sh /usr/local/bin/jupyter-uds-wrapper.sh
 RUN chmod +x /usr/local/bin/jupyter-uds-wrapper.sh
 
+# Notebook transcription helper — lets users call transcribe() from notebooks.
+# Communicates with session-manager via api.sock (UDS), no TCP needed.
+# httpx is already present in the datascience-notebook base image.
+COPY ./files/visp_transcribe.py /tmp/visp_transcribe.py
+RUN python -c "import site; print(site.getsitepackages()[0])" | xargs -I{} cp /tmp/visp_transcribe.py {}/visp_transcribe.py && \
+    rm /tmp/visp_transcribe.py
+
 # Ensure Jupyter runtime and local dirs exist and are owned
 # This prevents permission errors when the notebook server
 # tries to create /home/jovyan/.local/share/jupyter/runtime

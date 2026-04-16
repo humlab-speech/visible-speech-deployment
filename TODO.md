@@ -147,6 +147,23 @@
 
 - [ ] **Rename Dockerfile → Containerfile** (OCI standard, cosmetic)
 
+### Git / Release
+
+- [ ] **Tag pre-podman state and merge `feature/podman-migration` into `master`**
+
+  Pre-podman state tagged as `pre-podman-migration` in all repos (deployment,
+  session-manager, webclient, container-agent) — tags pushed to origin.
+
+  ```
+  git checkout master
+  git merge --no-ff feature/podman-migration -m "Merge podman migration into master"
+  git push origin master
+  git push origin pre-podman-migration
+  ```
+
+  Use `--no-ff` (merge commit) rather than squash — the 123 commits have clean
+  conventional commit messages and the merge commit gives a rollback point.
+
 ### Infrastructure
 
 - [ ] **Finish Podman migration cleanup**
