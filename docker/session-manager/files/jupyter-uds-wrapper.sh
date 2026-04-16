@@ -31,5 +31,15 @@ if [ "${VISP_PROXY_ENABLED}" = "1" ]; then
     fi
 fi
 
+# Copy starter notebook into the project directory if not already there.
+# /home/jovyan/project is bind-mounted (persistent); /home/jovyan/Transcription.ipynb
+# is baked into the image. Copying on first start makes it visible and persistent.
+NOTEBOOK_SRC="/home/jovyan/Transcription.ipynb"
+NOTEBOOK_DST="/home/jovyan/project/Transcription.ipynb"
+if [ -f "$NOTEBOOK_SRC" ] && [ ! -f "$NOTEBOOK_DST" ]; then
+    cp "$NOTEBOOK_SRC" "$NOTEBOOK_DST"
+    echo "[visp] Copied Transcription.ipynb into project directory"
+fi
+
 # Exec Jupyter — UDS args (--ServerApp.sock=...) are passed as "$@"
 exec start-notebook.py "$@"
