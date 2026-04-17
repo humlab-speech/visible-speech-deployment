@@ -5,7 +5,9 @@
 > netavark migration, Matomo analytics (ad-blocker-safe proxy rename), Angular 18→20
 > upgrade, Podman secrets, orphaned bundle detection, version drift tracking, disk leak
 > fix, path traversal protection (session-manager), SWAMID certificate deployment +
-> login verified, `deploy status --strict`, upload permission fixes.
+> login verified, `deploy status --strict`, upload permission fixes, whisperx removed
+> from Jupyter image (9.3 GB), RStudio session type dropped, notebook transcription
+> via `api.sock` + `visp_transcribe.py` + `Transcription.ipynb` starter notebook.
 
 ## High Priority
 
@@ -75,71 +77,18 @@
 
 ### Build & Images
 
-- [ ] **Remove whisperx from Jupyter/RStudio images; use WhisperVault via whisper-script**
+- [x] **Remove whisperx from Jupyter image; implement notebook transcription via api.sock**
 
-  **Problem:** The Jupyter image is **19.6 GB** and RStudio is **13.6 GB**, heavily
-  bloated by whisperx + PyTorch + pyannote.audio + speechbrain (~8–10 GB of ML
-  dependencies). Users don't run whisperx locally inside notebooks — transcription
-  goes through session-manager → WhisperVault. The local whisperx install is dead
-  weight that also causes slow image builds and excessive disk usage.
+  **Done:** whisperx, PyTorch, pyannote.audio and related ML deps removed from
+  `visp-jupyter-session`. Image is now **~9.3 GB** (down from ~19.6 GB).
+  RStudio session type dropped entirely — no quadlets exist for it.
 
-  **Current state (what's in Jupyter/RStudio today):**
-  - `pip install whisperx` + full PyTorch + pyannote.audio + speechbrain + torchaudio
-  - `whisperx_link_script.sh` — symlinks `/whisper_models/` → HuggingFace cache
-  - `/whisper_models` bind-mount (ro) with model files
-  - `/hf_cache` directory + `HF_HOME` env var
-  - None of this is used by the standard VISP transcription flow
-
-  **Proposed approach — give users whisper-script as a WhisperVault client:**
-
-  1. **Install whisper-script + its deps** (httpx, pandas, tqdm — ~50 MB total) into
-     session images instead of the full whisperx stack
-  2. **Mount the WhisperVault UDS** (`mounts/whisper/api/whisperx.sock`) into Jupyter
-     and RStudio containers at `/run/whisperx/whisperx.sock`
-  3. **Configure whisper-script** to use the UDS instead of HTTP — needs a small change
-     in `WhisperVaultTranscriber` to support `httpx.Client(transport=httpx.HTTPTransport(uds=...))`
-  4. **Remove** from Dockerfiles: whisperx, PyTorch, pyannote.audio, speechbrain,
-     torchaudio, pyreaper, pysptk, torchcrepe, pyworld, amfm_decompy
-  5. **Remove** whisperx_link_script.sh, `/hf_cache`, `/whisper_models` volume mount
-
-  **Issues and considerations:**
-  - **whisper-script currently uses HTTP, not UDS.** `WhisperVaultTranscriber` uses
-    `httpx.Client(base_url=...)` with a TCP URL. Must add UDS transport support:
-    `httpx.HTTPTransport(uds="/run/whisperx/whisperx.sock")`. Small change.
-  - **Authentication:** whisper-script supports optional HTTP Basic Auth via env vars.
-    Session containers would need the WhisperVault credentials injected (env or secret).
-    Currently session containers don't receive any WhisperVault secrets.
-  - **Network isolation:** WhisperVault runs `--network=none` and only speaks UDS.
-    Mounting the socket into session containers works but means **any user in any
-    Jupyter session can directly call WhisperVault** — bypassing session-manager's
-    queue and rate limiting. Options:
-    - Accept it (users can only transcribe their own files)
-    - Mount socket read-only? (won't help — UDS is bidirectional)
-    - Add per-user auth tokens to WhisperVault (new feature)
-    - Keep the session-manager queue path as default, expose whisper-script as a
-      "power user" option only
-  - **Concurrent access:** WhisperVault is single-model, single-request. If a user
-    calls whisper-script from a notebook while the VISP UI queue is also running a
-    transcription, one will block the other. WhisperVault handles this (FastAPI
-    serializes), but the user experience may be confusing.
-  - **Model reloads:** whisper-script can trigger `/reload` (model switching). If a
-    notebook user reloads a different model while the UI queue expects the current one,
-    session-manager's `currentPackage` tracking goes stale. Could cause unnecessary
-    re-reloads or unexpected model switches mid-queue.
-  - **Some researchers may genuinely want local whisperx** for custom pipelines,
-    alignment experiments, or offline use. Consider making it an opt-in build variant
-    (e.g. `visp-jupyter-session:ml` vs `visp-jupyter-session:latest`).
-  - **Image size savings:** removing the ML stack should drop Jupyter from ~19.6 GB
-    to ~8–9 GB (close to base datascience-notebook + R libraries + container-agent).
-    RStudio similarly from 13.6 GB to ~7–8 GB.
-
-  **Implementation order:**
-  1. Add UDS transport support to whisper-script's `WhisperVaultTranscriber`
-  2. Add socket mount + whisper-script install to Dockerfiles (alongside existing)
-  3. Test: run whisper-script from inside Jupyter notebook → verify transcription works
-  4. Remove whisperx + ML deps from Dockerfiles
-  5. Remove whisperx_link_script.sh, /hf_cache, /whisper_models volume
-  6. Rebuild images, verify size savings, test VISP UI transcription still works
+  Transcription from notebooks uses `visp_transcribe.py` baked into the image.
+  It communicates via `api.sock` (per-session Unix Domain Socket) →
+  session-manager → WhisperVault queue. Supports all advanced options
+  (beam_size, repetition_penalty, vad, vad_onset, condition_on_previous_text).
+  A `Transcription.ipynb` starter notebook is copied into each new project
+  directory on first session start.
 
 - [ ] **Audit Dockerfiles for version consistency**
   - Some Dockerfiles do `git clone` without specifying version
