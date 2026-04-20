@@ -7,7 +7,6 @@ _paq.push(['setDomains', [
   '*.octra.{{BASE_DOMAIN}}',
   '*.emu-webapp.{{BASE_DOMAIN}}'
 ]]);
-_paq.push(['enableCrossDomainLinking']);
 _paq.push(['trackPageView']);
 _paq.push(['enableLinkTracking']);
 (function() {
