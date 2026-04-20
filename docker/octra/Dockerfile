@@ -11,7 +11,7 @@ RUN apt-get update && \
 
 # Clone the humlab-speech fork, pinned to a specific commit
 RUN git clone --branch main --depth 1 https://github.com/humlab-speech/octra.git . && \
-    git checkout 15adcd3c6b1fd7ef4197290a5ffdcbcc8fde8c92
+    git checkout 4fb2c78496dd33925e10c411336abbf845054bca
 
 # Raise Angular initial bundle budget (default 2MB is too low for this app)
 RUN sed -i 's/"maximumWarning": "2mb"/"maximumWarning": "6mb"/' apps/octra/project.json
