@@ -1,5 +1,5 @@
 # Stage 1: Build the project
-FROM docker.io/node:20.5.1 AS build
+FROM docker.io/node:24.15.0 AS build
 
 WORKDIR /app
 
@@ -9,11 +9,15 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Clone the specific release tag with minimal history
-RUN git clone --branch web-media-1.0.1 --depth 1 https://github.com/IPS-LMU/octra.git .
+# Clone the humlab-speech fork, pinned to a specific commit
+RUN git clone --branch main --depth 1 https://github.com/humlab-speech/octra.git . && \
+    git checkout 15adcd3c6b1fd7ef4197290a5ffdcbcc8fde8c92
+
+# Raise Angular initial bundle budget (default 2MB is too low for this app)
+RUN sed -i 's/"maximumWarning": "2mb"/"maximumWarning": "6mb"/' apps/octra/project.json
 
 # Install dependencies
-RUN npm install --legacy-peer-deps
+RUN npm install
 
 # Build the project
 RUN npm run build:release
