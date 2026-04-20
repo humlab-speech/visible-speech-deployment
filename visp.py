@@ -749,9 +749,13 @@ def cmd_install(args):
             if target.exists():
                 continue
             # If the leaf name has a dot, it's likely a file — ensure its parent exists
+            # and touch a placeholder so Podman can bind-mount it.
             if "." in Path(rel_path).name:
                 if not target.parent.exists():
                     target.parent.mkdir(parents=True, exist_ok=True)
+                    created += 1
+                if not target.exists():
+                    target.touch()
                     created += 1
             else:
                 target.mkdir(parents=True, exist_ok=True)

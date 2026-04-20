@@ -123,6 +123,59 @@ The final wizard page offers two defaults — **keep both enabled**:
 - ✅ **IP anonymization** — masks the last byte(s) of visitor IP addresses.
   Important for GDPR compliance (Swedish/EU users).
 
+---
+
+## Geolocation Database (DBIP)
+
+After the wizard, Matomo needs a geo-database to resolve visitor IPs to
+cities/regions. Without it the Geolocation settings page will show
+**"geoip2php provider is no longer available"** and all locations will be
+unknown.
+
+### Installing the DBIP City Lite database
+
+1. Download the free **DBIP City Lite** `.mmdb` from
+   [https://db-ip.com/db/download/ip-to-city-lite](https://db-ip.com/db/download/ip-to-city-lite).
+   The file will be named something like `dbip-city-lite-2026-04.mmdb.gz`.
+
+2. Extract it:
+   ```bash
+   gunzip dbip-city-lite-2026-04.mmdb.gz
+   ```
+
+3. Copy and rename it to `mounts/matomo/DBIP-City.mmdb` on the server
+   (this single file is bind-mounted directly into the container as
+   `/var/www/html/misc/DBIP-City.mmdb`):
+   ```bash
+   cp dbip-city-lite-2026-04.mmdb mounts/matomo/DBIP-City.mmdb
+   ```
+   > The filename **must** be `DBIP-City.mmdb` — Matomo looks for that exact name.
+   > A placeholder empty file is created at `mounts/matomo/DBIP-City.mmdb` during
+   > `./visp.py install` so the bind mount point always exists. Matomo will show
+   > the provider as "Not Installed" until the real database is copied in.
+   >
+   > ⚠️ **Always use `cp` to overwrite the file in-place.** Because it is a
+   > file bind-mount (not a directory mount), the container tracks the specific
+   > inode. Using `rm` + copy, or `mv`, replaces the inode and leaves the
+   > container with a dangling mount until restarted.
+
+4. Go to **System → Geolocation** in the Matomo admin UI and select
+   **DBIP / GeoIP (PHP)**. Click **Save**.
+
+No container restart is required — the file is read directly from the mount.
+
+### Keeping it up to date
+
+DBIP updates the database monthly. Download the new file and overwrite in-place
+with `cp` — **do not use `mv` or `rm` first**, as that would break the bind mount:
+
+```bash
+gunzip dbip-city-lite-YYYY-MM.mmdb.gz
+cp dbip-city-lite-YYYY-MM.mmdb mounts/matomo/DBIP-City.mmdb
+```
+
+No container restart needed — Matomo re-reads the file on the next lookup.
+
 ### CLI archiving (production)
 
 By default Matomo generates reports on-demand (when you view the dashboard),

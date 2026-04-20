@@ -12,6 +12,7 @@ Environment=MATOMO_DATABASE_DBNAME=matomo_db
 Secret=visp_matomo_db_user,type=env,target=MATOMO_DATABASE_USERNAME
 Secret=visp_matomo_db_password,type=env,target=MATOMO_DATABASE_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/matomo/config:/var/www/html/config:rw,Z
+Volume=@@PROJECT_DIR@@/mounts/matomo/DBIP-City.mmdb:/var/www/html/misc/DBIP-City.mmdb:rw,Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/external_logs:ro
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
