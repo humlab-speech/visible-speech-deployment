@@ -51,13 +51,14 @@ def _make_proxy(session_name, state="running"):
     }
 
 
-def _make_socket_dir(name, has_ui=True, has_proxy=True):
+def _make_socket_dir(name, has_ui=True, has_proxy=True, has_api=True):
     """Create a mock socket directory dict."""
     return {
         name: {
             "path": Path(f"/fake/mounts/sessions/{name}"),
             "has_ui_sock": has_ui,
             "has_proxy_sock": has_proxy,
+            "has_api_sock": has_api,
         }
     }
 
@@ -228,6 +229,7 @@ def test_socket_dir_collection(tmp_path):
     sd.mkdir()
     (sd / "ui.sock").touch()
     (sd / "proxy.sock").touch()
+    (sd / "api.sock").touch()
 
     # Create one with no sockets
     empty = sessions_dir / "visp-session-stale-user-Cd34"
@@ -239,8 +241,10 @@ def test_socket_dir_collection(tmp_path):
     assert len(dirs) == 2
     assert dirs["visp-session-test-user-Ab12"]["has_ui_sock"] is True
     assert dirs["visp-session-test-user-Ab12"]["has_proxy_sock"] is True
+    assert dirs["visp-session-test-user-Ab12"]["has_api_sock"] is True
     assert dirs["visp-session-stale-user-Cd34"]["has_ui_sock"] is False
     assert dirs["visp-session-stale-user-Cd34"]["has_proxy_sock"] is False
+    assert dirs["visp-session-stale-user-Cd34"]["has_api_sock"] is False
 
 
 def test_json_output(capsys):

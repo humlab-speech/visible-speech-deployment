@@ -145,11 +145,9 @@
   - Orphaned Jupyter/RStudio containers after session-manager crash
   - Label containers with metadata, reconstruct state on restart
 
-- [ ] **Session doctor: account for `api.sock` in socket dir checks**
-  - Currently the doctor only checks for `ui.sock` and `proxy.sock`
-  - Should also verify `api.sock` is present for UDS Jupyter sessions
-  - Missing `api.sock` means notebook transcription is unavailable but session
-    otherwise works fine — worth surfacing as a warning, not a hard error
+- [x] **Session doctor: account for `api.sock` in socket dir checks**
+  - `api.sock` now tracked in `_collect_socket_dirs()`, warning issued if missing on a
+    running Jupyter session, and displayed in the socket dir line alongside ui.sock/proxy.sock
 
 - [ ] **`visp_transcribe`: reconnect / retry on api.sock connection failure**
   - If session-manager is restarted while a Jupyter session is running, the
@@ -157,6 +155,19 @@
   - Could implement transparent retry in `_client()`: attempt the call, and if
     connection is refused try once more after a short delay (the socket may be
     transiently unavailable during session-manager restart)
+
+- [ ] **Notebook transcription can starve the UI queue (low risk, worth capping)**
+  - Both paths share a single boolean `transcriptionRunning` mutex in WhisperService
+  - A notebook loop transcribing many files back-to-back holds the mutex continuously;
+    the UI queue's 15 s polling interval finds `transcriptionRunning = true` every
+    cycle and silently skips — UI transcriptions could be blocked for hours
+  - Risk is low on a single-user academic platform (WhisperVault is already CPU-bounded
+    at 4/16 cores) but worth a cheap safety net
+  - **Recommended fix:** add a global pending notebook request counter in `WhisperService`;
+    reject new `transcribeFile()` calls above ~3 with a clear error message
+  - **Not recommended:** routing notebooks through the MongoDB queue — notebooks need
+    a synchronous return value; polling for completion would complicate `visp_transcribe.py`
+  - See `dev-notes/TRANSCRIPTION_QUEUE_ARCH.md` for full architecture and option analysis
 
 
 - [ ] **MAYBE: Reconsider dev mode build strategy for webclient**

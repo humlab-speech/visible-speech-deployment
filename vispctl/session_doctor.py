@@ -153,6 +153,7 @@ def _collect_socket_dirs() -> dict[str, dict]:
             "path": d,
             "has_ui_sock": (d / "ui.sock").exists(),
             "has_proxy_sock": (d / "proxy.sock").exists(),
+            "has_api_sock": (d / "api.sock").exists(),
         }
     return dirs
 
@@ -295,6 +296,8 @@ def _diagnose(
                     report["warnings"].append("Socket dir exists but ui.sock is missing")
                 if not sd["has_proxy_sock"] and report["proxy"]:
                     report["warnings"].append("Socket dir exists but proxy.sock is missing")
+                if not sd["has_api_sock"]:
+                    report["warnings"].append("api.sock missing — notebook transcription (visp_transcribe) unavailable")
         else:
             # Only an issue if using UDS
             inspect = _podman_inspect(name) if not report["proxy"] else None
@@ -359,6 +362,8 @@ def _diagnose(
             extras.append("ui.sock present")
         if dirinfo["has_proxy_sock"]:
             extras.append("proxy.sock present")
+        if dirinfo["has_api_sock"]:
+            extras.append("api.sock present")
         if extras:
             report["issues"][0] += f" ({', '.join(extras)})"
         reports.append(report)
@@ -450,6 +455,10 @@ def _render_reports(
                     sock_parts.append(f"{_C.GREEN}proxy.sock{_C.NC}")
                 else:
                     sock_parts.append(f"{_C.DIM}proxy.sock{_C.NC}")
+                if sd["has_api_sock"]:
+                    sock_parts.append(f"{_C.GREEN}api.sock{_C.NC}")
+                else:
+                    sock_parts.append(f"{_C.DIM}api.sock{_C.NC}")
                 print(f"{continuation}  Socket dir: {', '.join(sock_parts)}")
 
             if verbose:
