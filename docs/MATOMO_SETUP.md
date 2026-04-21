@@ -101,6 +101,41 @@ This creates **Site ID 1**, which matches the tracker script configuration.
 
 Click **Next »**.
 
+## Step 6b — Register All Subdomains (REQUIRED for cross-subdomain tracking)
+
+> ⚠️ **This step is required.** Without it, Matomo silently drops tracking hits from
+> any subdomain not listed as an allowed URL for the site. Visits from `octra.*` and
+> `emu-webapp.*` will not appear in the dashboard even though the tracker script runs fine.
+
+After completing the wizard, go to:
+**Administration → Measurables (Sites) → Manage** → click the site → scroll down to
+**"Add URLs"**.
+
+Add **all** subdomains that load `vc.js`:
+
+| Subdomain URL                         | Has tracker? |
+|---------------------------------------|--------------|
+| `https://BASE_DOMAIN`                 | ✅ (main site, already set as `main_url`) |
+| `https://octra.BASE_DOMAIN`           | ✅ (`vc.js` injected via `octra.vhost.conf`) |
+| `https://emu-webapp.BASE_DOMAIN`      | ✅ (`vc.js` injected via `emu-webapp.vhost.conf`) |
+| `https://recorder.BASE_DOMAIN`        | ✅ (`vc.js` injected via `recorder.vhost.conf`) |
+
+Subdomains that do **not** load `vc.js` (no tracker injection, omit from Matomo):
+
+| Subdomain         | Notes                                         |
+|-------------------|-----------------------------------------------|
+| `matomo.*`        | The Matomo UI itself — not tracked            |
+| `app.*`           | WebSocket proxy to session-manager, no HTML UI |
+| `me.*`            | mongo-express admin UI — internal only        |
+
+Click **Save** after adding the URLs.
+
+**Verification:** After adding the URLs, use the Matomo API to confirm they are registered:
+```bash
+curl "https://matomo.BASE_DOMAIN/index.php?module=API&method=SitesManager.getSiteUrlsFromId&idSite=1&format=JSON&token_auth=anonymous"
+# Should list all the subdomain URLs you added
+```
+
 ## Step 7 — JavaScript Tracking Code
 
 Matomo shows a tracking snippet. **Skip this** — we already have our own
