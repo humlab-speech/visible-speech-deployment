@@ -157,6 +157,12 @@ class DeployManager:
             "WhisperVault": "visp-whisperx:latest",
         }
 
+        # Map component names to the visp.py build target name (when they differ)
+        component_to_build_target = {
+            "EMU-webApp": "emu-webapp",
+            "WhisperVault": "whisperx",
+        }
+
         # Components that use a named label instead of the default git.commit label
         # (when multiple repos are baked into one image)
         component_label_override: dict[str, str] = {}
@@ -171,12 +177,13 @@ class DeployManager:
             }
 
         # Check if image exists
+        build_target = component_to_build_target.get(component, component)
         if not self._check_image_exists(image_name):
             return {
                 "status": "❌ NOT BUILT",
                 "image_commit": "N/A",
                 "needs_rebuild": True,
-                "recommendation": f"Run: ./visp.py build {component}",
+                "recommendation": f"Run: ./visp.py build {build_target}",
             }
 
         # Try to get git commit label from image
@@ -210,6 +217,7 @@ class DeployManager:
                 "status": f"⚠️ STALE{dirty_suffix}",
                 "image_commit": image_commit[:8],
                 "needs_rebuild": True,
+                "build_target": build_target,
                 "recommendation": f"Image built from {image_commit[:8]}, source at {current_commit[:8]} - rebuild needed",
             }
 
@@ -728,6 +736,12 @@ class DeployManager:
                 summary_lines.append(w)
 
         # ── Recommended actions (copy-pasteable) ──────────────────────
+        # Map external repo names → visp.py build target names where they differ
+        _repo_to_build: dict[str, str] = {
+            "EMU-webApp": "emu-webapp",
+            "WhisperVault": "whisperx",
+        }
+
         actions: list[str] = []
 
         if repos_behind:
@@ -736,9 +750,9 @@ class DeployManager:
         # Collect everything that needs building into one command
         to_build: list[str] = []
         if not_built:
-            to_build.extend(r["Repository"] for r in not_built)
+            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in not_built)
         if needs_rebuild:
-            to_build.extend(r["Repository"] for r in needs_rebuild)
+            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
         if not_built_images:
             to_build.extend(d["Image"] for d in not_built_images)
         if stale_images:
@@ -777,7 +791,7 @@ class DeployManager:
         # If any images were rebuilt, suggest restart
         restart_candidates: list[str] = []
         if needs_rebuild:
-            restart_candidates.extend(r["Repository"] for r in needs_rebuild)
+            restart_candidates.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
         if stale_images:
             restart_candidates.extend(d["Image"] for d in stale_images)
         if restart_candidates:
