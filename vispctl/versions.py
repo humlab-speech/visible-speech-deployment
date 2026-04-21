@@ -10,31 +10,31 @@ from typing import Optional
 DEFAULT_VERSIONS_CONFIG = {
     "webclient": {
         "version": "latest",
-        "url": None,
+        "url": "https://github.com/humlab-speech/webclient.git",
         "npm_install": True,
         "npm_build": True,
     },
     "container-agent": {
         "version": "latest",
-        "url": None,
+        "url": "https://github.com/humlab-speech/container-agent.git",
         "npm_install": True,
         "npm_build": False,
     },
     "wsrng-server": {
         "version": "latest",
-        "url": None,
+        "url": "https://github.com/humlab-speech/wsrng-server.git",
         "npm_install": True,
         "npm_build": False,
     },
     "session-manager": {
         "version": "latest",
-        "url": None,
+        "url": "https://github.com/humlab-speech/session-manager.git",
         "npm_install": True,
         "npm_build": False,
     },
     "emu-webapp-server": {
         "version": "latest",
-        "url": None,
+        "url": "https://github.com/humlab-speech/emu-webapp-server.git",
         "npm_install": True,
         "npm_build": False,
     },

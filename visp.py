@@ -879,6 +879,35 @@ def cmd_install(args):
     print(f"Mode set to: {color(mode, Colors.MAGENTA)}")
     print("Run './visp.py reload' to apply changes.")
 
+    # Check whether external repos are present and offer to fetch them now.
+    from vispctl.versions import DEFAULT_VERSIONS_CONFIG
+
+    external_dir = PROJECT_DIR / "external"
+    missing_repos = [name for name in DEFAULT_VERSIONS_CONFIG if not (external_dir / name / ".git").exists()]
+    if missing_repos:
+        print()
+        print(color("⚠  External repositories are missing:", Colors.YELLOW))
+        for name in missing_repos:
+            print(f"     • {name}")
+        print()
+        response = input("  Fetch them now with 'deploy update'? (yes/no) [yes]: ").strip().lower()
+        if response in ("", "yes", "y"):
+            from vispctl.deploy import DeployManager
+
+            dm = DeployManager(runner=RUNNER)
+            if not dm.update_components(force=False):
+                print(
+                    color(
+                        "  ✗ deploy update failed — fix errors above and re-run './visp.py deploy update'", Colors.RED
+                    )
+                )
+            else:
+                print()
+                print(color("  ✓ External repositories ready.", Colors.GREEN))
+        else:
+            print()
+            print(color("  Remember to run './visp.py deploy update' before building images.", Colors.YELLOW))
+
 
 def cmd_uninstall(args):
     """Remove quadlet links from systemd directory."""
