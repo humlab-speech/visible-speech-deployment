@@ -2,10 +2,12 @@ services:
   apache:
     image: visp-apache
     build:
-      context: "./docker/apache"
+      context: ./external/webclient
+      dockerfile: ./docker/Dockerfile
+      target: production
       args:
         WEBCLIENT_BUILD: ${WEBCLIENT_BUILD:-visp-build}
-    restart: always
+    restart: unless-stopped
     ports:
       - $HTTP_PORT:80
     networks:
@@ -31,13 +33,12 @@ services:
       - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
       - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #GENERAL
-      - "./mounts/webapi/logs:/var/log/api:Z"
+      - "./mounts/api-logs/logs:/var/log/api:Z"
       - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
       #- "./external/webclient/dist:/var/www/html:Z"
-      #- "./external/webapi:/var/www/webapi:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
@@ -61,8 +62,7 @@ services:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
-      RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
-      RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
+      RSTUDIO_IMAGE_NAME: "visp-jupyter-session"
       JUPYTER_IMAGE_NAME: "visp-jupyter-session"
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       ACCESS_LIST_ENABLED: $ACCESS_LIST_ENABLED
@@ -72,11 +72,12 @@ services:
       GRADIO_WHISPERX_ENDPOINT: "http://whisper:7860"
       BASIC_AUTH_USERNAME: "whisperuser"
       BASIC_AUTH_PASSWORD: "whisperpass"
+      DOCKER_SOCKET_PATH: ${DOCKER_SOCKET_PATH:-/run/user/1000/podman/podman.sock}
     volumes:
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/session-manager.log:/session-manager/logs/session-manager.log:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
-      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "${DOCKER_SOCKET_PATH}:${DOCKER_SOCKET_PATH}:Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
@@ -88,13 +89,17 @@ services:
       - whisper-net
 
   emu-webapp:
-    image: visp-emu-webapp
     build:
-      context: ./docker/emu-webapp
+      context: ./external/EMU-webApp
+      dockerfile: ../../docker/emu-webapp/Dockerfile
       target: production
-    restart: always
+    restart: unless-stopped
+    stop_grace_period: 30s
     ports:
       - 127.0.0.1:9000:9000
+    volumes:
+      - ./external/EMU-webApp:/app:Z
+      - /app/node_modules
     networks:
       - visp-net
 

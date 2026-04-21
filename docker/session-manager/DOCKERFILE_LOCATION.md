@@ -6,7 +6,7 @@
 
 Following the "single source of truth" principle: services we control should own their build process. This allows:
 - Independent development without this deployment project
-- Standalone builds: `cd external/session-manager && docker build .`
+- Standalone builds: `cd external/session-manager && podman build .`
 - Version control of Dockerfile with the code it builds
 - Reuse by other projects
 
@@ -20,14 +20,15 @@ This directory contains session management **support files**:
 - `build-*.sh` - Scripts for building session images
 - Supporting configuration files
 
-## Docker Compose Configuration
+## Build Configuration
 
-```yaml
-session-manager:
-  build:
-    context: ./external/session-manager
-    dockerfile: Dockerfile  # Uses external/session-manager/Dockerfile
+Built via `visp.py` using the Dockerfile in the session-manager repository:
+
+```bash
+./visp.py build session-manager
 ```
+
+The build context is `external/session-manager/` with `external/session-manager/Dockerfile`.
 
 ## Legacy Note
 
@@ -35,6 +36,5 @@ The old Dockerfile that used to be here (which cloned from GitHub during build) 
 
 ## See Also
 
-- `docs/FOLDER_STRUCTURE.md` - Explanation of directory structure
-- `docs/DOCKERFILE_AUDIT.md` - Complete Dockerfile analysis
+- `AGENTS.md` - Comprehensive project architecture reference
 - `external/session-manager/` - The actual service code and Dockerfile

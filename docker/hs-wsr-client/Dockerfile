@@ -1,4 +1,4 @@
-FROM httpd:2.4
+FROM docker.io/library/httpd:2.4
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 

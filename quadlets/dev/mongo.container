@@ -1,0 +1,31 @@
+[Unit]
+Description=MongoDB Database
+After=network-online.target visp-net.service
+
+[Container]
+ContainerName=mongo
+Image=docker.io/library/mongo:6.0.14
+Network=visp-net.network
+PublishPort=127.0.0.1:27017:27017
+Environment=MONGO_INITDB_ROOT_USERNAME=root
+Secret=visp_mongo_root_password,type=env,target=MONGO_INITDB_ROOT_PASSWORD
+Volume=@@PROJECT_DIR@@/mounts/mongo/data:/data/db:Z
+Volume=@@PROJECT_DIR@@/mounts/mongo/logs:/var/log/mongodb:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+Exec=--logpath /var/log/mongodb/mongodb.log
+
+# Security hardening
+DropCapability=ALL
+AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--userns=keep-id --memory=512m --cpus=1.0 --pids-limit=200
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

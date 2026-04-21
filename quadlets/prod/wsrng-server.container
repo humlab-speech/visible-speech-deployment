@@ -1,0 +1,26 @@
+[Unit]
+Description=WSRNG Server
+After=network-online.target visp-net.service mongo.service
+Requires=mongo.service
+
+[Container]
+ContainerName=wsrng-server
+Image=localhost/visp-wsrng-server:latest
+Network=visp-net.network
+EnvironmentFile=@@PROJECT_DIR@@/external/wsrng-server/.env
+Secret=visp_mongo_root_password,type=env,target=MONGO_PASSWORD
+Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
+
+# Security hardening
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

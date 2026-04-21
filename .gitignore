@@ -8,6 +8,7 @@ docker-elk/
 docker/elasticsearch/
 docker/filebeat/
 docker/kibana/
+
 docker/logstash/
 filebeat-demo/
 mounts/elasticsearch/
@@ -23,6 +24,7 @@ mounts/apache/apache/uploads/*
 /external/
 install.sh
 .env
+.env.secrets
 dist
 certs/*
 private/*
@@ -40,7 +42,9 @@ kc-realm-export.json
 #docker/session-manager/scripts/container-agent/main.js
 mounts/mongo/data/
 mounts/mongo/logs/
-mounts/matomo/config
+mounts/matomo/
+mounts/matomo-db/
+mounts/apache/apache/vc.js
 mounts/session-manager
 restart-wsrng-server.sh
 run_git_clone_in_container.sh
@@ -87,3 +91,12 @@ mounts/whisperx/outputs/*
 # Local test scripts for the whisperx image (not intended for repo)
 docker/whisperx/*.sh
 /ARCHIVE/
+
+# Downloaded fonts for air-gapped builds (use scripts/download-fonts.sh to populate)
+external/webclient/fonts/
+.visp-mode
+backups/
+visp_mongodb_*.tar.gz
+COMMIT_MESSAGE.md
+NETAVARK_MIGRATION.md
+docker/session-manager/files/Transcription.ipynb

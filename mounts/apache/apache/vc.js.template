@@ -1,0 +1,23 @@
+// VISP visitor analytics configuration
+// Auto-generated from vc.js.template by ./visp.py install
+var _paq = window._paq = window._paq || [];
+_paq.push(['setDomains', [
+  '*.{{BASE_DOMAIN}}',
+  '*.octra.{{BASE_DOMAIN}}',
+  '*.emu-webapp.{{BASE_DOMAIN}}',
+  '*.recorder.{{BASE_DOMAIN}}'
+]]);
+_paq.push(['enableCrossDomainLinking']);
+_paq.push(['trackPageView']);
+_paq.push(['enableLinkTracking']);
+(function() {
+  // Served via Apache reverse proxy (same origin) to avoid cross-domain
+  // cert issues and ad-blocker interference. Apache proxies these paths
+  // to the Matomo container internally.
+  _paq.push(['setTrackerUrl', '/vt']);
+  _paq.push(['setSiteId', '1']);
+  var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+  g.async = true;
+  g.src = '/vt.js';
+  s.parentNode.insertBefore(g, s);
+})();

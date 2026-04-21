@@ -4,19 +4,19 @@ WhisperX Web API Service
 Provides REST API for speech transcription with optional speaker diarization.
 """
 
+import json
+import logging
 import os
 import tempfile
-import logging
-from typing import Optional, Dict, Any
-from pathlib import Path
-
-import uvicorn
-import json
 import time
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import JSONResponse
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import torch
+import uvicorn
 import whisperx
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,9 +50,7 @@ class WhisperXService:
                 )
             except Exception as e:
                 logger.error(f"Failed to load model {model_size}: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"Model loading failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Model loading failed: {str(e)}")
 
         return self.models[model_size]
 
@@ -61,9 +59,7 @@ class WhisperXService:
         if language not in self.align_models:
             logger.info(f"Loading alignment model for language: {language}")
             try:
-                model, metadata = whisperx.load_align_model(
-                    language_code=language, device=self.device
-                )
+                model, metadata = whisperx.load_align_model(language_code=language, device=self.device)
                 self.align_models[language] = (model, metadata)
             except Exception as e:
                 logger.warning(f"Failed to load alignment model for {language}: {e}")
@@ -94,9 +90,7 @@ class WhisperXService:
             "large-v2",
             "large-v3",
         ]:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid model size: {model_size}"
-            )
+            raise HTTPException(status_code=400, detail=f"Invalid model size: {model_size}")
 
         # Load Whisper model
         model = self._load_model(model_size)
@@ -116,23 +110,17 @@ class WhisperXService:
         align_model, metadata = self._load_align_model(detected_language)
         if align_model and metadata:
             logger.info("Aligning transcription for word-level timestamps...")
-            result = whisperx.align(
-                result["segments"], align_model, metadata, audio, self.device
-            )
+            result = whisperx.align(result["segments"], align_model, metadata, audio, self.device)
 
         # Speaker diarization (requires HuggingFace token)
         if enable_diarization:
             if not hf_token:
                 logger.warning("Diarization requested but no HF_TOKEN provided")
-                result["diarization_warning"] = (
-                    "No HuggingFace token provided for diarization"
-                )
+                result["diarization_warning"] = "No HuggingFace token provided for diarization"
             else:
                 try:
                     logger.info("Starting speaker diarization...")
-                    diarize_model = whisperx.DiarizationPipeline(
-                        use_auth_token=hf_token, device=self.device
-                    )
+                    diarize_model = whisperx.DiarizationPipeline(use_auth_token=hf_token, device=self.device)
                     diarize_segments = diarize_model(audio)
                     result = whisperx.assign_word_speakers(diarize_segments, result)
                     logger.info("Diarization completed")
@@ -171,16 +159,12 @@ class WhisperXService:
                 start = float(seg.get("start", 0.0))
                 end = float(seg.get("end", 0.0))
                 text = seg.get("text", "").strip()
-                srt_lines.append(
-                    f"{i}\n{_srt_time(start)} --> {_srt_time(end)}\n{text}\n"
-                )
+                srt_lines.append(f"{i}\n{_srt_time(start)} --> {_srt_time(end)}\n{text}\n")
 
             out_srt = self.output_dir / f"{fname_base}.srt"
             out_srt.write_text("\n".join(srt_lines), encoding="utf-8")
 
-            logger.info(
-                f"Saved transcription outputs: {out_json}, {out_txt}, {out_srt}"
-            )
+            logger.info(f"Saved transcription outputs: {out_json}, {out_txt}, {out_srt}")
         except Exception as e:
             logger.warning(f"Failed to persist outputs: {e}")
 
@@ -309,12 +293,8 @@ async def list_downloaded_models():
 
             return {
                 "model_directory": str(service.model_dir),
-                "downloaded_files": [
-                    str(f.relative_to(service.model_dir)) for f in model_files
-                ],
-                "model_directories": [
-                    str(d.relative_to(service.model_dir)) for d in model_dirs
-                ],
+                "downloaded_files": [str(f.relative_to(service.model_dir)) for f in model_files],
+                "model_directories": [str(d.relative_to(service.model_dir)) for d in model_dirs],
                 "total_files": len(model_files),
                 "total_directories": len(model_dirs),
             }

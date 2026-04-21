@@ -1,0 +1,29 @@
+[Unit]
+Description=OCTRA Speech Annotation Tool
+After=network-online.target octra-net-network.service
+Requires=octra-net-network.service
+
+[Container]
+ContainerName=octra
+Image=localhost/visp-octra:latest
+Network=octra-net.network
+Volume=@@PROJECT_DIR@@/mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+
+# Security hardening
+DropCapability=ALL
+AddCapability=SETGID SETUID NET_BIND_SERVICE
+NoNewPrivileges=true
+ReadOnly=true
+
+# Resource limits
+PodmanArgs=--memory=128m --cpus=0.25 --pids-limit=150 --tmpfs /tmp --tmpfs /run --tmpfs /usr/local/apache2/logs
+
+[Service]
+Restart=unless-stopped
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

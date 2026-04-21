@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM docker.io/library/debian:bullseye-20260406
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime
 

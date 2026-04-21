@@ -1,74 +1,49 @@
-# =========================================================================
-# Stage 1: The "Builder" Stage
-# =========================================================================
-FROM node:18-bookworm AS builder
+# syntax=docker/dockerfile:1
+#
+# EMU-webApp (Artic) — Svelte 5 + Vite 8 build
+# Upstream: https://github.com/humlab-speech/EMU-webApp
+#
 
-RUN apt-get update && \
-    apt-get install -y curl ca-certificates gnupg git nano wget rubygems ruby-dev build-essential xsel && \
-    rm -rf /var/lib/apt/lists/*
-
+############################
+# 1) Base deps stage
+############################
+FROM docker.io/library/node:22-bookworm-slim AS deps
 WORKDIR /app
 
-RUN gem install sass
-RUN gem install compass
-
-# Clone EMU-webApp from GitHub
-RUN git clone https://github.com/humlab-speech/EMU-webApp.git /app
-
-# Install dependencies
+# Install deps first (better caching)
+COPY package*.json ./
 RUN npm ci
 
-# Ensure node_modules binaries are executable after COPY (fixes permission issues on some systems)
-RUN chmod -R +x node_modules/.bin/ || true
+############################
+# 2) Development stage
+############################
+FROM docker.io/library/node:22-bookworm-slim AS development
+WORKDIR /app
 
-# Clean dist directory manually and build (avoids rimraf permission issues)
-RUN rm -rf dist/* && NODE_OPTIONS=--openssl-legacy-provider npx webpack --config webpack.prod.js
-
-# =========================================================================
-# Stage 2: The "Production" Stage - Nginx
-# =========================================================================
-FROM nginx:alpine AS production
-
-# Copy built files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx-production.conf /etc/nginx/conf.d/default.conf
+# Reuse node_modules from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
 EXPOSE 9000
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "9000"]
 
-# =========================================================================
-# Stage 3: The "Development" Stage - With Watch Mode
-# =========================================================================
-FROM node:18-bookworm AS development
-
-RUN apt-get update && \
-    apt-get install -y curl ca-certificates gnupg git nano wget rubygems ruby-dev build-essential xsel nginx && \
-    rm -rf /var/lib/apt/lists/*
-
+############################
+# 3) Build stage (creates static assets)
+############################
+FROM docker.io/library/node:22-bookworm-slim AS build
 WORKDIR /app
 
-RUN gem install sass
-RUN gem install compass
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Clone EMU-webApp from GitHub
-RUN git clone https://github.com/humlab-speech/EMU-webApp.git /app
+RUN npm run build:svelte
 
-# Install dependencies
-RUN npm ci
+############################
+# 4) Production stage (serves built assets)
+############################
+FROM docker.io/library/nginx:alpine AS production
 
-# Ensure node_modules binaries are executable
-RUN chmod -R +x node_modules/.bin/ || true
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration for development
-COPY nginx-development.conf /etc/nginx/sites-available/default
-
-# Copy and setup start script
-COPY start-dev.sh /usr/local/bin/start-dev.sh
-RUN chmod +x /usr/local/bin/start-dev.sh
-
-EXPOSE 9000
-
-CMD ["/usr/local/bin/start-dev.sh"]
+EXPOSE 80

@@ -1,0 +1,34 @@
+[Unit]
+Description=EMU-webapp Server (Production)
+After=network-online.target visp-net.service mongo.service
+Requires=mongo.service
+
+[Container]
+ContainerName=emu-webapp-server
+Image=localhost/visp-emu-webapp-server:latest
+Exec=npm start
+Network=visp-net.network
+PublishPort=127.0.0.1:17890:17890
+EnvironmentFile=@@PROJECT_DIR@@/mounts/emu-webapp-server/.env
+Environment=LOG_LEVEL=INFO
+Secret=visp_mongo_uri,type=env,target=MONGO_URI
+Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
+Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
+Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
+Volume=@@PROJECT_DIR@@/mounts/emu-webapp-server/logs:/home/node/app/logs:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+
+# Security hardening
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

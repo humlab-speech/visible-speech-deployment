@@ -1,14 +1,17 @@
-# Stage 1: Get pre-built container-agent from operations-session (no need to rebuild!)
-FROM visp-operations-session AS container_agent_source
+# Stage 1: Build container-agent (no host npm needed!)
+FROM docker.io/node:20.20.0-alpine3.22 AS container_agent_builder
+WORKDIR /build
+COPY ./container-agent /build/
+RUN npm install && \
+    npm run build
 
 # Stage 2: Base
-FROM quay.io/jupyter/datascience-notebook:r-4.3.3 AS base
+FROM quay.io/jupyter/datascience-notebook:r-4.5.2 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
-LABEL description="The Jupyter session image, which is instantiated when a new Jupyter session is spawned in the VISP interface"
+LABEL description="Jupyter + R session image. Used for interactive Jupyter sessions AND short-lived operations tasks (EMU-DB creation, audio import, etc.)"
 
 USER root
-
 
 WORKDIR /opt/conda/lib
 RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
@@ -18,37 +21,48 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libv8.so ./ && \
 RUN rm /etc/localtime && \
     ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime && \
     apt update && apt upgrade -y && \
-    apt install -y ffmpeg zlib1g-dev nano npm curl nodejs libnode-dev r-cran-v8 libavfilter-dev cmake && \
+    apt install -y ffmpeg zlib1g-dev nano npm curl nodejs libnode-dev r-cran-v8 \
+                   libavfilter-dev cmake socat rsync build-essential gfortran \
+                   libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
+                   libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
+                   libcurl4-openssl-dev && \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
+
 WORKDIR /home/jovyan
 
-# Stage 3: Python packages
-FROM base AS python_packages
+# Stage 3: R packages (emuR + dependencies for container-agent R scripts)
+FROM base AS r_packages
 
-RUN pip install --upgrade pip && \
-    pip install uv && \
-    uv pip install --system numpy \
-                   torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu \
-                   pyannote.audio \
-                   speechbrain opensmile librosa torchcrepe pyworld amfm_decompy tensorflow tensorflow_hub \
-                   json_tricks && \
-    git clone --recursive https://github.com/r9y9/pyreaper && \
-    uv pip install --system ./pyreaper/ && rm -rf pyreaper && \
-    git clone --recursive https://github.com/r9y9/pysptk && \
-    uv pip install --system ./pysptk/ && rm -rf pysptk && \
-    uv pip install --system whisperx
+# Fix: conda's cross-compiler (x86_64-conda-linux-gnu-cc) uses an older sysroot
+# that is incompatible with Ubuntu's system -dev package headers (__time64_t error).
+# Switch R to use the system compiler instead.
+RUN RHOME=$(R RHOME) && \
+    sed -i 's|x86_64-conda-linux-gnu-cc|gcc|g' $RHOME/etc/Makeconf && \
+    sed -i 's|x86_64-conda-linux-gnu-c++|g++|g' $RHOME/etc/Makeconf && \
+    sed -i 's|x86_64-conda-linux-gnu-gfortran|gfortran|g' $RHOME/etc/Makeconf && \
+    sed -i 's/-Werror=format-security//g' $RHOME/etc/Makeconf && \
+    sed -i 's/-Werror=implicit-function-declaration//g' $RHOME/etc/Makeconf
+
+ENV CRAN_MIRROR="https://cran.uib.no/"
+
+RUN R -e "install.packages('pak', repos='${CRAN_MIRROR}'); \
+          if (!requireNamespace('pak', quietly = TRUE)) stop('pak installation failed')"
+
+RUN R -e "options(repos = c(CRAN = '${CRAN_MIRROR}')); \
+    pak::pkg_install(c('curl', 'git2r', 'openxlsx', 'gt', 'tidyverse', 'tidymodels', 'remotes'))"
+RUN R -e "options(repos = c(CRAN = '${CRAN_MIRROR}')); \
+    pak::pkg_install(c('IPS-LMU/emuR', 'IPS-LMU/wrassp', 'jsonlite', 'stringi', 'av'));"
 
 # Stage 4: Final
-FROM python_packages AS final
+FROM r_packages AS final
 
-# Grab the compiled R from the visp_operations_session image, avoiding building them twice
-# NOTE: If the operations session image is updated, this image must be rebuilt
-COPY --from=visp-operations-session /usr/local/lib/R/site-library /opt/conda/lib/R/library
+# session-manager execs container-agent via /usr/local/bin/node but apt installs to /usr/bin/node
+RUN ln -sf /usr/bin/node /usr/local/bin/node
 
-# Copy the pre-built container-agent from operations-session (already built there!)
-COPY --from=container_agent_source /container-agent /container-agent
+# Copy the pre-built container-agent from builder stage
+COPY --from=container_agent_builder /build/dist /container-agent
 
 COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
 
@@ -59,36 +73,37 @@ RUN conda clean -a -y -q && \
     rm -rf /tmp/* && \
     rm -rf /var/tmp/*
 
-RUN mkdir /home/jovyan/project && \
+RUN mkdir -p /home/jovyan/project && \
     chown -R jovyan:users /home/jovyan/project && \
     chmod -R 755 /home/jovyan/project
 
 WORKDIR /home/jovyan/project
 
-COPY files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
+# UDS isolation wrapper: starts socat proxy bridge before Jupyter
+COPY ./files/jupyter-uds-wrapper.sh /usr/local/bin/jupyter-uds-wrapper.sh
+RUN chmod +x /usr/local/bin/jupyter-uds-wrapper.sh
 
-# This part is to create a cache directory for the whisperx model, which is then mounted.
-# We do not want users to download the model every time they start a new session.
-RUN mkdir /hf_cache && \
-    chmod -R 777 /hf_cache
-ENV HF_HOME="/hf_cache"
+# Notebook transcription helper — lets users call transcribe() from notebooks.
+# Communicates with session-manager via api.sock (UDS), no TCP needed.
+# httpx is already present in the datascience-notebook base image.
+COPY ./files/visp_transcribe.py /tmp/visp_transcribe.py
+RUN python -c "import site; print(site.getsitepackages()[0])" | xargs -I{} cp /tmp/visp_transcribe.py {}/visp_transcribe.py && \
+    rm /tmp/visp_transcribe.py
 
-# Copy whisper model link script
-COPY ./files/whisperx_link_script.sh /usr/local/bin/whisperx_link_script.sh
-RUN chmod +x /usr/local/bin/whisperx_link_script.sh
+# Starter notebook — generated from Transcription.py (jupytext percent format) at build time.
+# Edit Transcription.py; the .ipynb is produced here and baked into the image.
+RUN pip install --quiet jupytext
+COPY ./files/Transcription.py /tmp/Transcription.py
+RUN jupytext --to notebook /tmp/Transcription.py -o /home/jovyan/Transcription.ipynb && \
+    chown jovyan:users /home/jovyan/Transcription.ipynb && \
+    rm /tmp/Transcription.py
 
-# Add cron job for jovyan user to run the script at reboot
-RUN echo "@reboot jovyan /usr/local/bin/whisperx_link_script.sh" >> /etc/crontab
-
-# Switch back to jovyan user
-USER jovyan
-
-#########################################################
 # Ensure Jupyter runtime and local dirs exist and are owned
 # This prevents permission errors when the notebook server
 # tries to create /home/jovyan/.local/share/jupyter/runtime
-USER root
 RUN mkdir -p /home/jovyan/.local/share/jupyter/runtime && \
     chown -R jovyan:users /home/jovyan/.local && \
     chmod -R 700 /home/jovyan/.local
+
+# Switch back to jovyan user
 USER jovyan

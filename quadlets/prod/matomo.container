@@ -1,0 +1,33 @@
+[Unit]
+Description=Matomo Analytics
+After=network-online.target visp-net.service matomo-db.service
+Requires=matomo-db.service
+
+[Container]
+ContainerName=matomo
+Image=docker.io/library/matomo:5.8.0
+Network=visp-net.network
+Environment=MATOMO_DATABASE_HOST=matomo-db
+Environment=MATOMO_DATABASE_DBNAME=matomo_db
+Secret=visp_matomo_db_user,type=env,target=MATOMO_DATABASE_USERNAME
+Secret=visp_matomo_db_password,type=env,target=MATOMO_DATABASE_PASSWORD
+Volume=@@PROJECT_DIR@@/mounts/matomo/config:/var/www/html/config:rw,Z
+Volume=@@PROJECT_DIR@@/mounts/matomo/DBIP-City.mmdb:/var/www/html/misc/DBIP-City.mmdb:rw,Z
+Volume=@@PROJECT_DIR@@/mounts/apache/apache/logs/apache2:/external_logs:ro
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+
+# Security hardening
+DropCapability=ALL
+AddCapability=CHOWN DAC_OVERRIDE FOWNER NET_BIND_SERVICE SETGID SETUID
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

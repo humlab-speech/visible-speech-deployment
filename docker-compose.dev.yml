@@ -1,27 +1,24 @@
 services:
-  traefik:
-    image: docker.io/library/traefik:v3.3
-    restart: always
-    volumes:
-      - "./mounts/traefik/conf:/etc/traefik:Z"
-      - "./mounts/traefik/acme:/acme:Z"
-      - "./mounts/traefik/log:/var/log:Z"
-      #- "/var/run/docker.sock:/var/run/docker.sock"
-      - "/etc/timezone:/etc/timezone:ro"
-      - "/etc/localtime:/etc/localtime:ro"
-      - "./certs:/certs:ro"
+  nginx:
+    image: visp-nginx
+    build: "./docker/nginx"
+    restart: unless-stopped
     ports:
       - $HTTP_PORT:80
       - $HTTPS_PORT:443
-    environment:
-      BASE_DOMAIN: $BASE_DOMAIN
+    volumes:
+      - "./mounts/dev-edge-router/conf:/etc/nginx/conf.d:Z"
+      - "./mounts/dev-edge-router/logs:/var/log/nginx:Z"
+      - "./certs:/etc/certs:Z"
+      - "/etc/localtime:/etc/localtime:ro"
     networks:
       - visp-net
-
   apache:
     image: visp-apache
     build:
-      context: "./docker/apache"
+      context: ./external/webclient
+      dockerfile: ./docker/Dockerfile
+      target: development
       args:
         WEBCLIENT_BUILD: ${WEBCLIENT_BUILD:-visp-build}
     restart: unless-stopped
@@ -29,7 +26,7 @@ services:
       - visp-net
       - octra-net
     environment:
-      MODE: dev
+      MODE: prod
       PROJECT_NAME: $COMPOSE_PROJECT_NAME
       LOG_LEVEL: debug
       BASE_DOMAIN: $BASE_DOMAIN
@@ -48,22 +45,13 @@ services:
       - "./mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z"
       - "./certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z"
       #GENERAL
-      - "./mounts/webapi/logs:/var/log/api:Z"
+      - "./mounts/api-logs/logs:/var/log/api:Z"
       - "./mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/shib.conf:Z"
       - "./mounts/apache/apache/envvars:/etc/apache2/envvars:Z"
       - "./mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z"
       - "./mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z"
       - "./external/webclient:/webclient:Z"
       #- "./external/webclient/dist:/var/www/html:Z"
-      #- "./external/webapi:/var/www/webapi:Z"
-      # The application expects composer autoload at /var/www/html/api/vendor.
-      # In development the host mount of ./external/webclient/dist onto /var/www/html hides any
-      # vendor files the image build may have put under /var/www/html/api/vendor, and
-      # the repo now keeps composer packages under ./external/webapi/vendor. Mount the host
-      # vendor folder into the webroot so PHP can always require 'api/vendor/autoload.php'.
-      # This mirrors the runtime layout and avoids needing to create a symlink inside
-      # the running container as a temporary hotfix.
-      #- "./external/webapi/vendor:/var/www/html/api/vendor:Z"
       - "./mounts/apache/apache/logs/apache2:/var/log/apache2:Z"
       - "./mounts/apache/apache/logs/shibboleth:/var/log/shibboleth:Z"
       - "./mounts/apache/saml/shibd.logger:/etc/shibboleth/shibd.logger:Z"
@@ -72,8 +60,7 @@ services:
       - "./certs/letsencrypt:/certs/letsencrypt:Z"
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/apache/apache/php.ini:/etc/php/8.2/apache2/php.ini:Z"
-      #- "/etc/timezone:/etc/timezone:ro"
-      #- "/etc/localtime:/etc/localtime:ro"
+      - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
 
   session-manager:
@@ -89,8 +76,7 @@ services:
       COMPOSE_PROJECT_NAME: $COMPOSE_PROJECT_NAME
       HS_API_ACCESS_TOKEN: $VISP_API_ACCESS_TOKEN
       ABS_ROOT_PATH: $ABS_ROOT_PATH
-      RSTUDIO_IMAGE_NAME: "visp-rstudio-session"
-      RSTUDIO_PASSWORD: $RSTUDIO_PASSWORD
+      RSTUDIO_IMAGE_NAME: "visp-jupyter-session"
       JUPYTER_IMAGE_NAME: "visp-jupyter-session"
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       ACCESS_LIST_ENABLED: $ACCESS_LIST_ENABLED
@@ -101,14 +87,19 @@ services:
       GRADIO_WHISPERX_ENDPOINT: "http://whisper:7860"
       BASIC_AUTH_USERNAME: "whisperuser"
       BASIC_AUTH_PASSWORD: "whisperpass"
+      DOCKER_SOCKET_PATH: ${DOCKER_SOCKET_PATH:-/run/user/1000/podman/podman.sock}
     volumes:
       # Source code mount for development hot-reload
       - "./external/session-manager:/session-manager:Z"
+      # NOTE: container-agent is NOT mounted here. session-manager mounts
+      # external/container-agent/dist into each operations container it spawns
+      # dynamically via the Docker/Podman API (using ABS_ROOT_PATH as prefix).
+      # Run: ./visp.py build container-agent  to populate that dist folder.
       # Data volumes
       - "./mounts/apache/apache/uploads:/tmp/uploads:Z"
       - "./mounts/session-manager/logs:/session-manager/logs:Z"
       - "./mounts/session-manager/unimported_audio:/unimported_audio:Z"
-      - "/var/run/docker.sock:/var/run/docker.sock:Z"
+      - "${DOCKER_SOCKET_PATH}:${DOCKER_SOCKET_PATH}:Z"
       - "./mounts/repositories:/repositories:Z"
       - "./mounts/repository-template:/repository-template:Z"
       - "./mounts/transcription-queued:/transcription-queued:Z"
@@ -119,13 +110,14 @@ services:
       - whisper-net
 
   emu-webapp:
-    image: visp-emu-webapp
     build:
-      context: ./docker/emu-webapp
-      target: development
+      context: ./external/EMU-webApp
+      dockerfile: ../../docker/emu-webapp/Dockerfile
+      target: production #this is intentionally set to production, since the webpack-dev-server used in the development stage refuses to serve other than localhost domains currently and I have been unsuccessful in changing that. If you do manage to fix that, the port should then be changed to 9000
     restart: unless-stopped
+    stop_grace_period: 30s
     ports:
-      - 127.0.0.1:9000:9000
+      - 9000:80
     volumes:
       - ./external/EMU-webApp:/app:Z
       - /app/node_modules
@@ -139,7 +131,6 @@ services:
     ports:
       - 127.0.0.1:17890:17890
     volumes:
-      - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
       - "./mounts/repositories:/repositories:Z"
       - "./external/emu-webapp-server:/home/node/app:Z"
@@ -163,7 +154,6 @@ services:
     volumes:
       - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z"
       - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z"
-      - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
     networks:
       - octra-net
@@ -190,14 +180,13 @@ services:
     image: docker.io/library/mongo:6.0.27
     restart: unless-stopped
     ports:
-      - 127.0.0.1:27017:27017
+      - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
     volumes:
       - "./mounts/mongo/data:/data/db:Z"
       - "./mounts/mongo/logs:/var/log/mongodb:Z"
-      - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
     command: ['--logpath', '/var/log/mongodb/mongodb.log']
     networks:
@@ -222,6 +211,7 @@ services:
       context: ./docker/whisper
       dockerfile: Dockerfile
     image: visp-whisper
+    stop_grace_period: 30s
     volumes:
       - ./mounts/whisper/models:/Whisper-WebUI/models
       - ./mounts/whisper/outputs:/Whisper-WebUI/outputs

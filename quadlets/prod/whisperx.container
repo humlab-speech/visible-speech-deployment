@@ -1,0 +1,33 @@
+[Unit]
+Description=WhisperX Transcription Server (network-isolated)
+After=network-online.target
+
+[Container]
+ContainerName=whisperx
+Image=localhost/visp-whisperx:latest
+# Network-isolated: zero internet access after model download
+Network=none
+# Models mounted read-only; socket dir mounted read-write
+Volume=@@PROJECT_DIR@@/mounts/whisper/models:/models/extra:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/whisper/api:/run/api:Z
+# Default model: multilingual Whisper large-v3 (auto-detect language).
+# Session-manager switches to sv-standard package for Swedish via POST /reload.
+Environment=WHISPERX_MODEL=/models/extra/faster-whisper-large-v3-ct2
+Environment=WHISPERX_DEVICE=cpu
+Environment=WHISPERX_COMPUTE_TYPE=float32
+# Diarization model (pyannote speaker diarization pipeline)
+Environment=WHISPERX_DIARIZE_MODEL=/models/extra/pyannote-speaker-diarization
+
+# Security hardening (no resource limits — CPU/memory-intensive workload)
+DropCapability=ALL
+NoNewPrivileges=true
+ReadOnly=true
+PodmanArgs=--tmpfs /tmp
+
+[Service]
+Restart=always
+# Model loading can take 1-5 min; socket only appears once model is ready
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

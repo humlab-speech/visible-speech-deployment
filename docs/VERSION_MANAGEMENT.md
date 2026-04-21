@@ -10,7 +10,6 @@ The `versions.json` file controls which versions of external components are used
 ## Current Locked Versions (as of 2025-12-01)
 ```
 webclient:         e7d7b780 - removed lock file
-webapi:            127e3630 - refactor: remove GitLab integration
 container-agent:   d98ef9da - security updates
 wsrng-server:      a8dcb4d2 - Fix: set correct file ownership for node user
 session-manager:   ee3bf558 - Refactor: improve code organization
@@ -33,7 +32,7 @@ When you want to freeze all versions for production stability:
 }
 
 # Then update to checkout locked versions
-python3 visp_deploy.py update
+python3 visp.py update
 ```
 
 ### 2. Test a New Version (Single Component)
@@ -54,9 +53,9 @@ git log --oneline HEAD..origin/main  # See what commits are newer
 }
 
 # 3. Update just that component
-python3 visp_deploy.py update  # Will checkout the new version
-docker compose build webclient  # Rebuild if needed
-docker compose up -d           # Test it
+python3 visp.py update  # Will checkout the new version
+./visp.py build webclient  # Rebuild if needed
+./visp.py restart apache   # Pick up new dist/
 
 # 4a. If it works, update locked_version to the new SHA
 # 4b. If it breaks, revert version back to locked_version
@@ -67,10 +66,10 @@ When you want to pull latest versions of everything:
 
 ```bash
 # This is the default - versions.json already has "latest" for all
-python3 visp_deploy.py update
+python3 visp.py update
 
 # After testing, record the working commits as locked_version:
-for dir in webclient webapi container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
   if [ -d "$dir/.git" ]; then
     echo "$dir: $(cd $dir && git rev-parse HEAD)"
   fi
@@ -85,14 +84,14 @@ If an update breaks something:
 ```bash
 # Option A: Revert to locked versions in versions.json
 # Set all "version" fields to their "locked_version" values
-python3 visp_deploy.py update
+python3 visp.py update
 
 # Option B: Manual git rollback for single component
 cd session-manager
 git checkout ee3bf558  # Use locked_version SHA
 cd ..
-docker compose build session-manager
-docker compose up -d session-manager
+./visp.py build session-manager
+./visp.py restart session-manager
 ```
 
 ## Version String Formats
@@ -134,7 +133,7 @@ docker compose up -d session-manager
 
 ### Development Workflow
 1. **Use "latest"** to stay current with team changes
-2. Run `visp_deploy.py update` regularly
+2. Run `visp.py update` regularly
 3. Test after each update
 4. Record working commit SHAs if you need to share setup
 
@@ -160,7 +159,7 @@ git commit -m "Update webclient to abc123 - fixes XYZ issue"
 ```bash
 #!/bin/bash
 # lock-versions.sh - Lock all components to current commits
-for dir in webclient webapi container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
   if [ -d "$dir/.git" ]; then
     sha=$(cd $dir && git rev-parse HEAD)
     msg=$(cd $dir && git log -1 --format="%s")
@@ -174,7 +173,7 @@ done
 ```bash
 #!/bin/bash
 # check-updates.sh - See what's new in each repo
-for dir in webclient webapi container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server EMU-webApp; do
   if [ -d "$dir/.git" ]; then
     cd $dir
     git fetch -q
@@ -191,5 +190,5 @@ done
 
 ## Related Files
 - `versions.json` - Version configuration
-- `visp_deploy.py` - Reads versions.json, clones/updates repos
+- `visp.py` - Reads versions.json, clones/updates repos
 - `TODO.md` - Lists version management improvements needed

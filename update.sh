@@ -7,6 +7,6 @@ set -e
 echo "Updating VISP components..."
 
 # Run the Python deployment script
-python3 visp_deploy.py update
+python3 visp.py deploy update
 
 echo "Update complete."

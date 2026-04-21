@@ -1,0 +1,368 @@
+# Matomo Setup Guide
+
+First-time setup for the Matomo analytics instance. This only needs to be done
+once — configuration is persisted in `mounts/matomo/config/config.ini.php`.
+
+---
+
+## Prerequisites
+
+Matomo must be running:
+
+```bash
+./visp.py status          # matomo and matomo-db should be "active"
+```
+
+If not:
+
+```bash
+./visp.py install --mode dev   # or prod
+./visp.py reload
+./visp.py start all
+```
+
+---
+
+## Step 1 — Open the Setup Wizard
+
+Browse to `https://matomo.BASE_DOMAIN` (e.g. `https://matomo.visp.local`).
+
+Matomo detects that no configuration exists and launches the installation wizard.
+
+Click **Next »** through the Welcome page.
+
+## Step 2 — System Check
+
+Matomo checks PHP extensions and permissions. Everything should be green.
+Click **Next »**.
+
+## Step 3 — Database Setup
+
+The fields should be **pre-filled** from the environment variables and Podman
+secrets set during `./visp.py install`:
+
+| Field           | Expected value                                        |
+|-----------------|-------------------------------------------------------|
+| Database Server | `matomo-db`                                           |
+| Login           | Auto-generated (from `MATOMO_DB_USER` in `.env.secrets`) |
+| Password        | Auto-generated (from `MATOMO_DB_PASSWORD` in `.env.secrets`) |
+| Database Name   | `matomo_db`                                           |
+| Table Prefix    | `matomo_` (default, keep as-is)                       |
+| Adapter         | `PDO\MYSQL` (default)                                 |
+
+If the fields are empty, check the secrets:
+
+```bash
+grep -E 'MATOMO_DB_(USER|PASSWORD)' .env.secrets
+```
+
+Click **Next »**. Matomo will connect to MariaDB and create its tables.
+
+## Step 4 — Creating the Tables
+
+Automatic. Wait for it to finish, then click **Next »**.
+
+## Step 5 — Super User
+
+Create the Matomo admin account. This is the Matomo web UI login — it is
+**separate** from the database credentials and from VISP user accounts.
+
+| Field              | Suggested value             |
+|--------------------|-----------------------------|
+| Super User Login   | `admin`                     |
+| Password           | Choose a strong password    |
+| Email              | Your admin email            |
+
+> **Tip:** After completing the wizard, store these credentials in `.env.secrets`:
+>
+> ```
+> MATOMO_ADMIN_USER=admin
+> MATOMO_ADMIN_PASSWORD=<your password>
+> MATOMO_ADMIN_EMAIL=<your email>
+> ```
+>
+> These fields are not used by `visp.py` — they're just kept alongside the
+> other secrets for safekeeping.
+
+Click **Next »**.
+
+## Step 6 — Set Up a Website
+
+Register VISP as the tracked website:
+
+| Field             | Value                         |
+|-------------------|-------------------------------|
+| Website name      | `Visible Speech`              |
+| Website URL       | `https://BASE_DOMAIN`         |
+| Website time zone | Your local timezone           |
+| E-commerce        | No                            |
+
+This creates **Site ID 1**, which matches the tracker script configuration.
+
+Click **Next »**.
+
+## Step 6b — Register All Subdomains (REQUIRED for cross-subdomain tracking)
+
+> ⚠️ **This step is required.** Without it, Matomo silently drops tracking hits from
+> any subdomain not listed as an allowed URL for the site. Visits from `octra.*` and
+> `emu-webapp.*` will not appear in the dashboard even though the tracker script runs fine.
+
+After completing the wizard, go to:
+**Administration → Measurables (Sites) → Manage** → click the site → scroll down to
+**"Add URLs"**.
+
+Add **all** subdomains that load `vc.js`:
+
+| Subdomain URL                         | Has tracker? |
+|---------------------------------------|--------------|
+| `https://BASE_DOMAIN`                 | ✅ (main site, already set as `main_url`) |
+| `https://octra.BASE_DOMAIN`           | ✅ (`vc.js` injected via `octra.vhost.conf`) |
+| `https://emu-webapp.BASE_DOMAIN`      | ✅ (`vc.js` injected via `emu-webapp.vhost.conf`) |
+| `https://recorder.BASE_DOMAIN`        | ✅ (`vc.js` injected via `recorder.vhost.conf`) |
+
+Subdomains that do **not** load `vc.js` (no tracker injection, omit from Matomo):
+
+| Subdomain         | Notes                                         |
+|-------------------|-----------------------------------------------|
+| `matomo.*`        | The Matomo UI itself — not tracked            |
+| `app.*`           | WebSocket proxy to session-manager, no HTML UI |
+| `me.*`            | mongo-express admin UI — internal only        |
+
+Click **Save** after adding the URLs.
+
+**Verification:** After adding the URLs, use the Matomo API to confirm they are registered:
+```bash
+curl "https://matomo.BASE_DOMAIN/index.php?module=API&method=SitesManager.getSiteUrlsFromId&idSite=1&format=JSON&token_auth=anonymous"
+# Should list all the subdomain URLs you added
+```
+
+## Step 7 — JavaScript Tracking Code
+
+Matomo shows a tracking snippet. **Skip this** — we already have our own
+tracker file (`vc.js`) that is auto-generated by `./visp.py install`
+and loaded by the webclient.
+
+Click **Next »**.
+
+## Step 8 — Congratulations
+
+Setup complete! Click **Continue to Matomo**.
+
+---
+
+## Post-Setup Defaults
+
+The final wizard page offers two defaults — **keep both enabled**:
+
+- ✅ **Geolocation via dbip database** — maps visitor IPs to countries/cities.
+- ✅ **IP anonymization** — masks the last byte(s) of visitor IP addresses.
+  Important for GDPR compliance (Swedish/EU users).
+
+---
+
+## Geolocation Database (DBIP)
+
+After the wizard, Matomo needs a geo-database to resolve visitor IPs to
+cities/regions. Without it the Geolocation settings page will show
+**"geoip2php provider is no longer available"** and all locations will be
+unknown.
+
+### Installing the DBIP City Lite database
+
+1. Download the free **DBIP City Lite** `.mmdb` from
+   [https://db-ip.com/db/download/ip-to-city-lite](https://db-ip.com/db/download/ip-to-city-lite).
+   The file will be named something like `dbip-city-lite-2026-04.mmdb.gz`.
+
+2. Extract it:
+   ```bash
+   gunzip dbip-city-lite-2026-04.mmdb.gz
+   ```
+
+3. Copy and rename it to `mounts/matomo/DBIP-City.mmdb` on the server
+   (this single file is bind-mounted directly into the container as
+   `/var/www/html/misc/DBIP-City.mmdb`):
+   ```bash
+   cp dbip-city-lite-2026-04.mmdb mounts/matomo/DBIP-City.mmdb
+   ```
+   > The filename **must** be `DBIP-City.mmdb` — Matomo looks for that exact name.
+   > A placeholder empty file is created at `mounts/matomo/DBIP-City.mmdb` during
+   > `./visp.py install` so the bind mount point always exists. Matomo will show
+   > the provider as "Not Installed" until the real database is copied in.
+   >
+   > ⚠️ **Always use `cp` to overwrite the file in-place.** Because it is a
+   > file bind-mount (not a directory mount), the container tracks the specific
+   > inode. Using `rm` + copy, or `mv`, replaces the inode and leaves the
+   > container with a dangling mount until restarted.
+
+4. Go to **System → Geolocation** in the Matomo admin UI and select
+   **DBIP / GeoIP (PHP)**. Click **Save**.
+
+No container restart is required — the file is read directly from the mount.
+
+### Keeping it up to date
+
+DBIP updates the database monthly. Download the new file and overwrite in-place
+with `cp` — **do not use `mv` or `rm` first**, as that would break the bind mount:
+
+```bash
+gunzip dbip-city-lite-YYYY-MM.mmdb.gz
+cp dbip-city-lite-YYYY-MM.mmdb mounts/matomo/DBIP-City.mmdb
+```
+
+No container restart needed — Matomo re-reads the file on the next lookup.
+
+### CLI archiving (production)
+
+By default Matomo generates reports on-demand (when you view the dashboard),
+which can be slow with traffic. For production, set up **CLI archiving** so
+reports are pre-generated in the background:
+
+```bash
+# Run inside the Matomo container (add to cron or systemd timer):
+podman exec matomo php /var/www/html/console core:archive --url=https://matomo.BASE_DOMAIN
+```
+
+See [Matomo archiving FAQ](https://matomo.org/faq/on-premise/how-to-set-up-auto-archiving-of-your-reports/)
+for details. This is not needed for local dev.
+
+---
+
+## Verification
+
+### 1. Matomo dashboard loads
+
+Browse to `https://matomo.BASE_DOMAIN` and log in with the super user
+credentials you created in Step 5.
+
+### 2. Tracker script is served
+
+```bash
+curl -s -o /dev/null -w '%{http_code}' https://BASE_DOMAIN/vc.js
+# Should return 200
+```
+
+### 3. Matomo library loads through proxy
+
+```bash
+curl -s https://BASE_DOMAIN/vt.js | head -3
+# Should show: /*!! Matomo - free/libre analytics platform
+```
+
+### 4. Page views appear
+
+1. Open the VISP webclient (`https://BASE_DOMAIN`) in a browser.
+2. Navigate a few pages.
+3. Check the Matomo dashboard — visits should appear within a few seconds
+   under **Dashboard → Visitors in Real-time**.
+
+If no data appears, check the browser console (F12) for errors loading
+`vc.js` or `vt.js`.
+
+---
+
+## Troubleshooting
+
+### "Database connection failed" in wizard
+
+- Verify matomo-db is running: `./visp.py status`
+- Check matomo-db logs: `./visp.py logs matomo-db`
+- Verify secrets exist: `podman secret ls | grep matomo`
+
+### Matomo dashboard shows "No data"
+
+- Check that `vc.js` returns HTTP 200 (see above).
+- Open browser dev tools → Network tab → look for requests to `/vt` (the
+  collection endpoint) and `/vt.js` (the tracker library).
+- Ensure the tracker's `setSiteId` matches the Site ID in Matomo (should be `1`).
+- If paths are named `matomo.js` / `matomo.php` instead of `vt.js` / `vt`,
+  ad blockers will block them. See "Same-origin proxy" below.
+
+### Config lost after container restart
+
+The setup wizard writes to `mounts/matomo/config/config.ini.php`, which is
+bind-mounted into the container. If this file disappears, the wizard will
+reappear. Check:
+
+```bash
+ls -la mounts/matomo/config/config.ini.php
+```
+
+If the file exists but Matomo still shows the wizard, the container may not
+have the config directory mounted correctly:
+
+```bash
+podman inspect matomo --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\n"}}{{end}}' | grep config
+```
+
+---
+
+## Architecture notes
+
+- **App files** live inside the container image (ephemeral, re-extracted on
+  each start from `/usr/src/matomo`). They are **not** on the host.
+- **Config** (`config.ini.php`) is persisted via bind mount at
+  `mounts/matomo/config/` → `/var/www/html/config`.
+- **Database** is persisted via MariaDB data at `mounts/matomo-db/mysql/`.
+- **Tracker** is a separate static JS file served by Apache, generated from
+  a template during `./visp.py install`.
+
+### Real visitor IP (mod_remoteip)
+
+The request chain for tracking hits is:
+
+```
+Browser (real IP) → nginx/Traefik → Apache container → ProxyPass /vt → Matomo container
+```
+
+Without special configuration, Matomo sees the **Apache container's internal
+Podman network IP** (e.g. `10.89.0.x`) instead of the visitor's real IP. This
+causes all visits to appear as coming from a private network / incorrect country.
+
+The fix is Apache's `mod_remoteip`, which replaces `REMOTE_ADDR` with the real
+client IP from the `X-Forwarded-For` header before the request is proxied to
+Matomo. Configuration:
+
+1. **Dockerfile** — `a2enmod remoteip` (enabled at build time)
+2. **`remoteip.conf`** — bind-mounted into `/etc/apache2/conf-enabled/`:
+   - `RemoteIPHeader X-Forwarded-For`
+   - `RemoteIPInternalProxy 10.0.0.0/8` (university LBs + Podman networks)
+   - `RemoteIPInternalProxy 172.16.0.0/12` (Docker/Podman bridge networks)
+   - `RemoteIPInternalProxy 192.168.0.0/16` (local networks)
+3. **Matomo `config.ini.php`** — `proxy_client_headers[] = "HTTP_X_FORWARDED_FOR"`
+   (set during initial setup wizard, tells Matomo to trust the header)
+
+**Both** the Apache module AND the Matomo config setting are required. The upstream
+proxy (nginx in prod, Traefik in dev) must also set `X-Forwarded-For` — nginx does
+this via `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;` in `nginx.conf`.
+
+If visitors still show internal IPs after this change, verify:
+```bash
+# Check mod_remoteip is loaded:
+podman exec apache apache2ctl -M | grep remoteip
+
+# Check the config is mounted:
+podman exec apache cat /etc/apache2/conf-enabled/remoteip.conf
+```
+
+### Same-origin proxy (ad-blocker bypass)
+
+The Matomo tracker library (`matomo.js`) and collection endpoint (`matomo.php`)
+are served through Apache reverse proxy under **renamed paths**:
+
+| Browser path | Proxied to (internal)       | Purpose                 |
+|--------------|----------------------------|-------------------------|
+| `/vt.js`     | `http://matomo/matomo.js`   | Tracker JS library      |
+| `/vt`        | `http://matomo/matomo.php`  | Data collection endpoint|
+
+This solves two problems:
+
+1. **Cross-origin TLS** — avoids loading scripts from `matomo.BASE_DOMAIN`
+   (which would require a separate trusted certificate).
+2. **Ad blockers** — filenames like `matomo.js` and `matomo.php` are on every
+   ad-blocker filter list. The renamed paths (`vt.js`, `vt`) are not blocked.
+
+The proxy rules live in `mounts/apache/apache/vhosts/vhost.conf`. The tracker
+template (`vc.js.template`) references `/vt.js` and `/vt`.
+
+The Matomo dashboard is still accessible directly at `https://matomo.BASE_DOMAIN`
+(via its own Apache vhost / Traefik route).
