@@ -72,6 +72,25 @@ visible-speech-deployment/
 
 ## Service Architecture
 
+### Apache subdomain routing
+
+Each subdomain has its own `*.vhost.conf` in `mounts/apache/apache/vhosts/` (bind-mounted —
+no Apache rebuild needed for changes). Overview:
+
+| Subdomain | Vhost file | Proxies to | Purpose |
+|-----------|------------|------------|---------|
+| `BASE_DOMAIN` | `vhost.conf` | (serves directly) | Main webclient (Angular SPA) + PHP API at `/api/v1/` |
+| `app.BASE_DOMAIN` | `app.vhost.conf` | `session-manager:80` | Session iframe — webclient loads Jupyter sessions here (`?token=...`) |
+| `emu-webapp.BASE_DOMAIN` | `emu-webapp.vhost.conf` | `emu-webapp/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
+| `octra.BASE_DOMAIN` | `octra.vhost.conf` | `octra/` | Octra transcription tool |
+| `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
+| `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
+| `me.BASE_DOMAIN` | `me.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
+
+Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `emu-webapp.*`, `octra.*`, `recorder.*`.
+`app.*` intentionally has no tracker (serves only iframe content, never a standalone page).
+`matomo.*` and `me.*` are infrastructure — no tracker needed.
+
 **Important:** Not everything in `external/` is a separate Podman container. The deployment uses a layered approach:
 
 ### Separate Podman Containers (their own quadlets)
@@ -182,8 +201,7 @@ disk usage.
 | Type | Class | Image | User | Port | Network | Lifetime |
 |------|-------|-------|------|------|---------|----------|
 | `jupyter` | JupyterSession | visp-jupyter-session | jovyan | 8888 | `--network=none` + UDS | Long-lived |
-| `operations` | OperationsSession | visp-jupyter-session | jovyan | 8888 | Bridge (visp-net) | Short-lived |
-| `vscode` | VscodeSession | visp-vscode-session | abc | 8443 | Bridge (visp-net) | Long-lived |
+| `operations` | OperationsSession | visp-jupyter-session | jovyan | — | none | Short-lived |
 
 **Jupyter UDS network isolation:**
 
