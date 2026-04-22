@@ -492,9 +492,8 @@ podman build --label git.commit=<hash> \
 
 ## Related Documentation
 
-- [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) - How to lock/unlock versions
-- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Complete deployment workflow
-- [DEV_VS_PROD.md](DEV_VS_PROD.md) - Differences between modes
+- [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) - Lock/unlock/rollback workflows
+- [BACKUP_RESTORE.md](BACKUP_RESTORE.md) - Backup and restore procedures
 
 ## Summary
 
