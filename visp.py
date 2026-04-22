@@ -1806,7 +1806,49 @@ def _get_service_names() -> list[str]:
 # === Main ===
 
 
+def _check_systemd_user_bus() -> None:
+    """Warn early if the systemd user bus is unavailable (common after reboot/su without linger env)."""
+    xdg = os.environ.get("XDG_RUNTIME_DIR", "")
+    uid = os.getuid()
+    expected = f"/run/user/{uid}"
+
+    if not xdg:
+        print(
+            f"\033[33m⚠️  WARNING: XDG_RUNTIME_DIR is not set.\033[0m\n"
+            f"   systemctl --user and podman.socket will not work.\n"
+            f"   Fix for this session:\n"
+            f"     export XDG_RUNTIME_DIR={expected}\n"
+            f"     export DBUS_SESSION_BUS_ADDRESS=unix:path={expected}/bus\n"
+            f"   Add those lines to ~/.bashrc to make it permanent.\n",
+            file=sys.stderr,
+        )
+        return
+
+    bus_path = Path(xdg) / "bus"
+    if not bus_path.exists():
+        print(
+            f"\033[33m⚠️  WARNING: systemd user bus not found at {bus_path}.\033[0m\n"
+            f"   XDG_RUNTIME_DIR={xdg} is set but the bus socket is missing.\n"
+            f"   This usually means the systemd user session is not running.\n"
+            f"   Try: loginctl enable-linger {os.environ.get('USER', 'your-user')}\n"
+            f"   Then re-login or run: systemctl --user start dbus.socket\n",
+            file=sys.stderr,
+        )
+
+    podman_sock = Path(xdg) / "podman" / "podman.sock"
+    if not podman_sock.exists():
+        print(
+            f"\033[33m⚠️  WARNING: Podman socket not found at {podman_sock}.\033[0m\n"
+            f"   session-manager will fail to start containers.\n"
+            f"   Fix:\n"
+            f"     systemctl --user enable --now podman.service\n",
+            file=sys.stderr,
+        )
+
+
 def main():
+    _check_systemd_user_bus()
+
     parser = argparse.ArgumentParser(
         description="VISP Control - Unified management tool for VISP Podman deployment",
         formatter_class=argparse.RawDescriptionHelpFormatter,
