@@ -9,7 +9,7 @@ Dockerfiles/Containerfiles define **how to build** container images. They are pa
 ## Contents
 
 - `apache/` - Apache + Shibboleth + PHP web server
-- `emu-webapp/` - EMU-webApp build container (multi-stage)
+- `arctic/` - arctic build container (multi-stage)
 - `emu-webapp-server/` - EMU backend server
 - `session-manager/` - Session management + RStudio/Jupyter templates
 - `wsrng-server/` - WebSocket recording server

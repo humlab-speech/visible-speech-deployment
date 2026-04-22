@@ -51,7 +51,8 @@ run_git_clone_in_container.sh
 .vscode
 visp-server
 mounts/repositories
-docker/emu-webapp/EMU-webApp
+docker/arctic/arctic
+docker/arctic/artic
 mounts/whisper
 docker/session-manager/matlab_runtime_installer/
 docker/session-manager/container-agent/

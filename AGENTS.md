@@ -36,7 +36,7 @@ visible-speech-deployment/
 │
 ├── docker/                   # Dockerfiles for VISP-specific containers we own
 │   ├── apache/               # Apache + Shibboleth + PHP (VISP-specific glue)
-│   ├── emu-webapp/           # EMU-webApp build wrapper
+│   ├── arctic/               # arctic build wrapper
 │   ├── session-manager/      # Session manager (also in external/)
 │   └── …
 │
@@ -45,7 +45,7 @@ visible-speech-deployment/
 │   ├── webclient/            # humlab-speech/webclient
 │   ├── wsrng-server/         # humlab-speech/wsrng-server
 │   ├── emu-webapp-server/    # humlab-speech/emu-webapp-server
-│   ├── EMU-webApp/           # humlab-speech/EMU-webApp
+│   ├── arctic/               # humlab-speech/artic
 │   ├── container-agent/      # humlab-speech/container-agent
 │   └── WhisperVault/         # humlab-speech/WhisperVault (with whisperx/ submodule)
 │
@@ -81,13 +81,13 @@ no Apache rebuild needed for changes). Overview:
 |-----------|------------|------------|---------|
 | `BASE_DOMAIN` | `vhost.conf` | (serves directly) | Main webclient (Angular SPA) + PHP API at `/api/v1/` |
 | `app.BASE_DOMAIN` | `app.vhost.conf` | `session-manager:80` | Session iframe — webclient loads Jupyter sessions here (`?token=...`) |
-| `emu-webapp.BASE_DOMAIN` | `emu-webapp.vhost.conf` | `emu-webapp/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
+| `arctic.BASE_DOMAIN` | `arctic.vhost.conf` | `arctic/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
 | `octra.BASE_DOMAIN` | `octra.vhost.conf` | `octra/` | Octra transcription tool |
 | `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
 | `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
 | `me.BASE_DOMAIN` | `me.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
 
-Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `emu-webapp.*`, `octra.*`, `recorder.*`.
+Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `arctic.*`, `octra.*`, `recorder.*`.
 `app.*` intentionally has no tracker (serves only iframe content, never a standalone page).
 `matomo.*` and `me.*` are infrastructure — no tracker needed.
 
@@ -109,7 +109,7 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `emu-webapp.*`, `octra.
 - **matomo-db** (optional) — MariaDB database for Matomo (`docker.io/library/mariadb:10.11`).
   Data stored in `mounts/matomo-db/mysql/`.
 - **emu-webapp-server** — EMU backend
-- **emu-webapp** — EMU web interface
+- **arctic** — EMU web interface
 - **octra** — Transcription tool
 - **wsrng-server** — Web Speech Recorder server
 - **whisperx** (optional) — Speech-to-text transcription service
@@ -547,7 +547,7 @@ localhost/visp-apache:latest
 localhost/visp-session-manager:latest
 localhost/visp-jupyter-session:latest   # Unified session image (Jupyter + R + container-agent)
 localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isolation
-localhost/visp-emu-webapp:latest
+localhost/visp-arctic:latest
 localhost/visp-emu-webapp-server:latest
 localhost/visp-octra:latest
 localhost/visp-wsrng-server:latest

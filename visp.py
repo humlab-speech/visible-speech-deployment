@@ -111,7 +111,7 @@ SERVICES = [
     Service("whisperx", "container", "whisperx.container"),
     Service("wsrng-server", "container", "wsrng-server.container"),
     Service("session-manager", "container", "session-manager.container"),
-    Service("emu-webapp", "container", "emu-webapp.container"),
+    Service("arctic", "container", "arctic.container"),
     Service("emu-webapp-server", "container", "emu-webapp-server.container"),
     Service("octra", "container", "octra.container"),
     Service("apache", "container", "apache.container"),
@@ -130,7 +130,7 @@ CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
         ("php-errors", "/var/log/api/php_error.log"),
         ("apache-error", "/var/log/apache2/visp.local-error.log"),
         ("octra-error", "/var/log/apache2/octra-error.log"),
-        ("emu-error", "/var/log/apache2/emu-webapp-error.log"),
+        ("arctic-error", "/var/log/apache2/arctic-error.log"),
         ("shibboleth", "/var/log/shibboleth/shibd.log"),
         ("shibboleth-warn", "/var/log/shibboleth/shibd_warn.log"),
     ],
@@ -356,6 +356,34 @@ def _tail_container_logs(service: str, lines: int = 50, follow: bool = False, st
                 pass
 
 
+def _stream_podman_logs(
+    service: str,
+    *,
+    follow: bool,
+    lines: int | None = None,
+    since: str | None = None,
+) -> None:
+    """Stream container logs directly from podman.
+
+    This preserves the original byte stream (including ANSI color escapes)
+    and mirrors native `podman logs` behavior.
+    """
+    cmd = ["podman", "logs"]
+    if follow:
+        cmd.append("-f")
+    if lines is not None:
+        cmd.extend(["--tail", str(lines)])
+    if since:
+        cmd.extend(["--since", since])
+    cmd.append(service)
+
+    try:
+        subprocess.run(cmd, check=False)
+    except KeyboardInterrupt:
+        # Keep Ctrl+C behavior quiet (same ergonomics as podman logs in shell).
+        pass
+
+
 def _show_debug_info(service: str):
     """Show diagnostic info for a service: systemd status, container state, quadlet file."""
     service_name = f"{service}.service"
@@ -403,6 +431,31 @@ def cmd_logs(args):
     extra_args = []
     journal_only = getattr(args, "journal_only", False)
     debug = getattr(args, "debug", False)
+    no_follow = getattr(args, "no_follow", False)
+
+    service_name = getattr(args, "service", None)
+    service_info = next((s for s in SERVICES if s.name == service_name), None)
+    is_container_service = service_info is not None and service_info.type == "container"
+
+    # For single container services, default to podman logs -f behavior unless
+    # debug/journal-only/priority filtering forces journalctl mode.
+    use_podman_logs = (
+        service_name not in (None, "all")
+        and is_container_service
+        and not debug
+        and not journal_only
+        and not getattr(args, "priority", None)
+    )
+
+    if use_podman_logs:
+        follow = args.follow or not no_follow
+        _stream_podman_logs(
+            service_name,
+            follow=follow,
+            lines=args.lines,
+            since=getattr(args, "since", None),
+        )
+        return
 
     if args.follow:
         extra_args.append("-f")
@@ -1067,10 +1120,10 @@ BUILD_CONFIGS = {
         "dockerfile": "Dockerfile",
         "image": "visp-session-manager",
     },
-    "emu-webapp": {
-        "context": "./external/EMU-webApp",
-        "dockerfile": "../../docker/emu-webapp/Dockerfile",
-        "image": "visp-emu-webapp",
+    "arctic": {
+        "context": "./external/arctic",
+        "dockerfile": "../../docker/arctic/Dockerfile",
+        "image": "visp-arctic",
         "target": "production",
     },
     "emu-webapp-server": {
@@ -1468,6 +1521,7 @@ def cmd_debug(args):
     args.since = None
     args.priority = None
     args.journal_only = False
+    args.no_follow = True
 
     if args.service == "all":
         # Show debug info for all running container services
@@ -1879,7 +1933,13 @@ Examples:
     # logs
     p_logs = subparsers.add_parser("logs", aliases=["l"], help="View logs from services")
     p_logs.add_argument("service", nargs="?", default="all", help="Service name or 'all'")
-    p_logs.add_argument("-f", "--follow", action="store_true", help="Follow logs")
+    follow_group = p_logs.add_mutually_exclusive_group()
+    follow_group.add_argument("-f", "--follow", action="store_true", help="Follow logs")
+    follow_group.add_argument(
+        "--no-follow",
+        action="store_true",
+        help="Do not follow logs (single container services follow by default)",
+    )
     p_logs.add_argument("-n", "--lines", type=int, help="Number of lines to show")
     p_logs.add_argument("--since", help="Show logs since TIME (e.g., '1 hour ago')")
     p_logs.add_argument("-p", "--priority", help="Filter by priority")

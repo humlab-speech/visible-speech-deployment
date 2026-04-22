@@ -3,8 +3,10 @@
 var _paq = window._paq = window._paq || [];
 _paq.push(['setCookieDomain', '*.{{BASE_DOMAIN}}']);
 _paq.push(['setDomains', [
-  '{{BASE_DOMAIN}}',
-  '*.{{BASE_DOMAIN}}'
+  '*.{{BASE_DOMAIN}}',
+  '*.octra.{{BASE_DOMAIN}}',
+  '*.arctic.{{BASE_DOMAIN}}',
+  '*.recorder.{{BASE_DOMAIN}}'
 ]]);
 _paq.push(['trackPageView']);
 _paq.push(['enableLinkTracking']);

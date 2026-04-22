@@ -98,8 +98,8 @@ See `./visp.py --help` for the full command reference.
 | **Apache** | Web server + Shibboleth auth; hosts PHP API and Angular webclient |
 | **Session Manager** | Spawns and manages user session containers via WebSocket |
 | **MongoDB** | Database |
-| **EMU-webApp** | Web-based speech annotation tool |
-| **EMU-webApp Server** | EMU backend (Node.js) |
+| **arctic** | Web-based speech annotation tool |
+| **emu-webapp-server** | arctic backend (Node.js) |
 | **OCTRA** | Transcription annotation tool |
 | **wsrng-server** | Web Speech Recorder server |
 | **WhisperX** | Speech-to-text transcription via Unix Domain Socket (optional) |
@@ -110,7 +110,7 @@ See `./visp.py --help` for the full command reference.
 1. Add to `/etc/hosts` (local dev only):
    ```
    127.0.0.1 visp.local
-   127.0.0.1 emu-webapp.visp.local
+   127.0.0.1 arctic.visp.local
    ```
 
 2. Access test user (dev/demo):
@@ -131,7 +131,7 @@ In production, a host nginx forwards to Apache (port 8080). Apache handles all s
 
 **Required subdomains** (replace `yourdomain.com`):
 - `yourdomain.com` — main app (**WebSocket required**)
-- `emu-webapp.yourdomain.com` — EMU annotation
+- `arctic.yourdomain.com` — EMU annotation
 - `octra.yourdomain.com` — OCTRA transcription
 - `recorder.yourdomain.com` — audio recorder
 - `matomo.yourdomain.com` — analytics (optional)

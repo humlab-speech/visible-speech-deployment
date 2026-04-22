@@ -47,7 +47,7 @@ def test_get_derived():
     derived = sm.get_derived(env)
     assert derived["visp_mongo_root_password"] == "pw"
     assert "visp_mongo_uri" in derived
-    assert derived["visp_media_file_base_url"] == "https://emu-webapp.example.com"
+    assert derived["visp_media_file_base_url"] == "https://arctic.example.com"
 
 
 def test_create_remove_list_secrets():
