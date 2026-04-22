@@ -30,7 +30,7 @@ Volume=@@PROJECT_DIR@@/mounts/sessions:/sessions:Z
 
 # Security hardening
 DropCapability=ALL
-AddCapability=NET_BIND_SERVICE DAC_OVERRIDE
+AddCapability=NET_BIND_SERVICE DAC_OVERRIDE CHOWN
 NoNewPrivileges=true
 
 # Resource limits + DNS
