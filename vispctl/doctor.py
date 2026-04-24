@@ -262,8 +262,8 @@ def _fix_orphan_bundles(
 ) -> None:
     """Move orphan sessions/bundles to _lost+found/.
 
-    - Entire sessions not in MongoDB → move the whole ``*_ses/`` directory
-      (including ``.meta_json`` and all bundles inside it).
+    - Entire sessions not in MongoDB -> move the whole ``*_ses/`` directory
+      (including session metadata ``.json`` and all bundles inside it).
     - Individual bundles not in MongoDB (but session is valid) → move just
       the ``*_bndl/`` directory.
 

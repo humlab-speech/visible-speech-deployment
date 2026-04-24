@@ -192,22 +192,28 @@ function buildDiskModel(reposRoot) {
       // bundles are inside session dir
       const bundleDirs = listDirs(sessionPath).filter(isBundleDirName);
 
-      // Read session metadata from <sessionName>.meta_json if it exists
+      // Read session metadata from <sessionName>.json (legacy: .meta_json)
       let speakerGender = null;
       let speakerAge = null;
-      const metaJsonPath = path.join(sessionPath, `${sessionName}.meta_json`);
-      try {
-        const metaRaw = fs.readFileSync(metaJsonPath, 'utf8');
-        const meta = JSON.parse(metaRaw);
-        if (meta.Gender != null) {
-          const genderMap = { 'Woman': 'Female', 'Man': 'Male' };
-          speakerGender = genderMap[meta.Gender] || meta.Gender;
+      const sessionMetaCandidates = [
+        path.join(sessionPath, `${sessionName}.json`),
+        path.join(sessionPath, `${sessionName}.meta_json`)
+      ];
+      for (const metaPath of sessionMetaCandidates) {
+        try {
+          const metaRaw = fs.readFileSync(metaPath, 'utf8');
+          const meta = JSON.parse(metaRaw);
+          if (meta.Gender != null) {
+            const genderMap = { 'Woman': 'Female', 'Man': 'Male' };
+            speakerGender = genderMap[meta.Gender] || meta.Gender;
+          }
+          if (meta.Age != null) {
+            speakerAge = meta.Age;
+          }
+          break;
+        } catch {
+          // Try next candidate
         }
-        if (meta.Age != null) {
-          speakerAge = meta.Age;
-        }
-      } catch {
-        // No meta_json or unreadable — leave defaults as null
       }
 
       // A VISP "session" in your DB model looks like:
