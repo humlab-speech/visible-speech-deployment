@@ -43,11 +43,18 @@ def test_load_and_merge_envs(tmp_path):
 
 def test_get_derived():
     sm = SecretManager(FakeRunner())
-    env = {"MONGO_ROOT_PASSWORD": "pw", "BASE_DOMAIN": "example.com"}
+    env = {
+        "MONGO_ROOT_PASSWORD": "pw",
+        "BASE_DOMAIN": "example.com",
+        "SSP_ADMIN_PASSWORD": "adminpw",
+        "SSP_SALT": "devsalt",
+    }
     derived = sm.get_derived(env)
     assert derived["visp_mongo_root_password"] == "pw"
     assert "visp_mongo_uri" in derived
     assert derived["visp_media_file_base_url"] == "https://arctic.example.com"
+    assert derived["visp_ssp_admin_password"] == "adminpw"
+    assert derived["visp_ssp_salt"] == "devsalt"
 
 
 def test_create_remove_list_secrets():

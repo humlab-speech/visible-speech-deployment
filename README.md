@@ -50,7 +50,6 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 
 | Feature | Development | Production |
 |---------|-------------|------------|
-| Traefik reverse proxy | ✅ Included | ❌ Use host nginx |
 | `DEVELOPMENT_MODE` | `true` | `false` |
 | Source code | Mounted for hot-reload | Baked into images |
 | `LOG_LEVEL` | `debug` | `info` |
@@ -94,8 +93,8 @@ See `./visp.py --help` for the full command reference.
 
 | Service | Description |
 |---------|-------------|
-| **Traefik** | Edge router / TLS termination (dev mode only) |
 | **Apache** | Web server + Shibboleth auth; hosts PHP API and Angular webclient |
+| **Local IdP** | SimpleSAMLphp test Identity Provider at `idp.BASE_DOMAIN` (dev mode only) |
 | **Session Manager** | Spawns and manages user session containers via WebSocket |
 | **MongoDB** | Database |
 | **arctic** | Web-based speech annotation tool |
@@ -111,11 +110,19 @@ See `./visp.py --help` for the full command reference.
    ```
    127.0.0.1 visp.local
    127.0.0.1 arctic.visp.local
+   127.0.0.1 idp.visp.local
    ```
 
-2. Access test user (dev/demo):
+2. Sign in through the dev IdP (dev mode):
    ```
-   https://visp.local/?login=<TEST_USER_LOGIN_KEY from .env.secrets>
+   https://visp.local
+   ```
+   The app redirects to `/DS/Login` and then to `https://idp.BASE_DOMAIN/simplesaml/`.
+   Default test users:
+   ```
+   test1 / test1pass
+   test2 / test2pass
+   test3 / test3pass
    ```
 
 3. Grant user privileges:
@@ -127,7 +134,7 @@ See `./visp.py --help` for the full command reference.
 
 ## Reverse Proxy (Production)
 
-In production, a host nginx forwards to Apache (port 8080). Apache handles all subdomains internally via VirtualHost.
+In production, a host nginx forwards to Apache (port 8081). Apache handles all subdomains internally via VirtualHost.
 
 **Required subdomains** (replace `yourdomain.com`):
 - `yourdomain.com` — main app (**WebSocket required**)

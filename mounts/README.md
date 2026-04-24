@@ -21,7 +21,7 @@ Containers are ephemeral — data inside them is lost when containers are recrea
 - `repository-template/` - Template for new user repos
 - `transcription-queued/` - Transcription job queue
 - `octra/` - OCTRA runtime data
-- `traefik/` - Traefik reverse proxy config (dev mode)
+- `local-idp/` - Local dev IdP (SimpleSAMLphp) config and metadata
 - `vscode/` - VS Code server data
 - `whisper/` - Whisper model cache
 - `whisperx/` - WhisperX model cache

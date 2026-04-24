@@ -1,0 +1,36 @@
+[Unit]
+Description=Local SimpleSAMLphp IdP (Dev Only)
+After=network-online.target visp-net.service
+Wants=visp-net.service
+
+[Container]
+ContainerName=local-idp
+Image=docker.io/cirrusid/simplesamlphp:v2.4.2
+Network=visp-net.network
+EnvironmentFile=@@PROJECT_DIR@@/.env
+Environment=SSP_APACHE_ALIAS=simplesaml/
+Secret=visp_ssp_admin_password,type=env,target=SSP_ADMIN_PASSWORD
+Secret=visp_ssp_salt,type=env,target=SSP_SECRET_SALT
+Volume=@@PROJECT_DIR@@/certs/ssp-idp-cert:/var/simplesamlphp/cert:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/local-idp/config/authsources.php:/var/simplesamlphp/config/authsources.php:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/local-idp/config/config-override.php:/var/simplesamlphp/config/config-override.php:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/local-idp/metadata/saml20-idp-hosted.php:/var/simplesamlphp/metadata/saml20-idp-hosted.php:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/local-idp/metadata/saml20-sp-remote.php:/var/simplesamlphp/metadata/saml20-sp-remote.php:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/local-idp/log:/var/log/apache2:Z
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+
+# Security hardening
+DropCapability=ALL
+AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID NET_BIND_SERVICE
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=512m --cpus=0.5 --pids-limit=200
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

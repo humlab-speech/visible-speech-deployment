@@ -85,7 +85,7 @@ no Apache rebuild needed for changes). Overview:
 | `octra.BASE_DOMAIN` | `octra.vhost.conf` | `octra/` | Octra transcription tool |
 | `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
 | `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
-| `me.BASE_DOMAIN` | `me.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
+| `mongo.BASE_DOMAIN` | `mongo.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
 
 Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `arctic.*`, `octra.*`, `recorder.*`.
 `app.*` intentionally has no tracker (serves only iframe content, never a standalone page).

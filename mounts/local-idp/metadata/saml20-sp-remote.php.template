@@ -1,0 +1,22 @@
+<?php
+
+$metadata['https://{{BASE_DOMAIN}}'] = [
+    'AssertionConsumerService' => [
+        [
+            'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+            'Location' => 'https://{{BASE_DOMAIN}}/Shibboleth.sso/SAML2/POST',
+            'index' => 1,
+        ],
+    ],
+    'SingleLogoutService' => [
+        [
+            'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
+            'Location' => 'https://{{BASE_DOMAIN}}/Shibboleth.sso/SLO/Redirect',
+        ],
+        [
+            'Binding' => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
+            'Location' => 'https://{{BASE_DOMAIN}}/Shibboleth.sso/SLO/POST',
+        ],
+    ],
+    'NameIDFormat' => ['urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'],
+];

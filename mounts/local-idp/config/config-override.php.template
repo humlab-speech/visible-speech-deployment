@@ -1,0 +1,20 @@
+<?php
+
+$config['baseurlpath'] = 'simplesaml/';
+$config['enable.saml20-idp'] = true;
+$config['auth.adminpassword'] = getenv('SSP_ADMIN_PASSWORD') ?: 'dev-admin-password-not-set';
+$config['secretsalt'] = getenv('SSP_SECRET_SALT') ?: 'dev-secret-salt-not-set';
+$config['timezone'] = 'Europe/Stockholm';
+$config['technicalcontact_name'] = 'VISP Dev IdP';
+$config['technicalcontact_email'] = 'admin@{{BASE_DOMAIN}}';
+
+if (!isset($config['module.enable']) || !is_array($config['module.enable'])) {
+    $config['module.enable'] = [];
+}
+$config['module.enable']['admin'] = true;
+$config['module.enable']['exampleauth'] = true;
+
+$config['trusted.url.domains'] = [
+    '{{BASE_DOMAIN}}',
+    'idp.{{BASE_DOMAIN}}',
+];

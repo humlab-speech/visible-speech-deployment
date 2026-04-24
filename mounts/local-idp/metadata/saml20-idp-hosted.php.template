@@ -1,0 +1,9 @@
+<?php
+
+$metadata['https://idp.{{BASE_DOMAIN}}/simplesaml/saml2/idp/metadata.php'] = [
+    'host' => '__DEFAULT__',
+    'privatekey' => 'key.pem',
+    'certificate' => 'cert.pem',
+    'auth' => 'visp-example-users',
+    'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+];

@@ -36,6 +36,12 @@ rstudio-router/node_modules
 mounts/rstudio-router/docker-images
 mounts/apache/apache/logs
 mounts/apache/apache/vhosts-disabled
+mounts/apache/saml/local-idp/shibboleth2.xml
+mounts/apache/saml/local-idp/idp-metadata.xml
+mounts/local-idp/config/config-override.php
+mounts/local-idp/metadata/saml20-idp-hosted.php
+mounts/local-idp/metadata/saml20-sp-remote.php
+mounts/local-idp/log/
 mounts/whisper/models/*
 mounts/transcription-queued/*
 kc-realm-export.json

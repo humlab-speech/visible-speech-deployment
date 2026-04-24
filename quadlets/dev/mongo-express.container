@@ -1,0 +1,30 @@
+[Unit]
+Description=Mongo Express (Dev Only)
+After=network-online.target visp-net.service mongo.service
+Requires=mongo.service
+
+[Container]
+ContainerName=mongo-express
+Image=docker.io/library/mongo-express:1.0.2-20-alpine3.19
+Network=visp-net.network
+Environment=ME_CONFIG_MONGODB_ADMINUSERNAME=root
+Secret=visp_mongo_root_password,type=env,target=ME_CONFIG_MONGODB_ADMINPASSWORD
+Environment=ME_CONFIG_MONGODB_SERVER=mongo
+Environment=ME_CONFIG_BASICAUTH_USERNAME=mongo
+Environment=ME_CONFIG_BASICAUTH_PASSWORD=bongo
+Volume=/etc/timezone:/etc/timezone:ro
+Volume=/etc/localtime:/etc/localtime:ro
+
+# Security hardening
+DropCapability=ALL
+NoNewPrivileges=true
+
+# Resource limits
+PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
+
+[Service]
+Restart=on-failure
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

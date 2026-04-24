@@ -55,6 +55,10 @@ class SecretManager:
             secrets["visp_matomo_db_user"] = env_vars["MATOMO_DB_USER"]
         if "MATOMO_DB_PASSWORD" in env_vars:
             secrets["visp_matomo_db_password"] = env_vars["MATOMO_DB_PASSWORD"]
+        if "SSP_ADMIN_PASSWORD" in env_vars:
+            secrets["visp_ssp_admin_password"] = env_vars["SSP_ADMIN_PASSWORD"]
+        if "SSP_SALT" in env_vars:
+            secrets["visp_ssp_salt"] = env_vars["SSP_SALT"]
         return secrets
 
     def create_secrets(self, secrets: Dict[str, str]) -> None:

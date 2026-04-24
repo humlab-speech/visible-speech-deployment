@@ -1,14 +1,14 @@
 [Unit]
 Description=Apache Web Server with Webclient
-After=network-online.target visp-net.service octra-net.service session-manager.service
-Wants=session-manager.service
+After=network-online.target visp-net.service octra-net.service session-manager.service local-idp.service
+Wants=session-manager.service local-idp.service
 
 [Container]
 ContainerName=apache
 Image=localhost/visp-apache:latest
 Network=visp-net.network
 Network=octra-net.network
-PublishPort=8081:80
+PublishPort=@@HTTP_PORT@@:80
 EnvironmentFile=@@PROJECT_DIR@@/.env
 Environment=LOG_LEVEL=debug
 Environment=HTTP_PROTOCOL=http
@@ -20,11 +20,10 @@ DropCapability=ALL
 AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID NET_BIND_SERVICE
 NoNewPrivileges=true
 
-# SWAMID Shibboleth volumes (@@BASE_DOMAIN@@ resolved from .env at install time)
-Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/@@BASE_DOMAIN@@/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z
-Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/swamid-idp.xml:/etc/shibboleth/swamid-idp.xml:Z
+# Local test IdP Shibboleth volumes (generated during ./visp.py install in dev mode)
+Volume=@@PROJECT_DIR@@/mounts/apache/saml/local-idp/shibboleth2.xml:/etc/shibboleth/shibboleth2.xml:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/saml/local-idp/idp-metadata.xml:/etc/shibboleth/local-idp-metadata.xml:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/saml/swamid/attribute-map.xml:/etc/shibboleth/attribute-map.xml:Z
-Volume=@@PROJECT_DIR@@/certs/md-signer2.crt:/etc/shibboleth/md-signer2.crt:Z
 
 # General volumes
 Volume=@@PROJECT_DIR@@/mounts/api-logs/logs:/var/log/api:Z
