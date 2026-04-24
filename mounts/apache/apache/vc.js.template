@@ -1,12 +1,11 @@
 // VISP visitor analytics configuration
 // Auto-generated from vc.js.template by ./visp.py install
 var _paq = window._paq = window._paq || [];
+_paq.push(['setCookieDomain', '*.{{BASE_DOMAIN}}']);
 _paq.push(['setDomains', [
   '{{BASE_DOMAIN}}',
-  'emu-webapp.{{BASE_DOMAIN}}',
-  'recorder.{{BASE_DOMAIN}}'
+  '*.{{BASE_DOMAIN}}'
 ]]);
-_paq.push(['enableCrossDomainLinking']);
 _paq.push(['trackPageView']);
 _paq.push(['enableLinkTracking']);
 (function() {
