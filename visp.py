@@ -68,10 +68,10 @@ def render_quadlet_template(content: str) -> str:
     """Replace template placeholders with actual system values."""
     content = content.replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
     content = content.replace("@@UID@@", str(os.getuid()))
-    # Substitute @@BASE_DOMAIN@@ from .env (used in SWAMID shibboleth mounts)
+    # Substitute @@VAR@@ tokens from .env
     env_vars = load_env_vars(PROJECT_DIR / ".env")
-    base_domain = env_vars.get("BASE_DOMAIN", "")
-    content = content.replace("@@BASE_DOMAIN@@", base_domain)
+    for key, value in env_vars.items():
+        content = content.replace(f"@@{key}@@", value)
     return content
 
 
@@ -105,10 +105,11 @@ SERVICES = [
     Service("octra-net", "network", "octra-net.network"),
     # Then containers in dependency order
     Service("mongo", "container", "mongo.container"),
+    Service("mongo-express", "container", "mongo-express.container", dev_only=True),
     Service("matomo-db", "container", "matomo-db.container"),
     Service("matomo", "container", "matomo.container"),
-    Service("traefik", "container", "traefik.container"),
     Service("whisperx", "container", "whisperx.container"),
+    Service("local-idp", "container", "local-idp.container", dev_only=True),
     Service("wsrng-server", "container", "wsrng-server.container"),
     Service("session-manager", "container", "session-manager.container"),
     Service("arctic", "container", "arctic.container"),
@@ -117,8 +118,14 @@ SERVICES = [
     Service("apache", "container", "apache.container"),
 ]
 
-CONTAINER_SERVICES = [s for s in SERVICES if s.type == "container"]
 NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
+
+# Optional services can be disabled via .env flags (defaults to enabled).
+# Example: WHISPERX_ENABLED=false
+OPTIONAL_SERVICE_ENV_FLAGS: dict[str, str] = {
+    "whisperx": "WHISPERX_ENABLED",
+    "local-idp": "LOCAL_IDP_ENABLED",
+}
 
 # Container-internal log files that are NOT visible in journalctl.
 # These are files inside the container that must be read via `podman exec`.
@@ -195,6 +202,42 @@ def load_env_vars(env_file_path: Path) -> dict:
     return env_vars
 
 
+def _parse_env_bool(value: str | None, default: bool = True) -> bool:
+    """Parse boolean-like environment values with sane defaults."""
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _get_disabled_optional_services() -> dict[str, str]:
+    """Return mapping of disabled optional service name -> controlling env var."""
+    env_vars = load_env_vars(PROJECT_DIR / ".env")
+    disabled: dict[str, str] = {}
+    for service_name, env_var in OPTIONAL_SERVICE_ENV_FLAGS.items():
+        if not _parse_env_bool(env_vars.get(env_var), default=True):
+            disabled[service_name] = env_var
+    return disabled
+
+
+def _get_runtime_services(include_disabled: bool = False) -> list[Service]:
+    """Return services to use for runtime orchestration."""
+    if include_disabled:
+        return SERVICES
+    mode = get_current_mode()
+    disabled = _get_disabled_optional_services()
+    return [s for s in SERVICES if s.name not in disabled and not (s.dev_only and mode != "dev")]
+
+
+def _container_services(services: list[Service]) -> list[Service]:
+    """Filter service list to container services."""
+    return [s for s in services if s.type == "container"]
+
+
 # Deprecated secret wrapper functions removed — use `vispctl.secrets.SecretManager` directly.
 # These wrappers were left behind during refactoring and are now deleted to remove
 # dead code and avoid confusion.
@@ -208,9 +251,18 @@ def cmd_status(args):
     print(color("=== VISP Service Status ===", Colors.CYAN))
     print()
 
+    runtime_services = _get_runtime_services()
+
     # Use ServiceManager for service status
-    sm = ServiceManager(Runner(), SERVICES)
+    sm = ServiceManager(Runner(), runtime_services)
     sm.status()
+
+    disabled_optional_services = _get_disabled_optional_services()
+    if disabled_optional_services:
+        print()
+        print(color("=== Disabled Optional Services ===", Colors.CYAN))
+        for service_name, env_var in disabled_optional_services.items():
+            print(f"  ○ {service_name}: disabled via {env_var}=false in .env")
 
     # (ServiceManager prints service status). Continue with quadlet links and other info below.
 
@@ -222,7 +274,7 @@ def cmd_status(args):
     print()
 
     drift_warnings = []
-    for svc in SERVICES:
+    for svc in runtime_services:
         link_path = SYSTEMD_QUADLETS_DIR / svc.file
         target_path = quadlets_dir / svc.file
 
@@ -414,7 +466,7 @@ def _show_debug_info(service: str):
 
     # Quadlet file
     print(color("Quadlet File:", Colors.YELLOW))
-    svc_info = next((s for s in SERVICES if s.name == service), None)
+    svc_info = next((s for s in _get_runtime_services(include_disabled=True) if s.name == service), None)
     if svc_info:
         link_path = SYSTEMD_QUADLETS_DIR / svc_info.file
         if link_path.is_symlink():
@@ -433,8 +485,13 @@ def cmd_logs(args):
     debug = getattr(args, "debug", False)
     no_follow = getattr(args, "no_follow", False)
 
+    runtime_services = _get_runtime_services()
     service_name = getattr(args, "service", None)
-    service_info = next((s for s in SERVICES if s.name == service_name), None)
+    if service_name not in (None, "all"):
+        # Validate explicit service names and fail clearly for disabled optional services.
+        _resolve_services(service_name)
+
+    service_info = next((s for s in runtime_services if s.name == service_name), None)
     is_container_service = service_info is not None and service_info.type == "container"
 
     # For single container services, default to podman logs -f behavior unless
@@ -471,7 +528,7 @@ def cmd_logs(args):
     if args.service == "all" or not args.service:
         # All services — journal only (too noisy to mix all container logs)
         units = []
-        for svc in CONTAINER_SERVICES:
+        for svc in _container_services(runtime_services):
             units.extend(["-u", f"{svc.name}.service"])
         print(color("=== Viewing logs for all VISP services ===", Colors.CYAN))
         journalctl(*units, "--no-pager", *extra_args)
@@ -525,19 +582,28 @@ def cmd_logs(args):
 
 def cmd_start(args):
     """Start service(s)."""
-    sm = ServiceManager(Runner(), SERVICES)
-    sm.start(args.service)
+    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    if args.service == "all":
+        target_names = [svc.name for svc in _container_services(_resolve_services("all"))]
+        sm.start(target_names)
+    else:
+        target_names = [svc.name for svc in _resolve_services(args.service)]
+        sm.start(target_names)
 
 
 def cmd_stop(args):
     """Stop service(s)."""
-    sm = ServiceManager(Runner(), SERVICES)
-    sm.stop(args.service)
+    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    if args.service == "all":
+        sm.stop("all")
+    else:
+        target_names = [svc.name for svc in _resolve_services(args.service, include_disabled=True)]
+        sm.stop(target_names)
 
 
 def cmd_restart(args):
     """Restart service(s) or entire cluster."""
-    sm = ServiceManager(Runner(), SERVICES)
+    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
 
     if args.service == "all":
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
@@ -546,11 +612,13 @@ def cmd_restart(args):
         sm.stop("all")
         print()
         print(color("Starting services...", Colors.GREEN))
-        sm.start("all")
+        target_names = [svc.name for svc in _container_services(_resolve_services("all"))]
+        sm.start(target_names)
     else:
         # For individual services, stop then start the specific names
-        sm.stop(args.service)
-        sm.start(args.service)
+        target_names = [svc.name for svc in _resolve_services(args.service)]
+        sm.stop(target_names)
+        sm.start(target_names)
 
 
 # === Network Backend Management ===
@@ -676,6 +744,114 @@ def _setup_service_env_files():
         print(color("  ✓ Created external/wsrng-server/.env (MONGO_PASSWORD via Podman Secret)", Colors.GREEN))
     else:
         print(color("  ⚠ external/wsrng-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
+
+
+def _render_local_idp_file(template_path: Path, output_path: Path, base_domain: str) -> bool:
+    """Render a local IdP template file with BASE_DOMAIN substitution."""
+    if not template_path.exists():
+        print(color(f"  ⚠ Missing template: {template_path}", Colors.YELLOW))
+        return False
+
+    rendered = template_path.read_text().replace("{{BASE_DOMAIN}}", base_domain)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(rendered)
+    return True
+
+
+def _build_local_idp_metadata_xml(base_domain: str, cert_body: str) -> str:
+    """Build IdP metadata XML consumed by the Apache Shibboleth SP."""
+    idp_host = f"idp.{base_domain}"
+    idp_entity_id = f"https://{idp_host}/simplesaml/saml2/idp/metadata.php"
+    sso_url = f"https://{idp_host}/simplesaml/saml2/idp/SSOService.php"
+    slo_url = f"https://{idp_host}/simplesaml/saml2/idp/SingleLogoutService.php"
+    idp_scope = base_domain
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
+                     xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
+                     entityID="{idp_entity_id}">
+  <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <md:Extensions>
+      <shibmd:Scope regexp="false">{idp_scope}</shibmd:Scope>
+    </md:Extensions>
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>{cert_body}</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:KeyDescriptor use="encryption">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>{cert_body}</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="{sso_url}"/>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="{sso_url}"/>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="{slo_url}"/>
+    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="{slo_url}"/>
+  </md:IDPSSODescriptor>
+</md:EntityDescriptor>
+"""
+
+
+def _setup_local_idp_files(env_vars: dict[str, str]) -> None:
+    """Render local IdP templates and metadata files for dev mode."""
+    print(color("Setting up local IdP files...", Colors.CYAN))
+
+    base_domain = env_vars.get("BASE_DOMAIN", "").strip()
+    if not base_domain:
+        print(color("  ⚠ BASE_DOMAIN is not set; skipping local IdP file generation", Colors.YELLOW))
+        return
+
+    # Render template-based files.
+    template_pairs = [
+        (
+            PROJECT_DIR / "mounts/apache/saml/local-idp/shibboleth2.xml.template",
+            PROJECT_DIR / "mounts/apache/saml/local-idp/shibboleth2.xml",
+        ),
+        (
+            PROJECT_DIR / "mounts/local-idp/config/config-override.php.template",
+            PROJECT_DIR / "mounts/local-idp/config/config-override.php",
+        ),
+        (
+            PROJECT_DIR / "mounts/local-idp/metadata/saml20-idp-hosted.php.template",
+            PROJECT_DIR / "mounts/local-idp/metadata/saml20-idp-hosted.php",
+        ),
+        (
+            PROJECT_DIR / "mounts/local-idp/metadata/saml20-sp-remote.php.template",
+            PROJECT_DIR / "mounts/local-idp/metadata/saml20-sp-remote.php",
+        ),
+    ]
+
+    for template_path, output_path in template_pairs:
+        if _render_local_idp_file(template_path, output_path, base_domain):
+            print(color(f"  ✓ Rendered {output_path.relative_to(PROJECT_DIR)}", Colors.GREEN))
+
+    # Render IdP metadata XML for the Apache Shibboleth SP.
+    idp_cert = PROJECT_DIR / "certs/ssp-idp-cert/cert.pem"
+    metadata_output = PROJECT_DIR / "mounts/apache/saml/local-idp/idp-metadata.xml"
+    if not idp_cert.exists():
+        print(color("  ⚠ certs/ssp-idp-cert/cert.pem not found; run ./generate-certs.sh", Colors.YELLOW))
+        return
+
+    cert_lines = []
+    for line in idp_cert.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("-----"):
+            continue
+        cert_lines.append(stripped)
+
+    cert_body = "".join(cert_lines)
+    if not cert_body:
+        print(color("  ⚠ Could not parse IdP certificate body from certs/ssp-idp-cert/cert.pem", Colors.YELLOW))
+        return
+
+    metadata_output.parent.mkdir(parents=True, exist_ok=True)
+    metadata_output.write_text(_build_local_idp_metadata_xml(base_domain, cert_body))
+    print(color(f"  ✓ Rendered {metadata_output.relative_to(PROJECT_DIR)}", Colors.GREEN))
 
 
 # === Installation Commands ===
@@ -883,6 +1059,11 @@ def cmd_install(args):
         print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
     print()
 
+    # Generate local IdP config files in dev mode.
+    if mode == "dev":
+        _setup_local_idp_files(env_vars)
+        print()
+
     # Setup service-specific .env files from templates.
     # Sensitive values (MONGO_URI, MONGO_PASSWORD, MEDIA_FILE_BASE_URL) are
     # injected via Podman Secrets (see Secret= lines in quadlets), so we only
@@ -925,6 +1106,18 @@ def cmd_install(args):
             print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
             continue
 
+    # If optional services are disabled, remove stale installed quadlets when installing "all".
+    if args.service == "all":
+        disabled_optional_services = _get_disabled_optional_services()
+        for svc in SERVICES:
+            if svc.name not in disabled_optional_services:
+                continue
+            target = SYSTEMD_QUADLETS_DIR / svc.file
+            if target.exists() or target.is_symlink():
+                target.unlink()
+                env_var = disabled_optional_services[svc.name]
+                print(color(f"  ○ {svc.file}: removed ({env_var}=false)", Colors.YELLOW))
+
     # Save the mode
     set_current_mode(mode)
 
@@ -964,7 +1157,7 @@ def cmd_install(args):
 
 def cmd_uninstall(args):
     """Remove quadlet links from systemd directory."""
-    services = _resolve_services(args.service)
+    services = _resolve_services(args.service, include_disabled=True)
 
     # Stop services first
     if not args.keep_running:
@@ -1048,8 +1241,8 @@ def cmd_mode(args):
         print(f"  Current mode: {color(current, Colors.GREEN if current == 'prod' else Colors.YELLOW)}")
         print()
         print(color("Mode differences:", Colors.CYAN))
-        print("  dev      - Traefik proxy, source code mounts, container-agent mounted")
-        print("  prod     - No Traefik, code baked into images, optimized for deployment")
+        print("  dev      - Source code mounts, container-agent mounted")
+        print("  prod     - Code baked into images, optimized for deployment")
         print()
         print("  Change mode: ./visp.py mode [dev|prod]")
 
@@ -1183,8 +1376,7 @@ NODE_BUILD_CONFIGS = {
         "pre_build_cmd": "composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs",
         "pre_build_image": "docker.io/library/composer:2.9.5",
         # Use npx to invoke the locally installed ng binary.
-        # Note: --output-path is NOT passed here; angular.json defines
-        # outputPath: {base:"dist", browser:""} which the application builder needs.
+        # Note: --output-path is NOT passed here; angular.json controls outputPath.
         "build_cmd": "npx ng build --configuration={config}",
         "default_config": "visp.dev",
         "verify_file": "index.php",
@@ -1525,7 +1717,7 @@ def cmd_debug(args):
 
     if args.service == "all":
         # Show debug info for all running container services
-        for svc in CONTAINER_SERVICES:
+        for svc in _container_services(_get_runtime_services()):
             args.service = svc.name
             print(color(f"\n{'=' * 60}", Colors.CYAN))
             cmd_logs(args)
@@ -1838,23 +2030,34 @@ def cmd_restore(args):
 # === Helpers ===
 
 
-def _resolve_services(service_arg: str) -> list[Service]:
+def _resolve_services(service_arg: str, include_disabled: bool = False) -> list[Service]:
     """Resolve service argument to list of Service objects."""
-    if service_arg == "all":
-        return SERVICES
+    available_services = _get_runtime_services(include_disabled=include_disabled)
 
-    svc = next((s for s in SERVICES if s.name == service_arg), None)
+    if service_arg == "all":
+        return available_services
+
+    svc = next((s for s in available_services if s.name == service_arg), None)
     if svc:
         return [svc]
 
+    # Helpful message for optional services that are disabled in .env.
+    if not include_disabled:
+        disabled_optional_services = _get_disabled_optional_services()
+        if service_arg in disabled_optional_services:
+            env_var = disabled_optional_services[service_arg]
+            print(color(f"Service '{service_arg}' is disabled ({env_var}=false in .env).", Colors.YELLOW))
+            print(f"Enable it by setting {env_var}=true in .env")
+            sys.exit(1)
+
     print(color(f"Unknown service: {service_arg}", Colors.RED))
-    print(f"Available: {', '.join(s.name for s in SERVICES)}")
+    print(f"Available: {', '.join(s.name for s in available_services)}")
     sys.exit(1)
 
 
 def _get_service_names() -> list[str]:
     """Get list of service names for argparse choices."""
-    return ["all"] + [s.name for s in SERVICES]
+    return ["all"] + [s.name for s in _get_runtime_services()]
 
 
 # === Main ===

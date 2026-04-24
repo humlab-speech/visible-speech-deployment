@@ -12,6 +12,7 @@ class Service:
     type: Literal["container", "network"]
     file: str
     description: str = ""
+    dev_only: bool = False
 
 
 def load_default_services() -> list[Service]:
@@ -19,6 +20,5 @@ def load_default_services() -> list[Service]:
     return [
         Service("visp-net", "network", "visp-net.network"),
         Service("mongo", "container", "mongo.container"),
-        Service("traefik", "container", "traefik.container"),
         Service("session-manager", "container", "session-manager.container"),
     ]
