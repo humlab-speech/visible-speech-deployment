@@ -88,17 +88,17 @@ services:
       - visp-net
       - whisper-net
 
-  arctic:
+  artic:
     build:
-      context: ./external/arctic
-      dockerfile: ../../docker/arctic/Dockerfile
+      context: ./external/artic
+      dockerfile: ../../docker/artic/Dockerfile
       target: production
     restart: unless-stopped
     stop_grace_period: 30s
     ports:
       - 127.0.0.1:9000:9000
     volumes:
-      - ./external/arctic:/app:Z
+      - ./external/artic:/app:Z
       - /app/node_modules
     networks:
       - visp-net
@@ -120,7 +120,7 @@ services:
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       MONGO_DB_NAME: visp
       REPOSITORIES_PATH: /repositories
-      MEDIA_FILE_BASE_URL: https://arctic.${BASE_DOMAIN}
+      MEDIA_FILE_BASE_URL: https://artic.${BASE_DOMAIN}
       LOG_LEVEL: INFO
     networks:
       - visp-net

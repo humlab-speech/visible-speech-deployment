@@ -5,7 +5,7 @@ _paq.push(['setCookieDomain', '*.{{BASE_DOMAIN}}']);
 _paq.push(['setDomains', [
   '*.{{BASE_DOMAIN}}',
   '*.octra.{{BASE_DOMAIN}}',
-  '*.arctic.{{BASE_DOMAIN}}',
+  '*.artic.{{BASE_DOMAIN}}',
   '*.recorder.{{BASE_DOMAIN}}'
 ]]);
 _paq.push(['trackPageView']);

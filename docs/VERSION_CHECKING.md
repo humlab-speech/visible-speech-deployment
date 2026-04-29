@@ -265,7 +265,7 @@ The system knows which external repo builds into which container image:
 | `session-manager` | `visp-session-manager:latest` | Direct mapping |
 | `wsrng-server` | `visp-wsrng-server:latest` | Direct mapping |
 | `emu-webapp-server` | `visp-emu-webapp-server:latest` | Direct mapping |
-| `arctic` | `visp-arctic:latest` | Direct mapping |
+| `artic` | `visp-artic:latest` | Direct mapping |
 | `container-agent` | `visp-operations-session:latest` | Bundled into session images |
 
 This mapping is defined in `vispctl/deploy.py` in the `_get_build_status()` method.

@@ -21,7 +21,7 @@ container-agent:   d98ef9da - security updates
 wsrng-server:      a8dcb4d2 - Fix: set correct file ownership for node user
 session-manager:   ee3bf558 - Refactor: improve code organization
 emu-webapp-server: d6026f65 - docs: remove GitLab format reference
-arctic:        1434f7c5 - Merged changes from 1.5.1
+artic:         1434f7c5 - Merged changes from 1.5.1
 ```
 
 ## Usage Workflows
@@ -64,7 +64,7 @@ git commit -m "chore(deploy): lock all components to tested versions"
 python3 visp.py update
 
 # After testing, record the working commits as locked_version:
-for dir in webclient container-agent wsrng-server session-manager emu-webapp-server arctic; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server artic; do
   if [ -d "$dir/.git" ]; then
     echo "$dir: $(cd $dir && git rev-parse HEAD)"
   fi
@@ -148,7 +148,7 @@ git commit -m "Update webclient to abc123 - fixes XYZ issue"
 ```bash
 #!/bin/bash
 # lock-versions.sh - Lock all components to current commits
-for dir in webclient container-agent wsrng-server session-manager emu-webapp-server arctic; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server artic; do
   if [ -d "$dir/.git" ]; then
     sha=$(cd $dir && git rev-parse HEAD)
     msg=$(cd $dir && git log -1 --format="%s")
@@ -162,7 +162,7 @@ done
 ```bash
 #!/bin/bash
 # check-updates.sh - See what's new in each repo
-for dir in webclient container-agent wsrng-server session-manager emu-webapp-server arctic; do
+for dir in webclient container-agent wsrng-server session-manager emu-webapp-server artic; do
   if [ -d "$dir/.git" ]; then
     cd $dir
     git fetch -q

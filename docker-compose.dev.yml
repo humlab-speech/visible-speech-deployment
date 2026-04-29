@@ -109,17 +109,17 @@ services:
       - visp-net
       - whisper-net
 
-  arctic:
+  artic:
     build:
-      context: ./external/arctic
-      dockerfile: ../../docker/arctic/Dockerfile
+      context: ./external/artic
+      dockerfile: ../../docker/artic/Dockerfile
       target: production #this is intentionally set to production, since the webpack-dev-server used in the development stage refuses to serve other than localhost domains currently and I have been unsuccessful in changing that. If you do manage to fix that, the port should then be changed to 9000
     restart: unless-stopped
     stop_grace_period: 30s
     ports:
       - 9000:80
     volumes:
-      - ./external/arctic:/app:Z
+      - ./external/artic:/app:Z
       - /app/node_modules
     networks:
       - visp-net
@@ -142,7 +142,7 @@ services:
       MONGO_ROOT_PASSWORD: $MONGO_ROOT_PASSWORD
       MONGO_DB_NAME: visp
       REPOSITORIES_PATH: /repositories
-      MEDIA_FILE_BASE_URL: https://arctic.${BASE_DOMAIN}
+      MEDIA_FILE_BASE_URL: https://artic.${BASE_DOMAIN}
       LOG_LEVEL: DEBUG
     networks:
       - visp-net

@@ -105,7 +105,7 @@ Click **Next »**.
 
 > ⚠️ **This step is required.** Without it, Matomo silently drops tracking hits from
 > any subdomain not listed as an allowed URL for the site. Visits from `octra.*` and
-> `arctic.*` will not appear in the dashboard even though the tracker script runs fine.
+> `artic.*` will not appear in the dashboard even though the tracker script runs fine.
 
 After completing the wizard, go to:
 **Administration → Measurables (Sites) → Manage** → click the site → scroll down to
@@ -117,7 +117,7 @@ Add **all** subdomains that load `vc.js`:
 |---------------------------------------|--------------|
 | `https://BASE_DOMAIN`                 | ✅ (main site, already set as `main_url`) |
 | `https://octra.BASE_DOMAIN`           | ✅ (`vc.js` injected via `octra.vhost.conf`) |
-| `https://arctic.BASE_DOMAIN`      | ✅ (`vc.js` injected via `arctic.vhost.conf`) |
+| `https://artic.BASE_DOMAIN`       | ✅ (`vc.js` injected via `artic.vhost.conf`) |
 | `https://recorder.BASE_DOMAIN`        | ✅ (`vc.js` injected via `recorder.vhost.conf`) |
 
 Subdomains that do **not** load `vc.js` (no tracker injection, omit from Matomo):

@@ -97,8 +97,8 @@ See `./visp.py --help` for the full command reference.
 | **Local IdP** | SimpleSAMLphp test Identity Provider at `idp.BASE_DOMAIN` (dev mode only) |
 | **Session Manager** | Spawns and manages user session containers via WebSocket |
 | **MongoDB** | Database |
-| **arctic** | Web-based speech annotation tool |
-| **emu-webapp-server** | arctic backend (Node.js) |
+| **artic** | Web-based speech annotation tool |
+| **emu-webapp-server** | artic backend (Node.js) |
 | **OCTRA** | Transcription annotation tool |
 | **wsrng-server** | Web Speech Recorder server |
 | **WhisperX** | Speech-to-text transcription via Unix Domain Socket (optional) |
@@ -109,7 +109,7 @@ See `./visp.py --help` for the full command reference.
 1. Add to `/etc/hosts` (local dev only):
    ```
    127.0.0.1 visp.local
-   127.0.0.1 arctic.visp.local
+   127.0.0.1 artic.visp.local
    127.0.0.1 idp.visp.local
    ```
 
@@ -138,7 +138,7 @@ In production, a host nginx forwards to Apache (port 8081). Apache handles all s
 
 **Required subdomains** (replace `yourdomain.com`):
 - `yourdomain.com` — main app (**WebSocket required**)
-- `arctic.yourdomain.com` — EMU annotation
+- `artic.yourdomain.com` — EMU annotation
 - `octra.yourdomain.com` — OCTRA transcription
 - `recorder.yourdomain.com` — audio recorder
 - `matomo.yourdomain.com` — analytics (optional)
