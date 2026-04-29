@@ -50,8 +50,8 @@ done
 # --- nftables CIDR blocks ---
 # Tinyproxy's Filter matches hostnames as written in the CONNECT request,
 # including raw IP-literal addresses (e.g. CONNECT 10.1.2.3:443 is caught by
-# the ^10\. pattern). However it never resolves DNS — so "umu.se" is not matched
-# by ^130\.239\. even though umu.se resolves to 130.239.34.63.
+# the ^10\. pattern). However it never resolves DNS — so a hostname is not matched
+# by an IP-range pattern even if it resolves into that range.
 #
 # We close both gaps (raw-IP and DNS-resolved-to-blocked-IP) with nftables
 # OUTPUT DROP rules, which operate after DNS resolution at the TCP/IP layer.

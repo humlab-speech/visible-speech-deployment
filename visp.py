@@ -112,7 +112,7 @@ SERVICES = [
     Service("local-idp", "container", "local-idp.container", dev_only=True),
     Service("wsrng-server", "container", "wsrng-server.container"),
     Service("session-manager", "container", "session-manager.container"),
-    Service("arctic", "container", "arctic.container"),
+    Service("artic", "container", "artic.container"),
     Service("emu-webapp-server", "container", "emu-webapp-server.container"),
     Service("octra", "container", "octra.container"),
     Service("apache", "container", "apache.container"),
@@ -137,7 +137,7 @@ CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
         ("php-errors", "/var/log/api/php_error.log"),
         ("apache-error", "/var/log/apache2/visp.local-error.log"),
         ("octra-error", "/var/log/apache2/octra-error.log"),
-        ("arctic-error", "/var/log/apache2/arctic-error.log"),
+        ("artic-error", "/var/log/apache2/artic-error.log"),
         ("shibboleth", "/var/log/shibboleth/shibd.log"),
         ("shibboleth-warn", "/var/log/shibboleth/shibd_warn.log"),
     ],
@@ -746,6 +746,170 @@ def _setup_service_env_files():
         print(color("  ⚠ external/wsrng-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
 
 
+def _is_cert_valid(cert_path: Path, min_days: int = 30) -> bool:
+    """Return True if the certificate exists and won't expire within min_days."""
+    if not cert_path.exists():
+        return False
+    result = subprocess.run(
+        ["openssl", "x509", "-checkend", str(min_days * 86400), "-noout", "-in", str(cert_path)],
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def _ensure_cert(spec: dict) -> bool:
+    """
+    Ensure a certificate exists and is valid, generating it if needed.
+
+    spec keys:
+      label        – human-readable name for log messages
+      cert         – Path to the certificate file (.crt or .pem)
+      key          – Path to the private key file
+      method       – "openssl" | "shib-keygen"
+      openssl_args – list of extra args for openssl req (method=openssl only)
+      shib_host    – hostname for shib-keygen (method=shib-keygen only)
+      post_chown   – optional (uid, gid) to apply via podman unshare chown
+      min_days     – days before expiry that triggers regeneration (default 30)
+    """
+    cert_path: Path = spec["cert"]
+    key_path: Path = spec["key"]
+    label: str = spec["label"]
+    method: str = spec.get("method", "openssl")
+    min_days: int = spec.get("min_days", 30)
+
+    if _is_cert_valid(cert_path, min_days) and key_path.exists():
+        print(f"  ✓ {label}: certificate already exists and is valid")
+        return True
+
+    if cert_path.exists() and not _is_cert_valid(cert_path, min_days):
+        print(color(f"  ⚠ {label}: certificate expiring within {min_days} days — regenerating", Colors.YELLOW))
+    else:
+        print(color(f"  • {label}: generating certificate…", Colors.CYAN))
+
+    cert_path.parent.mkdir(parents=True, exist_ok=True)
+    key_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if method == "openssl":
+        cmd = [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:4096",
+            "-keyout",
+            str(key_path),
+            "-out",
+            str(cert_path),
+            "-nodes",
+            "-days",
+            "3650",
+        ] + spec.get("openssl_args", [])
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(color(f"  ✗ {label}: openssl failed: {result.stderr.strip()}", Colors.RED))
+            return False
+
+    elif method == "shib-keygen":
+        raise ValueError(
+            f"_ensure_cert: method 'shib-keygen' is no longer supported; "
+            f"use method 'openssl' with equivalent args (see shib-keygen source). "
+            f"Cert spec: {spec['label']}"
+        )
+    else:
+        print(color(f"  ✗ {label}: unknown method '{method}'", Colors.RED))
+        return False
+
+    # Apply ownership fix via podman unshare if requested.
+    if "post_chown" in spec:
+        uid, gid = spec["post_chown"]
+        for path in [cert_path, key_path]:
+            subprocess.run(
+                ["podman", "unshare", "chown", f"{uid}:{gid}", str(path)],
+                capture_output=True,
+            )
+
+    print(color(f"  ✓ {label}: certificate generated", Colors.GREEN))
+    return True
+
+
+def _ensure_certs(base_domain: str) -> None:
+    """
+    Ensure all certificates required by VISP exist and are valid.
+
+    Three cert types:
+      1. TLS (visp.local)     — self-signed wildcard for Apache HTTPS (openssl)
+      2. Shibboleth SP        — SAML SP signing cert (shib-keygen inside apache container)
+      3. SimpleSAMLphp IdP    — SAML IdP signing cert for local-idp (openssl)
+    """
+    print(color("Checking certificates…", Colors.CYAN))
+
+    cert_specs = [
+        {
+            "label": "TLS (dev HTTPS)",
+            "cert": PROJECT_DIR / f"certs/{base_domain}/cert.crt",
+            "key": PROJECT_DIR / f"certs/{base_domain}/cert.key",
+            "method": "openssl",
+            "openssl_args": [
+                "-subj",
+                f"/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN={base_domain}",
+                "-addext",
+                "basicConstraints=critical,CA:FALSE",
+                "-addext",
+                "keyUsage=critical,digitalSignature,keyEncipherment",
+                "-addext",
+                "extendedKeyUsage=serverAuth",
+                "-addext",
+                f"subjectAltName=DNS:{base_domain},DNS:*.{base_domain}",
+            ],
+        },
+        {
+            "label": "Shibboleth SP signing cert",
+            "cert": PROJECT_DIR / "certs/sp-cert/cert.pem",
+            "key": PROJECT_DIR / "certs/sp-cert/key.pem",
+            "method": "openssl",
+            "openssl_args": [
+                # Match shib-keygen defaults: 3072-bit RSA, SHA256, no passphrase,
+                # CN=hostname, subjectAltName=DNS:hostname only.
+                "-newkey",
+                "rsa:3072",
+                "-subj",
+                f"/CN={base_domain}",
+                "-addext",
+                f"subjectAltName=DNS:{base_domain}",
+                "-addext",
+                "subjectKeyIdentifier=hash",
+            ],
+            # _shibd inside the apache container runs as UID 101, GID 102
+            "post_chown": (101, 102),
+        },
+        {
+            "label": "SimpleSAMLphp IdP signing cert",
+            "cert": PROJECT_DIR / "certs/ssp-idp-cert/cert.pem",
+            "key": PROJECT_DIR / "certs/ssp-idp-cert/key.pem",
+            "method": "openssl",
+            "openssl_args": [
+                "-subj",
+                f"/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN={base_domain}",
+                "-addext",
+                "basicConstraints=critical,CA:FALSE",
+                "-addext",
+                "keyUsage=critical,digitalSignature,keyEncipherment",
+                "-addext",
+                "extendedKeyUsage=serverAuth,clientAuth",
+                "-addext",
+                f"subjectAltName=DNS:{base_domain}",
+            ],
+            # www-data inside the local-idp container runs as UID 33
+            "post_chown": (33, 33),
+        },
+    ]
+
+    for spec in cert_specs:
+        _ensure_cert(spec)
+
+    print()
+
+
 def _render_local_idp_file(template_path: Path, output_path: Path, base_domain: str) -> bool:
     """Render a local IdP template file with BASE_DOMAIN substitution."""
     if not template_path.exists():
@@ -834,7 +998,7 @@ def _setup_local_idp_files(env_vars: dict[str, str]) -> None:
     idp_cert = PROJECT_DIR / "certs/ssp-idp-cert/cert.pem"
     metadata_output = PROJECT_DIR / "mounts/apache/saml/local-idp/idp-metadata.xml"
     if not idp_cert.exists():
-        print(color("  ⚠ certs/ssp-idp-cert/cert.pem not found; run ./generate-certs.sh", Colors.YELLOW))
+        print(color("  ⚠ certs/ssp-idp-cert/cert.pem not found — run ./visp.py install to generate it", Colors.YELLOW))
         return
 
     cert_lines = []
@@ -1059,8 +1223,11 @@ def cmd_install(args):
         print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
     print()
 
-    # Generate local IdP config files in dev mode.
+    # Generate certificates and local IdP config files in dev mode.
     if mode == "dev":
+        base_domain = env_vars.get("BASE_DOMAIN", "").strip()
+        if base_domain:
+            _ensure_certs(base_domain)
         _setup_local_idp_files(env_vars)
         print()
 
@@ -1313,10 +1480,10 @@ BUILD_CONFIGS = {
         "dockerfile": "Dockerfile",
         "image": "visp-session-manager",
     },
-    "arctic": {
-        "context": "./external/arctic",
-        "dockerfile": "../../docker/arctic/Dockerfile",
-        "image": "visp-arctic",
+    "artic": {
+        "context": "./external/artic",
+        "dockerfile": "../../docker/artic/Dockerfile",
+        "image": "visp-artic",
         "target": "production",
     },
     "emu-webapp-server": {

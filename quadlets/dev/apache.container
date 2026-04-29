@@ -9,6 +9,7 @@ Image=localhost/visp-apache:latest
 Network=visp-net.network
 Network=octra-net.network
 PublishPort=@@HTTP_PORT@@:80
+PublishPort=8443:443
 EnvironmentFile=@@PROJECT_DIR@@/.env
 Environment=LOG_LEVEL=debug
 Environment=HTTP_PROTOCOL=http
@@ -31,7 +32,7 @@ Volume=@@PROJECT_DIR@@/mounts/apache/saml/shib.conf:/etc/apache2/conf-enabled/sh
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/remoteip.conf:/etc/apache2/conf-enabled/remoteip.conf:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/envvars:/etc/apache2/envvars:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/apache2.conf:/etc/apache2/apache2.conf:Z
-Volume=@@PROJECT_DIR@@/mounts/apache/apache/vhosts:/etc/apache2/sites-enabled:Z
+Volume=@@PROJECT_DIR@@/mounts/apache/apache/vhosts-https:/etc/apache2/sites-enabled:Z
 # DEV MODE: Mount source code for hot-reload development
 Volume=@@PROJECT_DIR@@/external/webclient/dist:/var/www/html:Z
 # DEV MODE: Mount PHP API source directly so edits are instant (no build needed)
