@@ -52,7 +52,7 @@ def test_get_derived():
     derived = sm.get_derived(env)
     assert derived["visp_mongo_root_password"] == "pw"
     assert "visp_mongo_uri" in derived
-    assert derived["visp_media_file_base_url"] == "https://arctic.example.com"
+    assert derived["visp_media_file_base_url"] == "https://artic.example.com"
     assert derived["visp_ssp_admin_password"] == "adminpw"
     assert derived["visp_ssp_salt"] == "devsalt"
 

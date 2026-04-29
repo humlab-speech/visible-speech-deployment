@@ -1,11 +1,11 @@
 [Unit]
-Description=arctic Container (Production)
+Description=artic Container (Production)
 After=network-online.target visp-net-network.service
 Requires=visp-net-network.service
 
 [Container]
-ContainerName=arctic
-Image=localhost/visp-arctic:latest
+ContainerName=artic
+Image=localhost/visp-artic:latest
 Network=visp-net.network
 # PublishPort=127.0.0.1:9000:9000  # Uncomment for direct dev access; Apache uses internal network
 

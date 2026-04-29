@@ -57,8 +57,8 @@ run_git_clone_in_container.sh
 .vscode
 visp-server
 mounts/repositories
-docker/arctic/arctic
-docker/arctic/artic
+docker/artic/arctic
+docker/artic/artic
 mounts/whisper
 docker/session-manager/matlab_runtime_installer/
 docker/session-manager/container-agent/

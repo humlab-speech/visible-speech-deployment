@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# arctic — Svelte 5 + Vite 8 build
+# artic — Svelte 5 + Vite 8 build
 # Upstream: https://github.com/humlab-speech/artic
 #
 

@@ -36,7 +36,7 @@ visible-speech-deployment/
 │
 ├── docker/                   # Dockerfiles for VISP-specific containers we own
 │   ├── apache/               # Apache + Shibboleth + PHP (VISP-specific glue)
-│   ├── arctic/               # arctic build wrapper
+│   ├── artic/               # artic build wrapper
 │   ├── session-manager/      # Session manager (also in external/)
 │   └── …
 │
@@ -45,7 +45,7 @@ visible-speech-deployment/
 │   ├── webclient/            # humlab-speech/webclient
 │   ├── wsrng-server/         # humlab-speech/wsrng-server
 │   ├── emu-webapp-server/    # humlab-speech/emu-webapp-server
-│   ├── arctic/               # humlab-speech/artic
+│   ├── artic/               # humlab-speech/artic
 │   ├── container-agent/      # humlab-speech/container-agent
 │   └── WhisperVault/         # humlab-speech/WhisperVault (with whisperx/ submodule)
 │
@@ -81,20 +81,19 @@ no Apache rebuild needed for changes). Overview:
 |-----------|------------|------------|---------|
 | `BASE_DOMAIN` | `vhost.conf` | (serves directly) | Main webclient (Angular SPA) + PHP API at `/api/v1/` |
 | `app.BASE_DOMAIN` | `app.vhost.conf` | `session-manager:80` | Session iframe — webclient loads Jupyter sessions here (`?token=...`) |
-| `arctic.BASE_DOMAIN` | `arctic.vhost.conf` | `arctic/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
+| `artic.BASE_DOMAIN` | `artic.vhost.conf` | `artic/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
 | `octra.BASE_DOMAIN` | `octra.vhost.conf` | `octra/` | Octra transcription tool |
 | `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
 | `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
 | `mongo.BASE_DOMAIN` | `mongo.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
 
-Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `arctic.*`, `octra.*`, `recorder.*`.
+Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `octra.*`, `recorder.*`.
 `app.*` intentionally has no tracker (serves only iframe content, never a standalone page).
 `matomo.*` and `me.*` are infrastructure — no tracker needed.
 
 **Important:** Not everything in `external/` is a separate Podman container. The deployment uses a layered approach:
 
 ### Separate Podman Containers (their own quadlets)
-- **traefik** — Edge router (ports 8080/8443)
 - **apache** — Web server + Shibboleth + PHP authentication; also hosts the PHP API and webclient (see below)
 - **session-manager** — Node.js WebSocket server (`external/session-manager`); separate container.
   Manages the full lifecycle of user projects: receives `saveProject` commands from the webclient
@@ -109,7 +108,7 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `arctic.*`, `octra.*`, 
 - **matomo-db** (optional) — MariaDB database for Matomo (`docker.io/library/mariadb:10.11`).
   Data stored in `mounts/matomo-db/mysql/`.
 - **emu-webapp-server** — EMU backend
-- **arctic** — EMU web interface
+- **artic** — EMU web interface
 - **octra** — Transcription tool
 - **wsrng-server** — Web Speech Recorder server
 - **whisperx** (optional) — Speech-to-text transcription service
@@ -547,7 +546,7 @@ localhost/visp-apache:latest
 localhost/visp-session-manager:latest
 localhost/visp-jupyter-session:latest   # Unified session image (Jupyter + R + container-agent)
 localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isolation
-localhost/visp-arctic:latest
+localhost/visp-artic:latest
 localhost/visp-emu-webapp-server:latest
 localhost/visp-octra:latest
 localhost/visp-wsrng-server:latest
@@ -564,13 +563,14 @@ Third-party images that are pulled from registries (e.g. `docker.io/library/trae
 
 ## Deployment modes
 
-| Setting                | `dev`                         | `prod`                        |
-|------------------------|-------------------------------|-------------------------------|
-| `DEVELOPMENT_MODE`     | `true`                        | `false`                       |
-| `LOG_LEVEL`            | `debug`                       | `info`                        |
-| Traefik                | ✅ included                   | ❌ omitted (host nginx)       |
-| Source mounts          | `external/` mounted into containers | code baked into images  |
-| Quadlet source         | `quadlets/dev/`               | `quadlets/prod/`              |
+| Setting                | `dev`                                    | `prod`                              |
+|------------------------|------------------------------------------|-------------------------------------|
+| `DEVELOPMENT_MODE`     | `true`                                   | `false`                             |
+| `LOG_LEVEL`            | `debug`                                  | `info`                              |
+| TLS / edge             | Docker Desktop nginx bridge (wsl/)       | Host nginx (outside repo)           |
+| Auth / IdP             | Local SimpleSAMLphp IdP (`local-idp`)    | SWAMID Shibboleth federation        |
+| Source mounts          | `external/` mounted into containers      | code baked into images              |
+| Quadlet source         | `quadlets/dev/`                          | `quadlets/prod/`                    |
 
 Switch modes with `./visp.py install --mode <dev|prod> --force && ./visp.py reload`.
 
@@ -660,37 +660,50 @@ timeouts). Use `podman info | grep networkBackend` to verify.
 
 ## WSL Deployment Notes
 
-When running VISP on **WSL2 with rootless Podman**, port forwarding from Windows to WSL requires special handling:
+When running VISP on **WSL2 with rootless Podman**, Apache terminates TLS directly (dev mode
+uses the `vhosts-https/` configs and self-signed `certs/visp.local/` certs). Windows port
+binding is done via `netsh portproxy` rules in an elevated PowerShell session.
 
-**Port Forwarding Issue:**
-- Rootless Podman cannot bind to privileged ports (80/443)
-- Traefik runs on ports 8080 (HTTP) and 8443 (HTTPS) inside WSL
-- ⚠️ **CRITICAL**: Use the **WSL IP address** (e.g., `172.29.72.57`), NOT `127.0.0.1`
-  - Using `127.0.0.1` will NOT work for port forwarding
-  - The WSL IP must be obtained from the WSL terminal with `hostname -I`
-
-**Setup (Windows PowerShell, Administrator):**
-```powershell
-# Get WSL IP from WSL terminal: hostname -I
-$WSL_IP = "172.29.72.57"  # Example - use actual WSL IP
-
-# Forward Windows 80 → WSL 8080
-netsh interface portproxy add v4tov4 listenport=80 listenaddress=0.0.0.0 connectport=8080 connectaddress=$WSL_IP
-
-# Forward Windows 443 → WSL 8443
-netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=8443 connectaddress=$WSL_IP
+**Architecture:**
+```
+Windows Browser → netsh portproxy (80/443) → WSL:8081/8443 → Apache (Podman, HTTP+HTTPS)
 ```
 
-**Cleanup (when no longer needed):**
+**Setup:**
+1. Find your WSL IP address from inside WSL:
+   ```bash
+   ip addr show eth0 | grep 'inet ' | awk '{print $2}' | cut -d/ -f1
+   # e.g. 172.29.72.57
+   ```
+2. Run in **Windows PowerShell (Admin)** — replace `<WSL_IP>` with your actual WSL IP:
+   ```powershell
+   $WSL_IP = "<WSL_IP>"
+   netsh interface portproxy add v4tov4 listenport=80  listenaddress=0.0.0.0 connectport=8081 connectaddress=$WSL_IP
+   netsh interface portproxy add v4tov4 listenport=443 listenaddress=0.0.0.0 connectport=8443 connectaddress=$WSL_IP
+   # Verify:
+   netsh interface portproxy show all
+   ```
+3. Add entries to `C:\Windows\System32\drivers\etc\hosts` on Windows:
+   ```
+   127.0.0.1  visp.local app.visp.local artic.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
+   ```
+
+Apache listens on `HTTP_PORT` (default `8081`) for HTTP and `8443` for HTTPS. The
+`vhosts-https/` Apache vhosts use `certs/visp.local/cert.crt` and `cert.key` (self-signed,
+bind-mounted at `/etc/certs:Z` in the dev quadlet).
+
+**⚠️ Removing stale rules** (old Traefik/nginx-bridge setup):
 ```powershell
-netsh interface portproxy delete v4tov4 listenport=80 listenaddress=0.0.0.0
+# Run in Windows PowerShell (Admin):
+netsh interface portproxy delete v4tov4 listenport=80  listenaddress=0.0.0.0
 netsh interface portproxy delete v4tov4 listenport=443 listenaddress=0.0.0.0
-```
-
-**Verification:**
-```powershell
+# Verify nothing remains:
 netsh interface portproxy show all
 ```
+
+**Note:** The WSL IP changes on each WSL restart. Either update the portproxy rules each time,
+or set a static IP in `.wslconfig`. The `wsl/` directory contains legacy scripts from a
+previous Docker-bridge approach — they are no longer used.
 
 **Podman socket stability (WSL):**
 

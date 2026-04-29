@@ -8,7 +8,7 @@ node_modules
 __pycache__
 *.log
 
-# Exclude other service directories (not needed for arctic build)
+# Exclude other service directories (not needed for artic build)
 webclient
 webapi
 session-manager
@@ -16,5 +16,5 @@ wsrng-server
 emu-webapp-server
 container-agent
 
-# Keep arctic and docker/arctic (needed for build)
+# Keep artic and docker/artic (needed for build)
 # These are implicitly included by not being listed above

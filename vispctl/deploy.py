@@ -152,14 +152,14 @@ class DeployManager:
             "session-manager": "visp-session-manager:latest",
             "wsrng-server": "visp-wsrng-server:latest",
             "emu-webapp-server": "visp-emu-webapp-server:latest",
-            "arctic": "visp-arctic:latest",
+            "artic": "visp-artic:latest",
             "container-agent": "visp-jupyter-session:latest",  # bundled in session image
             "WhisperVault": "visp-whisperx:latest",
         }
 
         # Map component names to the visp.py build target name (when they differ)
         component_to_build_target = {
-            "arctic": "arctic",
+            "artic": "artic",
             "WhisperVault": "whisperx",
         }
 
@@ -738,7 +738,7 @@ class DeployManager:
         # ── Recommended actions (copy-pasteable) ──────────────────────
         # Map external repo names → visp.py build target names where they differ
         _repo_to_build: dict[str, str] = {
-            "arctic": "arctic",
+            "artic": "artic",
             "WhisperVault": "whisperx",
         }
 

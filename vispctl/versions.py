@@ -38,7 +38,7 @@ DEFAULT_VERSIONS_CONFIG = {
         "npm_install": True,
         "npm_build": False,
     },
-    "arctic": {
+    "artic": {
         "version": "latest",
         "url": "https://github.com/humlab-speech/artic.git",
         "npm_install": True,
@@ -80,15 +80,15 @@ class ComponentConfig:
                 # Extract components from the wrapper structure
                 config = data.get("components", data)
 
-                # Migrate legacy component name to arctic.
-                legacy_names = [name for name in list(config.keys()) if name.lower() == "emu-webapp"]
+                # Migrate legacy component names to artic.
+                legacy_names = [name for name in list(config.keys()) if name.lower() in ("emu-webapp", "arctic")]
                 for legacy_name in legacy_names:
                     legacy_cfg = config.pop(legacy_name)
-                    if "arctic" not in config:
-                        config["arctic"] = legacy_cfg
+                    if "artic" not in config:
+                        config["artic"] = legacy_cfg
                     else:
                         for key, value in legacy_cfg.items():
-                            config["arctic"].setdefault(key, value)
+                            config["artic"].setdefault(key, value)
 
                 # Merge with defaults to ensure all required fields exist
                 for component, default_data in self.defaults.items():
