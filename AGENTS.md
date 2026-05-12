@@ -762,6 +762,71 @@ automatically, but `createProjects` is **not** set — it must be granted explic
 
 ---
 
+## Base Image Version Maintenance
+
+This section documents all Docker/Podman base images used in VISP and how to keep them
+updated. Containers share the **host kernel**, so kernel CVEs do **not** apply — only
+userspace library CVEs matter here.
+
+### Quick check command
+
+```bash
+# Check what's currently in each Dockerfile:
+grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
+    external/WhisperVault/container/*/Containerfile 2>/dev/null | sort -u
+```
+
+### Image inventory (as of 2026-05-12)
+
+> **Versions confirmed current as of 2026-05-12.** Docker Hub pages to check for updates
+> are linked in the "Where to check" column.
+
+| Dockerfile | Base image | Current pin | Notes |
+|---|---|---|---|
+| `docker/apache/Dockerfile` | `debian:trixie-20260406` | date-pinned | Trixie = Debian 13 (testing). Update date when new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `docker/octra/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `docker/octra/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Latest as of 2025-06-01. Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
+| `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | patch+alpine pinned ✅ | Node 20 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+| `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
+| `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | fully pinned ✅ | Dev image only — not deployed |
+| `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
+| `docker/session-proxy/Dockerfile` | `alpine:3.23` | minor pinned ✅ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
+| `docker/whisper/Dockerfile` | `debian:bookworm-20260406-slim` | date-pinned | ⚠️ This Dockerfile is **not used** — superseded by WhisperVault |
+| `docker/whisperx/Dockerfile` | `python:3.11.15-slim` | patch pinned ✅ | `3.11.15` is the latest 3.11 patch. Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=slim) |
+| `external/webclient/docker/Dockerfile` | `debian:trixie` | floating | External repo — check upstream |
+| `external/emu-webapp-server/docker/Dockerfile` | `node:23-bookworm-slim` | major only | External repo — Node 23 EOL April 2025; upstream should upgrade to 24 |
+| `external/session-manager/Dockerfile` | `node:20-bookworm-slim` + `debian:bullseye-slim` | **⚠️ bullseye EOL** | External repo. Bullseye EOL June 2026. Needs upstream PR to upgrade to bookworm |
+| `external/wsrng-server/Dockerfile` | `node:20.20.0-alpine3.22` | fully pinned ✅ | Latest patch is `20.20.2` — minor gap |
+| `external/WhisperVault/container/nginx/Containerfile` | `nginx:alpine` | **⚠️ floating** | External repo. Should be pinned to `nginx:1.30.0-alpine3.23` |
+
+### Update procedure
+
+1. **Own Dockerfiles** (in `docker/`): edit the `FROM` line directly, then rebuild and test:
+   ```bash
+   ./visp.py build <service>
+   ./visp.py restart <service>
+   # verify: ./visp.py logs <service> -f
+   ```
+2. **External repo Dockerfiles** (in `external/`): file a PR in the upstream repo
+   (`humlab-speech/<repo>`). After the PR is merged, run `./visp.py deploy update`
+   then rebuild.
+3. **Version check frequency**: check Docker Hub once a month, or whenever a CVE advisory
+   is announced that affects a dependency in the image (e.g. libssl, libexpat, curl).
+   Kernel CVEs can be ignored — containers share the host kernel.
+
+### Debian release notes
+
+| Codename | Debian # | Status | EOL |
+|---|---|---|---|
+| bullseye | 11 | **EOL imminent** | June 2026 |
+| bookworm | 12 | Stable ✅ | ~2026–2028 |
+| trixie | 13 | Stable ✅ (released 2025-08) | ~2027–2029 |
+
+If a Dockerfile still references `bullseye`, upgrade to `bookworm`. The main change is
+`libgit2-1.1` → `libgit2-1.5` and the `sources.list` format may differ slightly.
+
+---
+
 ## Things to avoid
 
 - **Never use Podman named volumes** — all persistent data uses host bind mounts under

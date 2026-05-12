@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.20
+FROM docker.io/library/alpine:3.23
 
 LABEL maintainer="Visible Speech <visp@umu.se>"
 LABEL description="Tinyproxy sidecar for network-isolated VISP session containers"

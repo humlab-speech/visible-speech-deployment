@@ -23,7 +23,7 @@ RUN npm install
 RUN npm run build:release
 
 # Stage 2: Serve the built files with Apache HTTPD
-FROM docker.io/httpd:2.4.63
+FROM docker.io/httpd:2.4.67
 
 # Create the media directory
 RUN mkdir -p /usr/local/apache2/htdocs/media

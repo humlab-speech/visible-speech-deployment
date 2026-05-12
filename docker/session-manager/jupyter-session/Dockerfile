@@ -1,5 +1,5 @@
 # Stage 1: Build container-agent (no host npm needed!)
-FROM docker.io/node:20.20.0-alpine3.22 AS container_agent_builder
+FROM docker.io/node:20.20.2-alpine3.22 AS container_agent_builder
 WORKDIR /build
 COPY ./container-agent /build/
 RUN npm install && \
