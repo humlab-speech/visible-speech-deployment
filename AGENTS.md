@@ -29,8 +29,8 @@ visible-speech-deployment/
 │   └── …
 │
 ├── quadlets/
-│   ├── dev/                  # Symlinked into ~/.config/containers/systemd/ in dev mode
-│   └── prod/                 # Symlinked in prod mode
+│   ├── dev/                  # Rendered and copied into ~/.config/containers/systemd/ in dev mode
+│   └── prod/                 # Rendered and copied in prod mode
 │       *.container           # Podman Quadlet unit files
 │       *.network             # Podman network unit files
 │
@@ -418,10 +418,16 @@ whenever images, quadlets, or service names change.
 ./visp.py build                  # build everything
 
 # Quadlet lifecycle  (always in this order for a clean reset)
-./visp.py uninstall              # remove quadlet symlinks + podman secrets
-./visp.py install [--mode dev|prod]  # create symlinks + secrets
+./visp.py uninstall              # remove copied quadlet files + podman secrets
+./visp.py install [--mode dev|prod]  # render templates → copy files to systemd dir + create secrets
 ./visp.py reload                 # systemctl --user daemon-reload
 ./visp.py start all
+
+# ⚠ Editing a quadlet file in quadlets/dev/ or quadlets/prod/ does NOT automatically
+# update the running system — the file must be re-copied via install, then reload must
+# be run, then the affected service(s) restarted:
+#   ./visp.py install --force → ./visp.py reload → ./visp.py restart <service>
+# Rebuilding an image only requires: build → restart <service>  (no install/reload needed)
 
 # Day-to-day
 ./visp.py status                 # service status + image list

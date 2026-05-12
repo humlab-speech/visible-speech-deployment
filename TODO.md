@@ -8,7 +8,8 @@
 > login verified, `deploy status --strict`, upload permission fixes, whisperx removed
 > from Jupyter image (9.3 GB), RStudio + VSCode session types dropped, notebook
 > transcription via `api.sock` + `visp_transcribe.py` + `Transcription.ipynb`, Jupyter
-> UDS network isolation (`--network=none`), operations sessions network-isolated.
+> UDS network isolation (`--network=none`), operations sessions network-isolated,
+> session doctor `api.sock` tracking, octra upgraded to humlab-2.2.2.
 
 ## High Priority
 
@@ -45,42 +46,34 @@
     tidy follow-up to network isolation — small effort, genuine depth-of-defence value — but
     not worth prioritising over the network isolation work itself.
 
-- [x] **Network-isolate operations session containers** — `--network=none` added to
-  `OperationsSession.getContainerConfig()`. Operations sessions only run container-agent
-  R/Node scripts via `podman exec` on bind-mounted project dirs — no network needed.
-
 ### Build & Images
-
-- [x] **Remove whisperx from Jupyter image; implement notebook transcription via api.sock**
-
-  **Done:** whisperx, PyTorch, pyannote.audio and related ML deps removed from
-  `visp-jupyter-session`. Image is now **~9.3 GB** (down from ~19.6 GB).
-  RStudio session type dropped entirely — no quadlets exist for it.
-
-  Transcription from notebooks uses `visp_transcribe.py` baked into the image.
-  It communicates via `api.sock` (per-session Unix Domain Socket) →
-  session-manager → WhisperVault queue. Supports all advanced options
-  (beam_size, repetition_penalty, vad, vad_onset, condition_on_previous_text).
-  A `Transcription.ipynb` starter notebook is copied into each new project
-  directory on first session start.
 
 - [ ] **Audit Dockerfiles for version consistency**
   - Some Dockerfiles do `git clone` without specifying version
   - Prefer using `external/` as build context (controlled by versions.json)
 
-### Git / Release
+### CLI / Operations UX
 
-- [ ] **Merge `feature/podman-migration` into `master`**
+- [ ] **Simplify the update-and-apply workflow in `visp.py`**
+  - Current problem: applying a quadlet change requires knowing 3–4 internal steps
+    (`install --force` → `reload` → `restart <svc>`), and applying an image rebuild
+    requires a different set (`build` → `restart`). The user's actual intent is almost
+    always just "bring everything up to the latest state".
+  - Proposal: add a high-level `apply [<service>|all]` command that does
+    install-if-needed + reload + restart in one step; for images, `build --restart`.
+    Keep the primitives (`install`, `reload`, `restart`) for debugging but de-emphasise
+    them in docs/help text.
+  - Also consider making `install` automatically run `reload` at the end — it already
+    prints "Run reload to apply", it could just do it.
 
-  `pre-podman-migration` tag already pushed to origin on all repos.
-
-  ```
-  git checkout master
-  git merge --no-ff feature/podman-migration -m "Merge podman migration into master"
-  git push origin master
-  ```
-
-  Use `--no-ff` so the merge commit gives a clean rollback point.
+- [ ] **Merge `status` and `deploy status` into one coherent picture**
+  - `status` covers runtime health (services running, quadlet drift)
+  - `deploy status` covers source freshness (image built from current commit,
+    repos ahead/behind remote)
+  - Neither alone answers "is everything up to date and running?"
+  - Option A: add a fast image-staleness summary section to `status` (no remote fetch)
+  - Option B: add `--full` flag to `status` that also runs `deploy status`
+  - Option C: rename `deploy status` to `audit` and document the two as complementary
 
 ### Infrastructure
 
@@ -113,10 +106,6 @@
 - [ ] **Investigate crash recovery for running sessions**
   - Orphaned Jupyter containers after session-manager crash
   - Label containers with metadata, reconstruct state on restart
-
-- [x] **Session doctor: account for `api.sock` in socket dir checks**
-  - `api.sock` now tracked in `_collect_socket_dirs()`, warning issued if missing on a
-    running Jupyter session, and displayed in the socket dir line alongside ui.sock/proxy.sock
 
 - [ ] **`visp_transcribe`: reconnect / retry on api.sock connection failure**
   - If session-manager is restarted while a Jupyter session is running, the
