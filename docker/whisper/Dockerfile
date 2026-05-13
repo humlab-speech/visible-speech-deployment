@@ -1,3 +1,6 @@
+# ⚠️  NOT USED — this image is superseded by WhisperVault (external/WhisperVault).
+# Kept for reference only. Do not build or deploy.
+
 FROM docker.io/library/debian:bookworm-20260406-slim
 
 RUN apt-get update && \

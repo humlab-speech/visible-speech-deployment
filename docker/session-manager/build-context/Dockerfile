@@ -1,3 +1,7 @@
+# ⚠️  NOT USED — legacy build-context predating the external/ repo pattern.
+# session-manager is now built from external/session-manager via visp.py.
+# Kept for reference only. Do not build or deploy.
+
 FROM docker.io/library/debian:bookworm-20260505
 
 RUN rm /etc/localtime && ln -s /usr/share/zoneinfo/Europe/Stockholm /etc/localtime

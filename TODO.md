@@ -48,9 +48,11 @@
 
 ### Build & Images
 
-- [ ] **Audit Dockerfiles for version consistency**
-  - Some Dockerfiles do `git clone` without specifying version
-  - Prefer using `external/` as build context (controlled by versions.json)
+- [x] **Audit Dockerfiles for version consistency**
+  - `docker/octra/Dockerfile`: pinned to commit hash ✅
+  - `docker/whisper/Dockerfile`: pinned to commit hash, marked NOT USED ✅
+  - `docker/session-manager/build-context/Dockerfile`: marked NOT USED ✅
+  - External repo Dockerfiles (floating `git clone`) tracked as upstream PRs needed
 
 ### CLI / Operations UX
 
@@ -91,7 +93,7 @@
 
 ### Documentation
 
-- [ ] **Document Apache vhost configuration** (fixed `ServerName` syntax; needs docs)
+- [x] **Document Apache vhost configuration** — added to AGENTS.md: two-directory layout, prod vs dev routing, graceful reload, ServerName syntax, and the "must update both" warning
 
 - [ ] **Add automated deployment tests**
   - Service startup, authentication, API accessibility

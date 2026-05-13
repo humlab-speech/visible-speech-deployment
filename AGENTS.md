@@ -762,6 +762,42 @@ automatically, but `createProjects` is **not** set — it must be granted explic
 
 ---
 
+## Apache Vhost Configuration
+
+Vhost files live in `mounts/apache/apache/` and are **bind-mounted** into the Apache
+container at runtime — no rebuild needed for changes, just `podman exec apache apachectl graceful`.
+
+### Two vhost directories
+
+| Directory | When used | Notes |
+|---|---|---|
+| `vhosts/` | **Prod** — external nginx terminates TLS, forwards plain HTTP to Apache | Also used for HTTP→HTTPS redirects in dev |
+| `vhosts-https/` | **Dev/WSL** — Apache terminates TLS directly (self-signed `certs/visp.local/`) | Not reached on prod |
+
+⚠️ **Important:** changes to routing logic (Alias, RewriteRule, ProxyPass) must be
+made in **both** the `vhosts/` and `vhosts-https/` versions of the same file, or they
+will only work on one environment. The Octra download-API bug (fixed 2026-05-12) was
+caused by exactly this — the fix was only in `vhosts/octra.vhost.conf` and not the
+HTTPS counterpart.
+
+### Applying vhost changes
+
+```bash
+# No restart needed — graceful reload is sufficient:
+podman exec apache apachectl -t          # validate first
+podman exec apache apachectl graceful    # apply
+```
+
+### ServerName syntax
+
+Vhost files use `${BASE_DOMAIN}` which Apache resolves from the environment
+(passed via `EnvironmentFile=` in the quadlet). Example:
+```apache
+ServerName octra.${BASE_DOMAIN}
+```
+
+---
+
 ## Base Image Version Maintenance
 
 This section documents all Docker/Podman base images used in VISP and how to keep them
