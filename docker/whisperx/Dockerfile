@@ -1,3 +1,9 @@
+# ⚠️  NOT USED — superseded by external/WhisperVault/container/Containerfile
+# The build system (visp.py build whisperx) uses:
+#   context:    ./external/WhisperVault
+#   dockerfile: container/Containerfile
+# This file is kept for historical reference only.
+
 # WhisperX Web API Container
 # Minimal containerized WhisperX with web API for speech transcription
 

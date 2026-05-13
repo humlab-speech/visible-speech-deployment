@@ -812,28 +812,29 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
     external/WhisperVault/container/*/Containerfile 2>/dev/null | sort -u
 ```
 
-### Image inventory (as of 2026-05-12)
+### Image inventory (as of 2026-05-13)
 
-> **Versions confirmed current as of 2026-05-12.** Docker Hub pages to check for updates
+> **Versions confirmed current as of 2026-05-13.** Docker Hub pages to check for updates
 > are linked in the "Where to check" column.
 
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
 | `docker/apache/Dockerfile` | `debian:trixie-20260406` | date-pinned | Trixie = Debian 13 (testing). Update date when new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `docker/octra/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
-| `docker/octra/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Latest as of 2025-06-01. Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
+| `docker/octra/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | patch+alpine pinned ✅ | Node 20 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
 | `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | fully pinned ✅ | Dev image only — not deployed |
 | `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
 | `docker/session-proxy/Dockerfile` | `alpine:3.23` | minor pinned ✅ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
 | `docker/whisper/Dockerfile` | `debian:bookworm-20260406-slim` | date-pinned | ⚠️ This Dockerfile is **not used** — superseded by WhisperVault |
-| `docker/whisperx/Dockerfile` | `python:3.11.15-slim` | patch pinned ✅ | `3.11.15` is the latest 3.11 patch. Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=slim) |
-| `external/webclient/docker/Dockerfile` | `debian:trixie` | floating | External repo — check upstream |
-| `external/emu-webapp-server/docker/Dockerfile` | `node:23-bookworm-slim` | major only | External repo — Node 23 EOL April 2025; upstream should upgrade to 24 |
-| `external/session-manager/Dockerfile` | `node:20-bookworm-slim` + `debian:bullseye-slim` | **⚠️ bullseye EOL** | External repo. Bullseye EOL June 2026. Needs upstream PR to upgrade to bookworm |
-| `external/wsrng-server/Dockerfile` | `node:20.20.0-alpine3.22` | fully pinned ✅ | Latest patch is `20.20.2` — minor gap |
-| `external/WhisperVault/container/nginx/Containerfile` | `nginx:alpine` | **⚠️ floating** | External repo. Should be pinned to `nginx:1.30.0-alpine3.23` |
+| `docker/whisperx/Dockerfile` | `python:3.11.15-slim` | patch pinned | ⚠️ This Dockerfile is **not used** — build system uses `external/WhisperVault/container/Containerfile` |
+| `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | patch pinned ✅ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
+| `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | fully pinned ✅ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
+| `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | fully pinned ✅ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `external/session-manager/Dockerfile` | `node:20.20.2-bookworm-slim` + `debian:bookworm-20260505-slim` | fully pinned ✅ | Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
+| `external/wsrng-server/Dockerfile` | `node:20.20.2-alpine3.22` | fully pinned ✅ | Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 
 ### Update procedure
 
