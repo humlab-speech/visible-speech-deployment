@@ -23,7 +23,7 @@
     "plugins": {},
     "allowed_browsers": [],
     "allowed_projects": [],
-    "languages": ["en", "de"],
+    "languages": ["en", "de", "it", "ko", "nl", "sv", "zh"],
     "audioExamples": [
       {
         "language": "en",
