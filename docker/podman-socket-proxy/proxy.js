@@ -50,6 +50,10 @@ const LOG_LEVEL     = (process.env.LOG_LEVEL || "info").toLowerCase();
 const CAP_ALLOWLIST = new Set([
     "CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID",
     "SETGID", "SETUID", "SETPCAP",
+    // Required by visp-session-proxy (tinyproxy sidecar) so its entrypoint.sh
+    // can install nftables OUTPUT rules that block traffic to private/internal
+    // subnets by IP. Scoped to the container's own network namespace only.
+    "NET_ADMIN",
 ]);
 
 // Images that session-manager is allowed to spawn.
