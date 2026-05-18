@@ -1,0 +1,27 @@
+[Unit]
+Description=Podman Socket Proxy for session-manager (Production)
+Before=session-manager.service
+
+[Container]
+ContainerName=podman-socket-proxy
+Image=localhost/visp-podman-socket-proxy:latest
+Network=none
+
+Environment=PODMAN_SOCKET=/run/podman/podman.sock
+Environment=PROXY_SOCKET=/run/podman-proxy/podman.sock
+Environment=ABS_ROOT_PATH=@@PROJECT_DIR@@
+Environment=LOG_LEVEL=info
+
+Volume=/run/user/@@UID@@/podman/podman.sock:/run/podman/podman.sock:ro,z
+Volume=@@PROJECT_DIR@@/mounts/podman-proxy:/run/podman-proxy:Z
+
+DropCapability=ALL
+NoNewPrivileges=true
+
+PodmanArgs=--memory=128m --cpus=0.25 --pids-limit=50
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

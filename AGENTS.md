@@ -552,6 +552,7 @@ localhost/visp-apache:latest
 localhost/visp-session-manager:latest
 localhost/visp-jupyter-session:latest   # Unified session image (Jupyter + R + container-agent)
 localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isolation
+localhost/visp-podman-socket-proxy:latest  # Body-inspecting socket proxy between session-manager and Podman
 localhost/visp-artic:latest
 localhost/visp-emu-webapp-server:latest
 localhost/visp-octra:latest

@@ -111,6 +111,7 @@ SERVICES = [
     Service("whisperx", "container", "whisperx.container"),
     Service("local-idp", "container", "local-idp.container", dev_only=True),
     Service("wsrng-server", "container", "wsrng-server.container"),
+    Service("podman-socket-proxy", "container", "podman-socket-proxy.container"),
     Service("session-manager", "container", "session-manager.container"),
     Service("artic", "container", "artic.container"),
     Service("emu-webapp-server", "container", "emu-webapp-server.container"),
@@ -1166,6 +1167,13 @@ def cmd_install(args):
     if not whisper_sock_dir.exists():
         whisper_sock_dir.mkdir(parents=True, exist_ok=True)
         print(color("  ✓ Created mounts/whisper/api/ (WhisperVault socket directory)", Colors.GREEN))
+
+    # Ensure the Podman socket proxy directory exists.
+    # podman-socket-proxy writes its socket here; session-manager mounts it.
+    proxy_sock_dir = PROJECT_DIR / "mounts" / "podman-proxy"
+    if not proxy_sock_dir.exists():
+        proxy_sock_dir.mkdir(parents=True, exist_ok=True)
+        print(color("  ✓ Created mounts/podman-proxy/ (Podman socket proxy directory)", Colors.GREEN))
     print()
 
     # Ensure container-writable directories have correct permissions.
@@ -1183,6 +1191,7 @@ def cmd_install(args):
         PROJECT_DIR / "mounts/session-manager/logs",
         PROJECT_DIR / "mounts/sessions",
         PROJECT_DIR / "mounts/matomo/html",
+        PROJECT_DIR / "mounts/podman-proxy",
     ]
     perm_fixed = 0
     for d in writable_dirs:
@@ -1521,6 +1530,12 @@ BUILD_CONFIGS = {
         "dockerfile": "Dockerfile",
         "image": "visp-session-proxy",
         "description": "Tinyproxy sidecar for network-isolated session containers",
+    },
+    "podman-socket-proxy": {
+        "context": "./docker/podman-socket-proxy",
+        "dockerfile": "Dockerfile",
+        "image": "visp-podman-socket-proxy",
+        "description": "Body-inspecting Podman socket proxy — enforces image/mount/cap allowlist on container create",
     },
 }
 

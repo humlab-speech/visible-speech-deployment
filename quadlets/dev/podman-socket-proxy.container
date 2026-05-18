@@ -1,0 +1,32 @@
+[Unit]
+Description=Podman Socket Proxy for session-manager
+# Must start before session-manager so the proxy socket exists when it connects
+Before=session-manager.service
+
+[Container]
+ContainerName=podman-socket-proxy
+Image=localhost/visp-podman-socket-proxy:latest
+# No network needed — communicates only via Unix sockets
+Network=none
+
+Environment=PODMAN_SOCKET=/run/podman/podman.sock
+Environment=PROXY_SOCKET=/run/podman-proxy/podman.sock
+Environment=ABS_ROOT_PATH=@@PROJECT_DIR@@
+Environment=LOG_LEVEL=debug
+
+# Real Podman socket (read-only from proxy's perspective — proxy reads it as upstream)
+Volume=/run/user/@@UID@@/podman/podman.sock:/run/podman/podman.sock:ro,z
+# Shared socket directory — session-manager will connect to proxy.sock here
+Volume=@@PROJECT_DIR@@/mounts/podman-proxy:/run/podman-proxy:Z
+
+# Security hardening — proxy needs no capabilities at all
+DropCapability=ALL
+NoNewPrivileges=true
+
+PodmanArgs=--memory=128m --cpus=0.25 --pids-limit=50
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

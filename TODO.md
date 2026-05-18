@@ -13,11 +13,7 @@
 
 ## High Priority
 
-- [ ] **Verify uploads work end-to-end in Podman**
-  - Upload permission fixes are in place (`fix-permissions`, `chmod 777`, api.php)
-  - Still needed: reproduce an upload while tailing Apache + session-manager logs,
-    verify files land on host at `mounts/apache/apache/uploads/`
-  - See AGENTS.md "File Upload Pipeline" section for debugging guide
+- [x] **Verify uploads work end-to-end in Podman** — confirmed working 2026-05-13
 
 ## Medium Priority
 
@@ -28,23 +24,13 @@
   - Consider `podman unshare chown`, `--userns=keep-id`, or ACLs for tighter permissions
   - Low risk on single-user server, problematic on shared systems
 
-- [ ] **Custom body-inspecting socket proxy for session-manager**
-  - session-manager has full Podman API access via socket mount; Traefik does NOT
-    actually use the socket (static config only) — its socket mount can simply be removed
-  - A simple body-inspecting proxy (~80 lines Python/Node) on the socket could enforce:
-    - `Image` must match `^localhost/visp-` — blocks spawning attacker-controlled images
-    - `HostConfig.Binds` paths must be under the project root — blocks mounting `/etc`, `~/.ssh`
-    - `HostConfig.Privileged` must be `false` — blocks container escape
-    - `HostConfig.NetworkMode` must be the sessions network — blocks joining `visp-net`
-    - `HostConfig.CapAdd` allowlist — no `SYS_ADMIN` etc.
-  - tecnativa/docker-socket-proxy is NOT sufficient — it works at HTTP path level only,
-    cannot inspect the request body to check which image or mounts are being requested
-  - **Honest usefulness assessment:** this is a *third* layer of defence, only meaningful
-    after network isolation is done. The attack chain requiring it is: (1) remotely-exploitable
-    RCE CVE in session-manager's Node.js deps, AND (2) attacker knows VISP architecture well
-    enough to abuse the socket. Low probability for an academic platform. Worth doing as a
-    tidy follow-up to network isolation — small effort, genuine depth-of-defence value — but
-    not worth prioritising over the network isolation work itself.
+- [x] **Custom body-inspecting socket proxy for session-manager**
+  - Implemented in `docker/podman-socket-proxy/` — pure Node.js, zero npm deps
+  - Deployed as `localhost/visp-podman-socket-proxy:latest` via `podman-socket-proxy.container` quadlet
+  - session-manager now mounts `mounts/podman-proxy/podman.sock` instead of the real socket
+  - Enforces on every `POST .../containers/create`: image allowlist (`localhost/visp-*`), mount path allowlist (under `ABS_ROOT_PATH`), `Privileged=false`, capability allowlist, no host netns/pid/ipc
+  - All other calls (list, inspect, exec, start, stop) pass through transparently
+  - Build: `./visp.py build podman-socket-proxy`
 
 ### Build & Images
 
