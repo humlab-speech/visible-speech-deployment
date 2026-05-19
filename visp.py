@@ -47,13 +47,15 @@ import sys
 import threading
 from pathlib import Path
 
-from vispctl.build import BuildManager
+from vispctl.build import BuildManager, resolve_build_order
 from vispctl.cleanup_containers import cleanup_containers
 from vispctl.images import ImageManager
+from vispctl.logs import tail_container_logs as _tail_container_logs_impl
+from vispctl.logs import view_logs
 from vispctl.network import NetworkManager
 
 # Use the new modular managers where appropriate
-from vispctl.runner import Runner
+from vispctl.runner import Colors, Runner, color, load_env_vars, parse_env_bool
 from vispctl.service import Service
 from vispctl.service_manager import ServiceManager
 
@@ -146,23 +148,6 @@ CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
 }
 
 
-# Colors
-class Colors:
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    BLUE = "\033[0;34m"
-    CYAN = "\033[0;36m"
-    MAGENTA = "\033[0;35m"
-    NC = "\033[0m"  # No Color
-    BOLD = "\033[1m"
-
-
-def color(text: str, c: str) -> str:
-    """Wrap text in color codes."""
-    return f"{c}{text}{Colors.NC}"
-
-
 # Module-level Runner instance for consistent subprocess handling
 RUNNER = Runner()
 
@@ -187,41 +172,12 @@ def journalctl(*args) -> subprocess.CompletedProcess:
     return RUNNER.journalctl(*args)
 
 
-def load_env_vars(env_file_path: Path) -> dict:
-    """Load environment variables from a .env file."""
-    env_vars = {}
-    if not env_file_path.exists():
-        return env_vars
-
-    with open(env_file_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
-                key, value = line.split("=", 1)
-                env_vars[key.strip()] = value.strip()
-    return env_vars
-
-
-def _parse_env_bool(value: str | None, default: bool = True) -> bool:
-    """Parse boolean-like environment values with sane defaults."""
-    if value is None:
-        return default
-    normalized = value.strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "off"}:
-        return False
-    return default
-
-
 def _get_disabled_optional_services() -> dict[str, str]:
     """Return mapping of disabled optional service name -> controlling env var."""
     env_vars = load_env_vars(PROJECT_DIR / ".env")
     disabled: dict[str, str] = {}
     for service_name, env_var in OPTIONAL_SERVICE_ENV_FLAGS.items():
-        if not _parse_env_bool(env_vars.get(env_var), default=True):
+        if not parse_env_bool(env_vars.get(env_var), default=True):
             disabled[service_name] = env_var
     return disabled
 
@@ -342,71 +298,8 @@ def cmd_status(args):
 
 
 def _tail_container_logs(service: str, lines: int = 50, follow: bool = False, stop_event: threading.Event = None):
-    """Tail container-internal log files via podman exec.
-
-    For services that write to log files inside the container (not stdout),
-    this reads those files so they appear alongside journalctl output.
-    """
-    log_files = CONTAINER_LOG_FILES.get(service)
-    if not log_files:
-        return
-
-    container = service
-
-    # Check if container is running
-    rc, _, _ = run_quiet(["podman", "inspect", "--format", "{{.State.Status}}", container])
-    if rc != 0:
-        print(color(f"  Container {container} not running — skipping app logs", Colors.YELLOW))
-        return
-
-    if follow:
-        # Follow mode: spawn tail -f processes and stream output with prefixes
-        processes = []
-        for label, path in log_files:
-            cmd = ["podman", "exec", container, "tail", "-n", "0", "-f", path]
-            try:
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-                processes.append((label, proc))
-            except OSError:
-                pass
-
-        def _stream_output(lbl, proc):
-            try:
-                for line in proc.stdout:
-                    if stop_event and stop_event.is_set():
-                        break
-                    print(f"{color(f'[{lbl}]', Colors.MAGENTA)} {line}", end="")
-            except (OSError, ValueError):
-                pass
-
-        threads = []
-        for label, proc in processes:
-            t = threading.Thread(target=_stream_output, args=(label, proc), daemon=True)
-            t.start()
-            threads.append(t)
-
-        # Wait for stop signal (KeyboardInterrupt handled by caller)
-        try:
-            if stop_event:
-                stop_event.wait()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            for _, proc in processes:
-                proc.terminate()
-            for _, proc in processes:
-                proc.wait()
-    else:
-        # Snapshot mode: show last N lines from each log file
-        for label, path in log_files:
-            cmd = ["podman", "exec", container, "tail", "-n", str(lines), path]
-            rc, stdout, stderr = run_quiet(cmd)
-            if rc == 0 and stdout.strip():
-                print(color(f"\n--- {label} ({path}) ---", Colors.MAGENTA))
-                print(stdout)
-            elif rc != 0 and "No such file" not in stderr:
-                # File doesn't exist yet — that's fine, skip silently
-                pass
+    """Tail container-internal log files via podman exec."""
+    _tail_container_logs_impl(service, CONTAINER_LOG_FILES, RUNNER, lines=lines, follow=follow, stop_event=stop_event)
 
 
 def _stream_podman_logs(
@@ -416,166 +309,31 @@ def _stream_podman_logs(
     lines: int | None = None,
     since: str | None = None,
 ) -> None:
-    """Stream container logs directly from podman.
+    """Stream container logs directly from podman."""
+    from vispctl.logs import stream_podman_logs
 
-    This preserves the original byte stream (including ANSI color escapes)
-    and mirrors native `podman logs` behavior.
-    """
-    cmd = ["podman", "logs"]
-    if follow:
-        cmd.append("-f")
-    if lines is not None:
-        cmd.extend(["--tail", str(lines)])
-    if since:
-        cmd.extend(["--since", since])
-    cmd.append(service)
-
-    try:
-        subprocess.run(cmd, check=False)
-    except KeyboardInterrupt:
-        # Keep Ctrl+C behavior quiet (same ergonomics as podman logs in shell).
-        pass
+    stream_podman_logs(service, follow=follow, lines=lines, since=since)
 
 
 def _show_debug_info(service: str):
-    """Show diagnostic info for a service: systemd status, container state, quadlet file."""
-    service_name = f"{service}.service"
+    """Show diagnostic info for a service."""
+    from vispctl.logs import show_debug_info
 
-    # Service status
-    print(color("Service Status:", Colors.YELLOW))
-    systemctl("status", service_name)
-    print()
-
-    # Container info
-    print(color("Container Info:", Colors.YELLOW))
-    container = service
-    rc, stdout, stderr = run_quiet(["podman", "inspect", container])
-    if rc == 0:
-        run(
-            [
-                "podman",
-                "inspect",
-                container,
-                "--format",
-                "Name: {{.Name}}\nState: {{.State.Status}}\nStarted: {{.State.StartedAt}}\nImage: {{.Image}}",
-            ],
-            check=False,
-        )
-    else:
-        print(color(f"Container not found: {container}", Colors.RED))
-    print()
-
-    # Quadlet file
-    print(color("Quadlet File:", Colors.YELLOW))
-    svc_info = next((s for s in _get_runtime_services(include_disabled=True) if s.name == service), None)
-    if svc_info:
-        link_path = SYSTEMD_QUADLETS_DIR / svc_info.file
-        if link_path.is_symlink():
-            print(color(f"  {link_path} -> {link_path.resolve()} (legacy symlink)", Colors.YELLOW))
-        elif link_path.exists():
-            print(f"  {link_path} (rendered template)")
-        else:
-            print(color(f"  {link_path} does not exist", Colors.RED))
-    print()
+    show_debug_info(service, RUNNER, _get_runtime_services(include_disabled=True), SYSTEMD_QUADLETS_DIR)
 
 
 def cmd_logs(args):
     """View logs from services (and optionally debug diagnostics)."""
-    extra_args = []
-    journal_only = getattr(args, "journal_only", False)
-    debug = getattr(args, "debug", False)
-    no_follow = getattr(args, "no_follow", False)
-
-    runtime_services = _get_runtime_services()
-    service_name = getattr(args, "service", None)
-    if service_name not in (None, "all"):
-        # Validate explicit service names and fail clearly for disabled optional services.
-        _resolve_services(service_name)
-
-    service_info = next((s for s in runtime_services if s.name == service_name), None)
-    is_container_service = service_info is not None and service_info.type == "container"
-
-    # For single container services, default to podman logs -f behavior unless
-    # debug/journal-only/priority filtering forces journalctl mode.
-    use_podman_logs = (
-        service_name not in (None, "all")
-        and is_container_service
-        and not debug
-        and not journal_only
-        and not getattr(args, "priority", None)
+    view_logs(
+        args,
+        runner=RUNNER,
+        container_log_files=CONTAINER_LOG_FILES,
+        systemd_dir=SYSTEMD_QUADLETS_DIR,
+        get_runtime_services=_get_runtime_services,
+        get_all_services=lambda: _get_runtime_services(include_disabled=True),
+        resolve_services=_resolve_services,
+        container_services=_container_services,
     )
-
-    if use_podman_logs:
-        follow = args.follow or not no_follow
-        _stream_podman_logs(
-            service_name,
-            follow=follow,
-            lines=args.lines,
-            since=getattr(args, "since", None),
-        )
-        return
-
-    if args.follow:
-        extra_args.append("-f")
-    if args.lines:
-        extra_args.extend(["-n", str(args.lines)])
-    elif not args.follow:
-        extra_args.extend(["-n", "100"])  # Default
-    if hasattr(args, "since") and args.since:
-        extra_args.extend(["--since", args.since])
-    if hasattr(args, "priority") and args.priority:
-        extra_args.extend(["-p", args.priority])
-
-    if args.service == "all" or not args.service:
-        # All services — journal only (too noisy to mix all container logs)
-        units = []
-        for svc in _container_services(runtime_services):
-            units.extend(["-u", f"{svc.name}.service"])
-        print(color("=== Viewing logs for all VISP services ===", Colors.CYAN))
-        journalctl(*units, "--no-pager", *extra_args)
-    else:
-        service = args.service
-        has_app_logs = service in CONTAINER_LOG_FILES
-
-        if debug:
-            print(color(f"=== Debug info for {service} ===", Colors.CYAN))
-            print()
-            _show_debug_info(service)
-
-        if args.follow:
-            # Follow mode: run journalctl and container log tailers concurrently
-            print(color(f"=== Following logs for {service} ===", Colors.CYAN))
-            if has_app_logs and not journal_only:
-                print(color("  (including container app logs — use --journal-only to hide)", Colors.CYAN))
-
-            stop_event = threading.Event()
-
-            # Start container log tailers in background threads
-            if has_app_logs and not journal_only:
-                log_thread = threading.Thread(
-                    target=_tail_container_logs,
-                    args=(service,),
-                    kwargs={"follow": True, "stop_event": stop_event},
-                    daemon=True,
-                )
-                log_thread.start()
-
-            # Run journalctl in foreground (blocks until Ctrl+C)
-            try:
-                journalctl("-u", f"{service}.service", *extra_args)
-            except KeyboardInterrupt:
-                pass
-            finally:
-                stop_event.set()
-        else:
-            # Snapshot mode: show journal, then container logs
-            print(color(f"=== Viewing logs for {service} ===", Colors.CYAN))
-            journalctl("-u", f"{service}.service", "--no-pager", *extra_args)
-
-            if has_app_logs and not journal_only:
-                lines = args.lines if args.lines else 30
-                print(color(f"\n=== Container app logs (last {lines} lines each) ===", Colors.CYAN))
-                _tail_container_logs(service, lines=lines)
 
 
 # === Service Control Commands ===
@@ -1310,86 +1068,6 @@ BUILDABLE_SERVICES = list(BUILD_CONFIGS.keys())
 ALL_BUILDABLE = BUILDABLE_SERVICES + list(NODE_BUILD_CONFIGS.keys())
 
 
-def _resolve_build_order(requested: list[str]) -> tuple[list[str], list[str]]:
-    """Resolve build dependencies and return services in correct build order.
-
-    Returns (ordered_list, auto_added_list).  Node builds come before container
-    builds so that artifacts (e.g. container-agent/dist) are ready when images
-    that need them are built.  Within each group, dependencies are respected
-    via topological sort; ties are broken alphabetically.
-    """
-    # Collect dependency edges from build configs
-    deps: dict[str, list[str]] = {}
-    for name, cfg in BUILD_CONFIGS.items():
-        d = []
-        if cfg.get("depends_on"):
-            d.append(cfg["depends_on"])
-        if cfg.get("prepare_context") and cfg["prepare_context"] in NODE_BUILD_CONFIGS:
-            d.append(cfg["prepare_context"])
-        if d:
-            deps[name] = d
-
-    # Expand requested set with transitive dependencies
-    original = set(requested)
-    needed: set[str] = set()
-
-    def _add(name: str) -> None:
-        if name in needed:
-            return
-        needed.add(name)
-        for dep in deps.get(name, []):
-            _add(dep)
-
-    for name in requested:
-        _add(name)
-
-    auto_added = sorted(needed - original)
-
-    # Topological sort with tie-breaking: node builds first, then alphabetical
-    node_names = set(NODE_BUILD_CONFIGS.keys())
-
-    in_deg = {n: 0 for n in needed}
-    fwd: dict[str, list[str]] = {n: [] for n in needed}
-    for n in needed:
-        for dep in deps.get(n, []):
-            if dep in needed:
-                fwd[dep].append(n)
-                in_deg[n] += 1
-
-    ready = [n for n in needed if in_deg[n] == 0]
-    result: list[str] = []
-    while ready:
-        ready.sort(key=lambda n: (0 if n in node_names else 1, n))
-        n = ready.pop(0)
-        result.append(n)
-        for dependent in fwd[n]:
-            in_deg[dependent] -= 1
-            if in_deg[dependent] == 0:
-                ready.append(dependent)
-
-    return result, auto_added
-
-
-def prepare_build_context(name: str, config: dict) -> bool:
-    """
-    Prepare the build context for images that need extra files copied in.
-
-    Delegates to BuildManager.
-    """
-    bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
-    return bm.prepare_build_context(name, config)
-
-
-def build_node_project(name: str, config: dict, no_cache: bool = False, build_config: str = None) -> bool:
-    """
-    Build a Node.js project using a containerized build (no host npm needed).
-
-    Delegates to BuildManager.
-    """
-    bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
-    return bm.build_node_project(name, config, no_cache=no_cache, build_config=build_config)
-
-
 def cmd_build(args):
     """Build container images and node projects.
 
@@ -1420,7 +1098,7 @@ def cmd_build(args):
             return
         requested = list(raw_services)
 
-    ordered, auto_added = _resolve_build_order(requested)
+    ordered, auto_added = resolve_build_order(requested, BUILD_CONFIGS, NODE_BUILD_CONFIGS)
 
     if auto_added:
         print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))

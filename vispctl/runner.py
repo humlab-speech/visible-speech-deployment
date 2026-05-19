@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from pathlib import Path
 from typing import List, Tuple
 
 
@@ -43,3 +44,31 @@ class Runner:
 
     def journalctl(self, *args) -> subprocess.CompletedProcess:
         return subprocess.run(["journalctl", "--user", *args])
+
+
+def load_env_vars(env_file_path: Path) -> dict:
+    """Load environment variables from a .env file."""
+    env_vars: dict[str, str] = {}
+    if not env_file_path.exists():
+        return env_vars
+    with open(env_file_path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                key, value = line.split("=", 1)
+                env_vars[key.strip()] = value.strip()
+    return env_vars
+
+
+def parse_env_bool(value: str | None, default: bool = True) -> bool:
+    """Parse boolean-like environment values with sane defaults."""
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default

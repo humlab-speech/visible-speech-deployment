@@ -353,3 +353,67 @@ class BuildManager:
             (output_dir / NODE_BUILD_MARKER).write_text(json.dumps(marker, indent=2) + "\n")
         except Exception:  # noqa: BLE001
             pass
+
+
+def resolve_build_order(
+    requested: list[str],
+    build_configs: Dict[str, Dict[str, Any]],
+    node_configs: Dict[str, Dict[str, Any]],
+) -> tuple[list[str], list[str]]:
+    """Resolve build dependencies and return services in correct build order.
+
+    Returns (ordered_list, auto_added_list).  Node builds come before container
+    builds so that artifacts (e.g. container-agent/dist) are ready when images
+    that need them are built.  Within each group, dependencies are respected
+    via topological sort; ties are broken alphabetically.
+    """
+    # Collect dependency edges from build configs
+    deps: dict[str, list[str]] = {}
+    for name, cfg in build_configs.items():
+        d = []
+        if cfg.get("depends_on"):
+            d.append(cfg["depends_on"])
+        if cfg.get("prepare_context") and cfg["prepare_context"] in node_configs:
+            d.append(cfg["prepare_context"])
+        if d:
+            deps[name] = d
+
+    # Expand requested set with transitive dependencies
+    original = set(requested)
+    needed: set[str] = set()
+
+    def _add(name: str) -> None:
+        if name in needed:
+            return
+        needed.add(name)
+        for dep in deps.get(name, []):
+            _add(dep)
+
+    for name in requested:
+        _add(name)
+
+    auto_added = sorted(needed - original)
+
+    # Topological sort with tie-breaking: node builds first, then alphabetical
+    node_names = set(node_configs.keys())
+
+    in_deg = {n: 0 for n in needed}
+    fwd: dict[str, list[str]] = {n: [] for n in needed}
+    for n in needed:
+        for dep in deps.get(n, []):
+            if dep in needed:
+                fwd[dep].append(n)
+                in_deg[n] += 1
+
+    ready = [n for n in needed if in_deg[n] == 0]
+    result: list[str] = []
+    while ready:
+        ready.sort(key=lambda n: (0 if n in node_names else 1, n))
+        n = ready.pop(0)
+        result.append(n)
+        for dependent in fwd[n]:
+            in_deg[dependent] -= 1
+            if in_deg[dependent] == 0:
+                ready.append(dependent)
+
+    return result, auto_added
