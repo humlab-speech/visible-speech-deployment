@@ -11,6 +11,7 @@ Commands:
   install     Link quadlet files to systemd directory
   uninstall   Remove quadlet links from systemd directory
   reload      Reload systemd daemon (after quadlet changes)
+  apply       Apply quadlet changes in one step (install --force + reload + restart)
   mode        Show or set deployment mode (dev/prod)
   build       Build container images (supports --no-cache, --pull)
   exec        Execute command in container
@@ -1395,6 +1396,94 @@ def cmd_reload(args):
         print(color(f"Failed: {result.stderr}", Colors.RED))
 
 
+def cmd_apply(args):
+    """Apply quadlet changes: install --force, reload, restart affected services.
+
+    This is the one-shot alternative to manually running:
+        ./visp.py install --force [service]
+        ./visp.py reload
+        ./visp.py restart [service]
+
+    It detects which quadlets have drifted from their templates and only
+    restarts those services (or the explicitly requested service).
+    When service is 'all', every drifted service is restarted after reload.
+    """
+    service = getattr(args, "service", "all")
+    mode = get_current_mode()
+    quadlets_dir = get_quadlets_dir(mode)
+    services = _resolve_services(service)
+
+    # --- Step 1: detect drift before we overwrite anything ---
+    drifted: list[Service] = []
+    not_installed: list[Service] = []
+    for svc in services:
+        source = quadlets_dir / svc.file
+        target = SYSTEMD_QUADLETS_DIR / svc.file
+        if not source.exists():
+            continue
+        expected = render_quadlet_template(source.read_text())
+        if not target.exists():
+            not_installed.append(svc)
+        elif target.read_text() != expected:
+            drifted.append(svc)
+
+    if not drifted and not not_installed:
+        print(color(f"✓ All quadlets are up to date ({mode} mode). Nothing to apply.", Colors.GREEN))
+        return
+
+    to_update = drifted + not_installed
+    print(color(f"=== Applying quadlet changes ({mode} mode) ===", Colors.CYAN))
+    print()
+    if drifted:
+        print(color(f"  Out of date ({len(drifted)}):", Colors.YELLOW))
+        for svc in drifted:
+            print(f"    • {svc.file}")
+    if not_installed:
+        print(color(f"  Not installed ({len(not_installed)}):", Colors.YELLOW))
+        for svc in not_installed:
+            print(f"    • {svc.file}")
+    print()
+
+    # --- Step 2: install --force (only the affected files, or all if service=="all") ---
+    print(color("Installing quadlets...", Colors.CYAN))
+    for svc in to_update:
+        source = quadlets_dir / svc.file
+        target = SYSTEMD_QUADLETS_DIR / svc.file
+        try:
+            content = source.read_text()
+            rendered = render_quadlet_template(content)
+            if target.exists() or target.is_symlink():
+                target.unlink()
+            target.write_text(rendered)
+            print(color(f"  ✓ {svc.file}: updated", Colors.GREEN))
+        except Exception as e:
+            print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
+    print()
+
+    # --- Step 3: daemon-reload ---
+    print(color("Reloading systemd daemon...", Colors.CYAN))
+    result = systemctl("daemon-reload")
+    if result.returncode != 0:
+        print(color(f"  ✗ daemon-reload failed: {result.stderr}", Colors.RED))
+        return
+    print(color("  ✓ Daemon reloaded", Colors.GREEN))
+    print()
+
+    # --- Step 4: restart only the affected container services ---
+    restart_targets = [svc for svc in to_update if svc.file.endswith(".container")]
+    if not restart_targets:
+        print(color("✓ No container services to restart (only network/volume units changed).", Colors.GREEN))
+        return
+
+    print(color(f"Restarting {len(restart_targets)} service(s)...", Colors.CYAN))
+    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    target_names = [svc.name for svc in restart_targets]
+    sm.stop(target_names)
+    sm.start(target_names)
+    print()
+    print(color("✓ Done.", Colors.GREEN))
+
+
 def cmd_mode(args):
     """Show or set deployment mode."""
     new_mode = getattr(args, "new_mode", None)
@@ -2362,6 +2451,19 @@ Examples:
     # reload
     subparsers.add_parser("reload", help="Reload systemd daemon")
 
+    # apply
+    p_apply = subparsers.add_parser(
+        "apply",
+        aliases=["a"],
+        help="Apply quadlet changes: install --force + reload + restart (one step)",
+    )
+    p_apply.add_argument(
+        "service",
+        nargs="?",
+        default="all",
+        help="Service to apply changes for (default: all)",
+    )
+
     # mode
     p_mode = subparsers.add_parser("mode", aliases=["m"], help="Show or set deployment mode")
     p_mode.add_argument(
@@ -2683,6 +2785,8 @@ Examples:
         "uninstall": cmd_uninstall,
         "u": cmd_uninstall,
         "reload": cmd_reload,
+        "apply": cmd_apply,
+        "a": cmd_apply,
         "mode": cmd_mode,
         "m": cmd_mode,
         "debug": cmd_debug,
