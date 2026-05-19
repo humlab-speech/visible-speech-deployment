@@ -275,7 +275,14 @@ def cmd_status(args):
     print(f"  Mode: {color(current_mode, Colors.MAGENTA)}")
     print()
 
-    drift_warnings = []
+    from vispctl.quadlets import get_quadlet_drift
+
+    drifted_svcs, not_installed_svcs = get_quadlet_drift(
+        runtime_services, quadlets_dir, SYSTEMD_QUADLETS_DIR, render_quadlet_template
+    )
+    drifted_files = {svc.file for svc in drifted_svcs}
+    not_installed_files = {svc.file for svc in not_installed_svcs}
+
     for svc in runtime_services:
         link_path = SYSTEMD_QUADLETS_DIR / svc.file
         target_path = quadlets_dir / svc.file
@@ -290,39 +297,31 @@ def cmd_status(args):
                 linked_mode = actual_target.parent.name
                 status = color(f"linked ({linked_mode} mode)", Colors.YELLOW)
             elif actual_target.parent.name == "quadlets":
-                # Old-style link to root quadlets directory
                 symbol = color("!", Colors.YELLOW)
                 status = color("linked (legacy, run install --force)", Colors.YELLOW)
             else:
                 symbol = color("!", Colors.YELLOW)
                 status = color(f"linked (unknown: {actual_target})", Colors.YELLOW)
+        elif svc.file in not_installed_files:
+            symbol = color("○", Colors.RED)
+            status = color("not installed", Colors.RED)
+        elif svc.file in drifted_files:
+            symbol = color("!", Colors.YELLOW)
+            status = color("installed (out of date — run apply or install --force)", Colors.YELLOW)
         elif link_path.exists():
-            # Rendered file (new-style template install) — check for drift
-            if target_path.exists():
-                expected = render_quadlet_template(target_path.read_text())
-                installed = link_path.read_text()
-                if installed == expected:
-                    symbol = color("✓", Colors.GREEN)
-                    status = color("installed", Colors.GREEN)
-                else:
-                    symbol = color("!", Colors.YELLOW)
-                    status = color("installed (out of date — run install --force)", Colors.YELLOW)
-                    drift_warnings.append(svc.file)
-            else:
-                symbol = color("✓", Colors.GREEN)
-                status = color("installed", Colors.GREEN)
+            symbol = color("✓", Colors.GREEN)
+            status = color("installed", Colors.GREEN)
         else:
             symbol = color("○", Colors.RED)
             status = color("not installed", Colors.RED)
 
         print(f"  {symbol} {svc.file}: {status}")
 
-    if drift_warnings:
+    if drifted_svcs:
         print()
         print(
             color(
-                f"  ⚠ {len(drift_warnings)} quadlet(s) differ from templates. "
-                "Run './visp.py install --force && ./visp.py reload' to update.",
+                f"  ⚠ {len(drifted_svcs)} quadlet(s) differ from templates. " "Run './visp.py apply' to update.",
                 Colors.YELLOW,
             )
         )
@@ -624,400 +623,57 @@ def cmd_restart(args):
 
 
 # === Network Backend Management ===
-
-
-def check_netavark() -> tuple[bool, str]:
-    """Check if netavark is configured and working.
-
-    Delegates to NetworkManager.
-    """
-    runner = Runner()
-    nm = NetworkManager(runner)
-    return nm.check_netavark()
-
-
-def configure_netavark() -> bool:
-    """Configure Podman to use netavark backend.
-
-    Returns:
-        bool: True if successful, False otherwise
-    """
-    runner = Runner()
-    nm = NetworkManager(runner)
-    return nm.configure_netavark()
-
-
-def prompt_netavark_migration() -> bool:
-    """Prompt user for netavark migration.
-
-    Returns:
-        bool: True if user wants to migrate, False otherwise
-    """
-    print()
-    print(color("=" * 70, Colors.YELLOW))
-    print(color("NETAVARK MIGRATION REQUIRED", Colors.YELLOW))
-    print(color("=" * 70, Colors.YELLOW))
-    print()
-    print("VISP requires the netavark network backend for proper DNS resolution.")
-    print("Your system is currently using CNI, which has critical DNS issues.")
-    print()
-    print(color("What will happen:", Colors.CYAN))
-    print("  1. Configure netavark in ~/.config/containers/containers.conf")
-    print("  2. Run 'podman system reset' (removes all containers)")
-    print("  3. Images are preserved (no need to rebuild)")
-    print("  4. Networks will be recreated automatically")
-    print()
-    print(color("⚠️  WARNING: All running containers will be removed!", Colors.RED))
-    print("  Make sure you have backups of important data.")
-    print()
-
-    while True:
-        response = input("Proceed with migration? (yes/no): ").strip().lower()
-        if response in ["yes", "y"]:
-            return True
-        elif response in ["no", "n"]:
-            print()
-            print("Migration cancelled. VISP may not work correctly with CNI.")
-            print("You can migrate later by running: ./visp.py install")
-            return False
-        else:
-            print("Please answer 'yes' or 'no'")
-
-
-def migrate_to_netavark() -> bool:
-    """Perform netavark migration.
-
-    Delegates to NetworkManager.
-    """
-    runner = Runner()
-    nm = NetworkManager(runner)
-    return nm.migrate_to_netavark()
-
-
-def ensure_networks_exist() -> bool:
-    """Ensure all required Podman networks exist.
-
-    Delegates to NetworkManager.
-    """
-    runner = Runner()
-    nm = NetworkManager(runner)
-    return nm.ensure_networks_exist()
+# Free-standing wrappers (check_netavark, configure_netavark, etc.) were removed —
+# they were dead code. Call NetworkManager methods directly (as cmd_install already does).
 
 
 def _setup_service_env_files():
-    """Create service-specific .env files from templates if they don't exist.
+    """Thin shim kept for call-site compatibility; delegates to vispctl.quadlets."""
+    from vispctl.quadlets import setup_service_env_files
 
-    Sensitive values (MONGO_URI, MONGO_PASSWORD, MEDIA_FILE_BASE_URL) are injected
-    at runtime via Podman Secrets (see Secret= lines in the quadlet files), so this
-    function only copies the template with non-secret defaults.
-    """
-    print(color("Setting up service environment files...", Colors.CYAN))
-
-    # --- emu-webapp-server ---
-    emu_env_target = PROJECT_DIR / "mounts/emu-webapp-server/.env"
-    emu_env_example = PROJECT_DIR / "external/emu-webapp-server/.env-example"
-    if emu_env_target.exists():
-        print("  ○ mounts/emu-webapp-server/.env already exists")
-    elif emu_env_example.exists():
-        # Copy template and strip out secrets (they come via Podman Secrets now)
-        content = emu_env_example.read_text()
-        lines = []
-        secret_keys = {"MONGO_URI", "MONGO_ROOT_PASSWORD", "MEDIA_FILE_BASE_URL"}
-        for line in content.splitlines():
-            key = line.split("=", 1)[0].strip() if "=" in line else ""
-            if key not in secret_keys:
-                lines.append(line)
-        emu_env_target.parent.mkdir(parents=True, exist_ok=True)
-        emu_env_target.write_text("\n".join(lines) + "\n")
-        print(color("  ✓ Created mounts/emu-webapp-server/.env (secrets via Podman Secrets)", Colors.GREEN))
-    else:
-        print(color("  ⚠ external/emu-webapp-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
-
-    # --- wsrng-server ---
-    wsrng_env_target = PROJECT_DIR / "external/wsrng-server/.env"
-    wsrng_env_example = PROJECT_DIR / "external/wsrng-server/.env-example"
-    if wsrng_env_target.exists():
-        print("  ○ external/wsrng-server/.env already exists")
-    elif wsrng_env_example.exists():
-        # Copy template; MONGO_PASSWORD is overridden by Podman Secret at runtime
-        import shutil
-
-        shutil.copy(wsrng_env_example, wsrng_env_target)
-        print(color("  ✓ Created external/wsrng-server/.env (MONGO_PASSWORD via Podman Secret)", Colors.GREEN))
-    else:
-        print(color("  ⚠ external/wsrng-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
+    setup_service_env_files(PROJECT_DIR)
 
 
 def _is_cert_valid(cert_path: Path, min_days: int = 30) -> bool:
-    """Return True if the certificate exists and won't expire within min_days."""
-    if not cert_path.exists():
-        return False
-    result = subprocess.run(
-        ["openssl", "x509", "-checkend", str(min_days * 86400), "-noout", "-in", str(cert_path)],
-        capture_output=True,
-    )
-    return result.returncode == 0
+    """Delegates to vispctl.certs."""
+    from vispctl.certs import is_cert_valid
+
+    return is_cert_valid(cert_path, min_days)
 
 
 def _ensure_cert(spec: dict) -> bool:
-    """
-    Ensure a certificate exists and is valid, generating it if needed.
+    """Delegates to vispctl.certs."""
+    from vispctl.certs import ensure_cert
 
-    spec keys:
-      label        – human-readable name for log messages
-      cert         – Path to the certificate file (.crt or .pem)
-      key          – Path to the private key file
-      method       – "openssl" | "shib-keygen"
-      openssl_args – list of extra args for openssl req (method=openssl only)
-      shib_host    – hostname for shib-keygen (method=shib-keygen only)
-      post_chown   – optional (uid, gid) to apply via podman unshare chown
-      min_days     – days before expiry that triggers regeneration (default 30)
-    """
-    cert_path: Path = spec["cert"]
-    key_path: Path = spec["key"]
-    label: str = spec["label"]
-    method: str = spec.get("method", "openssl")
-    min_days: int = spec.get("min_days", 30)
-
-    if _is_cert_valid(cert_path, min_days) and key_path.exists():
-        print(f"  ✓ {label}: certificate already exists and is valid")
-        return True
-
-    if cert_path.exists() and not _is_cert_valid(cert_path, min_days):
-        print(color(f"  ⚠ {label}: certificate expiring within {min_days} days — regenerating", Colors.YELLOW))
-    else:
-        print(color(f"  • {label}: generating certificate…", Colors.CYAN))
-
-    cert_path.parent.mkdir(parents=True, exist_ok=True)
-    key_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if method == "openssl":
-        cmd = [
-            "openssl",
-            "req",
-            "-x509",
-            "-newkey",
-            "rsa:4096",
-            "-keyout",
-            str(key_path),
-            "-out",
-            str(cert_path),
-            "-nodes",
-            "-days",
-            "3650",
-        ] + spec.get("openssl_args", [])
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            print(color(f"  ✗ {label}: openssl failed: {result.stderr.strip()}", Colors.RED))
-            return False
-
-    elif method == "shib-keygen":
-        raise ValueError(
-            f"_ensure_cert: method 'shib-keygen' is no longer supported; "
-            f"use method 'openssl' with equivalent args (see shib-keygen source). "
-            f"Cert spec: {spec['label']}"
-        )
-    else:
-        print(color(f"  ✗ {label}: unknown method '{method}'", Colors.RED))
-        return False
-
-    # Apply ownership fix via podman unshare if requested.
-    if "post_chown" in spec:
-        uid, gid = spec["post_chown"]
-        for path in [cert_path, key_path]:
-            subprocess.run(
-                ["podman", "unshare", "chown", f"{uid}:{gid}", str(path)],
-                capture_output=True,
-            )
-
-    print(color(f"  ✓ {label}: certificate generated", Colors.GREEN))
-    return True
+    return ensure_cert(spec)
 
 
 def _ensure_certs(base_domain: str) -> None:
-    """
-    Ensure all certificates required by VISP exist and are valid.
+    """Delegates to vispctl.certs."""
+    from vispctl.certs import ensure_certs
 
-    Three cert types:
-      1. TLS (visp.local)     — self-signed wildcard for Apache HTTPS (openssl)
-      2. Shibboleth SP        — SAML SP signing cert (shib-keygen inside apache container)
-      3. SimpleSAMLphp IdP    — SAML IdP signing cert for local-idp (openssl)
-    """
-    print(color("Checking certificates…", Colors.CYAN))
-
-    cert_specs = [
-        {
-            "label": "TLS (dev HTTPS)",
-            "cert": PROJECT_DIR / f"certs/{base_domain}/cert.crt",
-            "key": PROJECT_DIR / f"certs/{base_domain}/cert.key",
-            "method": "openssl",
-            "openssl_args": [
-                "-subj",
-                f"/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN={base_domain}",
-                "-addext",
-                "basicConstraints=critical,CA:FALSE",
-                "-addext",
-                "keyUsage=critical,digitalSignature,keyEncipherment",
-                "-addext",
-                "extendedKeyUsage=serverAuth",
-                "-addext",
-                f"subjectAltName=DNS:{base_domain},DNS:*.{base_domain}",
-            ],
-        },
-        {
-            "label": "Shibboleth SP signing cert",
-            "cert": PROJECT_DIR / "certs/sp-cert/cert.pem",
-            "key": PROJECT_DIR / "certs/sp-cert/key.pem",
-            "method": "openssl",
-            "openssl_args": [
-                # Match shib-keygen defaults: 3072-bit RSA, SHA256, no passphrase,
-                # CN=hostname, subjectAltName=DNS:hostname only.
-                "-newkey",
-                "rsa:3072",
-                "-subj",
-                f"/CN={base_domain}",
-                "-addext",
-                f"subjectAltName=DNS:{base_domain}",
-                "-addext",
-                "subjectKeyIdentifier=hash",
-            ],
-            # _shibd inside the apache container runs as UID 101, GID 102
-            "post_chown": (101, 102),
-        },
-        {
-            "label": "SimpleSAMLphp IdP signing cert",
-            "cert": PROJECT_DIR / "certs/ssp-idp-cert/cert.pem",
-            "key": PROJECT_DIR / "certs/ssp-idp-cert/key.pem",
-            "method": "openssl",
-            "openssl_args": [
-                "-subj",
-                f"/C=SE/ST=visp/L=visp/O=visp/OU=visp/CN={base_domain}",
-                "-addext",
-                "basicConstraints=critical,CA:FALSE",
-                "-addext",
-                "keyUsage=critical,digitalSignature,keyEncipherment",
-                "-addext",
-                "extendedKeyUsage=serverAuth,clientAuth",
-                "-addext",
-                f"subjectAltName=DNS:{base_domain}",
-            ],
-            # www-data inside the local-idp container runs as UID 33
-            "post_chown": (33, 33),
-        },
-    ]
-
-    for spec in cert_specs:
-        _ensure_cert(spec)
-
-    print()
+    ensure_certs(PROJECT_DIR, base_domain)
 
 
 def _render_local_idp_file(template_path: Path, output_path: Path, base_domain: str) -> bool:
-    """Render a local IdP template file with BASE_DOMAIN substitution."""
-    if not template_path.exists():
-        print(color(f"  ⚠ Missing template: {template_path}", Colors.YELLOW))
-        return False
+    """Delegates to vispctl.certs."""
+    from vispctl.certs import render_local_idp_file
 
-    rendered = template_path.read_text().replace("{{BASE_DOMAIN}}", base_domain)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(rendered)
-    return True
+    return render_local_idp_file(template_path, output_path, base_domain)
 
 
 def _build_local_idp_metadata_xml(base_domain: str, cert_body: str) -> str:
-    """Build IdP metadata XML consumed by the Apache Shibboleth SP."""
-    idp_host = f"idp.{base_domain}"
-    idp_entity_id = f"https://{idp_host}/simplesaml/saml2/idp/metadata.php"
-    sso_url = f"https://{idp_host}/simplesaml/saml2/idp/SSOService.php"
-    slo_url = f"https://{idp_host}/simplesaml/saml2/idp/SingleLogoutService.php"
-    idp_scope = base_domain
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"
-                     xmlns:shibmd="urn:mace:shibboleth:metadata:1.0"
-                     entityID="{idp_entity_id}">
-  <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
-    <md:Extensions>
-      <shibmd:Scope regexp="false">{idp_scope}</shibmd:Scope>
-    </md:Extensions>
-    <md:KeyDescriptor use="signing">
-      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-        <ds:X509Data>
-          <ds:X509Certificate>{cert_body}</ds:X509Certificate>
-        </ds:X509Data>
-      </ds:KeyInfo>
-    </md:KeyDescriptor>
-    <md:KeyDescriptor use="encryption">
-      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
-        <ds:X509Data>
-          <ds:X509Certificate>{cert_body}</ds:X509Certificate>
-        </ds:X509Data>
-      </ds:KeyInfo>
-    </md:KeyDescriptor>
-    <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat>
-    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="{sso_url}"/>
-    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="{sso_url}"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="{slo_url}"/>
-    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="{slo_url}"/>
-  </md:IDPSSODescriptor>
-</md:EntityDescriptor>
-"""
+    """Delegates to vispctl.certs."""
+    from vispctl.certs import build_local_idp_metadata_xml
+
+    return build_local_idp_metadata_xml(base_domain, cert_body)
 
 
 def _setup_local_idp_files(env_vars: dict[str, str]) -> None:
-    """Render local IdP templates and metadata files for dev mode."""
-    print(color("Setting up local IdP files...", Colors.CYAN))
+    """Delegates to vispctl.certs."""
+    from vispctl.certs import setup_local_idp_files
 
-    base_domain = env_vars.get("BASE_DOMAIN", "").strip()
-    if not base_domain:
-        print(color("  ⚠ BASE_DOMAIN is not set; skipping local IdP file generation", Colors.YELLOW))
-        return
-
-    # Render template-based files.
-    template_pairs = [
-        (
-            PROJECT_DIR / "mounts/apache/saml/local-idp/shibboleth2.xml.template",
-            PROJECT_DIR / "mounts/apache/saml/local-idp/shibboleth2.xml",
-        ),
-        (
-            PROJECT_DIR / "mounts/local-idp/config/config-override.php.template",
-            PROJECT_DIR / "mounts/local-idp/config/config-override.php",
-        ),
-        (
-            PROJECT_DIR / "mounts/local-idp/metadata/saml20-idp-hosted.php.template",
-            PROJECT_DIR / "mounts/local-idp/metadata/saml20-idp-hosted.php",
-        ),
-        (
-            PROJECT_DIR / "mounts/local-idp/metadata/saml20-sp-remote.php.template",
-            PROJECT_DIR / "mounts/local-idp/metadata/saml20-sp-remote.php",
-        ),
-    ]
-
-    for template_path, output_path in template_pairs:
-        if _render_local_idp_file(template_path, output_path, base_domain):
-            print(color(f"  ✓ Rendered {output_path.relative_to(PROJECT_DIR)}", Colors.GREEN))
-
-    # Render IdP metadata XML for the Apache Shibboleth SP.
-    idp_cert = PROJECT_DIR / "certs/ssp-idp-cert/cert.pem"
-    metadata_output = PROJECT_DIR / "mounts/apache/saml/local-idp/idp-metadata.xml"
-    if not idp_cert.exists():
-        print(color("  ⚠ certs/ssp-idp-cert/cert.pem not found — run ./visp.py install to generate it", Colors.YELLOW))
-        return
-
-    cert_lines = []
-    for line in idp_cert.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("-----"):
-            continue
-        cert_lines.append(stripped)
-
-    cert_body = "".join(cert_lines)
-    if not cert_body:
-        print(color("  ⚠ Could not parse IdP certificate body from certs/ssp-idp-cert/cert.pem", Colors.YELLOW))
-        return
-
-    metadata_output.parent.mkdir(parents=True, exist_ok=True)
-    metadata_output.write_text(_build_local_idp_metadata_xml(base_domain, cert_body))
-    print(color(f"  ✓ Rendered {metadata_output.relative_to(PROJECT_DIR)}", Colors.GREEN))
+    setup_local_idp_files(PROJECT_DIR, env_vars)
 
 
 # === Installation Commands ===
@@ -1096,7 +752,7 @@ def cmd_install(args):
 
     # Ensure networks exist (netavark doesn't auto-create from quadlet files)
     print()
-    if not ensure_networks_exist():
+    if not nm.ensure_networks_exist():
         print(color("Failed to create networks. Please check the errors above.", Colors.RED))
         sys.exit(1)
     print()
@@ -1414,18 +1070,9 @@ def cmd_apply(args):
     services = _resolve_services(service)
 
     # --- Step 1: detect drift before we overwrite anything ---
-    drifted: list[Service] = []
-    not_installed: list[Service] = []
-    for svc in services:
-        source = quadlets_dir / svc.file
-        target = SYSTEMD_QUADLETS_DIR / svc.file
-        if not source.exists():
-            continue
-        expected = render_quadlet_template(source.read_text())
-        if not target.exists():
-            not_installed.append(svc)
-        elif target.read_text() != expected:
-            drifted.append(svc)
+    from vispctl.quadlets import get_quadlet_drift
+
+    drifted, not_installed = get_quadlet_drift(services, quadlets_dir, SYSTEMD_QUADLETS_DIR, render_quadlet_template)
 
     if not drifted and not not_installed:
         print(color(f"✓ All quadlets are up to date ({mode} mode). Nothing to apply.", Colors.GREEN))
