@@ -42,18 +42,6 @@
 
 ### CLI / Operations UX
 
-- [ ] **Simplify the update-and-apply workflow in `visp.py`**
-  - Current problem: applying a quadlet change requires knowing 3–4 internal steps
-    (`install --force` → `reload` → `restart <svc>`), and applying an image rebuild
-    requires a different set (`build` → `restart`). The user's actual intent is almost
-    always just "bring everything up to the latest state".
-  - Proposal: add a high-level `apply [<service>|all]` command that does
-    install-if-needed + reload + restart in one step; for images, `build --restart`.
-    Keep the primitives (`install`, `reload`, `restart`) for debugging but de-emphasise
-    them in docs/help text.
-  - Also consider making `install` automatically run `reload` at the end — it already
-    prints "Run reload to apply", it could just do it.
-
 - [ ] **Merge `status` and `deploy status` into one coherent picture**
   - `status` covers runtime health (services running, quadlet drift)
   - `deploy status` covers source freshness (image built from current commit,
