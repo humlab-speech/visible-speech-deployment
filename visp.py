@@ -439,6 +439,13 @@ def _setup_local_idp_files(env_vars: dict[str, str]) -> None:
 
 def cmd_install(args):
     """Link quadlet files to systemd directory."""
+    from vispctl.install import (
+        cleanup_disabled_optional_services,
+        fix_writable_permissions,
+        generate_tracker_config,
+        install_quadlets,
+        scaffold_directories,
+    )
 
     # First-time setup: generate passwords if needed
     env_file_path = Path(".env")
@@ -539,94 +546,17 @@ def cmd_install(args):
     print()
 
     # Ensure all mount/cert directories referenced by quadlets exist.
-    # Parsed dynamically from Volume= lines so the list never goes stale.
     print(color("Creating mount directories...", Colors.CYAN))
-    created = 0
-    project_dir_str = str(PROJECT_DIR)
-    for quadlet_file in sorted(quadlets_dir.glob("*.container")):
-        rendered_content = render_quadlet_template(quadlet_file.read_text())
-        for line in rendered_content.splitlines():
-            line = line.strip()
-            if line.startswith("#") or not line.startswith(f"Volume={project_dir_str}/"):
-                continue
-            # Extract source path (before the first ":")
-            rel_path = line.split("=", 1)[1].split(":")[0].replace(f"{project_dir_str}/", "")
-            # Skip external/ — those are managed by 'deploy update'
-            if rel_path.startswith("external/"):
-                continue
-            target = PROJECT_DIR / rel_path
-            if target.exists():
-                continue
-            # If the leaf name has a dot, it's likely a file — ensure its parent exists
-            # and touch a placeholder so Podman can bind-mount it.
-            if "." in Path(rel_path).name:
-                if not target.parent.exists():
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    created += 1
-                if not target.exists():
-                    target.touch()
-                    created += 1
-            else:
-                target.mkdir(parents=True, exist_ok=True)
-                created += 1
+    created = scaffold_directories(PROJECT_DIR, quadlets_dir, render_quadlet_template)
     if created:
         print(f"  Created {created} missing mount directories")
     else:
         print("  All mount directories already exist")
     print()
 
-    # Ensure the WhisperVault Unix socket directory exists.
-    # Both whisperx and session-manager mount mounts/whisper/api; Podman
-    # refuses to start if the host path does not exist.
-    whisper_sock_dir = PROJECT_DIR / "mounts" / "whisper" / "api"
-    if not whisper_sock_dir.exists():
-        whisper_sock_dir.mkdir(parents=True, exist_ok=True)
-        print(color("  ✓ Created mounts/whisper/api/ (WhisperVault socket directory)", Colors.GREEN))
-
-    # Ensure the Podman socket proxy directory exists.
-    # podman-socket-proxy writes its socket here; session-manager mounts it.
-    proxy_sock_dir = PROJECT_DIR / "mounts" / "podman-proxy"
-    if not proxy_sock_dir.exists():
-        proxy_sock_dir.mkdir(parents=True, exist_ok=True)
-        print(color("  ✓ Created mounts/podman-proxy/ (Podman socket proxy directory)", Colors.GREEN))
-    print()
-
     # Ensure container-writable directories have correct permissions.
-    # In rootless Podman the host user maps to UID 0 inside the container,
-    # so directories owned by the host user are root:root (755) in the
-    # container — Apache's www-data (UID 33) cannot write to them.
-    # We fix this by making specific directories world-writable (777).
     print(color("Fixing container-writable directory permissions...", Colors.CYAN))
-    writable_dirs = [
-        PROJECT_DIR / "mounts/apache/apache/uploads",
-        PROJECT_DIR / "mounts/repositories",
-        PROJECT_DIR / "mounts/api-logs/logs",
-        PROJECT_DIR / "mounts/apache/apache/logs/apache2",
-        PROJECT_DIR / "mounts/apache/apache/logs/shibboleth",
-        PROJECT_DIR / "mounts/session-manager/logs",
-        PROJECT_DIR / "mounts/sessions",
-        PROJECT_DIR / "mounts/matomo/html",
-        PROJECT_DIR / "mounts/podman-proxy",
-    ]
-    perm_fixed = 0
-    for d in writable_dirs:
-        if not d.exists():
-            continue
-        current_mode = d.stat().st_mode & 0o777
-        if current_mode != 0o777:
-            try:
-                d.chmod(0o777)
-            except PermissionError:
-                # Directory is owned by a subuid from rootless Podman — use podman unshare
-                result = subprocess.run(
-                    ["podman", "unshare", "chmod", "777", str(d)],
-                    capture_output=True,
-                    text=True,
-                )
-                if result.returncode != 0:
-                    print(color(f"  ✗ Failed to fix permissions on {d}: {result.stderr.strip()}", Colors.RED))
-                    continue
-            perm_fixed += 1
+    perm_fixed = fix_writable_permissions(PROJECT_DIR)
     if perm_fixed:
         print(f"  Fixed permissions on {perm_fixed} directories (set to 777)")
     else:
@@ -634,17 +564,7 @@ def cmd_install(args):
     print()
 
     # Generate vc.js (visitor analytics config) from template if BASE_DOMAIN is set
-    tracker_template = PROJECT_DIR / "mounts/apache/apache/vc.js.template"
-    tracker_output = PROJECT_DIR / "mounts/apache/apache/vc.js"
-    if tracker_template.exists() and env_vars.get("BASE_DOMAIN"):
-        content = tracker_template.read_text()
-        content = content.replace("{{BASE_DOMAIN}}", env_vars["BASE_DOMAIN"])
-        tracker_output.write_text(content)
-        print(color(f"  ✓ Generated vc.js for {env_vars['BASE_DOMAIN']}", Colors.GREEN))
-    elif not tracker_output.exists():
-        # Create a placeholder so the bind-mount doesn't fail
-        tracker_output.write_text("// Analytics not configured — set BASE_DOMAIN and re-run install\n")
-        print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
+    generate_tracker_config(PROJECT_DIR, env_vars)
     print()
 
     # Generate certificates and local IdP config files in dev mode.
@@ -665,49 +585,25 @@ def cmd_install(args):
     # Determine which services are available in this mode
     services = _resolve_services(args.service)
 
-    # Filter to only services that exist in the mode's quadlet directory
-    available_services = [s for s in services if (quadlets_dir / s.file).exists()]
+    installed, skipped, errors = install_quadlets(
+        quadlets_dir,
+        SYSTEMD_QUADLETS_DIR,
+        services,
+        render_quadlet_template,
+        force=args.force,
+    )
 
-    if not available_services:
+    if not installed and not skipped and not errors:
         print(color(f"No quadlet files found in {quadlets_dir}", Colors.RED))
         return
 
-    for svc in available_services:
-        source = quadlets_dir / svc.file
-        target = SYSTEMD_QUADLETS_DIR / svc.file
-
-        if not source.exists():
-            print(color(f"  ✗ {svc.file}: source not found", Colors.RED))
-            continue
-
-        # Remove existing target if --force is set
-        if target.exists() or target.is_symlink():
-            if not args.force:
-                print(f"  ○ {svc.file}: already installed")
-                continue
-            target.unlink()
-
-        # Render template: replace placeholders with actual system values
-        try:
-            content = source.read_text()
-            rendered = render_quadlet_template(content)
-            target.write_text(rendered)
-            print(color(f"  ✓ {svc.file}: installed", Colors.GREEN))
-        except Exception as e:
-            print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
-            continue
-
     # If optional services are disabled, remove stale installed quadlets when installing "all".
     if args.service == "all":
-        disabled_optional_services = _get_disabled_optional_services()
-        for svc in SERVICES:
-            if svc.name not in disabled_optional_services:
-                continue
-            target = SYSTEMD_QUADLETS_DIR / svc.file
-            if target.exists() or target.is_symlink():
-                target.unlink()
-                env_var = disabled_optional_services[svc.name]
-                print(color(f"  ○ {svc.file}: removed ({env_var}=false)", Colors.YELLOW))
+        cleanup_disabled_optional_services(
+            SERVICES,
+            _get_disabled_optional_services(),
+            SYSTEMD_QUADLETS_DIR,
+        )
 
     # Save the mode
     set_current_mode(mode)
