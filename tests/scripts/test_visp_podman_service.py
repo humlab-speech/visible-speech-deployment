@@ -28,7 +28,7 @@ def test_cmd_start_delegates_to_servicemanager(monkeypatch):
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
 
-    args = types.SimpleNamespace(service="session-manager")
+    args = types.SimpleNamespace(services=["session-manager"])
     vp.cmd_start(args)
     assert called.get("start") and called["start"][0] == ["session-manager"]
 
@@ -49,7 +49,7 @@ def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
 
-    args = types.SimpleNamespace(service="all")
+    args = types.SimpleNamespace(services=["all"])
     vp.cmd_restart(args)
     assert called.get("stop") and called["stop"][0] == "all"
     assert called.get("start")
@@ -76,7 +76,7 @@ def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
     monkeypatch.setattr(vp, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
 
-    args = types.SimpleNamespace(service="all")
+    args = types.SimpleNamespace(services=["all"])
     vp.cmd_restart(args)
 
     assert called.get("stop") and called["stop"][0] == "all"

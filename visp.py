@@ -342,29 +342,32 @@ def cmd_logs(args):
 def cmd_start(args):
     """Start service(s)."""
     sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
-    if args.service == "all":
+    services = args.services
+    if not services or services == ["all"]:
         target_names = [svc.name for svc in _container_services(_resolve_services("all"))]
         sm.start(target_names)
     else:
-        target_names = [svc.name for svc in _resolve_services(args.service)]
+        target_names = [svc.name for s in services for svc in _resolve_services(s)]
         sm.start(target_names)
 
 
 def cmd_stop(args):
     """Stop service(s)."""
     sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
-    if args.service == "all":
+    services = args.services
+    if not services or services == ["all"]:
         sm.stop("all")
     else:
-        target_names = [svc.name for svc in _resolve_services(args.service, include_disabled=True)]
+        target_names = [svc.name for s in services for svc in _resolve_services(s, include_disabled=True)]
         sm.stop(target_names)
 
 
 def cmd_restart(args):
     """Restart service(s) or entire cluster."""
     sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    services = args.services
 
-    if args.service == "all":
+    if not services or services == ["all"]:
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
         print(color("Stopping services...", Colors.YELLOW))
@@ -375,7 +378,7 @@ def cmd_restart(args):
         sm.start(target_names)
     else:
         # For individual services, stop then start the specific names
-        target_names = [svc.name for svc in _resolve_services(args.service)]
+        target_names = [svc.name for s in services for svc in _resolve_services(s)]
         sm.stop(target_names)
         sm.start(target_names)
 
@@ -1647,15 +1650,15 @@ Examples:
 
     # start
     p_start = subparsers.add_parser("start", help="Start service(s)")
-    p_start.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
+    p_start.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # stop
     p_stop = subparsers.add_parser("stop", help="Stop service(s)")
-    p_stop.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
+    p_stop.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # restart
     p_restart = subparsers.add_parser("restart", aliases=["r"], help="Restart service(s)")
-    p_restart.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
+    p_restart.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # install
     p_install = subparsers.add_parser("install", aliases=["i"], help="Link quadlet files to systemd")
