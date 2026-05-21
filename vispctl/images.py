@@ -106,6 +106,37 @@ class ImageManager:
                     container_networks[container] = nets.strip() if nets else "none"
         return container_networks
 
+    def get_stale_containers(self, services: List[Service]) -> List[Service]:
+        """Return services whose running container was started from an older image
+        than the current ``localhost/visp-<name>:latest`` tag.
+
+        A container is considered stale when the image ID it was launched with
+        differs from the ID of the currently stored tag.  Services that are not
+        running, or whose image tag is not of the ``localhost/visp-*`` form, are
+        silently skipped.
+        """
+        stale: List[Service] = []
+        for svc in services:
+            if svc.type != "container":
+                continue
+            container_name = f"systemd-{svc.name}"
+
+            # Get the image ID the running container was launched with
+            rc, running_id, _ = self.runner.run_quiet(["podman", "inspect", container_name, "--format", "{{.ImageID}}"])
+            if rc != 0 or not running_id.strip():
+                continue  # not running
+
+            # Derive expected image tag from the container name
+            image_tag = f"localhost/visp-{svc.name}:latest"
+            rc2, latest_id, _ = self.runner.run_quiet(["podman", "image", "inspect", image_tag, "--format", "{{.Id}}"])
+            if rc2 != 0 or not latest_id.strip():
+                continue  # image not built yet
+
+            if running_id.strip() != latest_id.strip():
+                stale.append(svc)
+
+        return stale
+
     def scan_base_images(self) -> Dict[str, List[str]]:
         """Scan all Dockerfiles and extract base images.
 

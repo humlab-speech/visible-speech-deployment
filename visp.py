@@ -710,74 +710,100 @@ def cmd_reload(args):
 
 
 def cmd_apply(args):
-    """Apply quadlet changes: install --force, reload, restart affected services.
+    """Apply quadlet changes and restart containers running stale images.
 
     This is the one-shot alternative to manually running:
         ./visp.py install --force [service]
         ./visp.py reload
         ./visp.py restart [service]
 
-    It detects which quadlets have drifted from their templates and only
-    restarts those services (or the explicitly requested service).
-    When service is 'all', every drifted service is restarted after reload.
+    Two independent checks are performed:
+      1. Quadlet drift — quadlet file on disk differs from the rendered template.
+         Only drifted services are reinstalled and restarted.
+      2. Stale image — running container was launched from an older build of
+         its image than the current ``localhost/visp-<name>:latest`` tag.
+         These are restarted without touching the quadlet files.
+
+    When service is 'all', both checks run across all services.
     """
     service = getattr(args, "service", "all")
     mode = get_current_mode()
     quadlets_dir = get_quadlets_dir(mode)
     services = _resolve_services(service)
 
-    # --- Step 1: detect drift before we overwrite anything ---
+    # --- Step 1: detect quadlet drift ---
     from vispctl.quadlets import get_quadlet_drift
 
     drifted, not_installed = get_quadlet_drift(services, quadlets_dir, SYSTEMD_QUADLETS_DIR, render_quadlet_template)
 
-    if not drifted and not not_installed:
-        print(color(f"✓ All quadlets are up to date ({mode} mode). Nothing to apply.", Colors.GREEN))
+    # --- Step 2: detect stale images ---
+    im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
+    stale_image = im.get_stale_containers(services)
+    # Don't double-count services already in the quadlet restart set
+    quadlet_names = {s.name for s in drifted + not_installed}
+    stale_image_only = [s for s in stale_image if s.name not in quadlet_names]
+
+    if not drifted and not not_installed and not stale_image_only:
+        print(
+            color(
+                f"✓ All quadlets are up to date and all containers are running the latest images ({mode} mode).",
+                Colors.GREEN,
+            )
+        )
         return
 
     to_update = drifted + not_installed
-    print(color(f"=== Applying quadlet changes ({mode} mode) ===", Colors.CYAN))
-    print()
-    if drifted:
-        print(color(f"  Out of date ({len(drifted)}):", Colors.YELLOW))
-        for svc in drifted:
-            print(f"    • {svc.file}")
-    if not_installed:
-        print(color(f"  Not installed ({len(not_installed)}):", Colors.YELLOW))
-        for svc in not_installed:
-            print(f"    • {svc.file}")
-    print()
+    if to_update:
+        print(color(f"=== Applying quadlet changes ({mode} mode) ===", Colors.CYAN))
+        print()
+        if drifted:
+            print(color(f"  Out of date ({len(drifted)}):", Colors.YELLOW))
+            for svc in drifted:
+                print(f"    • {svc.file}")
+        if not_installed:
+            print(color(f"  Not installed ({len(not_installed)}):", Colors.YELLOW))
+            for svc in not_installed:
+                print(f"    • {svc.file}")
+        print()
 
-    # --- Step 2: install --force (only the affected files, or all if service=="all") ---
-    print(color("Installing quadlets...", Colors.CYAN))
-    for svc in to_update:
-        source = quadlets_dir / svc.file
-        target = SYSTEMD_QUADLETS_DIR / svc.file
-        try:
-            content = source.read_text()
-            rendered = render_quadlet_template(content)
-            if target.exists() or target.is_symlink():
-                target.unlink()
-            target.write_text(rendered)
-            print(color(f"  ✓ {svc.file}: updated", Colors.GREEN))
-        except Exception as e:
-            print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
-    print()
+        # --- Step 3: install --force (only the affected files) ---
+        print(color("Installing quadlets...", Colors.CYAN))
+        for svc in to_update:
+            source = quadlets_dir / svc.file
+            target = SYSTEMD_QUADLETS_DIR / svc.file
+            try:
+                content = source.read_text()
+                rendered = render_quadlet_template(content)
+                if target.exists() or target.is_symlink():
+                    target.unlink()
+                target.write_text(rendered)
+                print(color(f"  ✓ {svc.file}: updated", Colors.GREEN))
+            except Exception as e:
+                print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
+        print()
 
-    # --- Step 3: daemon-reload ---
-    print(color("Reloading systemd daemon...", Colors.CYAN))
-    result = systemctl("daemon-reload")
-    if result.returncode != 0:
-        print(color(f"  ✗ daemon-reload failed: {result.stderr}", Colors.RED))
-        return
-    print(color("  ✓ Daemon reloaded", Colors.GREEN))
-    print()
+        # --- Step 4: daemon-reload ---
+        print(color("Reloading systemd daemon...", Colors.CYAN))
+        result = systemctl("daemon-reload")
+        if result.returncode != 0:
+            print(color(f"  ✗ daemon-reload failed: {result.stderr}", Colors.RED))
+            return
+        print(color("  ✓ Daemon reloaded", Colors.GREEN))
+        print()
 
-    # --- Step 4: restart only the affected container services ---
-    restart_targets = [svc for svc in to_update if svc.file.endswith(".container")]
+    # --- Step 5: restart containers (quadlet-changed + stale-image) ---
+    quadlet_restart = [svc for svc in to_update if svc.file.endswith(".container")]
+    restart_targets = quadlet_restart + stale_image_only
+
     if not restart_targets:
-        print(color("✓ No container services to restart (only network/volume units changed).", Colors.GREEN))
+        print(color("✓ No container services to restart.", Colors.GREEN))
         return
+
+    if stale_image_only:
+        print(color(f"  Stale image ({len(stale_image_only)}):", Colors.YELLOW))
+        for svc in stale_image_only:
+            print(f"    • {svc.name}")
+        print()
 
     print(color(f"Restarting {len(restart_targets)} service(s)...", Colors.CYAN))
     sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
