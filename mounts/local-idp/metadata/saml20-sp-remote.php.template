@@ -19,4 +19,7 @@ $metadata['https://{{BASE_DOMAIN}}'] = [
         ],
     ],
     'NameIDFormat' => ['urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'],
+    'sign.logout' => true,
+    'redirect.sign' => true,
+    'certData' => '{{SP_CERT_BODY}}',
 ];

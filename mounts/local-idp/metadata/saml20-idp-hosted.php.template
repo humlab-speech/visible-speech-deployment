@@ -6,4 +6,5 @@ $metadata['https://idp.{{BASE_DOMAIN}}/simplesaml/saml2/idp/metadata.php'] = [
     'certificate' => 'cert.pem',
     'auth' => 'visp-example-users',
     'NameIDFormat' => 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent',
+    'redirect.sign' => true,
 ];

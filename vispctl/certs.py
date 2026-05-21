@@ -175,16 +175,40 @@ def ensure_certs(project_dir: Path, base_domain: str) -> None:
     print()
 
 
-def render_local_idp_file(template_path: Path, output_path: Path, base_domain: str) -> bool:
-    """Render a local IdP template file with BASE_DOMAIN substitution."""
+def render_local_idp_file(
+    template_path: Path,
+    output_path: Path,
+    base_domain: str,
+    replacements: dict[str, str] | None = None,
+) -> bool:
+    """Render a local IdP template file with BASE_DOMAIN and optional substitutions."""
     if not template_path.exists():
         print(color(f"  ⚠ Missing template: {template_path}", Colors.YELLOW))
         return False
 
     rendered = template_path.read_text().replace("{{BASE_DOMAIN}}", base_domain)
+    if replacements:
+        for key, value in replacements.items():
+            rendered = rendered.replace(key, value)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(rendered)
     return True
+
+
+def read_pem_certificate_body(cert_path: Path) -> str | None:
+    """Read a PEM certificate and return the base64 certificate body."""
+    if not cert_path.exists():
+        return None
+
+    cert_lines = []
+    for line in cert_path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("-----"):
+            continue
+        cert_lines.append(stripped)
+
+    cert_body = "".join(cert_lines)
+    return cert_body or None
 
 
 def build_local_idp_metadata_xml(base_domain: str, cert_body: str) -> str:
@@ -235,6 +259,13 @@ def setup_local_idp_files(project_dir: Path, env_vars: dict[str, str]) -> None:
         print(color("  ⚠ BASE_DOMAIN is not set; skipping local IdP file generation", Colors.YELLOW))
         return
 
+    sp_cert = project_dir / "certs/sp-cert/cert.pem"
+    sp_cert_body = read_pem_certificate_body(sp_cert)
+    if not sp_cert_body:
+        print(color("  ⚠ Could not parse SP certificate body from certs/sp-cert/cert.pem", Colors.YELLOW))
+        print(color("    Run ./visp.py install in dev mode to (re)generate certificates.", Colors.YELLOW))
+        return
+
     template_pairs = [
         (
             project_dir / "mounts/apache/saml/local-idp/shibboleth2.xml.template",
@@ -255,7 +286,11 @@ def setup_local_idp_files(project_dir: Path, env_vars: dict[str, str]) -> None:
     ]
 
     for template_path, output_path in template_pairs:
-        if render_local_idp_file(template_path, output_path, base_domain):
+        replacements = None
+        if template_path.name == "saml20-sp-remote.php.template":
+            replacements = {"{{SP_CERT_BODY}}": sp_cert_body}
+
+        if render_local_idp_file(template_path, output_path, base_domain, replacements=replacements):
             print(color(f"  ✓ Rendered {output_path.relative_to(project_dir)}", Colors.GREEN))
 
     # Render IdP metadata XML for the Apache Shibboleth SP.
@@ -265,14 +300,7 @@ def setup_local_idp_files(project_dir: Path, env_vars: dict[str, str]) -> None:
         print(color("  ⚠ certs/ssp-idp-cert/cert.pem not found — run ./visp.py install to generate it", Colors.YELLOW))
         return
 
-    cert_lines = []
-    for line in idp_cert.read_text().splitlines():
-        stripped = line.strip()
-        if not stripped or stripped.startswith("-----"):
-            continue
-        cert_lines.append(stripped)
-
-    cert_body = "".join(cert_lines)
+    cert_body = read_pem_certificate_body(idp_cert)
     if not cert_body:
         print(color("  ⚠ Could not parse IdP certificate body from certs/ssp-idp-cert/cert.pem", Colors.YELLOW))
         return
