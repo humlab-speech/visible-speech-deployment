@@ -1,15 +1,56 @@
 """Quadlet installation helpers for VISP.
 
-Extracted from visp.py: quadlet drift detection and service env-file setup.
+Contains: template rendering, mode management, quadlet drift detection,
+and service env-file setup.
 """
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
-from .runner import Colors, color
+from .runner import Colors, color, load_env_vars
 from .service import Service
+
+# ---------------------------------------------------------------------------
+# Mode and template helpers
+# ---------------------------------------------------------------------------
+
+# Resolved at import time from the location of this file's package root
+_PROJECT_DIR = Path(__file__).parent.parent.resolve()
+_QUADLETS_BASE_DIR = _PROJECT_DIR / "quadlets"
+_MODE_FILE = _PROJECT_DIR / ".visp-mode"
+_DEFAULT_MODE = "dev"
+
+
+def render_quadlet_template(content: str) -> str:
+    """Replace @@PLACEHOLDER@@ tokens in a quadlet file with live system values."""
+    content = content.replace("@@PROJECT_DIR@@", str(_PROJECT_DIR))
+    content = content.replace("@@UID@@", str(os.getuid()))
+    env_vars = load_env_vars(_PROJECT_DIR / ".env")
+    for key, value in env_vars.items():
+        content = content.replace(f"@@{key}@@", value)
+    return content
+
+
+def get_current_mode() -> str:
+    """Return the current deployment mode (dev or prod) from .visp-mode file."""
+    if _MODE_FILE.exists():
+        return _MODE_FILE.read_text().strip()
+    return _DEFAULT_MODE
+
+
+def set_current_mode(mode: str) -> None:
+    """Persist the deployment mode to .visp-mode."""
+    _MODE_FILE.write_text(mode)
+
+
+def get_quadlets_dir(mode: str | None = None) -> Path:
+    """Return the quadlets source directory for the given (or current) mode."""
+    if mode is None:
+        mode = get_current_mode()
+    return _QUADLETS_BASE_DIR / mode
 
 
 def get_quadlet_drift(

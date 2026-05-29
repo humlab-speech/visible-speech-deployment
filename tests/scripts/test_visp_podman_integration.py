@@ -17,6 +17,22 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
     class FakeBM:
         def __init__(self, runner, build_configs=None, node_configs=None):
             called["init"] = True
+            self.build_configs = build_configs or {}
+            self.node_configs = node_configs or {}
+
+        def check_version_drift(self, ordered, mode):
+            return [], False
+
+        def run_builds(self, ordered, no_cache=False, pull=False, build_config=None):
+            node_names = set(self.node_configs.keys())
+            for svc_name in ordered:
+                if svc_name in node_names:
+                    cfg = self.node_configs[svc_name]
+                    self.build_node_project(svc_name, cfg, no_cache, build_config)
+                else:
+                    cfg = self.build_configs[svc_name]
+                    self.build_image(svc_name, cfg, no_cache=no_cache, pull=pull)
+            return {"success": list(ordered), "failed": [], "skipped": []}
 
         def build_node_project(self, name, config, no_cache, build_config):
             called["node"] = (name, build_config)

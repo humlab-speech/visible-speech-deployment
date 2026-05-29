@@ -14,6 +14,22 @@ from typing import Callable
 from .runner import Colors, Runner, color
 from .service import Service
 
+# Container-internal log files that are NOT visible in journalctl.
+# These are files inside the container that must be read via `podman exec`.
+# Format: service_name -> list of (label, container_path) tuples.
+CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
+    "apache": [
+        ("api", "/var/log/api/webapi.log"),
+        ("api-debug", "/var/log/api/webapi.debug.log"),
+        ("php-errors", "/var/log/api/php_error.log"),
+        ("apache-error", "/var/log/apache2/visp.local-error.log"),
+        ("octra-error", "/var/log/apache2/octra-error.log"),
+        ("artic-error", "/var/log/apache2/artic-error.log"),
+        ("shibboleth", "/var/log/shibboleth/shibd.log"),
+        ("shibboleth-warn", "/var/log/shibboleth/shibd_warn.log"),
+    ],
+}
+
 
 def tail_container_logs(
     service: str,

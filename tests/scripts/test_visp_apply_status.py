@@ -20,6 +20,8 @@ def load_visp_module():
 
 
 def test_cmd_status_outputs_service_header(monkeypatch, capsys):
+    import vispctl.runner as r_mod
+
     vp = load_visp_module()
 
     class FakeSM:
@@ -30,10 +32,10 @@ def test_cmd_status_outputs_service_header(monkeypatch, capsys):
             pass
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
-    monkeypatch.setattr(vp, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
-    monkeypatch.setattr(vp, "run", lambda *a, **kw: None)
+    monkeypatch.setattr(vp.RUNNER, "run", lambda *a, **kw: None)
 
     # Provide empty systemd dir so no quadlet files are shown as links
     import tempfile
@@ -49,6 +51,8 @@ def test_cmd_status_outputs_service_header(monkeypatch, capsys):
 
 
 def test_cmd_status_shows_disabled_optional_service(monkeypatch, capsys):
+    import vispctl.runner as r_mod
+
     vp = load_visp_module()
 
     class FakeSM:
@@ -59,10 +63,10 @@ def test_cmd_status_shows_disabled_optional_service(monkeypatch, capsys):
             pass
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
-    monkeypatch.setattr(vp, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
+    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
-    monkeypatch.setattr(vp, "run", lambda *a, **kw: None)
+    monkeypatch.setattr(vp.RUNNER, "run", lambda *a, **kw: None)
 
     import tempfile
 
@@ -121,7 +125,9 @@ def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(q_mod, "get_quadlet_drift", lambda *a, **kw: ([drifted_svc], []))
 
-    monkeypatch.setattr(vp, "_resolve_services", lambda s, **kw: [drifted_svc])
+    import vispctl.service as svc_mod
+
+    monkeypatch.setattr(svc_mod, "resolve_services", lambda s, *a, **kw: [drifted_svc])
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
 
     restarted = {}
@@ -137,7 +143,7 @@ def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
             restarted["start"] = names
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
-    monkeypatch.setattr(vp, "systemctl", lambda *a, **kw: types.SimpleNamespace(returncode=0, stderr=""))
+    monkeypatch.setattr(vp.RUNNER, "systemctl", lambda *a, **kw: types.SimpleNamespace(returncode=0, stderr=""))
 
     args = types.SimpleNamespace(service="all")
     vp.cmd_apply(args)

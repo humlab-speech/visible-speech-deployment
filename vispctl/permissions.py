@@ -110,3 +110,20 @@ class PermissionsManager:
                 ok = False
 
         return ok
+
+    def verify_host_ownership(self, paths: Iterable[Path]) -> list[tuple[Path, int | None]]:
+        """Return (path, host_uid) for paths not owned by the current user.
+
+        Returns an empty list when all paths are owned by the current user.
+        A ``None`` uid means the path could not be stat-ed (permission denied).
+        """
+        uid = os.getuid()
+        mismatched: list[tuple[Path, int | None]] = []
+        for p in paths:
+            try:
+                st = p.stat()
+                if st.st_uid != uid:
+                    mismatched.append((p, st.st_uid))
+            except OSError:
+                mismatched.append((p, None))
+        return mismatched

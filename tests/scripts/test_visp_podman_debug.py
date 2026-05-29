@@ -21,7 +21,7 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     vp = load_visp_module()
 
     # Stub podman inspect to return not-found (so it prints container-not-found)
-    monkeypatch.setattr(vp, "run_quiet", lambda cmd: (1, "", ""))
+    monkeypatch.setattr(vp.RUNNER, "run_quiet", lambda cmd: (1, "", ""))
 
     # Replace SYSTEMD_QUADLETS_DIR with a temp dir and create a rendered file
     sys_dir = tmp_path / "systemd"

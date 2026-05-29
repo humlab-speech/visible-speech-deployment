@@ -1,4 +1,4 @@
-from vispctl.service import load_default_services
+from vispctl.service import DEFAULT_SERVICES
 from vispctl.service_manager import ServiceManager
 
 
@@ -20,7 +20,7 @@ class FakeRunner:
 
 
 def test_status_prints(capsys):
-    services = load_default_services()
+    services = DEFAULT_SERVICES
     fr = FakeRunner()
     m = ServiceManager(fr, services)
     m.status()
@@ -31,7 +31,7 @@ def test_status_prints(capsys):
 
 def test_network_status_shows_active(capsys):
     # Ensure network services are shown as active when podman network exists
-    services = load_default_services()
+    services = DEFAULT_SERVICES
     fr = FakeRunner()
     m = ServiceManager(fr, services)
     m.status()
@@ -42,7 +42,7 @@ def test_network_status_shows_active(capsys):
 
 
 def test_start_stop(capsys):
-    services = load_default_services()
+    services = DEFAULT_SERVICES
     fr = FakeRunner()
     m = ServiceManager(fr, services)
 

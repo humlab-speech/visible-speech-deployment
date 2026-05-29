@@ -26,7 +26,140 @@ class BuildManager:
         self.build_configs = build_configs or {}
         self.node_configs = node_configs or {}
 
-    def prepare_build_context(self, name: str, config: Dict[str, Any]) -> bool:
+    def run_builds(
+        self,
+        ordered: list[str],
+        no_cache: bool = False,
+        pull: bool = False,
+        build_config: str | None = None,
+    ) -> dict[str, list[str]]:
+        """Execute the build loop for an ordered list of services.
+
+        Returns a dict with keys "success", "failed", "skipped" containing
+        service name lists.
+        """
+        from .permissions import PermissionsManager
+
+        results: dict[str, list[str]] = {"success": [], "failed": [], "skipped": []}
+        node_names = set(self.node_configs.keys())
+
+        for svc_name in ordered:
+            if svc_name in node_names:
+                # ── Node.js build (containerized) ──────────────────────────
+                cfg = self.node_configs[svc_name]
+                print(color(f"Building {svc_name} (node)...", Colors.BLUE))
+                print(f"  Source: {cfg['source']}")
+                print(f"  Output: {cfg['output']}")
+
+                success = self.build_node_project(svc_name, cfg, no_cache, build_config)
+                if success:
+                    results["success"].append(svc_name)
+                    output_path = Path(cfg.get("output"))
+                    if output_path.exists():
+                        print(color(f"  Fixing permissions on {output_path}...", Colors.YELLOW))
+                        pm = PermissionsManager(self.runner)
+                        pm.apply_fix([output_path], recursive=True, host_owner=True)
+                        print(color("  ✓ Permissions fixed", Colors.GREEN))
+                else:
+                    results["failed"].append(svc_name)
+            else:
+                # ── Container image build ──────────────────────────────────
+                cfg = self.build_configs[svc_name]
+                description = cfg.get("description", "")
+                target = cfg.get("target")
+
+                print(color(f"Building {svc_name}...", Colors.BLUE))
+                print(f"  Image: {cfg['image']}:latest")
+                print(f"  Context: {cfg['context']}")
+                if description:
+                    print(f"  Description: {description}")
+                if target:
+                    print(f"  Target: {target}")
+
+                depends_on = cfg.get("depends_on")
+                if depends_on and depends_on not in results["success"]:
+                    rc, _, _ = self.runner.run_quiet(
+                        ["podman", "image", "exists", f"{self.build_configs[depends_on]['image']}:latest"]
+                    )
+                    if rc != 0:
+                        print(color(f"  ✗ Requires {depends_on} image — not built and not present", Colors.RED))
+                        results["skipped"].append(svc_name)
+                        print()
+                        continue
+
+                if cfg.get("prepare_context"):
+                    if not self.prepare_build_context(svc_name, cfg):
+                        results["failed"].append(svc_name)
+                        print()
+                        continue
+
+                ok = self.build_image(svc_name, cfg, no_cache=no_cache, pull=pull)
+                if ok:
+                    results["success"].append(svc_name)
+                else:
+                    results["failed"].append(svc_name)
+
+            print()
+
+        return results
+
+    def check_version_drift(self, ordered: list, mode: str) -> tuple[list[str], bool]:
+        """Check for version drift between repo state and locked versions.
+
+        Returns (warnings, is_blocking).
+        - warnings: list of human-readable warning strings
+        - is_blocking: True if the build should be aborted (prod mode mismatch)
+        """
+        from .git_repo import GitRepository
+        from .versions import ComponentConfig
+
+        comp_config = ComponentConfig()
+        node_names = set(self.node_configs.keys())
+        services_to_check = [s for s in ordered if s in node_names and s in dict(comp_config.get_components())]
+
+        warnings: list[str] = []
+        is_blocking = False
+
+        for svc_name in services_to_check:
+            comp_data = comp_config.get_component(svc_name)
+            if not comp_data:
+                continue
+
+            version = comp_data.get("version", "latest")
+            is_locked = comp_config.is_locked(svc_name)
+
+            repo_path = Path.cwd() / "external" / svc_name
+            if not repo_path.exists():
+                warnings.append(f"  ⚠️  {svc_name}: Repository not found at {repo_path}")
+                continue
+
+            repo = GitRepository(str(repo_path))
+            if not repo.is_git_repo():
+                continue
+
+            current_commit = repo.get_current_commit()
+            if not current_commit:
+                continue
+
+            if mode == "prod" and is_locked:
+                if current_commit != version:
+                    warnings.append(
+                        f"  ⚠️  {svc_name}: Version mismatch in PROD mode\n"
+                        f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
+                        f"      Run: ./visp.py deploy update"
+                    )
+                    is_blocking = True
+            elif mode == "dev" and not is_locked:
+                locked_version = comp_config.get_locked_version(svc_name)
+                if locked_version and locked_version != "N/A" and current_commit != locked_version:
+                    warnings.append(
+                        f"  ℹ️  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
+                        f"      Current: {current_commit[:8]}, Locked: {locked_version[:8]}"
+                    )
+
+        return warnings, is_blocking
+
+    def prepare_build_context(self, name: str, config: dict) -> bool:
         prepare = config.get("prepare_context")
         if not prepare:
             return True
@@ -417,3 +550,102 @@ def resolve_build_order(
                 ready.append(dependent)
 
     return result, auto_added
+
+
+# ---------------------------------------------------------------------------
+# Canonical build configuration — these are the single source of truth.
+# visp.py imports these rather than defining its own copies.
+# ---------------------------------------------------------------------------
+
+# Container image builds: maps service name -> podman build info
+BUILD_CONFIGS: dict[str, dict] = {
+    "apache": {
+        "context": ".",
+        "dockerfile": "./docker/apache/Dockerfile",
+        "image": "visp-apache",
+        "target": "production",
+        "build_args": {"WEBCLIENT_BUILD": "visp-build"},
+        "source_repo": "./external/webclient",  # git.commit label tracks webclient source
+    },
+    "session-manager": {
+        "context": "./external/session-manager",
+        "dockerfile": "Dockerfile",
+        "image": "visp-session-manager",
+    },
+    "artic": {
+        "context": "./external/artic",
+        "dockerfile": "../../docker/artic/Dockerfile",
+        "image": "visp-artic",
+        "target": "production",
+    },
+    "emu-webapp-server": {
+        "context": "./external/emu-webapp-server",
+        "dockerfile": "docker/Dockerfile",
+        "image": "visp-emu-webapp-server",
+    },
+    "octra": {
+        "context": "./docker/octra",
+        "dockerfile": "Dockerfile",
+        "image": "visp-octra",
+    },
+    "wsrng-server": {
+        "context": "./external/wsrng-server",
+        "dockerfile": "Dockerfile",
+        "image": "visp-wsrng-server",
+    },
+    "whisperx": {
+        "context": "./external/WhisperVault",
+        "dockerfile": "container/Containerfile",
+        "image": "visp-whisperx",
+        "description": "WhisperX transcription server (network-isolated, communicates via Unix socket)",
+    },
+    # Session images — used by session-manager to spawn user sessions
+    "jupyter-session": {
+        "context": "./docker/session-manager",
+        "dockerfile": "jupyter-session/Dockerfile",
+        "image": "visp-jupyter-session",
+        "description": "Jupyter + R session image (also used for operations tasks)",
+        "prepare_context": "container-agent",  # Needs container-agent copied to build context
+        "source_repo": "./external/container-agent",  # git.commit label tracks container-agent source
+    },
+    "session-proxy": {
+        "context": "./docker/session-proxy",
+        "dockerfile": "Dockerfile",
+        "image": "visp-session-proxy",
+        "description": "Tinyproxy sidecar for network-isolated session containers",
+    },
+    "podman-socket-proxy": {
+        "context": "./docker/podman-socket-proxy",
+        "dockerfile": "Dockerfile",
+        "image": "visp-podman-socket-proxy",
+        "description": "Body-inspecting Podman socket proxy — enforces image/mount/cap allowlist on container create",
+    },
+}
+
+# Node.js tool builds: built inside a container (no host npm/node required)
+NODE_BUILD_CONFIGS: dict[str, dict] = {
+    "container-agent": {
+        "source": "./external/container-agent",
+        "output": "./external/container-agent/dist",
+        "description": "Container management agent (webpack build)",
+        "build_cmd": "npm run build",
+        "verify_file": "main.js",
+    },
+    "webclient": {
+        "source": "./external/webclient",
+        "output": "./external/webclient/dist",
+        "description": "Angular webclient (ng build)",
+        # Pre-build: install PHP dependencies so angular.json's asset pipeline
+        # can copy vendor/ into dist/. Uses --ignore-platform-reqs because the
+        # Composer container lacks ext-mongodb (only needed at PHP runtime).
+        "pre_build_cmd": "composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs",
+        "pre_build_image": "docker.io/library/composer:2.9.5",
+        # Use npx to invoke the locally installed ng binary.
+        # Note: --output-path is NOT passed here; angular.json controls outputPath.
+        "build_cmd": "npx ng build --configuration={config}",
+        "default_config": "visp.dev",
+        "verify_file": "index.php",
+        # Angular 20 requires Node ^20.19 || ^22.12 || >=24
+        "container_image": "node:22.22.2",
+    },
+}

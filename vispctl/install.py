@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from vispctl.runner import Colors, color
 from vispctl.service import Service
+
+if TYPE_CHECKING:
+    from vispctl.runner import Runner
 
 
 def scaffold_directories(
@@ -202,7 +205,7 @@ def cleanup_disabled_optional_services(
     Remove quadlet files for optional services that are currently disabled.
 
     *disabled_optional* maps service-name → controlling env-var name
-    (as returned by ``_get_disabled_optional_services()`` in visp.py).
+    (as returned by ``get_disabled_optional_services()`` in vispctl.service).
     """
     for svc in services:
         if svc.name not in disabled_optional:
@@ -212,3 +215,216 @@ def cleanup_disabled_optional_services(
             target.unlink()
             env_var = disabled_optional[svc.name]
             print(color(f"  ○ {svc.file}: removed ({env_var}=false)", Colors.YELLOW))
+
+
+def run_install(
+    project_dir: Path,
+    systemd_dir: Path,
+    runner: Runner,
+    mode: str,
+    service_arg: str,
+    services: list[Service],
+    all_services: list[Service],
+    disabled_optional: dict[str, str],
+    render_fn: Callable[[str], str],
+    force: bool = False,
+) -> None:
+    """Orchestrate the full install flow.
+
+    This is the logic previously in ``cmd_install`` in visp.py.  It is
+    extracted here so it can be called from a thin CLI wrapper and
+    (eventually) tested without a running system.
+
+    Phases (in order):
+      1. First-time env-file generation
+      2. Netavark backend check / migration
+      3. Podman network creation
+      4. Podman secret creation
+      5. Mount-directory scaffolding
+      6. Container-writable permissions
+      7. Tracker config (vc.js)
+      8. Dev certs + local IdP files (dev mode only)
+      9. Service-specific .env files
+      10. Quadlet installation
+      11. Cleanup stale disabled-service quadlets
+      12. Save mode, print next steps
+      13. Check for missing external repos and offer to fetch
+    """
+    import sys
+
+    from .network import NetworkManager
+
+    # --- Phase 1: first-time env-file generation ---
+    env_file_path = project_dir / ".env"
+    secrets_file_path = project_dir / ".env.secrets"
+
+    if not env_file_path.exists() or not secrets_file_path.exists():
+        print(color("\n=== First-Time Setup: Generating Environment Files ===", Colors.CYAN))
+        print()
+        print("This will create .env and .env.secrets with auto-generated passwords.")
+        print("You can modify these files later if needed.")
+        print()
+
+        from .passwords import setup_env_file
+
+        try:
+            setup_env_file(auto_passwords=True, interactive=False)
+            print()
+        except (OSError, ValueError, RuntimeError) as e:
+            print(color(f"❌ Error setting up environment files: {e}", Colors.RED))
+            print("Please check the error and try again.")
+            sys.exit(1)
+
+    # --- Phase 2: netavark backend check / migration ---
+    nm = NetworkManager(runner)
+    is_netavark, current_backend = nm.check_netavark()
+
+    if not is_netavark:
+        print()
+        print(color(f"Current network backend: {current_backend}", Colors.YELLOW))
+        print()
+
+        if current_backend == "cni":
+            if nm.prompt_netavark_migration():
+                if not nm.migrate_to_netavark():
+                    print(color("Migration failed. Please fix the errors and try again.", Colors.RED))
+                    sys.exit(1)
+                print()
+                print(color("✓ Migration complete!", Colors.GREEN))
+                print()
+            else:
+                sys.exit(1)
+        else:
+            print(color("Netavark is required for proper DNS resolution.", Colors.YELLOW))
+            response = input("Configure netavark now? (yes/no): ").strip().lower()
+            if response in ["yes", "y"]:
+                if not nm.configure_netavark():
+                    sys.exit(1)
+                print()
+                print(color("✓ Netavark configured. Please restart Podman services.", Colors.GREEN))
+                print("  Run: podman system reset")
+                print()
+            else:
+                print("Installation cancelled.")
+                sys.exit(1)
+
+    # --- Phase 3: Podman network creation ---
+    print()
+    if not nm.ensure_networks_exist():
+        print(color("Failed to create networks. Please check the errors above.", Colors.RED))
+        sys.exit(1)
+    print()
+
+    systemd_dir.mkdir(parents=True, exist_ok=True)
+
+    from .quadlets import get_quadlets_dir, setup_service_env_files
+
+    quadlets_dir = get_quadlets_dir(mode)
+
+    print(color(f"Installing quadlets for {mode} mode", Colors.CYAN))
+    print(f"  Source: {quadlets_dir}")
+    print(f"  Target: {systemd_dir}")
+    print()
+
+    # --- Phase 4: Podman secrets ---
+    from .secrets import SecretManager
+
+    sm = SecretManager(runner)
+    env_vars = sm.load_all()
+
+    print(color("Creating Podman secrets...", Colors.CYAN))
+    sm.create_secrets(sm.get_derived(env_vars))
+    print()
+
+    # --- Phase 5: mount-directory scaffolding ---
+    print(color("Creating mount directories...", Colors.CYAN))
+    created = scaffold_directories(project_dir, quadlets_dir, render_fn)
+    if created:
+        print(f"  Created {created} missing mount directories")
+    else:
+        print("  All mount directories already exist")
+    print()
+
+    # --- Phase 6: container-writable permissions ---
+    print(color("Fixing container-writable directory permissions...", Colors.CYAN))
+    perm_fixed = fix_writable_permissions(project_dir)
+    if perm_fixed:
+        print(f"  Fixed permissions on {perm_fixed} directories (set to 777)")
+    else:
+        print("  All container-writable directories already have correct permissions")
+    print()
+
+    # --- Phase 7: tracker config (vc.js) ---
+    generate_tracker_config(project_dir, env_vars)
+    print()
+
+    # --- Phase 8: dev certs + local IdP files (dev only) ---
+    if mode == "dev":
+        from .certs import ensure_certs, setup_local_idp_files
+
+        base_domain = env_vars.get("BASE_DOMAIN", "").strip()
+        if base_domain:
+            ensure_certs(project_dir, base_domain)
+        setup_local_idp_files(project_dir, env_vars)
+        print()
+
+    # --- Phase 9: service-specific .env files ---
+    # Sensitive values are injected via Podman Secrets (Secret= lines in quadlets),
+    # so we only copy templates with non-secret defaults here.
+    setup_service_env_files(project_dir)
+    print()
+
+    # --- Phase 10: quadlet installation ---
+    installed, skipped, errors = install_quadlets(
+        quadlets_dir,
+        systemd_dir,
+        services,
+        render_fn,
+        force=force,
+    )
+
+    if not installed and not skipped and not errors:
+        print(color(f"No quadlet files found in {quadlets_dir}", Colors.RED))
+        return
+
+    # --- Phase 11: cleanup stale disabled-service quadlets ---
+    if service_arg == "all":
+        cleanup_disabled_optional_services(all_services, disabled_optional, systemd_dir)
+
+    # --- Phase 12: save mode, print next steps ---
+    from .quadlets import set_current_mode
+
+    set_current_mode(mode)
+
+    print()
+    print(f"Mode set to: {color(mode, Colors.MAGENTA)}")
+    print("Run './visp.py reload' to apply changes.")
+
+    # --- Phase 13: check for missing external repos ---
+    from .versions import DEFAULT_VERSIONS_CONFIG
+
+    external_dir = project_dir / "external"
+    missing_repos = [name for name in DEFAULT_VERSIONS_CONFIG if not (external_dir / name / ".git").exists()]
+    if missing_repos:
+        print()
+        print(color("⚠  External repositories are missing:", Colors.YELLOW))
+        for name in missing_repos:
+            print(f"     • {name}")
+        print()
+        response = input("  Fetch them now with 'deploy update'? (yes/no) [yes]: ").strip().lower()
+        if response in ("", "yes", "y"):
+            from .deploy import DeployManager
+
+            dm = DeployManager(runner=runner)
+            if not dm.update_components(force=False):
+                print(
+                    color(
+                        "  ✗ deploy update failed — fix errors above and re-run './visp.py deploy update'", Colors.RED
+                    )
+                )
+            else:
+                print()
+                print(color("  ✓ External repositories ready.", Colors.GREEN))
+        else:
+            print()
+            print(color("  Remember to run './visp.py deploy update' before building images.", Colors.YELLOW))

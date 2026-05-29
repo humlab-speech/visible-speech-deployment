@@ -42,153 +42,38 @@ Mode examples:
 
 import argparse
 import os
-import subprocess
 import sys
-import threading
 from pathlib import Path
 
-from vispctl.build import BuildManager, resolve_build_order
+from vispctl.build import BUILD_CONFIGS, NODE_BUILD_CONFIGS, BuildManager, resolve_build_order
 from vispctl.cleanup_containers import cleanup_containers
 from vispctl.images import ImageManager
-from vispctl.logs import tail_container_logs as _tail_container_logs_impl
-from vispctl.logs import view_logs
+from vispctl.logs import CONTAINER_LOG_FILES, view_logs
 from vispctl.network import NetworkManager
 
 # Use the new modular managers where appropriate
-from vispctl.runner import Colors, Runner, color, load_env_vars, parse_env_bool
-from vispctl.service import Service
+from vispctl.quadlets import get_current_mode, get_quadlets_dir, render_quadlet_template, set_current_mode
+from vispctl.runner import Colors, Runner, color
+from vispctl.service import (
+    DEFAULT_SERVICES,
+    Service,
+    get_disabled_optional_services,
+    get_runtime_services,
+    resolve_services,
+)
 from vispctl.service_manager import ServiceManager
+from vispctl.status import show_container_list, show_network_list, show_quadlet_table
 
 # Configuration
 PROJECT_DIR = Path(__file__).parent.resolve()
-QUADLETS_BASE_DIR = Path(__file__).parent / "quadlets"
 SYSTEMD_QUADLETS_DIR = Path.home() / ".config/containers/systemd"
-CONTAINERS_CONF = Path.home() / ".config/containers/containers.conf"
-MODE_FILE = Path(__file__).parent / ".visp-mode"
 
-
-def render_quadlet_template(content: str) -> str:
-    """Replace template placeholders with actual system values."""
-    content = content.replace("@@PROJECT_DIR@@", str(PROJECT_DIR))
-    content = content.replace("@@UID@@", str(os.getuid()))
-    # Substitute @@VAR@@ tokens from .env
-    env_vars = load_env_vars(PROJECT_DIR / ".env")
-    for key, value in env_vars.items():
-        content = content.replace(f"@@{key}@@", value)
-    return content
-
-
-# Default mode
-DEFAULT_MODE = "dev"
-
-
-def get_current_mode() -> str:
-    """Get the current deployment mode from .visp-mode file."""
-    if MODE_FILE.exists():
-        return MODE_FILE.read_text().strip()
-    return DEFAULT_MODE
-
-
-def set_current_mode(mode: str) -> None:
-    """Set the current deployment mode."""
-    MODE_FILE.write_text(mode)
-
-
-def get_quadlets_dir(mode: str = None) -> Path:
-    """Get the quadlets directory for the specified mode."""
-    if mode is None:
-        mode = get_current_mode()
-    return QUADLETS_BASE_DIR / mode
-
-
-# Service definitions - order matters for startup
-SERVICES = [
-    # Networks first
-    Service("visp-net", "network", "visp-net.network"),
-    Service("octra-net", "network", "octra-net.network"),
-    # Then containers in dependency order
-    Service("mongo", "container", "mongo.container"),
-    Service("mongo-express", "container", "mongo-express.container", dev_only=True),
-    Service("matomo-db", "container", "matomo-db.container"),
-    Service("matomo", "container", "matomo.container"),
-    Service("whisperx", "container", "whisperx.container"),
-    Service("local-idp", "container", "local-idp.container", dev_only=True),
-    Service("wsrng-server", "container", "wsrng-server.container"),
-    Service("podman-socket-proxy", "container", "podman-socket-proxy.container"),
-    Service("session-manager", "container", "session-manager.container"),
-    Service("artic", "container", "artic.container"),
-    Service("emu-webapp-server", "container", "emu-webapp-server.container"),
-    Service("octra", "container", "octra.container"),
-    Service("apache", "container", "apache.container"),
-]
-
+SERVICES = DEFAULT_SERVICES
 NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
+BUILDABLE_SERVICES = list(BUILD_CONFIGS.keys())
+ALL_BUILDABLE = BUILDABLE_SERVICES + list(NODE_BUILD_CONFIGS.keys())
 
-# Optional services can be disabled via .env flags (defaults to enabled).
-# Example: WHISPERX_ENABLED=false
-OPTIONAL_SERVICE_ENV_FLAGS: dict[str, str] = {
-    "whisperx": "WHISPERX_ENABLED",
-    "local-idp": "LOCAL_IDP_ENABLED",
-}
-
-# Container-internal log files that are NOT visible in journalctl.
-# These are files inside the container that must be read via `podman exec`.
-# Format: service_name -> list of (label, container_path) tuples.
-CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
-    "apache": [
-        ("api", "/var/log/api/webapi.log"),
-        ("api-debug", "/var/log/api/webapi.debug.log"),
-        ("php-errors", "/var/log/api/php_error.log"),
-        ("apache-error", "/var/log/apache2/visp.local-error.log"),
-        ("octra-error", "/var/log/apache2/octra-error.log"),
-        ("artic-error", "/var/log/apache2/artic-error.log"),
-        ("shibboleth", "/var/log/shibboleth/shibd.log"),
-        ("shibboleth-warn", "/var/log/shibboleth/shibd_warn.log"),
-    ],
-}
-
-
-# Module-level Runner instance for consistent subprocess handling
 RUNNER = Runner()
-
-
-def run(cmd: list[str], capture: bool = False, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
-    """Run a command via the shared Runner."""
-    return RUNNER.run(cmd, capture=capture, check=check, **kwargs)
-
-
-def run_quiet(cmd: list[str]) -> tuple[int, str, str]:
-    """Run a command and return (returncode, stdout, stderr) via Runner."""
-    return RUNNER.run_quiet(cmd)
-
-
-def systemctl(*args) -> subprocess.CompletedProcess:
-    """Run systemctl --user command via Runner."""
-    return RUNNER.systemctl(*args)
-
-
-def journalctl(*args) -> subprocess.CompletedProcess:
-    """Run journalctl --user command via Runner."""
-    return RUNNER.journalctl(*args)
-
-
-def _get_disabled_optional_services() -> dict[str, str]:
-    """Return mapping of disabled optional service name -> controlling env var."""
-    env_vars = load_env_vars(PROJECT_DIR / ".env")
-    disabled: dict[str, str] = {}
-    for service_name, env_var in OPTIONAL_SERVICE_ENV_FLAGS.items():
-        if not parse_env_bool(env_vars.get(env_var), default=True):
-            disabled[service_name] = env_var
-    return disabled
-
-
-def _get_runtime_services(include_disabled: bool = False) -> list[Service]:
-    """Return services to use for runtime orchestration."""
-    if include_disabled:
-        return SERVICES
-    mode = get_current_mode()
-    disabled = _get_disabled_optional_services()
-    return [s for s in SERVICES if s.name not in disabled and not (s.dev_only and mode != "dev")]
 
 
 def _container_services(services: list[Service]) -> list[Service]:
@@ -196,130 +81,38 @@ def _container_services(services: list[Service]) -> list[Service]:
     return [s for s in services if s.type == "container"]
 
 
-# Deprecated secret wrapper functions removed — use `vispctl.secrets.SecretManager` directly.
-# These wrappers were left behind during refactoring and are now deleted to remove
-# dead code and avoid confusion.
-
-
 # === Status Commands ===
 
 
-def cmd_status(args):
+def cmd_status(args):  # noqa: ARG001
     """Show status of all services and containers."""
     print(color("=== VISP Service Status ===", Colors.CYAN))
     print()
 
-    runtime_services = _get_runtime_services()
+    runtime_services = get_runtime_services()
 
     # Use ServiceManager for service status
-    sm = ServiceManager(Runner(), runtime_services)
+    sm = ServiceManager(RUNNER, runtime_services)
     sm.status()
 
-    disabled_optional_services = _get_disabled_optional_services()
+    disabled_optional_services = get_disabled_optional_services()
     if disabled_optional_services:
         print()
         print(color("=== Disabled Optional Services ===", Colors.CYAN))
         for service_name, env_var in disabled_optional_services.items():
             print(f"  ○ {service_name}: disabled via {env_var}=false in .env")
 
-    # (ServiceManager prints service status). Continue with quadlet links and other info below.
+    print()
+    show_quadlet_table(runtime_services, get_current_mode(), RUNNER, SYSTEMD_QUADLETS_DIR, render_quadlet_template)
 
     print()
-    print(color("=== Quadlet Links ===", Colors.CYAN))
-    current_mode = get_current_mode()
-    quadlets_dir = get_quadlets_dir(current_mode)
-    print(f"  Mode: {color(current_mode, Colors.MAGENTA)}")
-    print()
-
-    from vispctl.quadlets import get_quadlet_drift
-
-    drifted_svcs, not_installed_svcs = get_quadlet_drift(
-        runtime_services, quadlets_dir, SYSTEMD_QUADLETS_DIR, render_quadlet_template
-    )
-    drifted_files = {svc.file for svc in drifted_svcs}
-    not_installed_files = {svc.file for svc in not_installed_svcs}
-
-    for svc in runtime_services:
-        link_path = SYSTEMD_QUADLETS_DIR / svc.file
-        target_path = quadlets_dir / svc.file
-
-        if link_path.is_symlink():
-            actual_target = link_path.resolve()
-            if actual_target == target_path.resolve():
-                symbol = color("✓", Colors.GREEN)
-                status = color("linked", Colors.GREEN)
-            elif actual_target.parent.name in ("dev", "prod"):
-                symbol = color("!", Colors.YELLOW)
-                linked_mode = actual_target.parent.name
-                status = color(f"linked ({linked_mode} mode)", Colors.YELLOW)
-            elif actual_target.parent.name == "quadlets":
-                symbol = color("!", Colors.YELLOW)
-                status = color("linked (legacy, run install --force)", Colors.YELLOW)
-            else:
-                symbol = color("!", Colors.YELLOW)
-                status = color(f"linked (unknown: {actual_target})", Colors.YELLOW)
-        elif svc.file in not_installed_files:
-            symbol = color("○", Colors.RED)
-            status = color("not installed", Colors.RED)
-        elif svc.file in drifted_files:
-            symbol = color("!", Colors.YELLOW)
-            status = color("installed (out of date — run apply or install --force)", Colors.YELLOW)
-        elif link_path.exists():
-            symbol = color("✓", Colors.GREEN)
-            status = color("installed", Colors.GREEN)
-        else:
-            symbol = color("○", Colors.RED)
-            status = color("not installed", Colors.RED)
-
-        print(f"  {symbol} {svc.file}: {status}")
-
-    if drifted_svcs:
-        print()
-        print(
-            color(
-                f"  ⚠ {len(drifted_svcs)} quadlet(s) differ from templates. " "Run './visp.py apply' to update.",
-                Colors.YELLOW,
-            )
-        )
+    show_container_list(RUNNER)
 
     print()
-    print(color("=== Container Status ===", Colors.CYAN))
-    run(
-        ["podman", "ps", "-a", "--format", "table {{.Names}}\t{{.Status}}\t{{.Ports}}"],
-        check=False,
-    )
-
-    print()
-    print(color("=== Network Status ===", Colors.CYAN))
-    run(["podman", "network", "ls"], check=False)
+    show_network_list(RUNNER)
 
 
 # === Log Commands ===
-
-
-def _tail_container_logs(service: str, lines: int = 50, follow: bool = False, stop_event: threading.Event = None):
-    """Tail container-internal log files via podman exec."""
-    _tail_container_logs_impl(service, CONTAINER_LOG_FILES, RUNNER, lines=lines, follow=follow, stop_event=stop_event)
-
-
-def _stream_podman_logs(
-    service: str,
-    *,
-    follow: bool,
-    lines: int | None = None,
-    since: str | None = None,
-) -> None:
-    """Stream container logs directly from podman."""
-    from vispctl.logs import stream_podman_logs
-
-    stream_podman_logs(service, follow=follow, lines=lines, since=since)
-
-
-def _show_debug_info(service: str):
-    """Show diagnostic info for a service."""
-    from vispctl.logs import show_debug_info
-
-    show_debug_info(service, RUNNER, _get_runtime_services(include_disabled=True), SYSTEMD_QUADLETS_DIR)
 
 
 def cmd_logs(args):
@@ -329,9 +122,9 @@ def cmd_logs(args):
         runner=RUNNER,
         container_log_files=CONTAINER_LOG_FILES,
         systemd_dir=SYSTEMD_QUADLETS_DIR,
-        get_runtime_services=_get_runtime_services,
-        get_all_services=lambda: _get_runtime_services(include_disabled=True),
-        resolve_services=_resolve_services,
+        get_runtime_services=get_runtime_services,
+        get_all_services=lambda: get_runtime_services(include_disabled=True),
+        resolve_services=lambda s: resolve_services(s, PROJECT_DIR),
         container_services=_container_services,
     )
 
@@ -341,30 +134,30 @@ def cmd_logs(args):
 
 def cmd_start(args):
     """Start service(s)."""
-    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
     services = args.services
     if not services or services == ["all"]:
-        target_names = [svc.name for svc in _container_services(_resolve_services("all"))]
+        target_names = [svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR))]
         sm.start(target_names)
     else:
-        target_names = [svc.name for s in services for svc in _resolve_services(s)]
+        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR)]
         sm.start(target_names)
 
 
 def cmd_stop(args):
     """Stop service(s)."""
-    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
     services = args.services
     if not services or services == ["all"]:
         sm.stop("all")
     else:
-        target_names = [svc.name for s in services for svc in _resolve_services(s, include_disabled=True)]
+        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR, include_disabled=True)]
         sm.stop(target_names)
 
 
 def cmd_restart(args):
     """Restart service(s) or entire cluster."""
-    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
     services = args.services
 
     if not services or services == ["all"]:
@@ -374,11 +167,11 @@ def cmd_restart(args):
         sm.stop("all")
         print()
         print(color("Starting services...", Colors.GREEN))
-        target_names = [svc.name for svc in _container_services(_resolve_services("all"))]
+        target_names = [svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR))]
         sm.start(target_names)
     else:
         # For individual services, stop then start the specific names
-        target_names = [svc.name for s in services for svc in _resolve_services(s)]
+        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR)]
         sm.stop(target_names)
         sm.start(target_names)
 
@@ -388,271 +181,37 @@ def cmd_restart(args):
 # they were dead code. Call NetworkManager methods directly (as cmd_install already does).
 
 
-def _setup_service_env_files():
-    """Thin shim kept for call-site compatibility; delegates to vispctl.quadlets."""
-    from vispctl.quadlets import setup_service_env_files
-
-    setup_service_env_files(PROJECT_DIR)
-
-
-def _is_cert_valid(cert_path: Path, min_days: int = 30) -> bool:
-    """Delegates to vispctl.certs."""
-    from vispctl.certs import is_cert_valid
-
-    return is_cert_valid(cert_path, min_days)
-
-
-def _ensure_cert(spec: dict) -> bool:
-    """Delegates to vispctl.certs."""
-    from vispctl.certs import ensure_cert
-
-    return ensure_cert(spec)
-
-
-def _ensure_certs(base_domain: str) -> None:
-    """Delegates to vispctl.certs."""
-    from vispctl.certs import ensure_certs
-
-    ensure_certs(PROJECT_DIR, base_domain)
-
-
-def _render_local_idp_file(template_path: Path, output_path: Path, base_domain: str) -> bool:
-    """Delegates to vispctl.certs."""
-    from vispctl.certs import render_local_idp_file
-
-    return render_local_idp_file(template_path, output_path, base_domain)
-
-
-def _build_local_idp_metadata_xml(base_domain: str, cert_body: str) -> str:
-    """Delegates to vispctl.certs."""
-    from vispctl.certs import build_local_idp_metadata_xml
-
-    return build_local_idp_metadata_xml(base_domain, cert_body)
-
-
-def _setup_local_idp_files(env_vars: dict[str, str]) -> None:
-    """Delegates to vispctl.certs."""
-    from vispctl.certs import setup_local_idp_files
-
-    setup_local_idp_files(PROJECT_DIR, env_vars)
-
-
 # === Installation Commands ===
 
 
 def cmd_install(args):
     """Link quadlet files to systemd directory."""
-    from vispctl.install import (
-        cleanup_disabled_optional_services,
-        fix_writable_permissions,
-        generate_tracker_config,
-        install_quadlets,
-        scaffold_directories,
-    )
+    from vispctl.install import run_install
 
-    # First-time setup: generate passwords if needed
-    env_file_path = Path(".env")
-    secrets_file_path = Path(".env.secrets")
-
-    if not env_file_path.exists() or not secrets_file_path.exists():
-        print(color("\n=== First-Time Setup: Generating Environment Files ===", Colors.CYAN))
-        print()
-        print("This will create .env and .env.secrets with auto-generated passwords.")
-        print("You can modify these files later if needed.")
-        print()
-
-        from vispctl.passwords import setup_env_file
-
-        try:
-            setup_env_file(auto_passwords=True, interactive=False)
-            print()
-        except Exception as e:
-            print(color(f"❌ Error setting up environment files: {e}", Colors.RED))
-            print("Please check the error and try again.")
-            sys.exit(1)
-
-    # Check for netavark backend using NetworkManager
-    runner = Runner()
-    nm = NetworkManager(runner)
-
-    is_netavark, current_backend = nm.check_netavark()
-
-    if not is_netavark:
-        print()
-        print(color(f"Current network backend: {current_backend}", Colors.YELLOW))
-        print()
-
-        if current_backend == "cni":
-            # Offer to migrate from CNI
-            if nm.prompt_netavark_migration():
-                if not nm.migrate_to_netavark():
-                    print(
-                        color(
-                            "Migration failed. Please fix the errors and try again.",
-                            Colors.RED,
-                        )
-                    )
-                    sys.exit(1)
-                print()
-                print(color("✓ Migration complete!", Colors.GREEN))
-                print()
-            else:
-                sys.exit(1)
-        else:
-            # Unknown backend, just configure netavark
-            print(color("Netavark is required for proper DNS resolution.", Colors.YELLOW))
-            response = input("Configure netavark now? (yes/no): ").strip().lower()
-            if response in ["yes", "y"]:
-                if not nm.configure_netavark():
-                    sys.exit(1)
-                print()
-                print(
-                    color(
-                        "✓ Netavark configured. Please restart Podman services.",
-                        Colors.GREEN,
-                    )
-                )
-                print("  Run: podman system reset")
-                print()
-            else:
-                print("Installation cancelled.")
-                sys.exit(1)
-
-    # Ensure networks exist (netavark doesn't auto-create from quadlet files)
-    print()
-    if not nm.ensure_networks_exist():
-        print(color("Failed to create networks. Please check the errors above.", Colors.RED))
-        sys.exit(1)
-    print()
-
-    SYSTEMD_QUADLETS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Get mode from args or current setting
     mode = getattr(args, "mode", None) or get_current_mode()
-    quadlets_dir = get_quadlets_dir(mode)
-
-    print(color(f"Installing quadlets for {mode} mode", Colors.CYAN))
-    print(f"  Source: {quadlets_dir}")
-    print(f"  Target: {SYSTEMD_QUADLETS_DIR}")
-    print()
-
-    # Load environment variables and create Podman secrets via SecretManager
-    from vispctl.secrets import SecretManager
-
-    sm = SecretManager(RUNNER)
-    env_vars = sm.load_all()
-
-    # Create Podman secrets from environment variables
-    print(color("Creating Podman secrets...", Colors.CYAN))
-    secrets = sm.get_derived(env_vars)
-    sm.create_secrets(secrets)
-    print()
-
-    # Ensure all mount/cert directories referenced by quadlets exist.
-    print(color("Creating mount directories...", Colors.CYAN))
-    created = scaffold_directories(PROJECT_DIR, quadlets_dir, render_quadlet_template)
-    if created:
-        print(f"  Created {created} missing mount directories")
-    else:
-        print("  All mount directories already exist")
-    print()
-
-    # Ensure container-writable directories have correct permissions.
-    print(color("Fixing container-writable directory permissions...", Colors.CYAN))
-    perm_fixed = fix_writable_permissions(PROJECT_DIR)
-    if perm_fixed:
-        print(f"  Fixed permissions on {perm_fixed} directories (set to 777)")
-    else:
-        print("  All container-writable directories already have correct permissions")
-    print()
-
-    # Generate vc.js (visitor analytics config) from template if BASE_DOMAIN is set
-    generate_tracker_config(PROJECT_DIR, env_vars)
-    print()
-
-    # Generate certificates and local IdP config files in dev mode.
-    if mode == "dev":
-        base_domain = env_vars.get("BASE_DOMAIN", "").strip()
-        if base_domain:
-            _ensure_certs(base_domain)
-        _setup_local_idp_files(env_vars)
-        print()
-
-    # Setup service-specific .env files from templates.
-    # Sensitive values (MONGO_URI, MONGO_PASSWORD, MEDIA_FILE_BASE_URL) are
-    # injected via Podman Secrets (see Secret= lines in quadlets), so we only
-    # need to copy the templates with non-secret defaults.
-    _setup_service_env_files()
-    print()
-
-    # Determine which services are available in this mode
-    services = _resolve_services(args.service)
-
-    installed, skipped, errors = install_quadlets(
-        quadlets_dir,
-        SYSTEMD_QUADLETS_DIR,
-        services,
-        render_quadlet_template,
+    services = resolve_services(args.service, PROJECT_DIR)
+    run_install(
+        project_dir=PROJECT_DIR,
+        systemd_dir=SYSTEMD_QUADLETS_DIR,
+        runner=RUNNER,
+        mode=mode,
+        service_arg=args.service,
+        services=services,
+        all_services=SERVICES,
+        disabled_optional=get_disabled_optional_services(),
+        render_fn=render_quadlet_template,
         force=args.force,
     )
-
-    if not installed and not skipped and not errors:
-        print(color(f"No quadlet files found in {quadlets_dir}", Colors.RED))
-        return
-
-    # If optional services are disabled, remove stale installed quadlets when installing "all".
-    if args.service == "all":
-        cleanup_disabled_optional_services(
-            SERVICES,
-            _get_disabled_optional_services(),
-            SYSTEMD_QUADLETS_DIR,
-        )
-
-    # Save the mode
-    set_current_mode(mode)
-
-    print()
-    print(f"Mode set to: {color(mode, Colors.MAGENTA)}")
-    print("Run './visp.py reload' to apply changes.")
-
-    # Check whether external repos are present and offer to fetch them now.
-    from vispctl.versions import DEFAULT_VERSIONS_CONFIG
-
-    external_dir = PROJECT_DIR / "external"
-    missing_repos = [name for name in DEFAULT_VERSIONS_CONFIG if not (external_dir / name / ".git").exists()]
-    if missing_repos:
-        print()
-        print(color("⚠  External repositories are missing:", Colors.YELLOW))
-        for name in missing_repos:
-            print(f"     • {name}")
-        print()
-        response = input("  Fetch them now with 'deploy update'? (yes/no) [yes]: ").strip().lower()
-        if response in ("", "yes", "y"):
-            from vispctl.deploy import DeployManager
-
-            dm = DeployManager(runner=RUNNER)
-            if not dm.update_components(force=False):
-                print(
-                    color(
-                        "  ✗ deploy update failed — fix errors above and re-run './visp.py deploy update'", Colors.RED
-                    )
-                )
-            else:
-                print()
-                print(color("  ✓ External repositories ready.", Colors.GREEN))
-        else:
-            print()
-            print(color("  Remember to run './visp.py deploy update' before building images.", Colors.YELLOW))
 
 
 def cmd_uninstall(args):
     """Remove quadlet links from systemd directory."""
-    services = _resolve_services(args.service, include_disabled=True)
+    services = resolve_services(args.service, PROJECT_DIR, include_disabled=True)
 
     # Stop services first
     if not args.keep_running:
         print(color("Stopping services...", Colors.YELLOW))
-        sm = ServiceManager(Runner(), SERVICES)
+        sm = ServiceManager(RUNNER, SERVICES)
         sm.stop("all")
 
     print()
@@ -684,9 +243,10 @@ def cmd_uninstall(args):
     if getattr(args, "remove_networks", False):
         print()
         print(color("Removing Podman networks...", Colors.CYAN))
-        visp_networks = ["systemd-visp-net", "systemd-octra-net"]
+        # systemd prefixes network unit names with "systemd-" at runtime
+        visp_networks = [f"systemd-{svc.name}" for svc in NETWORK_SERVICES]
         for net_name in visp_networks:
-            rc, _, stderr = run_quiet(["podman", "network", "rm", net_name])
+            rc, _, stderr = RUNNER.run_quiet(["podman", "network", "rm", net_name])
             if rc == 0:
                 print(color(f"  ✓ {net_name}: removed", Colors.GREEN))
             elif "no such network" in stderr.lower() or "not found" in stderr.lower():
@@ -699,10 +259,10 @@ def cmd_uninstall(args):
     print("Run './visp.py reload' to apply changes.")
 
 
-def cmd_reload(args):
+def cmd_reload(args):  # noqa: ARG001
     """Reload systemd daemon to pick up quadlet changes."""
     print("Reloading systemd daemon...")
-    result = systemctl("daemon-reload")
+    result = RUNNER.systemctl("daemon-reload")
     if result.returncode == 0:
         print(color("Done. Quadlet changes are now active.", Colors.GREEN))
     else:
@@ -729,7 +289,7 @@ def cmd_apply(args):
     service = getattr(args, "service", "all")
     mode = get_current_mode()
     quadlets_dir = get_quadlets_dir(mode)
-    services = _resolve_services(service)
+    services = resolve_services(service, PROJECT_DIR)
 
     # --- Step 1: detect quadlet drift ---
     from vispctl.quadlets import get_quadlet_drift
@@ -768,23 +328,14 @@ def cmd_apply(args):
 
         # --- Step 3: install --force (only the affected files) ---
         print(color("Installing quadlets...", Colors.CYAN))
-        for svc in to_update:
-            source = quadlets_dir / svc.file
-            target = SYSTEMD_QUADLETS_DIR / svc.file
-            try:
-                content = source.read_text()
-                rendered = render_quadlet_template(content)
-                if target.exists() or target.is_symlink():
-                    target.unlink()
-                target.write_text(rendered)
-                print(color(f"  ✓ {svc.file}: updated", Colors.GREEN))
-            except Exception as e:
-                print(color(f"  ✗ {svc.file}: {e}", Colors.RED))
+        from vispctl.install import install_quadlets
+
+        install_quadlets(quadlets_dir, SYSTEMD_QUADLETS_DIR, to_update, render_quadlet_template, force=True)
         print()
 
         # --- Step 4: daemon-reload ---
         print(color("Reloading systemd daemon...", Colors.CYAN))
-        result = systemctl("daemon-reload")
+        result = RUNNER.systemctl("daemon-reload")
         if result.returncode != 0:
             print(color(f"  ✗ daemon-reload failed: {result.stderr}", Colors.RED))
             return
@@ -806,7 +357,7 @@ def cmd_apply(args):
         print()
 
     print(color(f"Restarting {len(restart_targets)} service(s)...", Colors.CYAN))
-    sm = ServiceManager(Runner(), _get_runtime_services(include_disabled=True))
+    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
     target_names = [svc.name for svc in restart_targets]
     sm.stop(target_names)
     sm.start(target_names)
@@ -848,14 +399,14 @@ def cmd_mode(args):
 def cmd_exec(args):
     """Execute command in container."""
     container = args.container
-    run(["podman", "exec", "-it", container, *args.exec_command], check=False)
+    RUNNER.run(["podman", "exec", "-it", container, *args.exec_command], check=False)
 
 
 def cmd_shell(args):
     """Open shell in container."""
     container = args.container
     shell = args.shell or "/bin/bash"
-    run(["podman", "exec", "-it", container, shell], check=False)
+    RUNNER.run(["podman", "exec", "-it", container, shell], check=False)
 
 
 def cmd_cleanup_containers(args):
@@ -872,7 +423,7 @@ def cmd_cleanup_containers(args):
             print(color("Cleanup cancelled by user.", Colors.YELLOW))
         else:
             print(color(f"Cleanup finished with status={status}: {message}", Colors.RED))
-    except Exception as e:
+    except (OSError, RuntimeError, ValueError) as e:
         print(color(f"Error during cleanup-containers: {e}", Colors.RED))
 
 
@@ -890,107 +441,6 @@ def cmd_session_doctor(args):
     )
     if issues:
         sys.exit(1)
-
-
-# Build configurations - maps service name to build info
-# Format: {"context": path, "dockerfile": path (optional), "image": image_name, "target": target (optional)}
-BUILD_CONFIGS = {
-    "apache": {
-        "context": ".",
-        "dockerfile": "./docker/apache/Dockerfile",
-        "image": "visp-apache",
-        "target": "production",
-        "build_args": {"WEBCLIENT_BUILD": "visp-build"},
-        "source_repo": "./external/webclient",  # git.commit label tracks webclient source
-    },
-    "session-manager": {
-        "context": "./external/session-manager",
-        "dockerfile": "Dockerfile",
-        "image": "visp-session-manager",
-    },
-    "artic": {
-        "context": "./external/artic",
-        "dockerfile": "../../docker/artic/Dockerfile",
-        "image": "visp-artic",
-        "target": "production",
-    },
-    "emu-webapp-server": {
-        "context": "./external/emu-webapp-server",
-        "dockerfile": "docker/Dockerfile",
-        "image": "visp-emu-webapp-server",
-    },
-    "octra": {
-        "context": "./docker/octra",
-        "dockerfile": "Dockerfile",
-        "image": "visp-octra",
-    },
-    "wsrng-server": {
-        "context": "./external/wsrng-server",
-        "dockerfile": "Dockerfile",
-        "image": "visp-wsrng-server",
-    },
-    "whisperx": {
-        "context": "./external/WhisperVault",
-        "dockerfile": "container/Containerfile",
-        "image": "visp-whisperx",
-        "description": "WhisperX transcription server (network-isolated, communicates via Unix socket)",
-    },
-    # Session images - used by session-manager to spawn user sessions
-    "jupyter-session": {
-        "context": "./docker/session-manager",
-        "dockerfile": "jupyter-session/Dockerfile",
-        "image": "visp-jupyter-session",
-        "description": "Jupyter + R session image (also used for operations tasks)",
-        "prepare_context": "container-agent",  # Needs container-agent copied to build context
-        "source_repo": "./external/container-agent",  # git.commit label tracks container-agent source
-    },
-    "session-proxy": {
-        "context": "./docker/session-proxy",
-        "dockerfile": "Dockerfile",
-        "image": "visp-session-proxy",
-        "description": "Tinyproxy sidecar for network-isolated session containers",
-    },
-    "podman-socket-proxy": {
-        "context": "./docker/podman-socket-proxy",
-        "dockerfile": "Dockerfile",
-        "image": "visp-podman-socket-proxy",
-        "description": "Body-inspecting Podman socket proxy — enforces image/mount/cap allowlist on container create",
-    },
-}
-
-# Special builds - Node.js tools built via container (no host npm needed)
-NODE_BUILD_CONFIGS = {
-    "container-agent": {
-        "source": "./external/container-agent",
-        "output": "./external/container-agent/dist",
-        "description": "Container management agent (webpack build)",
-        "build_cmd": "npm run build",
-        "verify_file": "main.js",
-    },
-    "webclient": {
-        "source": "./external/webclient",
-        "output": "./external/webclient/dist",
-        "description": "Angular webclient (ng build)",
-        # Pre-build: install PHP dependencies so angular.json's asset pipeline
-        # can copy vendor/ into dist/. Uses --ignore-platform-reqs because the
-        # Composer container lacks ext-mongodb (only needed at PHP runtime).
-        "pre_build_cmd": "composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs",
-        "pre_build_image": "docker.io/library/composer:2.9.5",
-        # Use npx to invoke the locally installed ng binary.
-        # Note: --output-path is NOT passed here; angular.json controls outputPath.
-        "build_cmd": "npx ng build --configuration={config}",
-        "default_config": "visp.dev",
-        "verify_file": "index.php",
-        # Angular 20 requires Node ^20.19 || ^22.12 || >=24
-        "container_image": "node:22.22.2",
-    },
-}
-
-# Services that can be built (have Dockerfiles)
-BUILDABLE_SERVICES = list(BUILD_CONFIGS.keys())
-
-# All buildable targets including node builds
-ALL_BUILDABLE = BUILDABLE_SERVICES + list(NODE_BUILD_CONFIGS.keys())
 
 
 def cmd_build(args):
@@ -1029,72 +479,27 @@ def cmd_build(args):
         print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
         print()
 
+    bm = BuildManager(RUNNER, build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
+
     # Check version drift before building (unless --force)
-    node_names = set(NODE_BUILD_CONFIGS.keys())
     if not force:
-        from vispctl.git_repo import GitRepository
-        from vispctl.versions import ComponentConfig
-
-        comp_config = ComponentConfig()
         mode = get_current_mode()
-
-        # Only check node builds that correspond to external repos
-        services_to_check = [s for s in ordered if s in node_names and s in dict(comp_config.get_components())]
-
-        version_warnings = []
-        for svc_name in services_to_check:
-            comp_data = comp_config.get_component(svc_name)
-            if not comp_data:
-                continue
-
-            version = comp_data.get("version", "latest")
-            is_locked = comp_config.is_locked(svc_name)
-
-            repo_path = Path.cwd() / "external" / svc_name
-            if not repo_path.exists():
-                version_warnings.append(f"  ⚠️  {svc_name}: Repository not found at {repo_path}")
-                continue
-
-            repo = GitRepository(str(repo_path))
-            if not repo.is_git_repo():
-                continue
-
-            current_commit = repo.get_current_commit()
-            if not current_commit:
-                continue
-
-            if mode == "prod" and is_locked:
-                if current_commit != version:
-                    version_warnings.append(
-                        f"  ⚠️  {svc_name}: Version mismatch in PROD mode\n"
-                        f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
-                        f"      Run: ./visp.py deploy update"
-                    )
-            elif mode == "dev" and not is_locked:
-                locked_version = comp_config.get_locked_version(svc_name)
-                if locked_version and locked_version != "N/A" and current_commit != locked_version:
-                    version_warnings.append(
-                        f"  ℹ️  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
-                        f"      Current: {current_commit[:8]}, Locked: {locked_version[:8]}"
-                    )
+        version_warnings, is_blocking = bm.check_version_drift(ordered, mode)
 
         if version_warnings:
             print(color("\n=== Version Check Warnings ===", Colors.YELLOW))
             for warning in version_warnings:
                 print(warning)
             print()
-            if mode == "prod" and any("Version mismatch" in w for w in version_warnings):
+            if is_blocking:
                 print(color("❌ Cannot build in PROD mode with version mismatches.", Colors.RED))
                 print("   Options:")
                 print("   1. Run: ./visp.py deploy update")
                 print("   2. Use --force to override (not recommended)")
                 print()
                 return
-            elif version_warnings:
-                print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
-                print()
-
-    bm = BuildManager(Runner(), build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
+            print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
+            print()
 
     print(color("=== Building VISP Services ===", Colors.CYAN))
     print(f"  Order: {' → '.join(ordered)}")
@@ -1107,65 +512,7 @@ def cmd_build(args):
     if no_cache or pull:
         print()
 
-    results = {"success": [], "failed": [], "skipped": []}
-
-    for svc_name in ordered:
-        if svc_name in node_names:
-            # ── Node.js build (containerized) ──────────────────────────
-            cfg = NODE_BUILD_CONFIGS[svc_name]
-            print(color(f"Building {svc_name} (node)...", Colors.BLUE))
-            print(f"  Source: {cfg['source']}")
-            print(f"  Output: {cfg['output']}")
-
-            success = bm.build_node_project(svc_name, cfg, no_cache, build_config)
-            if success:
-                results["success"].append(svc_name)
-                output_path = Path(cfg.get("output"))
-                if output_path.exists():
-                    print(color(f"  Fixing permissions on {output_path}...", Colors.YELLOW))
-                    from vispctl.permissions import PermissionsManager
-
-                    pm = PermissionsManager(Runner())
-                    pm.apply_fix([output_path], recursive=True, host_owner=True)
-                    print(color("  ✓ Permissions fixed", Colors.GREEN))
-            else:
-                results["failed"].append(svc_name)
-        else:
-            # ── Container image build ──────────────────────────────────
-            cfg = BUILD_CONFIGS[svc_name]
-            description = cfg.get("description", "")
-            target = cfg.get("target")
-
-            print(color(f"Building {svc_name}...", Colors.BLUE))
-            print(f"  Image: {cfg['image']}:latest")
-            print(f"  Context: {cfg['context']}")
-            if description:
-                print(f"  Description: {description}")
-            if target:
-                print(f"  Target: {target}")
-
-            depends_on = cfg.get("depends_on")
-            if depends_on and depends_on not in results["success"]:
-                rc, _, _ = run_quiet(["podman", "image", "exists", f"{BUILD_CONFIGS[depends_on]['image']}:latest"])
-                if rc != 0:
-                    print(color(f"  ✗ Requires {depends_on} image — not built and not present", Colors.RED))
-                    results["skipped"].append(svc_name)
-                    print()
-                    continue
-
-            if cfg.get("prepare_context"):
-                if not bm.prepare_build_context(svc_name, cfg):
-                    results["failed"].append(svc_name)
-                    print()
-                    continue
-
-            ok = bm.build_image(svc_name, cfg, no_cache=no_cache, pull=pull)
-            if ok:
-                results["success"].append(svc_name)
-            else:
-                results["failed"].append(svc_name)
-
-        print()
+    results = bm.run_builds(ordered, no_cache=no_cache, pull=pull, build_config=build_config)
 
     # Summary
     print(color("=== Build Summary ===", Colors.CYAN))
@@ -1191,7 +538,7 @@ def cmd_build(args):
         )
 
 
-def cmd_build_list(args):
+def cmd_build_list(args):  # noqa: ARG001
     """List buildable services."""
     print(color("=== Buildable Container Images ===", Colors.CYAN))
     print()
@@ -1227,24 +574,26 @@ def cmd_build_list(args):
 
 def cmd_debug(args):
     """Shorthand for 'logs [service] --debug'. Shows diagnostics + logs."""
-    # Build an args namespace compatible with cmd_logs
-    args.debug = True
-    args.follow = False
-    args.lines = None
-    args.since = None
-    args.priority = None
-    args.journal_only = False
-    args.no_follow = True
+    service = args.service
 
-    if args.service == "all":
-        # Show debug info for all running container services
-        for svc in _container_services(_get_runtime_services()):
-            args.service = svc.name
+    def _make_logs_args(svc_name: str) -> argparse.Namespace:
+        return argparse.Namespace(
+            service=svc_name,
+            debug=True,
+            follow=False,
+            no_follow=True,
+            lines=None,
+            since=None,
+            priority=None,
+            journal_only=False,
+        )
+
+    if service == "all":
+        for svc in _container_services(get_runtime_services()):
             print(color(f"\n{'=' * 60}", Colors.CYAN))
-            cmd_logs(args)
-        args.service = "all"
+            cmd_logs(_make_logs_args(svc.name))
     else:
-        cmd_logs(args)
+        cmd_logs(_make_logs_args(service))
 
 
 # === Network Info ===
@@ -1252,8 +601,7 @@ def cmd_debug(args):
 
 def cmd_network(args):
     """Show network information and DNS status, or perform actions like 'ensure'."""
-    runner = Runner()
-    nm = NetworkManager(runner)
+    nm = NetworkManager(RUNNER)
 
     if getattr(args, "action", None) == "ensure":
         print(color("Ensuring required Podman networks exist...", Colors.CYAN))
@@ -1290,30 +638,13 @@ def cmd_images(args):
     im.display_network_info()
 
 
-def cmd_images_base(args):
+def cmd_images_base(args):  # noqa: ARG001
     """List all base images used in Dockerfiles."""
     im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
     im.display_base_images()
 
 
 # === Deploy Commands ===
-
-
-def cmd_deploy(args):
-    """Dispatch deploy subcommands."""
-    if args.deploy_command == "status":
-        cmd_deploy_status(args)
-    elif args.deploy_command == "lock":
-        cmd_deploy_lock(args)
-    elif args.deploy_command == "unlock":
-        cmd_deploy_unlock(args)
-    elif args.deploy_command == "rollback":
-        cmd_deploy_rollback(args)
-    elif args.deploy_command == "update":
-        cmd_deploy_update(args)
-    else:
-        print("Unknown deploy command. Use --help for usage.")
-        sys.exit(1)
 
 
 def cmd_deploy_status(args):
@@ -1385,7 +716,7 @@ def cmd_fix_permissions(args):
     from vispctl.permissions import PermissionsManager
 
     # Default target paths if none provided: all container-writable directories
-    if getattr(args, "paths", None):
+    if args.paths:
         paths = [Path(p) for p in args.paths]
     else:
         paths = [
@@ -1411,19 +742,18 @@ def cmd_fix_permissions(args):
         )
         return
 
-    host_owner_flag = getattr(args, "host_owner", False)
     pm = PermissionsManager(RUNNER)
     planned = pm.plan_fix(
         existing,
-        recursive=getattr(args, "recursive", False),
-        host_owner=host_owner_flag,
+        recursive=args.recursive,
+        host_owner=args.host_owner,
     )
 
     print(color("=== Permission Fix Plan ===", Colors.CYAN))
     for c in planned:
         print(f"  {c}")
 
-    if not getattr(args, "apply", False):
+    if not args.apply:
         print()
         print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
         return
@@ -1433,8 +763,8 @@ def cmd_fix_permissions(args):
 
     ok = pm.apply_fix(
         existing,
-        recursive=getattr(args, "recursive", False),
-        host_owner=host_owner_flag,
+        recursive=args.recursive,
+        host_owner=args.host_owner,
     )
 
     if ok:
@@ -1443,22 +773,12 @@ def cmd_fix_permissions(args):
         print(color("✗ One or more operations failed", Colors.RED))
 
     # Post-check: confirm host ownership matches current user when possible
-    import os
-
-    mismatched = []
-    for p in existing:
-        try:
-            st = p.stat()
-            if st.st_uid != os.getuid():
-                mismatched.append((p, st.st_uid))
-        except Exception:
-            mismatched.append((p, None))
-
+    mismatched = pm.verify_host_ownership(existing)
     if mismatched:
         print()
         print(
             color(
-                "⚠️  Ownership check: some paths are not owned by the " "current user on the host:",
+                "⚠️  Ownership check: some paths are not owned by the current user on the host:",
                 Colors.YELLOW,
             )
         )
@@ -1466,7 +786,7 @@ def cmd_fix_permissions(args):
             if uid is None:
                 print(f"  - {p}: cannot stat (permission denied)")
             else:
-                print(f"  - {p}: host uid={uid} " f"(current user uid={os.getuid()})")
+                print(f"  - {p}: host uid={uid} (current user uid={os.getuid()})")
         print(
             color(
                 "Note: this can be normal under rootless Podman userns "
@@ -1548,39 +868,6 @@ def cmd_restore(args):
     return
 
 
-# === Helpers ===
-
-
-def _resolve_services(service_arg: str, include_disabled: bool = False) -> list[Service]:
-    """Resolve service argument to list of Service objects."""
-    available_services = _get_runtime_services(include_disabled=include_disabled)
-
-    if service_arg == "all":
-        return available_services
-
-    svc = next((s for s in available_services if s.name == service_arg), None)
-    if svc:
-        return [svc]
-
-    # Helpful message for optional services that are disabled in .env.
-    if not include_disabled:
-        disabled_optional_services = _get_disabled_optional_services()
-        if service_arg in disabled_optional_services:
-            env_var = disabled_optional_services[service_arg]
-            print(color(f"Service '{service_arg}' is disabled ({env_var}=false in .env).", Colors.YELLOW))
-            print(f"Enable it by setting {env_var}=true in .env")
-            sys.exit(1)
-
-    print(color(f"Unknown service: {service_arg}", Colors.RED))
-    print(f"Available: {', '.join(s.name for s in available_services)}")
-    sys.exit(1)
-
-
-def _get_service_names() -> list[str]:
-    """Get list of service names for argparse choices."""
-    return ["all"] + [s.name for s in _get_runtime_services()]
-
-
 # === Main ===
 
 
@@ -1652,10 +939,11 @@ Examples:
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # status
-    subparsers.add_parser("status", aliases=["s"], help="Show status of all services")
+    subparsers.add_parser("status", aliases=["s"], help="Show status of all services").set_defaults(func=cmd_status)
 
     # logs
     p_logs = subparsers.add_parser("logs", aliases=["l"], help="View logs from services")
+    p_logs.set_defaults(func=cmd_logs)
     p_logs.add_argument("service", nargs="?", default="all", help="Service name or 'all'")
     follow_group = p_logs.add_mutually_exclusive_group()
     follow_group.add_argument("-f", "--follow", action="store_true", help="Follow logs")
@@ -1676,30 +964,35 @@ Examples:
 
     # start
     p_start = subparsers.add_parser("start", help="Start service(s)")
+    p_start.set_defaults(func=cmd_start)
     p_start.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # stop
     p_stop = subparsers.add_parser("stop", help="Stop service(s)")
+    p_stop.set_defaults(func=cmd_stop)
     p_stop.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # restart
     p_restart = subparsers.add_parser("restart", aliases=["r"], help="Restart service(s)")
+    p_restart.set_defaults(func=cmd_restart)
     p_restart.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # install
     p_install = subparsers.add_parser("install", aliases=["i"], help="Link quadlet files to systemd")
+    p_install.set_defaults(func=cmd_install)
     p_install.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_install.add_argument("-f", "--force", action="store_true", help="Overwrite existing links")
     p_install.add_argument("-m", "--mode", choices=["dev", "prod"], help="Deployment mode (dev or prod)")
 
     # uninstall
     p_uninstall = subparsers.add_parser("uninstall", aliases=["u"], help="Remove quadlet links")
+    p_uninstall.set_defaults(func=cmd_uninstall)
     p_uninstall.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_uninstall.add_argument("--keep-running", action="store_true", help="Don't stop services first")
     p_uninstall.add_argument("--remove-networks", action="store_true", help="Also remove Podman networks")
 
     # reload
-    subparsers.add_parser("reload", help="Reload systemd daemon")
+    subparsers.add_parser("reload", help="Reload systemd daemon").set_defaults(func=cmd_reload)
 
     # apply
     p_apply = subparsers.add_parser(
@@ -1707,6 +1000,7 @@ Examples:
         aliases=["a"],
         help="Apply quadlet changes: install --force + reload + restart (one step)",
     )
+    p_apply.set_defaults(func=cmd_apply)
     p_apply.add_argument(
         "service",
         nargs="?",
@@ -1716,6 +1010,7 @@ Examples:
 
     # mode
     p_mode = subparsers.add_parser("mode", aliases=["m"], help="Show or set deployment mode")
+    p_mode.set_defaults(func=cmd_mode)
     p_mode.add_argument(
         "new_mode",
         nargs="?",
@@ -1725,15 +1020,18 @@ Examples:
 
     # debug
     p_debug = subparsers.add_parser("debug", aliases=["d"], help="Shorthand for 'logs --debug'")
+    p_debug.set_defaults(func=cmd_debug)
     p_debug.add_argument("service", nargs="?", default="all", help="Service name or 'all' (default: all)")
 
     # exec
     p_exec = subparsers.add_parser("exec", aliases=["e"], help="Execute command in container")
+    p_exec.set_defaults(func=cmd_exec)
     p_exec.add_argument("container", help="Container name (e.g. apache, session-manager)")
     p_exec.add_argument("exec_command", nargs="+", help="Command to run")
 
     # shell
     p_shell = subparsers.add_parser("shell", aliases=["sh"], help="Open shell in container")
+    p_shell.set_defaults(func=cmd_shell)
     p_shell.add_argument("container", help="Container name (e.g. apache, session-manager)")
     p_shell.add_argument("--shell", default="/bin/bash", help="Shell to use (default: /bin/bash)")
 
@@ -1743,6 +1041,7 @@ Examples:
         aliases=["cleanup"],
         help="Stop and remove session containers (legacy and current naming)",
     )
+    p_cleanup.set_defaults(func=cmd_cleanup_containers)
     p_cleanup.add_argument(
         "--mode",
         choices=["all", "stopped", "running"],
@@ -1762,6 +1061,7 @@ Examples:
         aliases=["sd"],
         help="Diagnose session containers, proxy sidecars, and socket dirs",
     )
+    p_sdoctor.set_defaults(func=cmd_session_doctor)
     p_sdoctor.add_argument(
         "--problems",
         action="store_true",
@@ -1793,6 +1093,7 @@ Examples:
 
     # build
     p_build = subparsers.add_parser("build", aliases=["b"], help="Build container images")
+    p_build.set_defaults(func=cmd_build)
     p_build.add_argument(
         "services",
         nargs="*",
@@ -1828,6 +1129,7 @@ Examples:
 
     # network
     p_network = subparsers.add_parser("network", aliases=["n", "net"], help="Show network info and DNS status")
+    p_network.set_defaults(func=cmd_network)
     p_network.add_argument(
         "action",
         nargs="?",
@@ -1837,15 +1139,18 @@ Examples:
 
     # images
     p_images = subparsers.add_parser("images", aliases=["img"], help="List VISP container images and build status")
+    p_images.set_defaults(func=cmd_images)
     p_images_sub = p_images.add_subparsers(dest="subcommand", help="Images subcommands")
-    p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions")
+    p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions").set_defaults(
+        func=cmd_images_base
+    )
 
     # deploy
     p_deploy = subparsers.add_parser("deploy", help="Manage deployments: version control, git repos, status")
     p_deploy_sub = p_deploy.add_subparsers(dest="deploy_command", help="Deploy subcommands", required=True)
 
-    # deploy status
     p_deploy_status = p_deploy_sub.add_parser("status", help="Check repository status and version drift")
+    p_deploy_status.set_defaults(func=cmd_deploy_status)
     p_deploy_status.add_argument(
         "--no-fetch", action="store_true", help="Skip fetching from remotes (use cached remote state)"
     )
@@ -1853,23 +1158,23 @@ Examples:
         "--strict", action="store_true", help="Exit with code 1 if any version drift is detected (for CI/CD)"
     )
 
-    # deploy lock
     p_deploy_lock = p_deploy_sub.add_parser("lock", help="Lock components to their current versions")
+    p_deploy_lock.set_defaults(func=cmd_deploy_lock)
     p_deploy_lock.add_argument("components", nargs="*", help="Components to lock (specify names or use --all)")
     p_deploy_lock.add_argument("--all", action="store_true", help="Lock all components")
 
-    # deploy unlock
     p_deploy_unlock = p_deploy_sub.add_parser("unlock", help="Unlock components to track latest")
+    p_deploy_unlock.set_defaults(func=cmd_deploy_unlock)
     p_deploy_unlock.add_argument("components", nargs="*", help="Components to unlock (specify names or use --all)")
     p_deploy_unlock.add_argument("--all", action="store_true", help="Unlock all components")
 
-    # deploy rollback
     p_deploy_rollback = p_deploy_sub.add_parser("rollback", help="Rollback components to their locked versions")
+    p_deploy_rollback.set_defaults(func=cmd_deploy_rollback)
     p_deploy_rollback.add_argument("components", nargs="*", help="Components to rollback (specify names or use --all)")
     p_deploy_rollback.add_argument("--all", action="store_true", help="Rollback all components")
 
-    # deploy update
     p_deploy_update = p_deploy_sub.add_parser("update", help="Update external repositories to configured versions")
+    p_deploy_update.set_defaults(func=cmd_deploy_update)
     p_deploy_update.add_argument("--force", action="store_true", help="Force update even with uncommitted changes")
 
     # fix-permissions
@@ -1878,6 +1183,7 @@ Examples:
         aliases=["fixperm"],
         help="Fix ownership and permissions for mount paths using podman unshare",
     )
+    p_fix.set_defaults(func=cmd_fix_permissions)
     p_fix.add_argument(
         "--path",
         "-p",
@@ -1910,6 +1216,7 @@ Examples:
 
     # backup
     p_backup = subparsers.add_parser("backup", help="Backup MongoDB database")
+    p_backup.set_defaults(func=cmd_backup)
     p_backup.add_argument(
         "--output",
         "-o",
@@ -1923,11 +1230,13 @@ Examples:
 
     # restore
     p_restore = subparsers.add_parser("restore", help="Restore MongoDB database from backup")
+    p_restore.set_defaults(func=cmd_restore)
     p_restore.add_argument("backup_file", help="Backup file to restore")
     p_restore.add_argument("--force", action="store_true", help="Skip confirmation prompt")
 
     # users
     p_users = subparsers.add_parser("users", help="Manage users in MongoDB")
+    p_users.set_defaults(func=cmd_users)
     p_users_sub = p_users.add_subparsers(dest="users_command", help="Users subcommands", required=True)
 
     p_users_sub.add_parser("list", aliases=["ls"], help="List all users")
@@ -1965,6 +1274,7 @@ Examples:
         aliases=["audit"],
         help="Project health overview: tree view + emuDB consistency checks",
     )
+    p_doctor.set_defaults(func=cmd_doctor)
     p_doctor.add_argument("project_id", nargs="?", help="Check a specific project by ID (default: all)")
     p_doctor.add_argument(
         "--no-files",
@@ -2016,64 +1326,14 @@ Examples:
 
     args = parser.parse_args()
 
-    if not args.command:
+    if not hasattr(args, "func"):
         parser.print_help()
         return
 
-    # Dispatch commands
-    cmd_map = {
-        "status": cmd_status,
-        "s": cmd_status,
-        "logs": cmd_logs,
-        "l": cmd_logs,
-        "start": cmd_start,
-        "stop": cmd_stop,
-        "restart": cmd_restart,
-        "r": cmd_restart,
-        "install": cmd_install,
-        "i": cmd_install,
-        "uninstall": cmd_uninstall,
-        "u": cmd_uninstall,
-        "reload": cmd_reload,
-        "apply": cmd_apply,
-        "a": cmd_apply,
-        "mode": cmd_mode,
-        "m": cmd_mode,
-        "debug": cmd_debug,
-        "d": cmd_debug,
-        "exec": cmd_exec,
-        "e": cmd_exec,
-        "shell": cmd_shell,
-        "sh": cmd_shell,
-        "cleanup-containers": cmd_cleanup_containers,
-        "cleanup": cmd_cleanup_containers,
-        "build": cmd_build,
-        "b": cmd_build,
-        "network": cmd_network,
-        "n": cmd_network,
-        "net": cmd_network,
-        "images": cmd_images,
-        "img": cmd_images,
-        "deploy": cmd_deploy,
-        "fix-permissions": cmd_fix_permissions,
-        "fixperm": cmd_fix_permissions,
-        "backup": cmd_backup,
-        "restore": cmd_restore,
-        "users": cmd_users,
-        "doctor": cmd_doctor,
-        "audit": cmd_doctor,
-        "session-doctor": cmd_session_doctor,
-        "sd": cmd_session_doctor,
-    }
-
-    handler = cmd_map.get(args.command)
-    if handler:
-        try:
-            handler(args)
-        except KeyboardInterrupt:
-            print()
-    else:
-        parser.print_help()
+    try:
+        args.func(args)
+    except KeyboardInterrupt:
+        print()
 
 
 if __name__ == "__main__":
