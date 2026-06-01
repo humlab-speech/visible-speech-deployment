@@ -1,7 +1,10 @@
 """Tests for vispctl/install.py."""
 
+from types import SimpleNamespace
+
 from vispctl.install import (
     cleanup_disabled_optional_services,
+    fix_mongo_mount_ownership,
     fix_writable_permissions,
     generate_tracker_config,
     install_quadlets,
@@ -123,6 +126,44 @@ def test_fix_writable_permissions_skips_missing(tmp_path):
     project_dir.mkdir()
     # no mounts/ subdirs at all
     fixed = fix_writable_permissions(project_dir)
+    assert fixed == 0
+
+
+# ---------------------------------------------------------------------------
+# fix_mongo_mount_ownership
+# ---------------------------------------------------------------------------
+
+
+def test_fix_mongo_mount_ownership_runs_unshare_chown(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    data_dir = project_dir / "mounts/mongo/data"
+    logs_dir = project_dir / "mounts/mongo/logs"
+    data_dir.mkdir(parents=True)
+    logs_dir.mkdir(parents=True)
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, capture_output, text):  # noqa: ANN001
+        calls.append(cmd)
+        return SimpleNamespace(returncode=0, stderr="")
+
+    monkeypatch.setattr("vispctl.install.subprocess.run", fake_run)
+
+    fixed = fix_mongo_mount_ownership(project_dir)
+
+    assert fixed == 2
+    assert calls == [
+        ["podman", "unshare", "chown", "-R", "999:999", str(data_dir)],
+        ["podman", "unshare", "chown", "-R", "999:999", str(logs_dir)],
+    ]
+
+
+def test_fix_mongo_mount_ownership_skips_missing(tmp_path):
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+
+    fixed = fix_mongo_mount_ownership(project_dir)
+
     assert fixed == 0
 
 

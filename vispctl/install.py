@@ -125,6 +125,45 @@ def fix_writable_permissions(project_dir: Path) -> int:
     return fixed
 
 
+def fix_mongo_mount_ownership(project_dir: Path) -> int:
+    """
+    Ensure Mongo bind-mount paths are owned by Mongo's runtime UID/GID
+    inside the rootless Podman user namespace.
+
+    Uses ``podman unshare chown -R 999:999`` so ownership is mapped through
+    Podman's namespace. This prevents startup failures where mongod cannot
+    read/write ``/data/db`` or rotate ``/var/log/mongodb/mongodb.log``.
+
+    Returns the number of mount roots successfully normalized.
+    """
+    mongo_mounts = [
+        project_dir / "mounts/mongo/data",
+        project_dir / "mounts/mongo/logs",
+    ]
+    fixed = 0
+
+    for mount_path in mongo_mounts:
+        if not mount_path.exists():
+            continue
+
+        result = subprocess.run(
+            ["podman", "unshare", "chown", "-R", "999:999", str(mount_path)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(
+                color(
+                    f"  ⚠ Failed to normalize Mongo ownership on {mount_path}: {result.stderr.strip()}",
+                    Colors.YELLOW,
+                )
+            )
+            continue
+        fixed += 1
+
+    return fixed
+
+
 def generate_tracker_config(project_dir: Path, env_vars: dict[str, str]) -> None:
     """
     Render ``mounts/apache/apache/vc.js`` from the ``*.template`` file,
@@ -241,7 +280,7 @@ def run_install(
       3. Podman network creation
       4. Podman secret creation
       5. Mount-directory scaffolding
-      6. Container-writable permissions
+      6. Container-writable permissions + Mongo mount ownership
       7. Tracker config (vc.js)
       8. Dev certs + local IdP files (dev mode only)
       9. Service-specific .env files
@@ -345,13 +384,19 @@ def run_install(
         print("  All mount directories already exist")
     print()
 
-    # --- Phase 6: container-writable permissions ---
+    # --- Phase 6: container-writable permissions + Mongo mount ownership ---
     print(color("Fixing container-writable directory permissions...", Colors.CYAN))
     perm_fixed = fix_writable_permissions(project_dir)
     if perm_fixed:
         print(f"  Fixed permissions on {perm_fixed} directories (set to 777)")
     else:
         print("  All container-writable directories already have correct permissions")
+
+    mongo_fixed = fix_mongo_mount_ownership(project_dir)
+    if mongo_fixed:
+        print(f"  Normalized Mongo mount ownership on {mongo_fixed} paths")
+    else:
+        print("  Mongo mount ownership already normalized (or paths missing)")
     print()
 
     # --- Phase 7: tracker config (vc.js) ---
