@@ -4,7 +4,7 @@ After=network-online.target visp-net.service
 
 [Container]
 ContainerName=mongo
-Image=docker.io/library/mongo:6.0.14
+Image=docker.io/library/mongo:6
 Network=visp-net.network
 PublishPort=127.0.0.1:27017:27017
 Environment=MONGO_INITDB_ROOT_USERNAME=root
