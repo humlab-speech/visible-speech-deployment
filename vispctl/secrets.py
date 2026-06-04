@@ -43,6 +43,8 @@ class SecretManager:
         if "MONGO_ROOT_PASSWORD" in env_vars:
             secrets["visp_mongo_root_password"] = env_vars["MONGO_ROOT_PASSWORD"]
             secrets["visp_mongo_uri"] = f"mongodb://root:{env_vars['MONGO_ROOT_PASSWORD']}@mongo:27017"
+        if "MONGO_EXPRESS_PASSWORD" in env_vars:
+            secrets["visp_mongo_express_password"] = env_vars["MONGO_EXPRESS_PASSWORD"]
         if "VISP_API_ACCESS_TOKEN" in env_vars:
             secrets["visp_api_access_token"] = env_vars["VISP_API_ACCESS_TOKEN"]
         if "TEST_USER_LOGIN_KEY" in env_vars:

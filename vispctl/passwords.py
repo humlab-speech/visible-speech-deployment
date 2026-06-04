@@ -144,10 +144,6 @@ def setup_env_file(auto_passwords: bool = True, interactive: bool = False) -> No
         "SSP_ADMIN_PASSWORD": ("local", "SimpleSAMLphp admin password"),
         "SSP_SALT": ("local", "SimpleSAMLphp salt"),
         "MONGO_EXPRESS_PASSWORD": ("local", "Mongo Express password"),
-        "MONGO_INITDB_ROOT_PASSWORD": (
-            "local",
-            "MongoDB init root password (should match MONGO_ROOT_PASSWORD)",
-        ),
     }
 
     for var, (ptype, comment) in password_vars.items():
@@ -156,7 +152,7 @@ def setup_env_file(auto_passwords: bool = True, interactive: bool = False) -> No
             continue
 
         # Skip Mongo if we handled it above (data exists check)
-        if var in ("MONGO_ROOT_PASSWORD", "MONGO_INITDB_ROOT_PASSWORD") and mongo_data_exists:
+        if var == "MONGO_ROOT_PASSWORD" and mongo_data_exists:
             continue
 
         if interactive:

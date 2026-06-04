@@ -45,12 +45,14 @@ def test_get_derived():
     sm = SecretManager(FakeRunner())
     env = {
         "MONGO_ROOT_PASSWORD": "pw",
+        "MONGO_EXPRESS_PASSWORD": "mongo-express-pw",
         "BASE_DOMAIN": "example.com",
         "SSP_ADMIN_PASSWORD": "adminpw",
         "SSP_SALT": "devsalt",
     }
     derived = sm.get_derived(env)
     assert derived["visp_mongo_root_password"] == "pw"
+    assert derived["visp_mongo_express_password"] == "mongo-express-pw"
     assert "visp_mongo_uri" in derived
     assert derived["visp_media_file_base_url"] == "https://artic.example.com"
     assert derived["visp_ssp_admin_password"] == "adminpw"
