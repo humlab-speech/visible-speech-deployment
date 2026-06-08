@@ -277,73 +277,56 @@ def cleanup_disabled_optional_services(
             print(color(f"  ○ {svc.file}: removed ({env_var}=false)", Colors.YELLOW))
 
 
-def _ensure_webclient_dist(project_dir: Path) -> None:
+def _ensure_webclient_dist(project_dir: Path, runner: Runner) -> None:
     """
-    Build the webclient dist directory using the host's npm/node if it is
-    missing or empty.  Only called in dev mode — prod bakes the build into
-    the Apache image.
+    Build the webclient dist directory if runtime-critical files are missing.
 
-    Requires ``node`` and ``npm`` to be on PATH.  If they are not available
-    the user is warned with the manual command to run.
+    Only called in dev mode — prod bakes the build into the Apache image.
+    Uses the same containerized Node/Composer build path as ``visp.py build
+    webclient`` so the PHP vendor dependencies are present in ``dist/vendor``.
     """
     webclient_dir = project_dir / "external" / "webclient"
     dist_dir = webclient_dir / "dist"
+    required_files = [
+        dist_dir / "index.php",
+        dist_dir / "vendor" / "autoload.php",
+    ]
 
     if not webclient_dir.exists():
         # External repos not present yet — skip silently (phase 13 handles this).
         return
 
-    if dist_dir.exists() and any(dist_dir.iterdir()):
-        # dist already populated — nothing to do.
+    if all(path.exists() for path in required_files):
+        # dist already has the assets Apache/PHP needs.
         return
+
+    if dist_dir.exists() and any(dist_dir.iterdir()):
+        missing = [str(path.relative_to(dist_dir)) for path in required_files if not path.exists()]
+        print(color("Webclient dist is incomplete; rebuilding missing runtime files:", Colors.YELLOW))
+        for path in missing:
+            print(f"  - {path}")
 
     print(color("Building webclient dist (dev mode)...", Colors.CYAN))
 
-    # Check node / npm availability.
-    node_ok = subprocess.run(["which", "node"], capture_output=True).returncode == 0
-    npm_ok = subprocess.run(["which", "npm"], capture_output=True).returncode == 0
+    from .build import NODE_BUILD_CONFIGS, BuildManager
 
-    if not node_ok or not npm_ok:
-        missing = []
-        if not node_ok:
-            missing.append("node")
-        if not npm_ok:
-            missing.append("npm")
-        print(
-            color(
-                f"  ⚠ {', '.join(missing)} not found on PATH — skipping webclient build.",
-                Colors.YELLOW,
-            )
-        )
-        print("  To build manually, run inside external/webclient/:")
-        print("    npm install --legacy-peer-deps")
-        print("    npm run visp-local-build")
+    config = dict(NODE_BUILD_CONFIGS["webclient"])
+    config["source"] = str(webclient_dir)
+    config["output"] = str(dist_dir)
+
+    bm = BuildManager(runner, build_configs={}, node_configs={"webclient": config})
+    if not bm.build_node_project("webclient", config, build_config="visp.dev"):
+        print(color("  ✗ Webclient dist not built.", Colors.RED))
+        print("  Fix the errors above, then run:")
+        print("    ./visp.py build webclient --config visp.dev")
         print()
         return
 
-    print("  Running: npm install --legacy-peer-deps")
-    result = subprocess.run(
-        ["npm", "install", "--legacy-peer-deps"],
-        cwd=webclient_dir,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(color("  ✗ npm install failed — webclient dist not built.", Colors.RED))
-        print("  Fix the errors above, then run inside external/webclient/:")
-        print("    npm install --legacy-peer-deps && npm run visp-local-build")
-        print()
-        return
-
-    print("  Running: npm run visp-local-build")
-    result = subprocess.run(
-        ["npm", "run", "visp-local-build"],
-        cwd=webclient_dir,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(color("  ✗ npm run visp-local-build failed — webclient dist not built.", Colors.RED))
-        print("  Fix the errors above, then run inside external/webclient/:")
-        print("    npm run visp-local-build")
+    missing_after_build = [str(path.relative_to(dist_dir)) for path in required_files if not path.exists()]
+    if missing_after_build:
+        print(color("  ✗ Webclient build finished, but required files are still missing:", Colors.RED))
+        for path in missing_after_build:
+            print(f"    - {path}")
         print()
         return
 
@@ -383,7 +366,7 @@ def run_install(
       11. Cleanup stale disabled-service quadlets
       12. Save mode, print next steps
       13. Check for missing external repos and offer to fetch
-      14. Build webclient dist (dev mode only, host npm)
+      14. Build webclient dist (dev mode only, containerized Node/Composer)
     """
     import sys
 
@@ -575,6 +558,6 @@ def run_install(
             print()
             print(color("  Remember to run './visp.py deploy update' before building images.", Colors.YELLOW))
 
-    # --- Phase 14: build webclient dist for dev mode (host npm) ---
+    # --- Phase 14: build webclient dist for dev mode ---
     if mode == "dev":
-        _ensure_webclient_dist(project_dir)
+        _ensure_webclient_dist(project_dir, runner)
