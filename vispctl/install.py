@@ -125,14 +125,20 @@ def fix_writable_permissions(project_dir: Path) -> int:
     return fixed
 
 
+MONGO_CONTAINER_UID = 999
+MONGO_CONTAINER_GID = 999
+MONGO_MOUNT_MODE = "u+rwX,go-rwx"
+
+
 def fix_mongo_mount_ownership(project_dir: Path) -> int:
     """
     Ensure Mongo bind-mount paths are owned by Mongo's runtime UID/GID
     inside the rootless Podman user namespace.
 
-    Uses ``podman unshare chown -R 999:999`` so ownership is mapped through
-    Podman's namespace. This prevents startup failures where mongod cannot
-    read/write ``/data/db`` or rotate ``/var/log/mongodb/mongodb.log``.
+    Uses ``podman unshare chown -R 999:999`` so Mongo's in-container
+    ``mongodb`` user is mapped to the correct subordinate host UID/GID.
+    Then removes group/other access, so old ``0777`` workarounds do not
+    linger after install.
 
     Returns the number of mount roots successfully normalized.
     """
@@ -146,15 +152,30 @@ def fix_mongo_mount_ownership(project_dir: Path) -> int:
         if not mount_path.exists():
             continue
 
-        result = subprocess.run(
-            ["podman", "unshare", "chown", "-R", "999:999", str(mount_path)],
+        owner = f"{MONGO_CONTAINER_UID}:{MONGO_CONTAINER_GID}"
+        chown_result = subprocess.run(
+            ["podman", "unshare", "chown", "-R", owner, str(mount_path)],
             capture_output=True,
             text=True,
         )
-        if result.returncode != 0:
+        if chown_result.returncode != 0:
             print(
                 color(
-                    f"  ⚠ Failed to normalize Mongo ownership on {mount_path}: {result.stderr.strip()}",
+                    f"  ⚠ Failed to normalize Mongo ownership on {mount_path}: {chown_result.stderr.strip()}",
+                    Colors.YELLOW,
+                )
+            )
+            continue
+
+        chmod_result = subprocess.run(
+            ["podman", "unshare", "chmod", "-R", MONGO_MOUNT_MODE, str(mount_path)],
+            capture_output=True,
+            text=True,
+        )
+        if chmod_result.returncode != 0:
+            print(
+                color(
+                    f"  ⚠ Failed to tighten Mongo permissions on {mount_path}: {chmod_result.stderr.strip()}",
                     Colors.YELLOW,
                 )
             )
@@ -256,6 +277,63 @@ def cleanup_disabled_optional_services(
             print(color(f"  ○ {svc.file}: removed ({env_var}=false)", Colors.YELLOW))
 
 
+def _ensure_webclient_dist(project_dir: Path, runner: Runner) -> None:
+    """
+    Build the webclient dist directory if runtime-critical files are missing.
+
+    Only called in dev mode — prod bakes the build into the Apache image.
+    Uses the same containerized Node/Composer build path as ``visp.py build
+    webclient`` so the PHP vendor dependencies are present in ``dist/vendor``.
+    """
+    webclient_dir = project_dir / "external" / "webclient"
+    dist_dir = webclient_dir / "dist"
+    required_files = [
+        dist_dir / "index.php",
+        dist_dir / "vendor" / "autoload.php",
+    ]
+
+    if not webclient_dir.exists():
+        # External repos not present yet — skip silently (phase 13 handles this).
+        return
+
+    if all(path.exists() for path in required_files):
+        # dist already has the assets Apache/PHP needs.
+        return
+
+    if dist_dir.exists() and any(dist_dir.iterdir()):
+        missing = [str(path.relative_to(dist_dir)) for path in required_files if not path.exists()]
+        print(color("Webclient dist is incomplete; rebuilding missing runtime files:", Colors.YELLOW))
+        for path in missing:
+            print(f"  - {path}")
+
+    print(color("Building webclient dist (dev mode)...", Colors.CYAN))
+
+    from .build import NODE_BUILD_CONFIGS, BuildManager
+
+    config = dict(NODE_BUILD_CONFIGS["webclient"])
+    config["source"] = str(webclient_dir)
+    config["output"] = str(dist_dir)
+
+    bm = BuildManager(runner, build_configs={}, node_configs={"webclient": config})
+    if not bm.build_node_project("webclient", config, build_config="visp.dev"):
+        print(color("  ✗ Webclient dist not built.", Colors.RED))
+        print("  Fix the errors above, then run:")
+        print("    ./visp.py build webclient --config visp.dev")
+        print()
+        return
+
+    missing_after_build = [str(path.relative_to(dist_dir)) for path in required_files if not path.exists()]
+    if missing_after_build:
+        print(color("  ✗ Webclient build finished, but required files are still missing:", Colors.RED))
+        for path in missing_after_build:
+            print(f"    - {path}")
+        print()
+        return
+
+    print(color("  ✓ Webclient dist built successfully.", Colors.GREEN))
+    print()
+
+
 def run_install(
     project_dir: Path,
     systemd_dir: Path,
@@ -288,6 +366,7 @@ def run_install(
       11. Cleanup stale disabled-service quadlets
       12. Save mode, print next steps
       13. Check for missing external repos and offer to fetch
+      14. Build webclient dist (dev mode only, containerized Node/Composer)
     """
     import sys
 
@@ -384,7 +463,7 @@ def run_install(
         print("  All mount directories already exist")
     print()
 
-    # --- Phase 6: container-writable permissions + Mongo mount ownership ---
+    # --- Phase 6: container-writable permissions + Mongo mount ownership/mode ---
     print(color("Fixing container-writable directory permissions...", Colors.CYAN))
     perm_fixed = fix_writable_permissions(project_dir)
     if perm_fixed:
@@ -394,9 +473,9 @@ def run_install(
 
     mongo_fixed = fix_mongo_mount_ownership(project_dir)
     if mongo_fixed:
-        print(f"  Normalized Mongo mount ownership on {mongo_fixed} paths")
+        print(f"  Normalized Mongo mount ownership and permissions on {mongo_fixed} paths")
     else:
-        print("  Mongo mount ownership already normalized (or paths missing)")
+        print("  Mongo mount ownership/permissions already normalized (or paths missing)")
     print()
 
     # --- Phase 7: tracker config (vc.js) ---
@@ -470,6 +549,15 @@ def run_install(
             else:
                 print()
                 print(color("  ✓ External repositories ready.", Colors.GREEN))
+                # Phase 9 ran before these repos existed, so any service env
+                # files that depend on external/*/.env-example templates were
+                # skipped. Now that the repos are present, create them.
+                print()
+                setup_service_env_files(project_dir)
         else:
             print()
             print(color("  Remember to run './visp.py deploy update' before building images.", Colors.YELLOW))
+
+    # --- Phase 14: build webclient dist for dev mode ---
+    if mode == "dev":
+        _ensure_webclient_dist(project_dir, runner)

@@ -1,8 +1,10 @@
 """Tests for vispctl/install.py."""
 
+from pathlib import Path
 from types import SimpleNamespace
 
 from vispctl.install import (
+    _ensure_webclient_dist,
     cleanup_disabled_optional_services,
     fix_mongo_mount_ownership,
     fix_writable_permissions,
@@ -154,7 +156,9 @@ def test_fix_mongo_mount_ownership_runs_unshare_chown(monkeypatch, tmp_path):
     assert fixed == 2
     assert calls == [
         ["podman", "unshare", "chown", "-R", "999:999", str(data_dir)],
+        ["podman", "unshare", "chmod", "-R", "u+rwX,go-rwx", str(data_dir)],
         ["podman", "unshare", "chown", "-R", "999:999", str(logs_dir)],
+        ["podman", "unshare", "chmod", "-R", "u+rwX,go-rwx", str(logs_dir)],
     ]
 
 
@@ -206,6 +210,58 @@ def test_generate_tracker_config_leaves_existing_if_no_domain(tmp_path):
     generate_tracker_config(tmp_path, {})
 
     assert existing.read_text() == "// existing"
+
+
+# ---------------------------------------------------------------------------
+# _ensure_webclient_dist
+# ---------------------------------------------------------------------------
+
+
+def test_ensure_webclient_dist_rebuilds_when_vendor_missing(tmp_path):
+    project_dir = tmp_path / "project"
+    webclient_dir = project_dir / "external/webclient"
+    dist_dir = webclient_dir / "dist"
+    dist_dir.mkdir(parents=True)
+    (dist_dir / "index.php").write_text("<?php")
+
+    commands: list[list[str]] = []
+
+    class FakeRunner:
+        def run(self, cmd, check=True):  # noqa: ANN001, ARG002
+            commands.append(list(cmd))
+            for value in cmd:
+                if isinstance(value, str) and value.endswith(":/output:Z"):
+                    output_dir = value.split(":/output:Z")[0]
+                    vendor_dir = Path(output_dir) / "vendor"
+                    vendor_dir.mkdir(parents=True, exist_ok=True)
+                    (Path(output_dir) / "index.php").write_text("<?php")
+                    (vendor_dir / "autoload.php").write_text("<?php")
+                    break
+
+            return SimpleNamespace(returncode=0)
+
+    _ensure_webclient_dist(project_dir, FakeRunner())
+
+    joined_commands = [" ".join(command) for command in commands]
+    assert len(commands) == 2
+    assert any("composer install" in command for command in joined_commands)
+    assert any("npx ng build --configuration=visp.dev" in command for command in joined_commands)
+    assert not any("visp-local-build" in command for command in joined_commands)
+    assert (dist_dir / "vendor/autoload.php").exists()
+
+
+def test_ensure_webclient_dist_skips_when_runtime_files_exist(tmp_path):
+    project_dir = tmp_path / "project"
+    dist_dir = project_dir / "external/webclient/dist"
+    (dist_dir / "vendor").mkdir(parents=True)
+    (dist_dir / "index.php").write_text("<?php")
+    (dist_dir / "vendor/autoload.php").write_text("<?php")
+
+    class FakeRunner:
+        def run(self, cmd, check=True):  # noqa: ANN001, ARG002
+            raise AssertionError("webclient build should not run")
+
+    _ensure_webclient_dist(project_dir, FakeRunner())
 
 
 # ---------------------------------------------------------------------------
