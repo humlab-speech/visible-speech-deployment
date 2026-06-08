@@ -107,3 +107,4 @@ visp_mongodb_*.tar.gz
 COMMIT_MESSAGE.md
 NETAVARK_MIGRATION.md
 docker/session-manager/files/Transcription.ipynb
+johan-todo.md

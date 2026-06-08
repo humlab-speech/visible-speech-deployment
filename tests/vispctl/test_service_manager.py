@@ -3,6 +3,9 @@ from vispctl.service_manager import ServiceManager
 
 
 class FakeRunner:
+    def __init__(self):
+        self.systemctl_calls = []
+
     def run_quiet(self, cmd):
         # Simulate 'systemctl is-active' returning active
         if cmd and cmd[0] == "podman":
@@ -11,6 +14,8 @@ class FakeRunner:
         return 0, "active", ""
 
     def systemctl(self, *args, **kwargs):
+        self.systemctl_calls.append(args)
+
         class R:
             def __init__(self):
                 self.returncode = 0
@@ -55,3 +60,26 @@ def test_start_stop(capsys):
     out = capsys.readouterr().out
     assert "Stopping mongo.service" in out
     assert "Stopped" in out
+
+
+def test_enable_disable(tmp_path, capsys):
+    services = DEFAULT_SERVICES
+    fr = FakeRunner()
+    (tmp_path / "mongo.container").write_text("[Install]\nWantedBy=default.target\n")
+    m = ServiceManager(fr, services, systemd_dir=tmp_path)
+
+    m.disable("mongo")
+    out = capsys.readouterr().out
+    dropin = tmp_path / "mongo.container.d" / "90-visp-autostart.conf"
+    assert "Disabling autostart for mongo.service" in out
+    assert "Disabled" in out
+    assert dropin.exists()
+    assert "WantedBy=" in dropin.read_text()
+    assert ("daemon-reload",) in fr.systemctl_calls
+
+    m.enable("mongo")
+    out = capsys.readouterr().out
+    assert "Enabling autostart for mongo.service" in out
+    assert "Enabled" in out
+    assert not dropin.exists()
+    assert fr.systemctl_calls.count(("daemon-reload",)) == 2

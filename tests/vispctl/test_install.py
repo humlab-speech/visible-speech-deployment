@@ -154,7 +154,9 @@ def test_fix_mongo_mount_ownership_runs_unshare_chown(monkeypatch, tmp_path):
     assert fixed == 2
     assert calls == [
         ["podman", "unshare", "chown", "-R", "999:999", str(data_dir)],
+        ["podman", "unshare", "chmod", "-R", "u+rwX,go-rwx", str(data_dir)],
         ["podman", "unshare", "chown", "-R", "999:999", str(logs_dir)],
+        ["podman", "unshare", "chmod", "-R", "u+rwX,go-rwx", str(logs_dir)],
     ]
 
 

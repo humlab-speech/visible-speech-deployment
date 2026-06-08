@@ -7,6 +7,8 @@ Commands:
   logs        View logs (replaces visp-logs.sh)
   start       Start service(s)
   stop        Stop service(s)
+  up          Enable and start service(s)
+  down        Stop and disable service(s)
   restart     Restart service(s) or entire cluster
   install     Link quadlet files to systemd directory
   uninstall   Remove quadlet links from systemd directory
@@ -153,6 +155,34 @@ def cmd_stop(args):
     else:
         target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR, include_disabled=True)]
         sm.stop(target_names)
+
+
+def cmd_up(args):
+    """Enable and start service(s)."""
+    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    services = args.services
+    if not services or services == ["all"]:
+        target_names = [svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR))]
+    else:
+        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR)]
+
+    sm.enable(target_names)
+    sm.start(target_names)
+
+
+def cmd_down(args):
+    """Stop and disable service(s)."""
+    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    services = args.services
+    if not services or services == ["all"]:
+        target_names = [
+            svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR, include_disabled=True))
+        ]
+    else:
+        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR, include_disabled=True)]
+
+    sm.stop(target_names)
+    sm.disable(target_names)
 
 
 def cmd_restart(args):
@@ -922,6 +952,8 @@ Examples:
   visp-ctl status              # Show all service status
   visp-ctl logs -f             # Follow all logs
   visp-ctl logs session-manager -n 200  # Last 200 lines from session-manager
+  visp-ctl up all              # Enable and start all services
+  visp-ctl down all            # Stop and disable all services
   visp-ctl restart all         # Restart entire cluster
   visp-ctl restart mongo       # Restart just mongo
   visp-ctl install all         # Link all quadlets
@@ -971,6 +1003,16 @@ Examples:
     p_stop = subparsers.add_parser("stop", help="Stop service(s)")
     p_stop.set_defaults(func=cmd_stop)
     p_stop.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
+
+    # up
+    p_up = subparsers.add_parser("up", help="Enable and start service(s)")
+    p_up.set_defaults(func=cmd_up)
+    p_up.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
+
+    # down
+    p_down = subparsers.add_parser("down", help="Stop and disable service(s)")
+    p_down.set_defaults(func=cmd_down)
+    p_down.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # restart
     p_restart = subparsers.add_parser("restart", aliases=["r"], help="Restart service(s)")

@@ -125,14 +125,20 @@ def fix_writable_permissions(project_dir: Path) -> int:
     return fixed
 
 
+MONGO_CONTAINER_UID = 999
+MONGO_CONTAINER_GID = 999
+MONGO_MOUNT_MODE = "u+rwX,go-rwx"
+
+
 def fix_mongo_mount_ownership(project_dir: Path) -> int:
     """
     Ensure Mongo bind-mount paths are owned by Mongo's runtime UID/GID
     inside the rootless Podman user namespace.
 
-    Uses ``podman unshare chown -R 999:999`` so ownership is mapped through
-    Podman's namespace. This prevents startup failures where mongod cannot
-    read/write ``/data/db`` or rotate ``/var/log/mongodb/mongodb.log``.
+    Uses ``podman unshare chown -R 999:999`` so Mongo's in-container
+    ``mongodb`` user is mapped to the correct subordinate host UID/GID.
+    Then removes group/other access, so old ``0777`` workarounds do not
+    linger after install.
 
     Returns the number of mount roots successfully normalized.
     """
@@ -146,15 +152,30 @@ def fix_mongo_mount_ownership(project_dir: Path) -> int:
         if not mount_path.exists():
             continue
 
-        result = subprocess.run(
-            ["podman", "unshare", "chown", "-R", "999:999", str(mount_path)],
+        owner = f"{MONGO_CONTAINER_UID}:{MONGO_CONTAINER_GID}"
+        chown_result = subprocess.run(
+            ["podman", "unshare", "chown", "-R", owner, str(mount_path)],
             capture_output=True,
             text=True,
         )
-        if result.returncode != 0:
+        if chown_result.returncode != 0:
             print(
                 color(
-                    f"  ⚠ Failed to normalize Mongo ownership on {mount_path}: {result.stderr.strip()}",
+                    f"  ⚠ Failed to normalize Mongo ownership on {mount_path}: {chown_result.stderr.strip()}",
+                    Colors.YELLOW,
+                )
+            )
+            continue
+
+        chmod_result = subprocess.run(
+            ["podman", "unshare", "chmod", "-R", MONGO_MOUNT_MODE, str(mount_path)],
+            capture_output=True,
+            text=True,
+        )
+        if chmod_result.returncode != 0:
+            print(
+                color(
+                    f"  ⚠ Failed to tighten Mongo permissions on {mount_path}: {chmod_result.stderr.strip()}",
                     Colors.YELLOW,
                 )
             )
@@ -459,7 +480,7 @@ def run_install(
         print("  All mount directories already exist")
     print()
 
-    # --- Phase 6: container-writable permissions + Mongo mount ownership ---
+    # --- Phase 6: container-writable permissions + Mongo mount ownership/mode ---
     print(color("Fixing container-writable directory permissions...", Colors.CYAN))
     perm_fixed = fix_writable_permissions(project_dir)
     if perm_fixed:
@@ -469,9 +490,9 @@ def run_install(
 
     mongo_fixed = fix_mongo_mount_ownership(project_dir)
     if mongo_fixed:
-        print(f"  Normalized Mongo mount ownership on {mongo_fixed} paths")
+        print(f"  Normalized Mongo mount ownership and permissions on {mongo_fixed} paths")
     else:
-        print("  Mongo mount ownership already normalized (or paths missing)")
+        print("  Mongo mount ownership/permissions already normalized (or paths missing)")
     print()
 
     # --- Phase 7: tracker config (vc.js) ---

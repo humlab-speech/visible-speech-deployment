@@ -33,6 +33,56 @@ def test_cmd_start_delegates_to_servicemanager(monkeypatch):
     assert called.get("start") and called["start"][0] == ["session-manager"]
 
 
+def test_cmd_up_enables_then_starts(monkeypatch):
+    vp = load_visp_module()
+    called = {}
+
+    class FakeSM:
+        def __init__(self, runner, services):
+            called["init"] = True
+
+        def enable(self, names):
+            called.setdefault("ops", []).append(("enable", names))
+
+        def start(self, names):
+            called.setdefault("ops", []).append(("start", names))
+
+    monkeypatch.setattr(vp, "ServiceManager", FakeSM)
+
+    args = types.SimpleNamespace(services=["session-manager"])
+    vp.cmd_up(args)
+
+    assert called.get("ops") == [
+        ("enable", ["session-manager"]),
+        ("start", ["session-manager"]),
+    ]
+
+
+def test_cmd_down_stops_then_disables(monkeypatch):
+    vp = load_visp_module()
+    called = {}
+
+    class FakeSM:
+        def __init__(self, runner, services):
+            called["init"] = True
+
+        def stop(self, names):
+            called.setdefault("ops", []).append(("stop", names))
+
+        def disable(self, names):
+            called.setdefault("ops", []).append(("disable", names))
+
+    monkeypatch.setattr(vp, "ServiceManager", FakeSM)
+
+    args = types.SimpleNamespace(services=["session-manager"])
+    vp.cmd_down(args)
+
+    assert called.get("ops") == [
+        ("stop", ["session-manager"]),
+        ("disable", ["session-manager"]),
+    ]
+
+
 def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
     vp = load_visp_module()
     called = {}

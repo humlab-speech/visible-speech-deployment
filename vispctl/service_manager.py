@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Iterable, List
 
 from .runner import Colors, Runner, color
@@ -9,12 +10,24 @@ from .service import Service
 
 
 class ServiceManager:
-    def __init__(self, runner: Runner, services: Iterable[Service]):
+    def __init__(self, runner: Runner, services: Iterable[Service], systemd_dir: Path | None = None):
         self.runner = runner
         self.services: List[Service] = list(services)
+        self.systemd_dir = systemd_dir or Path.home() / ".config/containers/systemd"
 
     def _svc_name(self, svc: Service) -> str:
         return f"{svc.name}.service"
+
+    def _autostart_dropin(self, svc: Service) -> Path:
+        return self.systemd_dir / f"{svc.file}.d" / "90-visp-autostart.conf"
+
+    def _reload_systemd(self) -> None:
+        print("Reloading systemd daemon...")
+        res = self.runner.systemctl("daemon-reload")
+        if res.returncode != 0:
+            print(color(f"  Failed: {res.stderr}", Colors.RED))
+        else:
+            print(color("  Reloaded", Colors.GREEN))
 
     def start(self, names: Iterable[str] | str = "all") -> None:
         if names == "all":
@@ -32,6 +45,35 @@ class ServiceManager:
             else:
                 print(color("  Started", Colors.GREEN))
 
+    def enable(self, names: Iterable[str] | str = "all") -> None:
+        if names == "all":
+            targets = [s for s in self.services if s.type == "container"]
+        else:
+            if isinstance(names, str):
+                names = [names]
+            targets = [s for s in self.services if s.name in names]
+
+        changed = False
+        for svc in targets:
+            print(f"Enabling autostart for {self._svc_name(svc)}...")
+            source = self.systemd_dir / svc.file
+            if not source.exists():
+                print(color(f"  Failed: {source} is not installed", Colors.RED))
+                continue
+
+            dropin = self._autostart_dropin(svc)
+            if dropin.exists():
+                dropin.unlink()
+                if not any(dropin.parent.iterdir()):
+                    dropin.parent.rmdir()
+                changed = True
+                print(color("  Enabled", Colors.GREEN))
+            else:
+                print("  Already enabled")
+
+        if changed:
+            self._reload_systemd()
+
     def stop(self, names: Iterable[str] | str = "all") -> None:
         if names == "all":
             targets = [s for s in reversed(self.services) if s.type == "container"]
@@ -47,6 +89,37 @@ class ServiceManager:
                 print(color(f"  Failed: {res.stderr}", Colors.RED))
             else:
                 print(color("  Stopped", Colors.GREEN))
+
+    def disable(self, names: Iterable[str] | str = "all") -> None:
+        if names == "all":
+            targets = [s for s in reversed(self.services) if s.type == "container"]
+        else:
+            if isinstance(names, str):
+                names = [names]
+            targets = [s for s in reversed(self.services) if s.name in names]
+
+        changed = False
+        for svc in targets:
+            print(f"Disabling autostart for {self._svc_name(svc)}...")
+            source = self.systemd_dir / svc.file
+            if not source.exists():
+                print(color(f"  Failed: {source} is not installed", Colors.RED))
+                continue
+
+            dropin = self._autostart_dropin(svc)
+            content = "# Created by visp.py down. Remove this file or run visp.py up to restore autostart.\n"
+            content += "[Install]\nWantedBy=\nRequiredBy=\nUpheldBy=\nAlias=\n"
+            if dropin.exists() and dropin.read_text() == content:
+                print("  Already disabled")
+                continue
+
+            dropin.parent.mkdir(parents=True, exist_ok=True)
+            dropin.write_text(content)
+            changed = True
+            print(color("  Disabled", Colors.GREEN))
+
+        if changed:
+            self._reload_systemd()
 
     def status(self) -> None:
         print(color("=== VISP Service Status (PoC) ===", Colors.CYAN))
