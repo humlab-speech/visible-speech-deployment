@@ -36,7 +36,7 @@ Everything else (start, stop, exec, inspect, image pulls, etc.) passes through u
 ```
 session-manager container
   │
-  │  /var/run/docker.sock  (bind-mount from mounts/podman-proxy/podman.sock)
+  │  /run/podman-proxy/podman.sock  (from bind-mounted mounts/podman-proxy/)
   ▼
 podman-socket-proxy container      ← this service
   │  validates containers/create
@@ -87,8 +87,9 @@ The service is managed as a systemd Quadlet unit:
 ```
 
 `session-manager` has `After=podman-socket-proxy.service` and
-`Requires=podman-socket-proxy.service` in its quadlet, so it will not start until the
-proxy socket is ready.
+`Requires=podman-socket-proxy.service` in its quadlet, and it mounts the shared
+`mounts/podman-proxy/` directory. Mounting the directory avoids a startup race where
+Podman tries to bind-mount `podman.sock` before the proxy process has created it.
 
 ## Testing the proxy
 
