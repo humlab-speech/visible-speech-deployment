@@ -8,6 +8,7 @@ a running system.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
@@ -123,6 +124,198 @@ def fix_writable_permissions(project_dir: Path) -> int:
                 continue
         fixed += 1
     return fixed
+
+
+def normalize_repository_ownership(project_dir: Path) -> bool:
+    """Re-own the repository tree to container-root (UID/GID 0) in the userns.
+
+    All containers that write into ``mounts/repositories`` run as container-root,
+    which under rootless Podman maps to the host user. Data created earlier by a
+    non-root container user (e.g. emu-webapp-server's ``Data/VISP_emuDB`` owned by
+    a sub-UID) is unreadable/unwritable to those root-equivalent processes once
+    capabilities are dropped. ``podman unshare chown -R 0:0`` rewrites the whole
+    tree to the single shared identity.
+
+    ``mounts/repositories`` itself stays mode 0777 via :func:`fix_writable_permissions`.
+    This is idempotent and safe to run on every install.
+
+    Returns ``True`` on success (or when the path is missing), ``False`` on error.
+    """
+    repos_dir = project_dir / "mounts/repositories"
+    if not repos_dir.exists():
+        return True
+
+    result = subprocess.run(
+        ["podman", "unshare", "chown", "-R", "0:0", str(repos_dir)],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(color(f"  ⚠ Failed to normalize repository ownership: {result.stderr.strip()}", Colors.YELLOW))
+        return False
+    return True
+
+
+# Images whose containers write into mounts/repositories. Under rootless Podman
+# they must all run as container-root (UID 0 → the unprivileged host user) so they
+# share one ownership identity with session-manager; a non-root writer cannot create
+# files inside the UID-0 repository dirs session-manager creates, because the quadlets
+# drop all capabilities (no DAC_OVERRIDE to bypass the permission check).
+WSRNG_IMAGE = "localhost/visp-wsrng-server:latest"
+EMU_WEBAPP_IMAGE = "localhost/visp-emu-webapp-server:latest"
+REPOSITORY_WRITER_IMAGES = [
+    (WSRNG_IMAGE, "wsrng-server"),
+    (EMU_WEBAPP_IMAGE, "emu-webapp-server"),
+]
+
+
+def _resolve_image_uid(image: str) -> int | None:
+    """Return the numeric UID the given image runs as, or ``None`` if unknown.
+
+    Reads ``.Config.User`` from ``podman image inspect``. The value may be a
+    numeric UID ("1000"), a "uid:gid" pair, or a username ("node"). We resolve
+    usernames by looking them up in the image's own ``/etc/passwd``. An empty
+    user means the container runs as root (UID 0).
+    """
+    inspect = subprocess.run(
+        ["podman", "image", "inspect", image, "--format", "{{.Config.User}}"],
+        capture_output=True,
+        text=True,
+    )
+    if inspect.returncode != 0:
+        return None
+
+    user = inspect.stdout.strip()
+    if not user:
+        return 0  # no USER set → root
+
+    user = user.split(":", 1)[0]  # drop any ":gid" suffix
+    if user.isdigit():
+        return int(user)
+
+    # Username — resolve it against the image's /etc/passwd.
+    lookup = subprocess.run(
+        ["podman", "run", "--rm", "--entrypoint", "", image, "id", "-u", user],
+        capture_output=True,
+        text=True,
+    )
+    if lookup.returncode == 0 and lookup.stdout.strip().isdigit():
+        return int(lookup.stdout.strip())
+    return None
+
+
+def _probe_repository_write(repos_dir: Path, image: str, uid: int) -> bool:
+    """Run a throwaway *image* container as *uid* and try to write under *repos_dir*.
+
+    Creates a host-owned probe directory that mimics a session-manager-created
+    project repo, then attempts — inside the container, as the image's configured
+    user — to create the nested ``Data/speech_recorder_uploads/...`` path that
+    wsrng-server writes audio into. Cleans up afterwards. Returns ``True`` on a
+    successful write.
+    """
+    probe_root = repos_dir / f".vispctl-permcheck-{os.getpid()}"
+    rel_target = "Data/speech_recorder_uploads/emudb-sessions/_probe"
+    try:
+        (probe_root / "Data").mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        print(color(f"  ⚠ Could not create probe dir for repository write check: {e}", Colors.YELLOW))
+        # Treat an inability to create the probe as "not failing" — we cannot prove a problem.
+        return True
+
+    try:
+        write_test = subprocess.run(
+            [
+                "podman",
+                "run",
+                "--rm",
+                "--user",
+                str(uid),
+                "--entrypoint",
+                "",
+                "-v",
+                f"{repos_dir}:/repositories:Z",
+                image,
+                "sh",
+                "-c",
+                f"mkdir -p /repositories/{probe_root.name}/{rel_target} "
+                f"&& touch /repositories/{probe_root.name}/{rel_target}/probe.wav",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        return write_test.returncode == 0
+    finally:
+        # Files created inside the container are owned by a sub-UID, so a plain
+        # rmtree may fail — fall back to 'podman unshare rm'.
+        if probe_root.exists():
+            try:
+                import shutil
+
+                shutil.rmtree(probe_root)
+            except OSError:
+                subprocess.run(
+                    ["podman", "unshare", "rm", "-rf", str(probe_root)],
+                    capture_output=True,
+                    text=True,
+                )
+
+
+def verify_repository_write_access(project_dir: Path) -> bool:
+    """Verify every repository-writer container can write into the repositories mount.
+
+    Project repositories under ``mounts/repositories`` are created by
+    session-manager as the host user (container UID 0). Other writers
+    (wsrng-server for audio uploads, emu-webapp-server for the emuDB) must run as
+    the same identity, otherwise their writes fail at runtime with::
+
+        EACCES: permission denied, mkdir '/repositories/<proj>/Data/...'
+
+    For each writer image this resolves the configured user and, when it is
+    non-root, runs a *real* write probe reproducing the runtime conditions.
+
+    Returns ``True`` when all writers can write (or checks are skipped because an
+    image is unavailable / runs as root). Returns ``False`` and prints remediation
+    guidance when any writer would be unable to write.
+    """
+    repos_dir = project_dir / "mounts/repositories"
+    if not repos_dir.exists():
+        print(color("  ○ mounts/repositories missing — skipping repository write check", Colors.YELLOW))
+        return True
+
+    all_ok = True
+    for image, label in REPOSITORY_WRITER_IMAGES:
+        uid = _resolve_image_uid(image)
+        if uid is None:
+            print(
+                color(
+                    f"  ○ {label} image not built yet — skipping write check "
+                    "(re-run install after 'deploy update'/build)",
+                    Colors.YELLOW,
+                )
+            )
+            continue
+        if uid == 0:
+            print(
+                color(f"  ✓ {label} runs as container-root (maps to host user) — can write repositories", Colors.GREEN)
+            )
+            continue
+
+        if _probe_repository_write(repos_dir, image, uid):
+            print(color(f"  ✓ {label} can write into mounts/repositories", Colors.GREEN))
+            continue
+
+        all_ok = False
+        print(color(f"  ✗ {label} (UID {uid}) cannot write into mounts/repositories", Colors.RED))
+        print(color("    Writes will fail at runtime with 'EACCES: permission denied, mkdir'.", Colors.RED))
+        print(color("    Cause: session-manager creates project repos owned by the host user", Colors.YELLOW))
+        print(color(f"    (container UID 0), but {label} runs as a non-root user without write access", Colors.YELLOW))
+        print(color("    (all capabilities are dropped, so root-equivalence via DAC_OVERRIDE is gone).", Colors.YELLOW))
+        print(
+            color(f"    Fix: run {label} as container-root — set 'User=0:0' in its quadlet and remove", Colors.YELLOW)
+        )
+        print(color("    any 'USER' directive from its Dockerfile, matching session-manager.", Colors.YELLOW))
+
+    return all_ok
 
 
 MONGO_CONTAINER_UID = 999
@@ -334,6 +527,50 @@ def _ensure_webclient_dist(project_dir: Path, runner: Runner) -> None:
     print()
 
 
+def _ensure_container_agent_dist(project_dir: Path, runner: Runner) -> None:
+    """
+    Build the container-agent dist directory if the compiled entry point is missing.
+
+    Only called in dev mode — in prod, container-agent is baked into the
+    visp-jupyter-session image at build time.  Uses the same containerized
+    Node build path as ``visp.py build container-agent``.
+    """
+    agent_dir = project_dir / "external" / "container-agent"
+    dist_dir = agent_dir / "dist"
+    required_file = dist_dir / "main.js"
+
+    if not agent_dir.exists():
+        # External repos not present yet — skip silently (phase 13 handles this).
+        return
+
+    if required_file.exists():
+        return
+
+    print(color("Building container-agent dist (dev mode)...", Colors.CYAN))
+
+    from .build import NODE_BUILD_CONFIGS, BuildManager
+
+    config = dict(NODE_BUILD_CONFIGS["container-agent"])
+    config["source"] = str(agent_dir)
+    config["output"] = str(dist_dir)
+
+    bm = BuildManager(runner, build_configs={}, node_configs={"container-agent": config})
+    if not bm.build_node_project("container-agent", config):
+        print(color("  ✗ container-agent dist not built.", Colors.RED))
+        print("  Fix the errors above, then run:")
+        print("    ./visp.py build container-agent")
+        print()
+        return
+
+    if not required_file.exists():
+        print(color("  ✗ container-agent build finished, but dist/main.js is still missing.", Colors.RED))
+        print()
+        return
+
+    print(color("  ✓ container-agent dist built successfully.", Colors.GREEN))
+    print()
+
+
 def run_install(
     project_dir: Path,
     systemd_dir: Path,
@@ -358,7 +595,7 @@ def run_install(
       3. Podman network creation
       4. Podman secret creation
       5. Mount-directory scaffolding
-      6. Container-writable permissions + Mongo mount ownership
+      6. Container-writable permissions + Mongo + repository ownership/write check
       7. Tracker config (vc.js)
       8. Dev certs + local IdP files (dev mode only)
       9. Service-specific .env files
@@ -367,6 +604,7 @@ def run_install(
       12. Save mode, print next steps
       13. Check for missing external repos and offer to fetch
       14. Build webclient dist (dev mode only, containerized Node/Composer)
+      15. Build container-agent dist (dev mode only, containerized Node)
     """
     import sys
 
@@ -476,6 +714,18 @@ def run_install(
         print(f"  Normalized Mongo mount ownership and permissions on {mongo_fixed} paths")
     else:
         print("  Mongo mount ownership/permissions already normalized (or paths missing)")
+
+    # Re-own the repository tree to the single shared container-root identity so
+    # all repository writers (session-manager, wsrng-server, emu-webapp-server)
+    # can write each other's files. Migrates any sub-UID data left by older builds.
+    if normalize_repository_ownership(project_dir):
+        print("  Repository ownership normalized to container-root (0:0)")
+    print()
+
+    # Verify every repository-writer container can write into the repositories
+    # mount they share with session-manager (audio/emuDB writes fail otherwise).
+    print(color("Verifying repository write access...", Colors.CYAN))
+    verify_repository_write_access(project_dir)
     print()
 
     # --- Phase 7: tracker config (vc.js) ---
@@ -561,3 +811,7 @@ def run_install(
     # --- Phase 14: build webclient dist for dev mode ---
     if mode == "dev":
         _ensure_webclient_dist(project_dir, runner)
+
+    # --- Phase 15: build container-agent dist for dev mode ---
+    if mode == "dev":
+        _ensure_container_agent_dist(project_dir, runner)

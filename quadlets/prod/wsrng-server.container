@@ -11,6 +11,12 @@ EnvironmentFile=@@PROJECT_DIR@@/external/wsrng-server/.env
 Secret=visp_mongo_root_password,type=env,target=MONGO_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 
+# Run as container-root (maps to the unprivileged host user under rootless Podman).
+# Required so this container shares ownership of mounts/repositories with
+# session-manager; a non-root uid cannot write the uid-0 repo dirs session-manager
+# creates because all capabilities (incl. DAC_OVERRIDE) are dropped below.
+User=0:0
+
 # Security hardening
 DropCapability=ALL
 NoNewPrivileges=true
