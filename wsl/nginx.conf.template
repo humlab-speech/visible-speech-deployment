@@ -21,6 +21,10 @@ server {
     http2 on;
     server_name visp.local *.visp.local;
 
+    # Allow audio uploads through the edge proxy. Without this nginx uses its
+    # 1 MB default and returns 413 before Apache/PHP can handle the request.
+    client_max_body_size 10G;
+
     # SSL certificates
     ssl_certificate /certs/visp.local/cert.crt;
     ssl_certificate_key /certs/visp.local/cert.key;
