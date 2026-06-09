@@ -4,13 +4,18 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from vispctl.install import (
+    EMU_WEBAPP_IMAGE,
+    WSRNG_IMAGE,
     _ensure_webclient_dist,
+    _resolve_image_uid,
     cleanup_disabled_optional_services,
     fix_mongo_mount_ownership,
     fix_writable_permissions,
     generate_tracker_config,
     install_quadlets,
+    normalize_repository_ownership,
     scaffold_directories,
+    verify_repository_write_access,
 )
 from vispctl.service import Service
 
@@ -169,6 +174,134 @@ def test_fix_mongo_mount_ownership_skips_missing(tmp_path):
     fixed = fix_mongo_mount_ownership(project_dir)
 
     assert fixed == 0
+
+
+# ---------------------------------------------------------------------------
+# verify_repository_write_access / normalize_repository_ownership / _resolve_image_uid
+# ---------------------------------------------------------------------------
+
+
+def _patch_run(monkeypatch, handler):
+    """Replace vispctl.install.subprocess.run with *handler(cmd) -> namespace*."""
+
+    def fake_run(cmd, capture_output=False, text=False):  # noqa: ANN001, ARG001
+        return handler(cmd)
+
+    monkeypatch.setattr("vispctl.install.subprocess.run", fake_run)
+
+
+def test_resolve_image_uid_numeric(monkeypatch):
+    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=0, stdout="1000\n", stderr=""))
+    assert _resolve_image_uid("img") == 1000
+
+
+def test_resolve_image_uid_strips_gid(monkeypatch):
+    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=0, stdout="1000:1000\n", stderr=""))
+    assert _resolve_image_uid("img") == 1000
+
+
+def test_resolve_image_uid_empty_means_root(monkeypatch):
+    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=0, stdout="\n", stderr=""))
+    assert _resolve_image_uid("img") == 0
+
+
+def test_resolve_image_uid_username_lookup(monkeypatch):
+    def handler(cmd):
+        if cmd[1] == "image":  # podman image inspect ...
+            return SimpleNamespace(returncode=0, stdout="node\n", stderr="")
+        # podman run ... id -u node
+        return SimpleNamespace(returncode=0, stdout="1000\n", stderr="")
+
+    _patch_run(monkeypatch, handler)
+    assert _resolve_image_uid("img") == 1000
+
+
+def test_resolve_image_uid_missing_image(monkeypatch):
+    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=125, stdout="", stderr="no such image"))
+    assert _resolve_image_uid("img") is None
+
+
+def test_verify_skips_when_repos_missing(tmp_path):
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    # mounts/repositories does not exist → skipped, treated as OK.
+    assert verify_repository_write_access(project_dir) is True
+
+
+def test_verify_skips_when_images_missing(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    (project_dir / "mounts/repositories").mkdir(parents=True)
+    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=125, stdout="", stderr=""))
+    assert verify_repository_write_access(project_dir) is True
+
+
+def test_verify_passes_when_keepid_write_succeeds(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    (project_dir / "mounts/repositories").mkdir(parents=True)
+
+    def handler(cmd):
+        if cmd[1] == "image":  # inspect → image exists (USER node = 1000)
+            return SimpleNamespace(returncode=0, stdout="1000\n", stderr="")
+        # the throwaway keep-id write probe succeeds
+        assert cmd[0] == "podman" and cmd[1] == "run"
+        assert "--userns" in cmd and "keep-id:uid=1000,gid=1000" in cmd
+        assert "--user" in cmd and "1000:1000" in cmd
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    _patch_run(monkeypatch, handler)
+    assert verify_repository_write_access(project_dir) is True
+    # probe directory must be cleaned up
+    assert not list((project_dir / "mounts/repositories").glob(".vispctl-permcheck-*"))
+
+
+def test_verify_fails_when_keepid_write_denied(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    (project_dir / "mounts/repositories").mkdir(parents=True)
+
+    def handler(cmd):
+        if cmd[1] == "image":
+            return SimpleNamespace(returncode=0, stdout="1000\n", stderr="")
+        return SimpleNamespace(returncode=1, stdout="", stderr="Permission denied")
+
+    _patch_run(monkeypatch, handler)
+    assert verify_repository_write_access(project_dir) is False
+    assert not list((project_dir / "mounts/repositories").glob(".vispctl-permcheck-*"))
+
+
+def test_normalize_repository_ownership_runs_unshare_chown(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    repos = project_dir / "mounts/repositories"
+    repos.mkdir(parents=True)
+
+    calls: list[list[str]] = []
+
+    def handler(cmd):
+        calls.append(cmd)
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    _patch_run(monkeypatch, handler)
+
+    assert normalize_repository_ownership(project_dir) is True
+    assert calls == [["podman", "unshare", "chown", "-R", "0:0", str(repos)]]
+
+
+def test_normalize_repository_ownership_skips_missing(tmp_path):
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    # No subprocess call needed; missing path is a no-op success.
+    assert normalize_repository_ownership(project_dir) is True
+
+
+def test_normalize_repository_ownership_reports_failure(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    (project_dir / "mounts/repositories").mkdir(parents=True)
+    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=1, stdout="", stderr="boom"))
+    assert normalize_repository_ownership(project_dir) is False
+
+
+def test_repository_writer_image_constants():
+    assert WSRNG_IMAGE == "localhost/visp-wsrng-server:latest"
+    assert EMU_WEBAPP_IMAGE == "localhost/visp-emu-webapp-server:latest"
 
 
 # ---------------------------------------------------------------------------

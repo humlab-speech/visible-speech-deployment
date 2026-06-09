@@ -19,6 +19,17 @@ Volume=@@PROJECT_DIR@@/mounts/emu-webapp-server/logs:/home/node/app/logs:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 
+# Pin this container's real service identity (node = uid 1000 / gid 1000 in the
+# node base image) to the host repository owner via rootless keep-id. Writes into
+# mounts/repositories then land owned by that single host identity — the same one
+# session-manager, wsrng-server and apache all converge on — so every service can
+# read and rewrite the others' files even with all capabilities dropped. As a
+# bonus, container UID 0 maps to a harmless subuid (a root escape ≠ the host repo
+# owner). Keep the explicit User= matching the keep-id values; don't rely on the
+# image USER.
+User=1000:1000
+UserNS=keep-id:uid=1000,gid=1000
+
 # Security hardening
 DropCapability=ALL
 NoNewPrivileges=true

@@ -27,24 +27,32 @@ podman info | grep networkBackend    # netavark
 ## Quick Start
 
 ```bash
-# 1. Clone and configure
+# 1. Clone
 git clone https://github.com/humlab-speech/visible-speech-deployment.git
 cd visible-speech-deployment
-cp .env-example .env
-nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
-# .env.secrets is auto-generated with random passwords on first install
 
-# 2. Build images
+# 2. Generate local config, secrets, certificates, and dev quadlets
+./visp.py install --mode dev
+nano .env  # Optional: adjust BASE_DOMAIN, ADMIN_EMAIL, optional services, etc.
+
+# 3. Fetch external application repositories
+./visp.py deploy update
+
+# 4. Re-render quadlets after any .env edits and after external repos exist
+./visp.py install --mode dev --force
+
+# 5. Build images
 ./visp.py build                  # Build all images (or selectively, see below)
 
-# 3. Install and start
-./visp.py install --mode dev     # Link quadlets to systemd
+# 6. Start
 ./visp.py reload                 # Reload systemd daemon
 ./visp.py start all
 
-# 4. Verify
+# 7. Verify
 ./visp.py status
 ```
+
+`.env` is copied from `.env-example` automatically during first install. `.env.secrets` is also created automatically with generated passwords and tokens.
 
 ## Deployment Modes
 
@@ -108,9 +116,7 @@ See `./visp.py --help` for the full command reference.
 
 1. Add to `/etc/hosts` (local dev only):
    ```
-   127.0.0.1 visp.local
-   127.0.0.1 artic.visp.local
-   127.0.0.1 idp.visp.local
+   127.0.0.1 visp.local app.visp.local artic.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
    ```
 
 2. Sign in through the dev IdP (dev mode):
@@ -132,9 +138,65 @@ See `./visp.py --help` for the full command reference.
    ```
    See [AGENTS.md](AGENTS.md) → *User management* for details.
 
+## Local Dev Host Nginx
+
+In dev mode, the Apache container publishes HTTP on `8081` and HTTPS on `8443`. A host-OS nginx can listen on standard ports `80`/`443` for `visp.local` and proxy to Apache on `8443`.
+
+1. Add local domains to `/etc/hosts`:
+   ```text
+   127.0.0.1 visp.local app.visp.local artic.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
+   ```
+
+2. Create `/etc/nginx/sites-available/visp.local`:
+   ```nginx
+   server {
+       listen 80;
+       listen [::]:80;
+       server_name visp.local *.visp.local;
+
+       return 301 https://$host$request_uri;
+   }
+
+   server {
+       listen 443 ssl;
+       listen [::]:443 ssl;
+       server_name visp.local *.visp.local;
+
+       include /etc/nginx/snippets/snakeoil.conf;
+
+       client_max_body_size 10G;
+
+       location / {
+           proxy_pass https://127.0.0.1:8443;
+
+           proxy_ssl_server_name on;
+           proxy_ssl_name $host;
+
+           proxy_http_version 1.1;
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection "upgrade";
+
+           proxy_connect_timeout 60s;
+           proxy_send_timeout 86400s;
+           proxy_read_timeout 86400s;
+       }
+   }
+   ```
+
+3. Enable and reload nginx:
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/visp.local /etc/nginx/sites-enabled/visp.local
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
 ## Reverse Proxy (Production)
 
-In production, a host nginx forwards to Apache (port 8081). Apache handles all subdomains internally via VirtualHost.
+In production, a host nginx forwards to Apache, usually on port `8081`. Apache handles all subdomains internally via VirtualHost.
 
 **Required subdomains** (replace `yourdomain.com`):
 - `yourdomain.com` — main app (**WebSocket required**)
@@ -144,6 +206,8 @@ In production, a host nginx forwards to Apache (port 8081). Apache handles all s
 - `matomo.yourdomain.com` — analytics (optional)
 
 **⚠️ WebSocket proxying is required** on the main domain — without it users cannot log in. Proxy headers (`Host`, `X-Forwarded-For`, `X-Forwarded-Proto`, `Upgrade`, `Connection`) and long timeouts (~24 h) are needed.
+
+Set `client_max_body_size 10G;` (or higher) in the nginx `server` block so audio uploads are not rejected by nginx before reaching Apache/PHP.
 
 ## Development
 

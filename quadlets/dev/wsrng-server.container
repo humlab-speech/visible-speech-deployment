@@ -11,6 +11,17 @@ EnvironmentFile=@@PROJECT_DIR@@/external/wsrng-server/.env
 Secret=visp_mongo_root_password,type=env,target=MONGO_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 
+# Pin this container's real service identity (node = uid 1000 / gid 1000 in the
+# node base image) to the host repository owner via rootless keep-id. Audio that
+# wsrng-server writes under mounts/repositories then lands owned by that single
+# host identity — the same one session-manager, emu-webapp-server and apache all
+# converge on — so every service can read and rewrite the others' files even with
+# all capabilities dropped. As a bonus, container UID 0 maps to a harmless subuid
+# (a root escape ≠ the host repo owner). Keep the explicit User= matching the
+# keep-id values; don't rely on the image USER.
+User=1000:1000
+UserNS=keep-id:uid=1000,gid=1000
+
 # Security hardening
 DropCapability=ALL
 NoNewPrivileges=true
