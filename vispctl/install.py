@@ -127,14 +127,16 @@ def fix_writable_permissions(project_dir: Path) -> int:
 
 
 def normalize_repository_ownership(project_dir: Path) -> bool:
-    """Re-own the repository tree to container-root (UID/GID 0) in the userns.
+    """Re-own the repository tree to the host repository owner.
 
-    All containers that write into ``mounts/repositories`` run as container-root,
-    which under rootless Podman maps to the host user. Data created earlier by a
-    non-root container user (e.g. emu-webapp-server's ``Data/VISP_emuDB`` owned by
-    a sub-UID) is unreadable/unwritable to those root-equivalent processes once
-    capabilities are dropped. ``podman unshare chown -R 0:0`` rewrites the whole
-    tree to the single shared identity.
+    Every container that writes into ``mounts/repositories`` (session-manager,
+    emu-webapp-server, wsrng-server, apache) pins its own service UID/GID to the
+    host repo owner with rootless ``--userns=keep-id`` (configured per quadlet), so
+    all of them write as one host identity. ``podman unshare`` enters the default
+    rootless namespace where container UID/GID 0 *is* that host owner, hence
+    ``chown -R 0:0`` rewrites the whole tree to it. This also migrates any data
+    left foreign-owned (sub-UID) by an older, pre-keep-id build so the keep-id
+    writers can read and rewrite it.
 
     ``mounts/repositories`` itself stays mode 0777 via :func:`fix_writable_permissions`.
     This is idempotent and safe to run on every install.
@@ -156,16 +158,17 @@ def normalize_repository_ownership(project_dir: Path) -> bool:
     return True
 
 
-# Images whose containers write into mounts/repositories. Under rootless Podman
-# they must all run as container-root (UID 0 → the unprivileged host user) so they
-# share one ownership identity with session-manager; a non-root writer cannot create
-# files inside the UID-0 repository dirs session-manager creates, because the quadlets
-# drop all capabilities (no DAC_OVERRIDE to bypass the permission check).
+# Containers that write into mounts/repositories, with the real in-container
+# service identity (uid, gid) each one runs as. Under rootless Podman each pins
+# that uid/gid to the host repository owner with --userns=keep-id:uid=<uid>,gid=<gid>
+# (set in the quadlets), so every writer — together with session-manager and apache
+# — lands its writes under the single shared host identity. The write probe below
+# reproduces that exact keep-id mapping.
 WSRNG_IMAGE = "localhost/visp-wsrng-server:latest"
 EMU_WEBAPP_IMAGE = "localhost/visp-emu-webapp-server:latest"
-REPOSITORY_WRITER_IMAGES = [
-    (WSRNG_IMAGE, "wsrng-server"),
-    (EMU_WEBAPP_IMAGE, "emu-webapp-server"),
+REPOSITORY_WRITERS = [
+    (WSRNG_IMAGE, "wsrng-server", 1000, 1000),
+    (EMU_WEBAPP_IMAGE, "emu-webapp-server", 1000, 1000),
 ]
 
 
@@ -204,14 +207,16 @@ def _resolve_image_uid(image: str) -> int | None:
     return None
 
 
-def _probe_repository_write(repos_dir: Path, image: str, uid: int) -> bool:
-    """Run a throwaway *image* container as *uid* and try to write under *repos_dir*.
+def _probe_repository_write(repos_dir: Path, image: str, uid: int, gid: int) -> bool:
+    """Run a throwaway *image* container and try to write under *repos_dir*.
 
-    Creates a host-owned probe directory that mimics a session-manager-created
-    project repo, then attempts — inside the container, as the image's configured
-    user — to create the nested ``Data/speech_recorder_uploads/...`` path that
-    wsrng-server writes audio into. Cleans up afterwards. Returns ``True`` on a
-    successful write.
+    Reproduces the runtime ownership conditions exactly: the container runs as the
+    service identity ``uid:gid`` with ``--userns=keep-id:uid=<uid>,gid=<gid>``, the
+    same mapping the quadlet uses. A host-owned probe directory (created by the host
+    user that owns the repo tree) then appears inside the container as ``uid`` and
+    must be writable. The probe creates the nested
+    ``Data/speech_recorder_uploads/...`` path that wsrng-server writes audio into.
+    Cleans up afterwards. Returns ``True`` on a successful write.
     """
     probe_root = repos_dir / f".vispctl-permcheck-{os.getpid()}"
     rel_target = "Data/speech_recorder_uploads/emudb-sessions/_probe"
@@ -229,7 +234,9 @@ def _probe_repository_write(repos_dir: Path, image: str, uid: int) -> bool:
                 "run",
                 "--rm",
                 "--user",
-                str(uid),
+                f"{uid}:{gid}",
+                "--userns",
+                f"keep-id:uid={uid},gid={gid}",
                 "--entrypoint",
                 "",
                 "-v",
@@ -263,19 +270,20 @@ def _probe_repository_write(repos_dir: Path, image: str, uid: int) -> bool:
 def verify_repository_write_access(project_dir: Path) -> bool:
     """Verify every repository-writer container can write into the repositories mount.
 
-    Project repositories under ``mounts/repositories`` are created by
-    session-manager as the host user (container UID 0). Other writers
-    (wsrng-server for audio uploads, emu-webapp-server for the emuDB) must run as
-    the same identity, otherwise their writes fail at runtime with::
+    The ``mounts/repositories`` tree is owned by the host repository owner (see
+    :func:`normalize_repository_ownership`). Each writer container pins its own
+    service UID/GID to that host owner with ``--userns=keep-id`` so its writes land
+    correctly owned; if the keep-id mapping is wrong or the tree was left
+    foreign-owned, writes fail at runtime with::
 
         EACCES: permission denied, mkdir '/repositories/<proj>/Data/...'
 
-    For each writer image this resolves the configured user and, when it is
-    non-root, runs a *real* write probe reproducing the runtime conditions.
+    For each writer this runs a *real* write probe under the same keep-id mapping
+    the quadlet uses, reproducing the runtime conditions.
 
     Returns ``True`` when all writers can write (or checks are skipped because an
-    image is unavailable / runs as root). Returns ``False`` and prints remediation
-    guidance when any writer would be unable to write.
+    image is unavailable). Returns ``False`` and prints remediation guidance when
+    any writer would be unable to write.
     """
     repos_dir = project_dir / "mounts/repositories"
     if not repos_dir.exists():
@@ -283,9 +291,8 @@ def verify_repository_write_access(project_dir: Path) -> bool:
         return True
 
     all_ok = True
-    for image, label in REPOSITORY_WRITER_IMAGES:
-        uid = _resolve_image_uid(image)
-        if uid is None:
+    for image, label, uid, gid in REPOSITORY_WRITERS:
+        if _resolve_image_uid(image) is None:
             print(
                 color(
                     f"  ○ {label} image not built yet — skipping write check "
@@ -294,26 +301,26 @@ def verify_repository_write_access(project_dir: Path) -> bool:
                 )
             )
             continue
-        if uid == 0:
-            print(
-                color(f"  ✓ {label} runs as container-root (maps to host user) — can write repositories", Colors.GREEN)
-            )
-            continue
 
-        if _probe_repository_write(repos_dir, image, uid):
-            print(color(f"  ✓ {label} can write into mounts/repositories", Colors.GREEN))
+        if _probe_repository_write(repos_dir, image, uid, gid):
+            print(color(f"  ✓ {label} (keep-id uid={uid},gid={gid}) can write into mounts/repositories", Colors.GREEN))
             continue
 
         all_ok = False
-        print(color(f"  ✗ {label} (UID {uid}) cannot write into mounts/repositories", Colors.RED))
+        print(color(f"  ✗ {label} cannot write into mounts/repositories as uid {uid}:{gid}", Colors.RED))
         print(color("    Writes will fail at runtime with 'EACCES: permission denied, mkdir'.", Colors.RED))
-        print(color("    Cause: session-manager creates project repos owned by the host user", Colors.YELLOW))
-        print(color(f"    (container UID 0), but {label} runs as a non-root user without write access", Colors.YELLOW))
-        print(color("    (all capabilities are dropped, so root-equivalence via DAC_OVERRIDE is gone).", Colors.YELLOW))
+        print(color("    Cause: the repositories tree is not owned by the host repo owner that", Colors.YELLOW))
+        print(color(f"    {label}'s keep-id mapping resolves to (e.g. files left foreign-owned by an", Colors.YELLOW))
+        print(color("    older pre-keep-id build).", Colors.YELLOW))
+        print(color("    Fix: re-run install to normalize ownership, or manually run:", Colors.YELLOW))
+        print(color(f"      podman unshare chown -R 0:0 {repos_dir}", Colors.YELLOW))
         print(
-            color(f"    Fix: run {label} as container-root — set 'User=0:0' in its quadlet and remove", Colors.YELLOW)
+            color(
+                f"    and confirm the quadlet sets 'User={uid}:{gid}' + "
+                f"'UserNS=keep-id:uid={uid},gid={gid}'.",
+                Colors.YELLOW,
+            )
         )
-        print(color("    any 'USER' directive from its Dockerfile, matching session-manager.", Colors.YELLOW))
 
     return all_ok
 
@@ -715,11 +722,12 @@ def run_install(
     else:
         print("  Mongo mount ownership/permissions already normalized (or paths missing)")
 
-    # Re-own the repository tree to the single shared container-root identity so
-    # all repository writers (session-manager, wsrng-server, emu-webapp-server)
-    # can write each other's files. Migrates any sub-UID data left by older builds.
+    # Re-own the repository tree to the host repository owner that every writer's
+    # keep-id mapping resolves to (session-manager, wsrng-server, emu-webapp-server,
+    # apache), so they can all write each other's files. Migrates any foreign-owned
+    # (sub-UID) data left by older pre-keep-id builds.
     if normalize_repository_ownership(project_dir):
-        print("  Repository ownership normalized to container-root (0:0)")
+        print("  Repository ownership normalized to the host repo owner")
     print()
 
     # Verify every repository-writer container can write into the repositories

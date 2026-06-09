@@ -235,24 +235,17 @@ def test_verify_skips_when_images_missing(monkeypatch, tmp_path):
     assert verify_repository_write_access(project_dir) is True
 
 
-def test_verify_ok_when_all_root(monkeypatch, tmp_path):
-    project_dir = tmp_path / "project"
-    (project_dir / "mounts/repositories").mkdir(parents=True)
-    # Empty User → root for every writer image; no write probe should be attempted.
-    _patch_run(monkeypatch, lambda cmd: SimpleNamespace(returncode=0, stdout="\n", stderr=""))
-    assert verify_repository_write_access(project_dir) is True
-    assert not list((project_dir / "mounts/repositories").glob(".vispctl-permcheck-*"))
-
-
-def test_verify_passes_when_nonroot_write_succeeds(monkeypatch, tmp_path):
+def test_verify_passes_when_keepid_write_succeeds(monkeypatch, tmp_path):
     project_dir = tmp_path / "project"
     (project_dir / "mounts/repositories").mkdir(parents=True)
 
     def handler(cmd):
-        if cmd[1] == "image":  # inspect → non-root uid
+        if cmd[1] == "image":  # inspect → image exists (USER node = 1000)
             return SimpleNamespace(returncode=0, stdout="1000\n", stderr="")
-        # the throwaway write probe succeeds
+        # the throwaway keep-id write probe succeeds
         assert cmd[0] == "podman" and cmd[1] == "run"
+        assert "--userns" in cmd and "keep-id:uid=1000,gid=1000" in cmd
+        assert "--user" in cmd and "1000:1000" in cmd
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     _patch_run(monkeypatch, handler)
@@ -261,7 +254,7 @@ def test_verify_passes_when_nonroot_write_succeeds(monkeypatch, tmp_path):
     assert not list((project_dir / "mounts/repositories").glob(".vispctl-permcheck-*"))
 
 
-def test_verify_fails_when_nonroot_write_denied(monkeypatch, tmp_path):
+def test_verify_fails_when_keepid_write_denied(monkeypatch, tmp_path):
     project_dir = tmp_path / "project"
     (project_dir / "mounts/repositories").mkdir(parents=True)
 
