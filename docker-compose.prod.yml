@@ -132,8 +132,8 @@ services:
     networks:
       - visp-net
     volumes:
-      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:Z"
-      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:Z"
+      - "./mounts/octra/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z"
+      - "./mounts/octra/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z"
       - "/etc/timezone:/etc/timezone:ro"
       - "/etc/localtime:/etc/localtime:ro"
 

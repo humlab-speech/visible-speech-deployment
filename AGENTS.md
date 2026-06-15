@@ -564,7 +564,7 @@ Quadlet `Image=` lines **must** use `localhost/visp-*:latest` — never `docker.
 (that attempts a Docker Hub pull and fails).
 
 Third-party images that are pulled from registries (e.g. `docker.io/library/traefik:v3.3`,
-`docker.io/library/mongo:6.0.14`) use the full registry prefix.
+`docker.io/library/mongo:6.0.27`) use the full registry prefix.
 
 ---
 
