@@ -79,6 +79,24 @@ def scaffold_directories(
     return created
 
 
+CONTAINER_WRITABLE_DIRS = [
+    Path("mounts/apache/apache/uploads"),
+    Path("mounts/repositories"),
+    Path("mounts/api-logs/logs"),
+    Path("mounts/apache/apache/logs/apache2"),
+    Path("mounts/apache/apache/logs/shibboleth"),
+    Path("mounts/session-manager/logs"),
+    Path("mounts/sessions"),
+    Path("mounts/matomo/html"),
+    Path("mounts/podman-proxy"),
+]
+
+
+def get_container_writable_dirs(project_dir: Path) -> list[Path]:
+    """Return install-managed container-writable directories as absolute paths."""
+    return [project_dir / rel_path for rel_path in CONTAINER_WRITABLE_DIRS]
+
+
 def fix_writable_permissions(project_dir: Path) -> int:
     """
     Ensure container-writable directories have mode 0o777.
@@ -92,19 +110,8 @@ def fix_writable_permissions(project_dir: Path) -> int:
 
     Returns the number of directories whose permissions were changed.
     """
-    writable_dirs = [
-        project_dir / "mounts/apache/apache/uploads",
-        project_dir / "mounts/repositories",
-        project_dir / "mounts/api-logs/logs",
-        project_dir / "mounts/apache/apache/logs/apache2",
-        project_dir / "mounts/apache/apache/logs/shibboleth",
-        project_dir / "mounts/session-manager/logs",
-        project_dir / "mounts/sessions",
-        project_dir / "mounts/matomo/html",
-        project_dir / "mounts/podman-proxy",
-    ]
     fixed = 0
-    for d in writable_dirs:
+    for d in get_container_writable_dirs(project_dir):
         if not d.exists():
             continue
         current_mode = d.stat().st_mode & 0o777
@@ -316,8 +323,7 @@ def verify_repository_write_access(project_dir: Path) -> bool:
         print(color(f"      podman unshare chown -R 0:0 {repos_dir}", Colors.YELLOW))
         print(
             color(
-                f"    and confirm the quadlet sets 'User={uid}:{gid}' + "
-                f"'UserNS=keep-id:uid={uid},gid={gid}'.",
+                f"    and confirm the quadlet sets 'User={uid}:{gid}' + " f"'UserNS=keep-id:uid={uid},gid={gid}'.",
                 Colors.YELLOW,
             )
         )

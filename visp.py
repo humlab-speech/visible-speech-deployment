@@ -745,18 +745,70 @@ def cmd_fix_permissions(args):
     """Fix file ownership and permissions using 'podman unshare'."""
     from vispctl.permissions import PermissionsManager
 
-    # Default target paths if none provided: all container-writable directories
+    if not args.paths:
+        from vispctl.install import (
+            fix_mongo_mount_ownership,
+            fix_writable_permissions,
+            get_container_writable_dirs,
+            normalize_repository_ownership,
+        )
+
+        writable_dirs = get_container_writable_dirs(PROJECT_DIR)
+        existing_dirs = [p for p in writable_dirs if p.exists()]
+        missing_dirs = [p for p in writable_dirs if not p.exists()]
+
+        print(color("=== Install-Equivalent Permission Fix Plan ===", Colors.CYAN))
+
+        if args.recursive or args.host_owner:
+            print(
+                color(
+                    "Note: --recursive and --host-owner only apply with explicit --path targets; "
+                    "the default mode mirrors './visp.py install'.",
+                    Colors.YELLOW,
+                )
+            )
+
+        for p in missing_dirs:
+            print(color(f"! Path does not exist: {p.relative_to(PROJECT_DIR)}", Colors.YELLOW))
+
+        for p in existing_dirs:
+            print(f"  chmod 777 {p}")
+            print(f"  # fallback if needed: podman unshare chmod 777 {p}")
+
+        mongo_mounts = [
+            PROJECT_DIR / "mounts/mongo/data",
+            PROJECT_DIR / "mounts/mongo/logs",
+        ]
+        for p in mongo_mounts:
+            if p.exists():
+                print(f"  podman unshare chown -R 999:999 {p}")
+                print(f"  podman unshare chmod -R u+rwX,go-rwx {p}")
+
+        repos_dir = PROJECT_DIR / "mounts/repositories"
+        if repos_dir.exists():
+            print(f"  podman unshare chown -R 0:0 {repos_dir}")
+
+        if not args.apply:
+            print()
+            print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
+            return
+
+        print()
+        print(color("Applying install-equivalent permission fixes...", Colors.CYAN))
+        perm_fixed = fix_writable_permissions(PROJECT_DIR)
+        mongo_fixed = fix_mongo_mount_ownership(PROJECT_DIR)
+        repos_ok = normalize_repository_ownership(PROJECT_DIR)
+
+        print(f"  Container-writable directories fixed: {perm_fixed}")
+        print(f"  Mongo mount paths normalized: {mongo_fixed}")
+        if repos_ok:
+            print("  Repository ownership normalized")
+        else:
+            print(color("  Repository ownership normalization failed", Colors.YELLOW))
+        return
+
     if args.paths:
         paths = [Path(p) for p in args.paths]
-    else:
-        paths = [
-            Path("mounts/repositories"),
-            Path("mounts/apache/apache/uploads"),
-            Path("mounts/api-logs/logs"),
-            Path("mounts/apache/apache/logs/apache2"),
-            Path("mounts/apache/apache/logs/shibboleth"),
-            Path("mounts/session-manager/logs"),
-        ]
 
     existing = [p for p in paths if p.exists()]
     missing = [p for p in paths if not p.exists()]
@@ -1231,10 +1283,7 @@ Examples:
         "-p",
         dest="paths",
         action="append",
-        help=(
-            "Path to fix (can be specified multiple times). "
-            "Default: all container-writable dirs (uploads, repositories, logs)"
-        ),
+        help="Path to fix (can be specified multiple times). Default: run the same permission repair used by install.",
     )
     p_fix.add_argument(
         "-r",
@@ -1247,7 +1296,8 @@ Examples:
         action="store_true",
         help=(
             "Try to set host ownership to the current user using "
-            "namespace mapping (uses 'podman unshare chown 0:0'; no sudo)."
+            "namespace mapping for explicit --path targets "
+            "(uses 'podman unshare chown 0:0'; no sudo)."
         ),
     )
     p_fix.add_argument(

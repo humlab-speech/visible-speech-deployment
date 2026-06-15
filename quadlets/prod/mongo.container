@@ -4,7 +4,7 @@ After=network-online.target visp-net.service
 
 [Container]
 ContainerName=mongo
-Image=docker.io/library/mongo:6
+Image=docker.io/library/mongo:6.0.27
 Network=visp-net.network
 PublishPort=127.0.0.1:27017:27017
 Environment=MONGO_INITDB_ROOT_USERNAME=root
@@ -21,7 +21,7 @@ AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID
 NoNewPrivileges=true
 
 # Resource limits
-PodmanArgs=--userns=keep-id --memory=512m --cpus=1.0 --pids-limit=200
+PodmanArgs=--memory=512m --cpus=1.0 --pids-limit=200
 
 [Service]
 Restart=always

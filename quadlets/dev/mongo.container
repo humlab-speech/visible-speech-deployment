@@ -4,7 +4,7 @@ After=network-online.target visp-net.service
 
 [Container]
 ContainerName=mongo
-Image=docker.io/library/mongo:6
+Image=docker.io/library/mongo:6.0.27
 Network=visp-net.network
 PublishPort=127.0.0.1:27017:27017
 Environment=MONGO_INITDB_ROOT_USERNAME=root
@@ -17,7 +17,7 @@ Exec=--logpath /var/log/mongodb/mongodb.log
 
 # Security hardening
 DropCapability=ALL
-AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID CAP_FOWNER
+AddCapability=CHOWN DAC_OVERRIDE SETGID SETUID
 NoNewPrivileges=true
 
 # Resource limits
