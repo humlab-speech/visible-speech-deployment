@@ -336,6 +336,82 @@ MONGO_CONTAINER_GID = 999
 MONGO_MOUNT_MODE = "u+rwX,go-rwx"
 
 
+def _parse_id_map(map_text: str) -> list[tuple[int, int, int]]:
+    """Parse /proc/self/{uid,gid}_map into (namespace_start, host_start, length)."""
+    mappings: list[tuple[int, int, int]] = []
+    for line in map_text.splitlines():
+        parts = line.split()
+        if len(parts) != 3:
+            continue
+        mappings.append((int(parts[0]), int(parts[1]), int(parts[2])))
+    return mappings
+
+
+def _map_namespace_id(namespace_id: int, mappings: list[tuple[int, int, int]]) -> int | None:
+    """Map a namespace UID/GID to the corresponding host UID/GID."""
+    for namespace_start, host_start, length in mappings:
+        if namespace_start <= namespace_id < namespace_start + length:
+            return host_start + namespace_id - namespace_start
+    return None
+
+
+def _resolve_rootless_host_id(namespace_id: int, map_name: str) -> int | None:
+    """Return the host UID/GID for a rootless namespace UID/GID."""
+    result = subprocess.run(
+        ["podman", "unshare", "cat", f"/proc/self/{map_name}_map"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    return _map_namespace_id(namespace_id, _parse_id_map(result.stdout))
+
+
+def _try_host_root_mongo_repair(mount_path: Path, host_uid: int, host_gid: int) -> bool:
+    """
+    Repair an inaccessible Mongo mount from the host side when rootless
+    podman-unshare cannot traverse it.
+
+    Uses non-interactive sudo only; if sudo would prompt, print the exact root
+    commands for manual repair and return False.
+    """
+    chown_cmd = ["sudo", "-n", "chown", "-R", f"{host_uid}:{host_gid}", str(mount_path)]
+    chmod_cmd = ["sudo", "-n", "chmod", "-R", MONGO_MOUNT_MODE, str(mount_path)]
+
+    try:
+        chown_result = subprocess.run(chown_cmd, capture_output=True, text=True)
+    except FileNotFoundError:
+        chown_result = subprocess.CompletedProcess(chown_cmd, returncode=127, stderr="sudo not found")
+    if chown_result.returncode != 0:
+        print(
+            color(
+                "  ⚠ Rootless repair could not access this Mongo path. Run as root:\n"
+                f"      chown -R {host_uid}:{host_gid} {mount_path}\n"
+                f"      chmod -R {MONGO_MOUNT_MODE} {mount_path}",
+                Colors.YELLOW,
+            )
+        )
+        return False
+
+    chmod_result = subprocess.run(chmod_cmd, capture_output=True, text=True)
+    if chmod_result.returncode != 0:
+        print(
+            color(
+                f"  ⚠ Host-root chmod failed for {mount_path}: {chmod_result.stderr.strip()}",
+                Colors.YELLOW,
+            )
+        )
+        return False
+
+    print(
+        color(
+            f"  ✓ Repaired Mongo ownership via host mapping ({host_uid}:{host_gid}) for {mount_path}",
+            Colors.GREEN,
+        )
+    )
+    return True
+
+
 def fix_mongo_mount_ownership(project_dir: Path) -> int:
     """
     Ensure Mongo bind-mount paths are owned by Mongo's runtime UID/GID
@@ -371,6 +447,19 @@ def fix_mongo_mount_ownership(project_dir: Path) -> int:
                     Colors.YELLOW,
                 )
             )
+            host_uid = _resolve_rootless_host_id(MONGO_CONTAINER_UID, "uid")
+            host_gid = _resolve_rootless_host_id(MONGO_CONTAINER_GID, "gid")
+            if host_uid is None or host_gid is None:
+                print(
+                    color(
+                        "  ⚠ Could not compute the host UID/GID for Mongo's rootless mapping. "
+                        "Check 'podman unshare cat /proc/self/uid_map' manually.",
+                        Colors.YELLOW,
+                    )
+                )
+                continue
+            if _try_host_root_mongo_repair(mount_path, host_uid, host_gid):
+                fixed += 1
             continue
 
         chmod_result = subprocess.run(

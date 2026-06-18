@@ -1,8 +1,13 @@
 import importlib.util
+import sys
 import types
 from pathlib import Path
 
 import pytest
+
+proj = str(Path(__file__).resolve().parents[2])
+if proj not in sys.path:
+    sys.path.insert(0, proj)
 
 
 def load_visp_module():
@@ -81,6 +86,39 @@ def test_cmd_down_stops_then_disables(monkeypatch):
         ("stop", ["session-manager"]),
         ("disable", ["session-manager"]),
     ]
+
+
+def test_cmd_down_all_skips_dev_only_services_in_prod(monkeypatch):
+    vp = load_visp_module()
+    called = {}
+
+    class FakeSM:
+        def __init__(self, runner, services):
+            called["services"] = [service.name for service in services]
+
+        def stop(self, names):
+            called.setdefault("ops", []).append(("stop", names))
+
+        def disable(self, names):
+            called.setdefault("ops", []).append(("disable", names))
+
+    monkeypatch.setattr(vp, "ServiceManager", FakeSM)
+
+    import vispctl.quadlets as q_mod
+    import vispctl.runner as r_mod
+
+    monkeypatch.setattr(q_mod, "get_current_mode", lambda: "prod")
+    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
+
+    args = types.SimpleNamespace(services=["all"])
+    vp.cmd_down(args)
+
+    assert "local-idp" not in called["services"]
+    assert "mongo-express" not in called["services"]
+    for _, targets in called["ops"]:
+        assert "local-idp" not in targets
+        assert "mongo-express" not in targets
+        assert "session-manager" in targets
 
 
 def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):

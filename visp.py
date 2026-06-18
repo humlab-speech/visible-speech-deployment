@@ -747,6 +747,10 @@ def cmd_fix_permissions(args):
 
     if not args.paths:
         from vispctl.install import (
+            MONGO_CONTAINER_GID,
+            MONGO_CONTAINER_UID,
+            MONGO_MOUNT_MODE,
+            _resolve_rootless_host_id,
             fix_mongo_mount_ownership,
             fix_writable_permissions,
             get_container_writable_dirs,
@@ -783,6 +787,14 @@ def cmd_fix_permissions(args):
             if p.exists():
                 print(f"  podman unshare chown -R 999:999 {p}")
                 print(f"  podman unshare chmod -R u+rwX,go-rwx {p}")
+                host_uid = _resolve_rootless_host_id(MONGO_CONTAINER_UID, "uid")
+                host_gid = _resolve_rootless_host_id(MONGO_CONTAINER_GID, "gid")
+                if host_uid is not None and host_gid is not None:
+                    print("  # if rootless podman cannot access the path, run as root:")
+                    print(f"  sudo chown -R {host_uid}:{host_gid} {p}")
+                    print(f"  sudo chmod -R {MONGO_MOUNT_MODE} {p}")
+                else:
+                    print("  # if rootless podman cannot access the path, inspect uid/gid maps and chown as root")
 
         repos_dir = PROJECT_DIR / "mounts/repositories"
         if repos_dir.exists():

@@ -1,12 +1,17 @@
 """Tests for vispctl/install.py."""
 
+import sys
 from pathlib import Path
 from types import SimpleNamespace
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from vispctl.install import (
     EMU_WEBAPP_IMAGE,
     WSRNG_IMAGE,
     _ensure_webclient_dist,
+    _map_namespace_id,
+    _parse_id_map,
     _resolve_image_uid,
     cleanup_disabled_optional_services,
     fix_mongo_mount_ownership,
@@ -141,6 +146,18 @@ def test_fix_writable_permissions_skips_missing(tmp_path):
 # ---------------------------------------------------------------------------
 
 
+def test_map_namespace_id_resolves_subuid_mapping():
+    mappings = _parse_id_map(
+        """
+         0       1002          1
+         1     231072      65536
+        """
+    )
+
+    assert _map_namespace_id(0, mappings) == 1002
+    assert _map_namespace_id(999, mappings) == 232070
+
+
 def test_fix_mongo_mount_ownership_runs_unshare_chown(monkeypatch, tmp_path):
     project_dir = tmp_path / "project"
     data_dir = project_dir / "mounts/mongo/data"
@@ -174,6 +191,36 @@ def test_fix_mongo_mount_ownership_skips_missing(tmp_path):
     fixed = fix_mongo_mount_ownership(project_dir)
 
     assert fixed == 0
+
+
+def test_fix_mongo_mount_ownership_falls_back_to_host_mapping(monkeypatch, tmp_path):
+    project_dir = tmp_path / "project"
+    data_dir = project_dir / "mounts/mongo/data"
+    data_dir.mkdir(parents=True)
+
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, capture_output, text):  # noqa: ANN001
+        calls.append(cmd)
+        if cmd[:4] == ["podman", "unshare", "chown", "-R"]:
+            return SimpleNamespace(returncode=1, stdout="", stderr="Permission denied")
+        if cmd == ["podman", "unshare", "cat", "/proc/self/uid_map"]:
+            return SimpleNamespace(returncode=0, stdout="0 1002 1\n1 231072 65536\n", stderr="")
+        if cmd == ["podman", "unshare", "cat", "/proc/self/gid_map"]:
+            return SimpleNamespace(returncode=0, stdout="0 1002 1\n1 231072 65536\n", stderr="")
+        if cmd[:3] == ["sudo", "-n", "chown"]:
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        if cmd[:3] == ["sudo", "-n", "chmod"]:
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("vispctl.install.subprocess.run", fake_run)
+
+    fixed = fix_mongo_mount_ownership(project_dir)
+
+    assert fixed == 1
+    assert ["sudo", "-n", "chown", "-R", "232070:232070", str(data_dir)] in calls
+    assert ["sudo", "-n", "chmod", "-R", "u+rwX,go-rwx", str(data_dir)] in calls
 
 
 # ---------------------------------------------------------------------------

@@ -83,11 +83,12 @@ def get_runtime_services(
 
     if project_dir is None:
         project_dir = Path(__file__).parent.parent
-    if include_disabled:
-        return list(DEFAULT_SERVICES)
     mode = get_current_mode()
+    services = [s for s in DEFAULT_SERVICES if not (s.dev_only and mode != "dev")]
+    if include_disabled:
+        return services
     disabled = get_disabled_optional_services(Path(project_dir))
-    return [s for s in DEFAULT_SERVICES if s.name not in disabled and not (s.dev_only and mode != "dev")]
+    return [s for s in services if s.name not in disabled]
 
 
 def resolve_services(
