@@ -13,6 +13,21 @@ DATABASE = "visp"
 MONGO_CONTAINER = "mongo"
 
 
+def js_escape(s: str) -> str:
+    """Escape a string for safe embedding in a JavaScript single-quoted string.
+
+    Prevents injection when user-supplied values are interpolated into
+    ``mongosh --eval`` commands.
+    """
+    s = s.replace("\\", "\\\\")
+    s = s.replace("'", "\\'")
+    s = s.replace("`", "\\`")
+    s = s.replace("\n", "\\n")
+    s = s.replace("\r", "\\r")
+    s = s.replace("\t", "\\t")
+    return s
+
+
 def load_env() -> dict:
     """Load environment variables from .env and .env.secrets."""
     env = {}

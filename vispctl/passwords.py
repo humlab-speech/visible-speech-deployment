@@ -2,7 +2,7 @@
 
 import getpass
 import os
-import random
+import secrets
 import shutil
 import string
 from typing import Optional
@@ -11,7 +11,7 @@ from typing import Optional
 def generate_random_string(length: int = 32) -> str:
     """Generate a random string for passwords."""
     chars = string.ascii_letters + string.digits
-    return "".join(random.choice(chars) for _ in range(length))
+    return "".join(secrets.choice(chars) for _ in range(length))
 
 
 class EnvFile:

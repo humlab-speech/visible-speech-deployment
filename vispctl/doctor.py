@@ -6,11 +6,12 @@ and audio files, cross-referencing MongoDB ↔ disk ↔ emuDB bundle lists.
 
 import hashlib
 import json
+import shlex
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .mongo import mongosh_json
+from .mongo import js_escape, mongosh_json
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 REPOS_PATH = _PROJECT_ROOT / "mounts" / "repositories"
@@ -143,7 +144,7 @@ def _append_manifest(project_path: Path, message: str) -> None:
             check=False,
         )
         subprocess.run(
-            ["podman", "unshare", "bash", "-c", f"cat >> {manifest}"],
+            ["podman", "unshare", "bash", "-c", f"cat >> {shlex.quote(str(manifest))}"],
             input=line.encode(),
             capture_output=True,
             check=False,
@@ -168,7 +169,7 @@ def _podman_move(src: Path, dst: Path) -> bool:
 def _podman_write(path: Path, content: str) -> bool:
     """Write content to a container-owned file via podman unshare."""
     result = subprocess.run(
-        ["podman", "unshare", "bash", "-c", f"cat > {path}"],
+        ["podman", "unshare", "bash", "-c", f"cat > {shlex.quote(str(path))}"],
         input=content.encode(),
         capture_output=True,
         check=False,
@@ -744,7 +745,7 @@ def run_doctor(
 
     # Fetch projects from MongoDB
     if project_id:
-        project = mongosh_json(f"db.projects.findOne({{id: '{project_id}'}})")
+        project = mongosh_json(f"db.projects.findOne({{id: '{js_escape(project_id)}'}})")
         if not project:
             print(f"{_C.RED}Project '{project_id}' not found in MongoDB{_C.NC}")
             return 1

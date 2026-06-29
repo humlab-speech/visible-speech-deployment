@@ -3,7 +3,7 @@
 import json
 import sys
 
-from .mongo import mongosh_json
+from .mongo import js_escape, mongosh_json
 
 COLLECTION = "users"
 
@@ -53,7 +53,7 @@ def cmd_list(args) -> None:  # noqa: ARG001
 def cmd_show(args) -> None:
     """Show detailed user info."""
     username = args.username
-    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{username}'}})")
+    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
 
     if not user:
         print(_color(f"User not found: {username}", _C.RED))
@@ -82,7 +82,7 @@ def cmd_create(args) -> None:
     email = args.email
     username = email.replace("@", "_at_").replace(".", "_dot_")
 
-    existing = mongosh_json(f"db.{COLLECTION}.findOne({{email: '{email}'}})")
+    existing = mongosh_json(f"db.{COLLECTION}.findOne({{email: '{js_escape(email)}'}})")
     if existing:
         print(_color(f"User with email {email} already exists", _C.YELLOW))
         print(f"Username: {existing.get('username')}")
@@ -115,7 +115,7 @@ def cmd_create(args) -> None:
 def cmd_activate(args) -> None:
     """Enable login for user."""
     username = args.username
-    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: true}}}})")
+    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: true}}}})")
 
     if not result or result.get("matchedCount", 0) == 0:
         print(_color(f"User not found: {username}", _C.RED))
@@ -128,7 +128,7 @@ def cmd_activate(args) -> None:
 def cmd_deactivate(args) -> None:
     """Disable login for user."""
     username = args.username
-    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: false}}}})")
+    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: false}}}})")
 
     if not result or result.get("matchedCount", 0) == 0:
         print(_color(f"User not found: {username}", _C.RED))
@@ -150,7 +150,7 @@ def cmd_grant(args) -> None:
         sys.exit(1)
 
     result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{'privileges.{privilege}': true}}}})"
+        f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{'privileges.{js_escape(privilege)}': true}}}})"
     )
 
     if not result or result.get("matchedCount", 0) == 0:
@@ -173,7 +173,7 @@ def cmd_revoke(args) -> None:
         sys.exit(1)
 
     result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{'privileges.{privilege}': false}}}})"
+        f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{'privileges.{js_escape(privilege)}': false}}}})"
     )
 
     if not result or result.get("matchedCount", 0) == 0:
@@ -188,7 +188,7 @@ def cmd_delete(args) -> None:
     """Delete a user."""
     username = args.username
 
-    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{username}'}})")
+    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
     if not user:
         print(_color(f"User not found: {username}", _C.RED))
         sys.exit(1)
@@ -205,7 +205,7 @@ def cmd_delete(args) -> None:
             print("Cancelled.")
             return
 
-    result = mongosh_json(f"db.{COLLECTION}.deleteOne({{username: '{username}'}})")
+    result = mongosh_json(f"db.{COLLECTION}.deleteOne({{username: '{js_escape(username)}'}})")
 
     if result and result.get("deletedCount", 0) > 0:
         print(_color(f"Deleted user: {username}", _C.GREEN))
