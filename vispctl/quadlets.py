@@ -121,3 +121,91 @@ def setup_service_env_files(project_dir: Path) -> None:
         print(color("  ✓ Created external/wsrng-server/.env (MONGO_PASSWORD via Podman Secret)", Colors.GREEN))
     else:
         print(color("  ⚠ external/wsrng-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
+
+
+def cmd_apply(
+    args,
+    project_dir: Path | None = None,
+    systemd_dir: Path | None = None,
+    runner=None,
+    build_configs=None,
+    network_services=None,
+) -> None:
+    """Apply quadlet changes and restart containers running stale images."""
+    from .images import ImageManager
+    from .install import install_quadlets
+    from .service import get_runtime_services, resolve_services
+    from .service_manager import ServiceManager
+
+    if project_dir is None:
+        project_dir = Path(__file__).parent.parent
+    if systemd_dir is None:
+        systemd_dir = Path.home() / ".config/containers/systemd"
+
+    service = getattr(args, "service", "all")
+    mode = get_current_mode()
+    quadlets_dir = get_quadlets_dir(mode)
+    services = resolve_services(service, project_dir)
+
+    drifted, not_installed = get_quadlet_drift(services, quadlets_dir, systemd_dir, render_quadlet_template)
+
+    im = ImageManager(runner, build_configs or {}, network_services or [])
+    stale_image = im.get_stale_containers(services)
+    quadlet_names = {s.name for s in drifted + not_installed}
+    stale_image_only = [s for s in stale_image if s.name not in quadlet_names]
+
+    if not drifted and not not_installed and not stale_image_only:
+        print(
+            color(
+                f"All quadlets are up to date and all containers are running the latest images ({mode} mode).",
+                Colors.GREEN,
+            )
+        )
+        return
+
+    to_update = drifted + not_installed
+    if to_update:
+        print(color(f"=== Applying quadlet changes ({mode} mode) ===", Colors.CYAN))
+        print()
+        if drifted:
+            print(color(f"  Out of date ({len(drifted)}):", Colors.YELLOW))
+            for svc in drifted:
+                print(f"    - {svc.file}")
+        if not_installed:
+            print(color(f"  Not installed ({len(not_installed)}):", Colors.YELLOW))
+            for svc in not_installed:
+                print(f"    - {svc.file}")
+        print()
+
+        print(color("Installing quadlets...", Colors.CYAN))
+        install_quadlets(quadlets_dir, systemd_dir, to_update, render_quadlet_template, force=True)
+        print()
+
+        print(color("Reloading systemd daemon...", Colors.CYAN))
+        result = runner.systemctl("daemon-reload")
+        if result.returncode != 0:
+            print(color(f"  daemon-reload failed: {result.stderr}", Colors.RED))
+            return
+        print(color("  Daemon reloaded", Colors.GREEN))
+        print()
+
+    quadlet_restart = [svc for svc in to_update if svc.file.endswith(".container")]
+    restart_targets = quadlet_restart + stale_image_only
+
+    if not restart_targets:
+        print(color("No container services to restart.", Colors.GREEN))
+        return
+
+    if stale_image_only:
+        print(color(f"  Stale image ({len(stale_image_only)}):", Colors.YELLOW))
+        for svc in stale_image_only:
+            print(f"    - {svc.name}")
+        print()
+
+    print(color(f"Restarting {len(restart_targets)} service(s)...", Colors.CYAN))
+    sm = ServiceManager(runner, get_runtime_services(project_dir, include_disabled=True))
+    target_names = [svc.name for svc in restart_targets]
+    sm.stop(target_names)
+    sm.start(target_names)
+    print()
+    print(color("Done.", Colors.GREEN))

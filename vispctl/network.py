@@ -162,3 +162,37 @@ class NetworkManager:
             return False
         print(color("  ✓ System reset complete", Colors.GREEN))
         return True
+
+
+def cmd_network(args, runner=None) -> None:
+    """Show network information and DNS status, or perform actions like 'ensure'."""
+    from .runner import Colors, Runner, color
+
+    if runner is None:
+        runner = Runner()
+    nm = NetworkManager(runner)
+
+    if getattr(args, "action", None) == "ensure":
+        print(color("Ensuring required Podman networks exist...", Colors.CYAN))
+        ok = nm.ensure_networks_exist()
+        if ok:
+            print(color("  Networks ensured", Colors.GREEN))
+        else:
+            print(color("  Failed to ensure networks", Colors.RED))
+            import sys
+
+            sys.exit(1)
+        return
+
+    print(color("=== Network Backend ===", Colors.CYAN))
+    is_net, backend = nm.check_netavark()
+    if is_net:
+        print(color(f"  Backend: {backend} (recommended)", Colors.GREEN))
+    else:
+        print(
+            color(
+                f"  Backend: {backend} (CNI - consider upgrading to netavark)",
+                Colors.YELLOW,
+            )
+        )
+    print()

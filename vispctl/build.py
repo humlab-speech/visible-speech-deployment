@@ -280,9 +280,7 @@ class BuildManager:
 
     def _add_git_labels(self, cmd: list[str], path: Path, label_prefix: str) -> None:
         """Add git commit and dirty labels for a path to the build command."""
-        git_check = subprocess.run(
-            ["git", "rev-parse", "--git-dir"], cwd=path, capture_output=True, check=False
-        )
+        git_check = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=path, capture_output=True, check=False)
         if git_check.returncode != 0:
             return
         commit_result = subprocess.run(
@@ -632,3 +630,131 @@ NODE_BUILD_CONFIGS: dict[str, dict] = {
         "container_image": "node:22.22.2",
     },
 }
+
+
+def cmd_build(
+    args,
+    runner=None,
+    build_configs=None,
+    node_configs=None,
+    all_buildable=None,
+) -> None:
+    """Build container images and node projects."""
+    from .runner import Colors, color
+
+    if getattr(args, "list", False):
+        cmd_build_list(args, build_configs=build_configs, node_configs=node_configs)
+        return
+
+    no_cache = getattr(args, "no_cache", False)
+    pull = getattr(args, "pull", False)
+    raw_services = getattr(args, "services", ["all"])
+    build_config = getattr(args, "config", None)
+    force = getattr(args, "force", False)
+
+    if "all" in raw_services:
+        requested = list(all_buildable)
+    else:
+        unknown = [s for s in raw_services if s not in all_buildable]
+        if unknown:
+            print(color(f"Error: Unknown service(s): {', '.join(unknown)}", Colors.RED))
+            print(f"Buildable services: {', '.join(all_buildable)}")
+            return
+        requested = list(raw_services)
+
+    ordered, auto_added = resolve_build_order(requested, build_configs, node_configs)
+
+    if auto_added:
+        print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
+        print()
+
+    bm = BuildManager(runner, build_configs=build_configs, node_configs=node_configs)
+
+    if not force:
+        from .quadlets import get_current_mode
+
+        mode = get_current_mode()
+        version_warnings, is_blocking = bm.check_version_drift(ordered, mode)
+
+        if version_warnings:
+            print(color("\n=== Version Check Warnings ===", Colors.YELLOW))
+            for warning in version_warnings:
+                print(warning)
+            print()
+            if is_blocking:
+                print(color("Cannot build in PROD mode with version mismatches.", Colors.RED))
+                print("   Options:")
+                print("   1. Run: ./visp.py deploy update")
+                print("   2. Use --force to override (not recommended)")
+                print()
+                return
+            print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
+            print()
+
+    print(color("=== Building VISP Services ===", Colors.CYAN))
+    print(f"  Order: {' -> '.join(ordered)}")
+    print()
+
+    if no_cache:
+        print(color("Building with --no-cache (clean rebuild)", Colors.YELLOW))
+    if pull:
+        print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
+    if no_cache or pull:
+        print()
+
+    results = bm.run_builds(ordered, no_cache=no_cache, pull=pull, build_config=build_config)
+
+    print(color("=== Build Summary ===", Colors.CYAN))
+    if results["success"]:
+        print(color(f"  Successful: {', '.join(results['success'])}", Colors.GREEN))
+    if results["skipped"]:
+        print(
+            color(
+                f"  Skipped (missing deps): {', '.join(results['skipped'])}",
+                Colors.YELLOW,
+            )
+        )
+    if results["failed"]:
+        print(color(f"  Failed: {', '.join(results['failed'])}", Colors.RED))
+
+    if results["failed"]:
+        print()
+        print(
+            color(
+                "Tip: Use --no-cache to force a clean rebuild if you're having issues",
+                Colors.YELLOW,
+            )
+        )
+
+
+def cmd_build_list(args, build_configs=None, node_configs=None):  # noqa: ARG001
+    """List buildable services."""
+    from .runner import Colors, color
+
+    print(color("=== Buildable Container Images ===", Colors.CYAN))
+    print()
+    for name, config in (build_configs or {}).items():
+        print(f"  {color(name, Colors.BLUE)}")
+        print(f"    Image: {config['image']}:latest")
+        print(f"    Context: {config['context']}")
+        if config.get("description"):
+            print(f"    Description: {config['description']}")
+        if config.get("target"):
+            print(f"    Target: {config['target']}")
+        if config.get("depends_on"):
+            print(f"    Depends on: {config['depends_on']}")
+        if config.get("prepare_context"):
+            print(f"    Requires: {config['prepare_context']} to be built first")
+        print()
+
+    print(color("=== Buildable Node.js Projects (containerized) ===", Colors.CYAN))
+    print()
+    for name, config in (node_configs or {}).items():
+        print(f"  {color(name, Colors.BLUE)}")
+        print(f"    Source: {config['source']}")
+        print(f"    Output: {config['output']}")
+        print(f"    Description: {config['description']}")
+        if config.get("default_config"):
+            print(f"    Default config: {config['default_config']}")
+            print("    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local")
+        print()

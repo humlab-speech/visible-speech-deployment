@@ -43,19 +43,34 @@ Mode examples:
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
-from vispctl.build import BUILD_CONFIGS, NODE_BUILD_CONFIGS, BuildManager, resolve_build_order
+from vispctl.build import (
+    BUILD_CONFIGS,
+    NODE_BUILD_CONFIGS,
+)
+from vispctl.build import (
+    cmd_build as _cmd_build,
+)
+from vispctl.build import (
+    cmd_build_list as _cmd_build_list,
+)
 from vispctl.cleanup_containers import cleanup_containers
 from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
-from vispctl.network import NetworkManager
+from vispctl.permissions import cmd_fix_permissions as _cmd_fix_permissions
 
 # Use the new modular managers where appropriate
-from vispctl.quadlets import get_current_mode, get_quadlets_dir, render_quadlet_template, set_current_mode
+from vispctl.quadlets import (
+    cmd_apply as _cmd_apply,
+)
+from vispctl.quadlets import (
+    get_current_mode,
+    render_quadlet_template,
+    set_current_mode,
+)
 from vispctl.runner import Colors, Runner, color
 from vispctl.service import (
     DEFAULT_SERVICES,
@@ -301,99 +316,14 @@ def cmd_reload(args):  # noqa: ARG001
 
 
 def cmd_apply(args):
-    """Apply quadlet changes and restart containers running stale images.
-
-    This is the one-shot alternative to manually running:
-        ./visp.py install --force [service]
-        ./visp.py reload
-        ./visp.py restart [service]
-
-    Two independent checks are performed:
-      1. Quadlet drift — quadlet file on disk differs from the rendered template.
-         Only drifted services are reinstalled and restarted.
-      2. Stale image — running container was launched from an older build of
-         its image than the current ``localhost/visp-<name>:latest`` tag.
-         These are restarted without touching the quadlet files.
-
-    When service is 'all', both checks run across all services.
-    """
-    service = getattr(args, "service", "all")
-    mode = get_current_mode()
-    quadlets_dir = get_quadlets_dir(mode)
-    services = resolve_services(service, PROJECT_DIR)
-
-    # --- Step 1: detect quadlet drift ---
-    from vispctl.quadlets import get_quadlet_drift
-
-    drifted, not_installed = get_quadlet_drift(services, quadlets_dir, SYSTEMD_QUADLETS_DIR, render_quadlet_template)
-
-    # --- Step 2: detect stale images ---
-    im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
-    stale_image = im.get_stale_containers(services)
-    # Don't double-count services already in the quadlet restart set
-    quadlet_names = {s.name for s in drifted + not_installed}
-    stale_image_only = [s for s in stale_image if s.name not in quadlet_names]
-
-    if not drifted and not not_installed and not stale_image_only:
-        print(
-            color(
-                f"✓ All quadlets are up to date and all containers are running the latest images ({mode} mode).",
-                Colors.GREEN,
-            )
-        )
-        return
-
-    to_update = drifted + not_installed
-    if to_update:
-        print(color(f"=== Applying quadlet changes ({mode} mode) ===", Colors.CYAN))
-        print()
-        if drifted:
-            print(color(f"  Out of date ({len(drifted)}):", Colors.YELLOW))
-            for svc in drifted:
-                print(f"    • {svc.file}")
-        if not_installed:
-            print(color(f"  Not installed ({len(not_installed)}):", Colors.YELLOW))
-            for svc in not_installed:
-                print(f"    • {svc.file}")
-        print()
-
-        # --- Step 3: install --force (only the affected files) ---
-        print(color("Installing quadlets...", Colors.CYAN))
-        from vispctl.install import install_quadlets
-
-        install_quadlets(quadlets_dir, SYSTEMD_QUADLETS_DIR, to_update, render_quadlet_template, force=True)
-        print()
-
-        # --- Step 4: daemon-reload ---
-        print(color("Reloading systemd daemon...", Colors.CYAN))
-        result = RUNNER.systemctl("daemon-reload")
-        if result.returncode != 0:
-            print(color(f"  ✗ daemon-reload failed: {result.stderr}", Colors.RED))
-            return
-        print(color("  ✓ Daemon reloaded", Colors.GREEN))
-        print()
-
-    # --- Step 5: restart containers (quadlet-changed + stale-image) ---
-    quadlet_restart = [svc for svc in to_update if svc.file.endswith(".container")]
-    restart_targets = quadlet_restart + stale_image_only
-
-    if not restart_targets:
-        print(color("✓ No container services to restart.", Colors.GREEN))
-        return
-
-    if stale_image_only:
-        print(color(f"  Stale image ({len(stale_image_only)}):", Colors.YELLOW))
-        for svc in stale_image_only:
-            print(f"    • {svc.name}")
-        print()
-
-    print(color(f"Restarting {len(restart_targets)} service(s)...", Colors.CYAN))
-    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
-    target_names = [svc.name for svc in restart_targets]
-    sm.stop(target_names)
-    sm.start(target_names)
-    print()
-    print(color("✓ Done.", Colors.GREEN))
+    _cmd_apply(
+        args,
+        project_dir=PROJECT_DIR,
+        systemd_dir=SYSTEMD_QUADLETS_DIR,
+        runner=RUNNER,
+        build_configs=BUILD_CONFIGS,
+        network_services=NETWORK_SERVICES,
+    )
 
 
 def cmd_mode(args):
@@ -475,129 +405,17 @@ def cmd_session_doctor(args):
 
 
 def cmd_build(args):
-    """Build container images and node projects.
-
-    Accepts one or more service names (or 'all').  Dependencies are
-    automatically added and the build order is resolved via topological
-    sort — node builds before container images, and base images before
-    those that depend on them.
-    """
-    # Handle --list flag
-    if getattr(args, "list", False):
-        cmd_build_list(args)
-        return
-
-    no_cache = getattr(args, "no_cache", False)
-    pull = getattr(args, "pull", False)
-    raw_services = getattr(args, "services", ["all"])
-    build_config = getattr(args, "config", None)
-    force = getattr(args, "force", False)
-
-    # Resolve "all" → full list; otherwise validate names
-    if "all" in raw_services:
-        requested = list(ALL_BUILDABLE)
-    else:
-        unknown = [s for s in raw_services if s not in ALL_BUILDABLE]
-        if unknown:
-            print(color(f"Error: Unknown service(s): {', '.join(unknown)}", Colors.RED))
-            print(f"Buildable services: {', '.join(ALL_BUILDABLE)}")
-            return
-        requested = list(raw_services)
-
-    ordered, auto_added = resolve_build_order(requested, BUILD_CONFIGS, NODE_BUILD_CONFIGS)
-
-    if auto_added:
-        print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
-        print()
-
-    bm = BuildManager(RUNNER, build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
-
-    # Check version drift before building (unless --force)
-    if not force:
-        mode = get_current_mode()
-        version_warnings, is_blocking = bm.check_version_drift(ordered, mode)
-
-        if version_warnings:
-            print(color("\n=== Version Check Warnings ===", Colors.YELLOW))
-            for warning in version_warnings:
-                print(warning)
-            print()
-            if is_blocking:
-                print(color("❌ Cannot build in PROD mode with version mismatches.", Colors.RED))
-                print("   Options:")
-                print("   1. Run: ./visp.py deploy update")
-                print("   2. Use --force to override (not recommended)")
-                print()
-                return
-            print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
-            print()
-
-    print(color("=== Building VISP Services ===", Colors.CYAN))
-    print(f"  Order: {' → '.join(ordered)}")
-    print()
-
-    if no_cache:
-        print(color("Building with --no-cache (clean rebuild)", Colors.YELLOW))
-    if pull:
-        print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
-    if no_cache or pull:
-        print()
-
-    results = bm.run_builds(ordered, no_cache=no_cache, pull=pull, build_config=build_config)
-
-    # Summary
-    print(color("=== Build Summary ===", Colors.CYAN))
-    if results["success"]:
-        print(color(f"  Successful: {', '.join(results['success'])}", Colors.GREEN))
-    if results["skipped"]:
-        print(
-            color(
-                f"  Skipped (missing deps): {', '.join(results['skipped'])}",
-                Colors.YELLOW,
-            )
-        )
-    if results["failed"]:
-        print(color(f"  Failed: {', '.join(results['failed'])}", Colors.RED))
-
-    if results["failed"]:
-        print()
-        print(
-            color(
-                "Tip: Use --no-cache to force a clean rebuild if you're having issues",
-                Colors.YELLOW,
-            )
-        )
+    _cmd_build(
+        args,
+        runner=RUNNER,
+        build_configs=BUILD_CONFIGS,
+        node_configs=NODE_BUILD_CONFIGS,
+        all_buildable=ALL_BUILDABLE,
+    )
 
 
 def cmd_build_list(args):  # noqa: ARG001
-    """List buildable services."""
-    print(color("=== Buildable Container Images ===", Colors.CYAN))
-    print()
-    for name, config in BUILD_CONFIGS.items():
-        print(f"  {color(name, Colors.BLUE)}")
-        print(f"    Image: {config['image']}:latest")
-        print(f"    Context: {config['context']}")
-        if config.get("description"):
-            print(f"    Description: {config['description']}")
-        if config.get("target"):
-            print(f"    Target: {config['target']}")
-        if config.get("depends_on"):
-            print(f"    Depends on: {config['depends_on']}")
-        if config.get("prepare_context"):
-            print(f"    Requires: {config['prepare_context']} to be built first")
-        print()
-
-    print(color("=== Buildable Node.js Projects (containerized) ===", Colors.CYAN))
-    print()
-    for name, config in NODE_BUILD_CONFIGS.items():
-        print(f"  {color(name, Colors.BLUE)}")
-        print(f"    Source: {config['source']}")
-        print(f"    Output: {config['output']}")
-        print(f"    Description: {config['description']}")
-        if config.get("default_config"):
-            print(f"    Default config: {config['default_config']}")
-            print("    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local")
-        print()
+    _cmd_build_list(args, build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
 
 
 # === Debug Commands ===
@@ -631,32 +449,9 @@ def cmd_debug(args):
 
 
 def cmd_network(args):
-    """Show network information and DNS status, or perform actions like 'ensure'."""
-    nm = NetworkManager(RUNNER)
+    from vispctl.network import cmd_network as _cmd_network
 
-    if getattr(args, "action", None) == "ensure":
-        print(color("Ensuring required Podman networks exist...", Colors.CYAN))
-        ok = nm.ensure_networks_exist()
-        if ok:
-            print(color("  ✓ Networks ensured", Colors.GREEN))
-        else:
-            print(color("  ✗ Failed to ensure networks", Colors.RED))
-            sys.exit(1)
-        return
-
-    # Default: show current network backend status
-    print(color("=== Network Backend ===", Colors.CYAN))
-    is_net, backend = nm.check_netavark()
-    if is_net:
-        print(color(f"  Backend: {backend} (recommended)", Colors.GREEN))
-    else:
-        print(
-            color(
-                f"  Backend: {backend} (CNI - consider upgrading to netavark)",
-                Colors.YELLOW,
-            )
-        )
-    print()
+    _cmd_network(args, runner=RUNNER)
 
 
 def cmd_images(args):
@@ -743,157 +538,7 @@ def cmd_deploy_update(args):
 
 
 def cmd_fix_permissions(args):
-    """Fix file ownership and permissions using 'podman unshare'."""
-    from vispctl.permissions import PermissionsManager
-
-    if not args.paths:
-        from vispctl.install import (
-            MONGO_CONTAINER_GID,
-            MONGO_CONTAINER_UID,
-            MONGO_MOUNT_MODE,
-            _resolve_rootless_host_id,
-            fix_mongo_mount_ownership,
-            fix_writable_permissions,
-            get_container_writable_dirs,
-            normalize_repository_ownership,
-        )
-
-        writable_dirs = get_container_writable_dirs(PROJECT_DIR)
-        existing_dirs = [p for p in writable_dirs if p.exists()]
-        missing_dirs = [p for p in writable_dirs if not p.exists()]
-
-        print(color("=== Install-Equivalent Permission Fix Plan ===", Colors.CYAN))
-
-        if args.recursive or args.host_owner:
-            print(
-                color(
-                    "Note: --recursive and --host-owner only apply with explicit --path targets; "
-                    "the default mode mirrors './visp.py install'.",
-                    Colors.YELLOW,
-                )
-            )
-
-        for p in missing_dirs:
-            print(color(f"! Path does not exist: {p.relative_to(PROJECT_DIR)}", Colors.YELLOW))
-
-        for p in existing_dirs:
-            print(f"  chmod 777 {p}")
-            print(f"  # fallback if needed: podman unshare chmod 777 {p}")
-
-        mongo_mounts = [
-            PROJECT_DIR / "mounts/mongo/data",
-            PROJECT_DIR / "mounts/mongo/logs",
-        ]
-        for p in mongo_mounts:
-            if p.exists():
-                print(f"  podman unshare chown -R 999:999 {p}")
-                print(f"  podman unshare chmod -R u+rwX,go-rwx {p}")
-                host_uid = _resolve_rootless_host_id(MONGO_CONTAINER_UID, "uid")
-                host_gid = _resolve_rootless_host_id(MONGO_CONTAINER_GID, "gid")
-                if host_uid is not None and host_gid is not None:
-                    print("  # if rootless podman cannot access the path, run as root:")
-                    print(f"  sudo chown -R {host_uid}:{host_gid} {p}")
-                    print(f"  sudo chmod -R {MONGO_MOUNT_MODE} {p}")
-                else:
-                    print("  # if rootless podman cannot access the path, inspect uid/gid maps and chown as root")
-
-        repos_dir = PROJECT_DIR / "mounts/repositories"
-        if repos_dir.exists():
-            print(f"  podman unshare chown -R 0:0 {repos_dir}")
-
-        if not args.apply:
-            print()
-            print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
-            return
-
-        print()
-        print(color("Applying install-equivalent permission fixes...", Colors.CYAN))
-        perm_fixed = fix_writable_permissions(PROJECT_DIR)
-        mongo_fixed = fix_mongo_mount_ownership(PROJECT_DIR)
-        repos_ok = normalize_repository_ownership(PROJECT_DIR)
-
-        print(f"  Container-writable directories fixed: {perm_fixed}")
-        print(f"  Mongo mount paths normalized: {mongo_fixed}")
-        if repos_ok:
-            print("  Repository ownership normalized")
-        else:
-            print(color("  Repository ownership normalization failed", Colors.YELLOW))
-        return
-
-    if args.paths:
-        paths = [Path(p) for p in args.paths]
-
-    existing = [p for p in paths if p.exists()]
-    missing = [p for p in paths if not p.exists()]
-    for p in missing:
-        print(color(f"! Path does not exist: {p}", Colors.YELLOW))
-
-    if not existing:
-        print(
-            color(
-                "No existing target paths to operate on. Use --path to specify one.",
-                Colors.YELLOW,
-            )
-        )
-        return
-
-    pm = PermissionsManager(RUNNER)
-    planned = pm.plan_fix(
-        existing,
-        recursive=args.recursive,
-        host_owner=args.host_owner,
-    )
-
-    print(color("=== Permission Fix Plan ===", Colors.CYAN))
-    for c in planned:
-        print(f"  {c}")
-
-    if not args.apply:
-        print()
-        print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
-        return
-
-    print()
-    print(color("Applying permission fixes...", Colors.CYAN))
-
-    ok = pm.apply_fix(
-        existing,
-        recursive=args.recursive,
-        host_owner=args.host_owner,
-    )
-
-    if ok:
-        print(color("✓ Permissions fixed", Colors.GREEN))
-    else:
-        print(color("✗ One or more operations failed", Colors.RED))
-
-    # Post-check: confirm host ownership matches current user when possible
-    mismatched = pm.verify_host_ownership(existing)
-    if mismatched:
-        print()
-        print(
-            color(
-                "⚠️  Ownership check: some paths are not owned by the current user on the host:",
-                Colors.YELLOW,
-            )
-        )
-        for p, uid in mismatched:
-            if uid is None:
-                print(f"  - {p}: cannot stat (permission denied)")
-            else:
-                print(f"  - {p}: host uid={uid} (current user uid={os.getuid()})")
-        print(
-            color(
-                "Note: this can be normal under rootless Podman userns "
-                "mapping. If you passed --host-owner and host ownership "
-                "does not match, your system's userns mapping doesn't map "
-                "namespace 0 to your host UID. In that case you can either "
-                "remove files inside the namespace (podman unshare rm -rf) "
-                "or manually chown as admin outside this script "
-                "(not recommended for normal operation).",
-                Colors.YELLOW,
-            )
-        )
+    _cmd_fix_permissions(args, project_dir=PROJECT_DIR, runner=RUNNER)
 
 
 # === User Management Commands ===
@@ -967,43 +612,9 @@ def cmd_restore(args):
 
 
 def _check_systemd_user_bus() -> None:
-    """Warn early if the systemd user bus is unavailable (common after reboot/su without linger env)."""
-    xdg = os.environ.get("XDG_RUNTIME_DIR", "")
-    uid = os.getuid()
-    expected = f"/run/user/{uid}"
+    from vispctl.runner import check_systemd_user_bus
 
-    if not xdg:
-        print(
-            f"\033[33m⚠️  WARNING: XDG_RUNTIME_DIR is not set.\033[0m\n"
-            f"   systemctl --user and podman.socket will not work.\n"
-            f"   Fix for this session:\n"
-            f"     export XDG_RUNTIME_DIR={expected}\n"
-            f"     export DBUS_SESSION_BUS_ADDRESS=unix:path={expected}/bus\n"
-            f"   Add those lines to ~/.bashrc to make it permanent.\n",
-            file=sys.stderr,
-        )
-        return
-
-    bus_path = Path(xdg) / "bus"
-    if not bus_path.exists():
-        print(
-            f"\033[33m⚠️  WARNING: systemd user bus not found at {bus_path}.\033[0m\n"
-            f"   XDG_RUNTIME_DIR={xdg} is set but the bus socket is missing.\n"
-            f"   This usually means the systemd user session is not running.\n"
-            f"   Try: loginctl enable-linger {os.environ.get('USER', 'your-user')}\n"
-            f"   Then re-login or run: systemctl --user start dbus.socket\n",
-            file=sys.stderr,
-        )
-
-    podman_sock = Path(xdg) / "podman" / "podman.sock"
-    if not podman_sock.exists():
-        print(
-            f"\033[33m⚠️  WARNING: Podman socket not found at {podman_sock}.\033[0m\n"
-            f"   session-manager will fail to start containers.\n"
-            f"   Fix:\n"
-            f"     systemctl --user enable --now podman.service\n",
-            file=sys.stderr,
-        )
+    check_systemd_user_bus()
 
 
 def main():
