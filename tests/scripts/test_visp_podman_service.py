@@ -188,7 +188,7 @@ def test_resolve_services_reports_disabled_optional_service(monkeypatch, capsys)
     from vispctl.service import resolve_services
 
     with pytest.raises(SystemExit):
-        resolve_services("whisperx", vp.PROJECT_DIR)
+        resolve_services("whisperx", vp.get_config().project_dir)
 
     out = capsys.readouterr().out
     assert "disabled" in out
@@ -206,7 +206,7 @@ def test_resolve_services_reports_disabled_local_idp(monkeypatch, capsys):
     from vispctl.service import resolve_services
 
     with pytest.raises(SystemExit):
-        resolve_services("local-idp", vp.PROJECT_DIR)
+        resolve_services("local-idp", vp.get_config().project_dir)
 
     out = capsys.readouterr().out
     assert "disabled" in out

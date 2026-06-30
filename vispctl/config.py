@@ -26,6 +26,9 @@ if TYPE_CHECKING:
     from .service import Service
 
 
+__all__ = ["VispConfig", "get_config", "init_config"]
+
+
 @dataclass(frozen=True)
 class VispConfig:
     """Immutable configuration for the VISP deployment tool.

@@ -5,6 +5,8 @@ import sys
 import types
 from pathlib import Path
 
+import vispctl.runner as r_mod
+
 
 def load_visp_module():
     proj = str(Path.cwd())
@@ -19,9 +21,7 @@ def load_visp_module():
 # ── cmd_status ─────────────────────────────────────────────────────────────────
 
 
-def test_cmd_status_outputs_service_header(monkeypatch, capsys):
-    import vispctl.runner as r_mod
-
+def test_cmd_status_outputs_service_header(tmp_path, monkeypatch, capsys):
     vp = load_visp_module()
 
     class FakeSM:
@@ -31,28 +31,25 @@ def test_cmd_status_outputs_service_header(monkeypatch, capsys):
         def status(self):
             pass
 
+    runner = vp.Runner()
+    runner._run = lambda *a, **kw: None
+    vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
+    (tmp_path / "systemd").mkdir(exist_ok=True)
+
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
     monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
-    monkeypatch.setattr(vp.RUNNER, "run", lambda *a, **kw: None)
 
-    # Provide empty systemd dir so no quadlet files are shown as links
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        monkeypatch.setattr(vp, "SYSTEMD_QUADLETS_DIR", Path(tmp))
-        args = types.SimpleNamespace()
-        vp.cmd_status(args)
+    args = types.SimpleNamespace()
+    vp.cmd_status(args)
 
     out = capsys.readouterr().out
     assert "VISP Service Status" in out
     assert "Quadlet Links" in out
 
 
-def test_cmd_status_shows_disabled_optional_service(monkeypatch, capsys):
-    import vispctl.runner as r_mod
-
+def test_cmd_status_shows_disabled_optional_service(tmp_path, monkeypatch, capsys):
     vp = load_visp_module()
 
     class FakeSM:
@@ -62,18 +59,18 @@ def test_cmd_status_shows_disabled_optional_service(monkeypatch, capsys):
         def status(self):
             pass
 
+    runner = vp.Runner()
+    runner._run = lambda *a, **kw: None
+    vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
+    (tmp_path / "systemd").mkdir(exist_ok=True)
+
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
     monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
-    monkeypatch.setattr(vp.RUNNER, "run", lambda *a, **kw: None)
 
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        monkeypatch.setattr(vp, "SYSTEMD_QUADLETS_DIR", Path(tmp))
-        args = types.SimpleNamespace()
-        vp.cmd_status(args)
+    args = types.SimpleNamespace()
+    vp.cmd_status(args)
 
     out = capsys.readouterr().out
     assert "Disabled Optional Services" in out
@@ -87,16 +84,13 @@ def test_cmd_apply_nothing_to_do(tmp_path, monkeypatch, capsys):
     vp = load_visp_module()
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
 
-    # All quadlets are up to date
-    monkeypatch.setattr(
-        vp,
-        "get_quadlet_drift" if hasattr(vp, "get_quadlet_drift") else "_unused",
-        lambda *a, **kw: ([], []),
-        raising=False,
-    )
     from vispctl import quadlets as q_mod
 
     monkeypatch.setattr(q_mod, "get_quadlet_drift", lambda *a, **kw: ([], []))
+
+    runner = vp.Runner()
+    runner._run = lambda *a, **kw: None
+    vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
 
     args = types.SimpleNamespace(service="all")
     vp.cmd_apply(args)
@@ -113,13 +107,11 @@ def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
 
     drifted_svc = Service("mongo", "container", "mongo.container")
 
-    # Provide a source quadlet file
     quad_dir = tmp_path / "quadlets" / "dev"
     quad_dir.mkdir(parents=True)
     (quad_dir / "mongo.container").write_text("new content")
     monkeypatch.setattr(vp, "get_quadlets_dir", lambda m=None: quad_dir)
-    monkeypatch.setattr(vp, "SYSTEMD_QUADLETS_DIR", tmp_path / "systemd")
-    (tmp_path / "systemd").mkdir()
+    (tmp_path / "systemd").mkdir(exist_ok=True)
 
     from vispctl import quadlets as q_mod
 
@@ -143,7 +135,19 @@ def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
             restarted["start"] = names
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
-    monkeypatch.setattr(vp.RUNNER, "systemctl", lambda *a, **kw: types.SimpleNamespace(returncode=0, stderr=""))
+
+    runner = vp.Runner()
+    runner._run = lambda *a, **kw: None
+    vp.init_config(
+        runner=runner,
+        systemd_dir=tmp_path / "systemd",
+        project_dir=tmp_path,
+        build_configs=vp.BUILD_CONFIGS,
+        node_configs=vp.NODE_BUILD_CONFIGS,
+        all_buildable=vp.ALL_BUILDABLE,
+        network_services=vp.NETWORK_SERVICES,
+    )
+    monkeypatch.setattr(runner, "systemctl", lambda *a, **kw: types.SimpleNamespace(returncode=0, stderr=""))
 
     args = types.SimpleNamespace(service="all")
     vp.cmd_apply(args)
