@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
+from .config import get_config
 from .runner import Colors, Runner, color
 
 NODE_BUILD_MARKER = ".build-marker"
@@ -164,7 +165,8 @@ class BuildManager:
         if not prepare:
             return True
 
-        context_dir = Path(__file__).parent.parent / config["context"]
+        project_dir = get_config().project_dir
+        context_dir = project_dir / config["context"]
 
         if prepare == "container-agent":
             agent_cfg = self.node_configs.get("container-agent")
@@ -172,7 +174,7 @@ class BuildManager:
                 print(color("  ✗ container-agent build config missing", Colors.RED))
                 return False
 
-            agent_source = Path(__file__).parent.parent / agent_cfg["source"]
+            agent_source = project_dir / agent_cfg["source"]
             agent_dest = context_dir / "container-agent"
 
             if not agent_source.exists():
@@ -251,7 +253,7 @@ class BuildManager:
             # deployment repo commit too so deploy status can detect stale images
             # when only the Dockerfile changed.
             if source_repo:
-                deploy_path = Path(__file__).parent.parent.resolve()
+                deploy_path = get_config().project_dir
                 deploy_commit = subprocess.run(
                     ["git", "rev-parse", "HEAD"], cwd=deploy_path, capture_output=True, text=True, check=False
                 )
@@ -311,8 +313,9 @@ class BuildManager:
         no_cache: bool = False,
         build_config: str = None,
     ) -> bool:
-        source_dir = Path(__file__).parent.parent / config["source"]
-        output_dir = Path(__file__).parent.parent / config["output"]
+        project_dir = get_config().project_dir
+        source_dir = project_dir / config["source"]
+        output_dir = project_dir / config["output"]
 
         build_cmd_template = config.get("build_cmd", "npm run build")
         if "{config}" in build_cmd_template:

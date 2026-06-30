@@ -10,25 +10,24 @@ import os
 import shutil
 from pathlib import Path
 
+from .config import get_config
 from .runner import Colors, color, load_env_vars
 from .service import Service
 
-# ---------------------------------------------------------------------------
-# Mode and template helpers
-# ---------------------------------------------------------------------------
-
-# Resolved at import time from the location of this file's package root
-_PROJECT_DIR = Path(__file__).parent.parent.resolve()
-_QUADLETS_BASE_DIR = _PROJECT_DIR / "quadlets"
-_MODE_FILE = _PROJECT_DIR / ".visp-mode"
 _DEFAULT_MODE = "dev"
+
+
+def _get_project_dir() -> Path:
+    """Return project directory from config."""
+    return get_config().project_dir
 
 
 def render_quadlet_template(content: str) -> str:
     """Replace @@PLACEHOLDER@@ tokens in a quadlet file with live system values."""
-    content = content.replace("@@PROJECT_DIR@@", str(_PROJECT_DIR))
+    project_dir = _get_project_dir()
+    content = content.replace("@@PROJECT_DIR@@", str(project_dir))
     content = content.replace("@@UID@@", str(os.getuid()))
-    env_vars = load_env_vars(_PROJECT_DIR / ".env")
+    env_vars = load_env_vars(project_dir / ".env")
     for key, value in env_vars.items():
         content = content.replace(f"@@{key}@@", value)
     return content
@@ -36,21 +35,22 @@ def render_quadlet_template(content: str) -> str:
 
 def get_current_mode() -> str:
     """Return the current deployment mode (dev or prod) from .visp-mode file."""
-    if _MODE_FILE.exists():
-        return _MODE_FILE.read_text().strip()
+    mode_file = _get_project_dir() / ".visp-mode"
+    if mode_file.exists():
+        return mode_file.read_text().strip()
     return _DEFAULT_MODE
 
 
 def set_current_mode(mode: str) -> None:
     """Persist the deployment mode to .visp-mode."""
-    _MODE_FILE.write_text(mode)
+    (_get_project_dir() / ".visp-mode").write_text(mode)
 
 
 def get_quadlets_dir(mode: str | None = None) -> Path:
     """Return the quadlets source directory for the given (or current) mode."""
     if mode is None:
         mode = get_current_mode()
-    return _QUADLETS_BASE_DIR / mode
+    return _get_project_dir() / "quadlets" / mode
 
 
 def get_quadlet_drift(
@@ -138,9 +138,9 @@ def cmd_apply(
     from .service_manager import ServiceManager
 
     if project_dir is None:
-        project_dir = _PROJECT_DIR
+        project_dir = get_config().project_dir
     if systemd_dir is None:
-        systemd_dir = Path.home() / ".config/containers/systemd"
+        systemd_dir = get_config().systemd_dir
 
     service = getattr(args, "service", "all")
     mode = get_current_mode()

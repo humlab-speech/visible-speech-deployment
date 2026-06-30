@@ -11,13 +11,19 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .config import get_config
 from .display import FAIL, PASS, TREE_BRANCH, TREE_LAST, TREE_SPACE, TREE_VERTICAL, WARN
 from .mongo import js_escape, mongosh_json
 from .runner import Colors
 
-_PROJECT_ROOT = Path(__file__).parent.parent
-REPOS_PATH = _PROJECT_ROOT / "mounts" / "repositories"
 EMU_DB_NAME = "VISP_emuDB"
+
+
+def _get_repos_path() -> Path:
+    """Return the repositories mount path from config."""
+    return get_config().project_dir / "mounts" / "repositories"
+
+
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg"}
 LOST_FOUND_DIR = "_lost+found"
 
@@ -49,7 +55,7 @@ def _add_fix(fixes: list[dict], fix_id: str, desc: str, status: str) -> None:
 
 
 def _emu_db_path(project_id: str) -> Path:
-    return REPOS_PATH / project_id / "Data" / EMU_DB_NAME
+    return _get_repos_path() / project_id / "Data" / EMU_DB_NAME
 
 
 def _disk_sessions(project_id: str) -> dict[str, Path]:
@@ -184,7 +190,7 @@ def _fix_stale_bundle_list_entries(
     if not bl_dir.exists():
         return
 
-    repo_path = REPOS_PATH / project_id
+    repo_path = _get_repos_path() / project_id
 
     for bl_file in sorted(bl_dir.glob("*.json")):
         try:
@@ -262,7 +268,7 @@ def _fix_orphan_bundles(
     When *only_ids* is set, only fixes whose ID is in the set are applied.
     """
     disk_ses = _disk_sessions(project_id)
-    repo_path = REPOS_PATH / project_id
+    repo_path = _get_repos_path() / project_id
     lf_base = db_path / LOST_FOUND_DIR
 
     for ses_name, ses_path in disk_ses.items():
@@ -359,7 +365,7 @@ def _diagnose_project(
         "stats": {"audio_files": 0, "total_audio_bytes": 0, "bundles": 0, "transcriptions": 0},
     }
 
-    repo_dir = REPOS_PATH / pid
+    repo_dir = _get_repos_path() / pid
     if not repo_dir.exists():
         report["issues"].append("Repository directory missing on disk")
         return report
@@ -627,7 +633,7 @@ def _render_tree(reports: list[dict], show_files: bool = True, show_healthy: boo
             if stats["transcriptions"]:
                 stat_str += f", {stats['transcriptions']} transcribed"
 
-            print(f"{parent}{branch}{proj_icon} {_C.BOLD}{proj['name']}{_C.NC}" f"  {_C.DIM}{proj['id']}{_C.NC}")
+            print(f"{parent}{branch}{proj_icon} {_C.BOLD}{proj['name']}{_C.NC}  {_C.DIM}{proj['id']}{_C.NC}")
 
             child_prefix = parent + (_S if is_last_proj else _I)
 
@@ -710,9 +716,10 @@ def _render_tree(reports: list[dict], show_files: bool = True, show_healthy: boo
 
 def _find_disk_orphans(mongo_project_ids: set[str]) -> list[str]:
     """Find project directories on disk that have no MongoDB entry."""
-    if not REPOS_PATH.exists():
+    repos = _get_repos_path()
+    if not repos.exists():
         return []
-    return sorted(d.name for d in REPOS_PATH.iterdir() if d.is_dir() and d.name not in mongo_project_ids)
+    return sorted(d.name for d in repos.iterdir() if d.is_dir() and d.name not in mongo_project_ids)
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────
@@ -793,9 +800,10 @@ def run_doctor(
 
     # Disk orphans
     if disk_orphans:
+        repos = _get_repos_path()
         print(f"{_WARN} {_C.YELLOW}Orphaned directories on disk (no MongoDB entry):{_C.NC}")
         for orphan in disk_orphans:
-            print(f"  {_FAIL} {REPOS_PATH / orphan}")
+            print(f"  {_FAIL} {repos / orphan}")
         print()
 
     # Final summary

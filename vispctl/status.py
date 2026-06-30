@@ -66,7 +66,7 @@ def show_quadlet_table(
         print()
         print(
             color(
-                f"  ⚠ {len(drifted_svcs)} quadlet(s) differ from templates. " "Run './visp.py apply' to update.",
+                f"  ⚠ {len(drifted_svcs)} quadlet(s) differ from templates. Run './visp.py apply' to update.",
                 Colors.YELLOW,
             )
         )

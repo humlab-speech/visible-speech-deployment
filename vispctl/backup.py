@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
+from .config import get_config
 from .runner import Colors, Runner, color
 from .secrets import SecretManager
 
@@ -13,7 +14,7 @@ from .secrets import SecretManager
 class BackupManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
         self.runner = runner
-        self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
+        self.project_dir = Path(project_dir) if project_dir else get_config().project_dir
         self.sm = SecretManager(self.runner, project_dir=self.project_dir)
 
     def _detect_mongo_version(self) -> str:

@@ -2,12 +2,10 @@
 
 import json
 import subprocess
-from pathlib import Path
 
+from .config import get_config
 from .env import load_all_env as _load_all_env
 from .exceptions import MongoError
-
-_PROJECT_ROOT = Path(__file__).parent.parent
 
 DATABASE = "visp"
 MONGO_CONTAINER = "mongo"
@@ -30,7 +28,7 @@ def js_escape(s: str) -> str:
 
 def load_env() -> dict:
     """Load environment variables from .env and .env.secrets."""
-    return _load_all_env(_PROJECT_ROOT)
+    return _load_all_env(get_config().project_dir)
 
 
 def get_mongo_password() -> str:

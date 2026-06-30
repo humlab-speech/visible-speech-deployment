@@ -23,11 +23,15 @@ import json
 import subprocess
 from pathlib import Path
 
+from .config import get_config
 from .display import FAIL, PASS, TREE_BRANCH, TREE_LAST, TREE_SPACE, TREE_VERTICAL, WARN
 from .runner import Colors
 
-_PROJECT_ROOT = Path(__file__).parent.parent
-SESSIONS_DIR = _PROJECT_ROOT / "mounts" / "sessions"
+
+def _get_sessions_dir() -> Path:
+    """Return the sessions mount directory from config."""
+    return get_config().project_dir / "mounts" / "sessions"
+
 
 _C = Colors
 _PASS = PASS
@@ -133,9 +137,10 @@ def _collect_socket_dirs() -> dict[str, dict]:
     Returns {dir_name: {path, has_ui_sock, has_proxy_sock}}.
     """
     dirs = {}
-    if not SESSIONS_DIR.exists():
+    sessions_dir = _get_sessions_dir()
+    if not sessions_dir.exists():
         return dirs
-    for d in sorted(SESSIONS_DIR.iterdir()):
+    for d in sorted(sessions_dir.iterdir()):
         if not d.is_dir():
             continue
         dirs[d.name] = {
