@@ -48,8 +48,8 @@ def show_quadlet_table(
                 symbol = color("!", Colors.YELLOW)
                 status = color(f"linked (unknown: {actual_target})", Colors.YELLOW)
         elif svc.file in not_installed_files:
-            symbol = color("○", Colors.RED)
-            status = color("not installed", Colors.RED)
+            symbol = color("○", Colors.YELLOW)
+            status = color("not installed", Colors.YELLOW)
         elif svc.file in drifted_files:
             symbol = color("!", Colors.YELLOW)
             status = color("installed (out of date — run apply or install --force)", Colors.YELLOW)
@@ -57,8 +57,8 @@ def show_quadlet_table(
             symbol = color("✓", Colors.GREEN)
             status = color("installed", Colors.GREEN)
         else:
-            symbol = color("○", Colors.RED)
-            status = color("not installed", Colors.RED)
+            symbol = color("○", Colors.YELLOW)
+            status = color("not installed", Colors.YELLOW)
 
         print(f"  {symbol} {svc.file}: {status}")
 

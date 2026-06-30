@@ -8,7 +8,7 @@ from typing import Dict, List
 from .config import get_config
 from .env import load_all_env as _load_all_env
 from .env import load_env_file
-from .runner import Runner
+from .runner import Colors, Runner, color
 
 
 class SecretManager:
@@ -60,15 +60,15 @@ class SecretManager:
                 input=value,
             )
             if proc.returncode == 0:
-                print(f"  ✓ Secret '{name}': created")
+                print(color(f"  ✓ Secret '{name}': created", Colors.GREEN))
             else:
-                print(f"  ✗ Secret '{name}': failed - {proc.stderr}")
+                print(color(f"  ✗ Secret '{name}': failed - {proc.stderr}", Colors.RED))
 
     def remove_secrets(self, names: List[str]) -> None:
         for name in names:
             res = self.runner.run(["podman", "secret", "rm", name], capture=True, check=False)
             if res.returncode == 0:
-                print(f"  ✓ Secret '{name}': removed")
+                print(color(f"  ✓ Secret '{name}': removed", Colors.GREEN))
 
     def list_secrets(self) -> List[str]:
         res = self.runner.run(

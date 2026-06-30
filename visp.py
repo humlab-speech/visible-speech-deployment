@@ -112,7 +112,7 @@ def cmd_status(args):  # noqa: ARG001
         print()
         print(color("=== Disabled Optional Services ===", Colors.CYAN))
         for service_name, env_var in disabled_optional_services.items():
-            print(f"  ○ {service_name}: disabled via {env_var}=false in .env")
+            print(color(f"  ○ {service_name}: disabled via {env_var}=false in .env", Colors.YELLOW))
 
     print()
     show_quadlet_table(runtime_services, get_current_mode(), cfg.runner, cfg.systemd_dir, render_quadlet_template)
@@ -274,7 +274,7 @@ def cmd_uninstall(args):
             target.unlink()
             print(color(f"  ✓ {svc.file}: removed", Colors.GREEN))
         else:
-            print(f"  ○ {svc.file}: not installed")
+            print(color(f"  ○ {svc.file}: not installed", Colors.YELLOW))
 
     print()
 
@@ -297,7 +297,7 @@ def cmd_uninstall(args):
             if rc == 0:
                 print(color(f"  ✓ {net_name}: removed", Colors.GREEN))
             elif "no such network" in stderr.lower() or "not found" in stderr.lower():
-                print(f"  ○ {net_name}: not found")
+                print(color(f"  ○ {net_name}: not found", Colors.YELLOW))
             else:
                 print(color(f"  ✗ {net_name}: {stderr.strip()}", Colors.RED))
 

@@ -100,7 +100,7 @@ class DeployManager:
             marker = json.loads(marker_path.read_text())
         except Exception:  # noqa: BLE001
             return {
-                "status": "⚠️ UNKNOWN",
+                "status": "⚠ UNKNOWN",
                 "image_commit": "N/A (bad marker)",
                 "needs_rebuild": None,
                 "recommendation": f"Rebuild recommended: ./visp.py build {component}",
@@ -108,7 +108,7 @@ class DeployManager:
 
         build_commit = marker.get("git_commit", "")
         build_dirty = marker.get("git_dirty", False)
-        dirty_suffix = " ⚠️ DIRTY BUILD" if build_dirty else ""
+        dirty_suffix = " ⚠ DIRTY BUILD" if build_dirty else ""
 
         if build_commit == current_commit:
             return {
@@ -120,7 +120,7 @@ class DeployManager:
                 else "Built from a dirty tree — rebuild from clean state recommended",
             }
         return {
-            "status": f"⚠️ STALE{dirty_suffix}",
+            "status": f"⚠ STALE{dirty_suffix}",
             "image_commit": build_commit[:8] if build_commit else "N/A",
             "needs_rebuild": True,
             "recommendation": f"Built from {build_commit[:8]}, source at {current_commit[:8]} - rebuild needed",
@@ -193,11 +193,11 @@ class DeployManager:
         dirty_label = commit_label.replace("git.commit", "git.dirty")
         image_commit = self._get_image_label(image_name, commit_label)
         image_dirty = self._get_image_label(image_name, dirty_label) == "true"
-        dirty_suffix = " ⚠️ DIRTY BUILD" if image_dirty else ""
+        dirty_suffix = " ⚠ DIRTY BUILD" if image_dirty else ""
 
         if not image_commit:
             return {
-                "status": "⚠️ UNKNOWN",
+                "status": "⚠ UNKNOWN",
                 "image_commit": "N/A (no label)",
                 "needs_rebuild": None,  # Can't determine
                 "recommendation": "Image exists but has no git commit label (rebuild recommended)",
@@ -215,7 +215,7 @@ class DeployManager:
             }
         else:
             return {
-                "status": f"⚠️ STALE{dirty_suffix}",
+                "status": f"⚠ STALE{dirty_suffix}",
                 "image_commit": image_commit[:8],
                 "needs_rebuild": True,
                 "build_target": build_target,
@@ -292,7 +292,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": parent,
-                            "Status": "⚠️ NO LABEL",
+                            "Status": "⚠ NO LABEL",
                             "Detail": f"{built_str} — rebuild recommended" if built_str else "No labels",
                         }
                     )
@@ -301,7 +301,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": parent,
-                            "Status": "⚠️ STALE",
+                            "Status": "⚠ STALE",
                             "Detail": f"Source ({image_commit[:8]}→{source_commit[:8]}) "
                             f"+ Dockerfile ({deploy_label[:8]}→{deploy_commit[:8]})",
                         }
@@ -311,7 +311,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": parent,
-                            "Status": "⚠️ STALE",
+                            "Status": "⚠ STALE",
                             "Detail": f"Source: image has {image_commit[:8]}, now at {source_commit[:8]}",
                         }
                     )
@@ -320,7 +320,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": parent,
-                            "Status": "⚠️ STALE",
+                            "Status": "⚠ STALE",
                             "Detail": f"Dockerfile/config changed ({deploy_label[:8]}→{deploy_commit[:8]})",
                         }
                     )
@@ -345,7 +345,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": parent,
-                            "Status": "⚠️ NO TIMESTAMP",
+                            "Status": "⚠ NO TIMESTAMP",
                             "Detail": "Rebuild recommended",
                         }
                     )
@@ -354,7 +354,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": parent,
-                            "Status": "⚠️ STALE",
+                            "Status": "⚠ STALE",
                             "Detail": f"Built {child_ts[:19]}, parent rebuilt {parent_ts[:19]}",
                         }
                     )
@@ -390,7 +390,7 @@ class DeployManager:
                         {
                             "Image": build_name,
                             "Tracks": "deployment repo",
-                            "Status": "⚠️ STALE",
+                            "Status": "⚠ STALE",
                             "Detail": f"Image has {image_commit[:8]}, repo at {deploy_commit[:8]}",
                         }
                     )
@@ -461,7 +461,7 @@ class DeployManager:
             return {
                 "Repository": "visible-speech-deployment (THIS REPO)",
                 "Branch": current_branch,
-                "Has Changes": "⚠️  YES" if has_changes else "✅ NO",
+                "Has Changes": "⚠  YES" if has_changes else "✅ NO",
                 "Behind Remote": f"⬇️ {behind_count}" if behind_count > 0 else "✅ 0",
                 "Ahead Remote": f"🚀 {ahead_count}" if ahead_count > 0 else "✅ 0",
             }
@@ -576,7 +576,7 @@ class DeployManager:
 
                 if has_changes:
                     repos_with_changes.append(repo_name)
-                    overall_status = "⚠️  HAS CHANGES"
+                    overall_status = "⚠  HAS CHANGES"
                 else:
                     overall_status = "✅ CLEAN"
 
@@ -646,7 +646,7 @@ class DeployManager:
         behind_count_str = deployment_repo_status.get("Behind Remote", "✅ 0")
         if behind_count_str.startswith("⬇️"):
             behind_count = int(behind_count_str.split()[1])
-            print(f"⚠️  WARNING: Deployment repo is {behind_count} commit(s) behind remote!")
+            print(f"⚠  WARNING: Deployment repo is {behind_count} commit(s) behind remote!")
             branch = deployment_repo_status.get("Branch", "main")
             print(f"   Run 'git pull origin {branch}' to update the deployment scripts")
 
@@ -685,16 +685,16 @@ class DeployManager:
         summary_lines = []
 
         # Check build status
-        needs_rebuild = [r for r in status_results if r.get("Build Status", "").startswith("⚠️ STALE")]
+        needs_rebuild = [r for r in status_results if r.get("Build Status", "").startswith("⚠ STALE")]
         not_built = [r for r in status_results if r.get("Build Status", "").startswith("❌ NOT BUILT")]
 
         # Add container image warnings to summary
-        stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠️ STALE")]
+        stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠ STALE")]
         not_built_images = [d for d in image_status_rows if d["Status"].startswith("❌ NOT BUILT")]
 
         # ── Situation overview ────────────────────────────────────────
         if repos_with_changes:
-            summary_lines.append(f"⚠️  Repositories with uncommitted changes: {', '.join(repos_with_changes)}")
+            summary_lines.append(f"⚠  Repositories with uncommitted changes: {', '.join(repos_with_changes)}")
 
         if repos_ahead:
             summary_lines.append(f"🚀 Repositories ahead of remote: {', '.join(repos_ahead)}")
@@ -708,7 +708,7 @@ class DeployManager:
 
         if needs_rebuild:
             names = [r["Repository"] for r in needs_rebuild]
-            summary_lines.append(f"⚠️  Components need rebuild (source changed): {', '.join(names)}")
+            summary_lines.append(f"⚠  Components need rebuild (source changed): {', '.join(names)}")
 
         if not_built_images:
             names = [d["Image"] for d in not_built_images]
@@ -716,7 +716,7 @@ class DeployManager:
 
         if stale_images:
             names = [d["Image"] for d in stale_images]
-            summary_lines.append(f"⚠️  Container images need rebuild: {', '.join(names)}")
+            summary_lines.append(f"⚠  Container images need rebuild: {', '.join(names)}")
 
         if node_build_warnings:
             summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
@@ -826,14 +826,14 @@ class DeployManager:
         for component in components:
             comp_data = self.config.get_component(component)
             if not comp_data:
-                print(f"⚠️  {component}: Not found in versions.json, skipping")
+                print(f"⚠  {component}: Not found in versions.json, skipping")
                 continue
 
             repo_path = self.external_dir / component
             repo = GitRepository(str(repo_path))
 
             if not repo.exists():
-                print(f"⚠️  {component}: Repository not cloned at {repo_path}, skipping")
+                print(f"⚠  {component}: Repository not cloned at {repo_path}, skipping")
                 continue
 
             try:
@@ -872,7 +872,7 @@ class DeployManager:
                 print(f"\n❌ Failed to save versions.json: {e}")
                 return False
         else:
-            print("\n⚠️  No components were locked")
+            print("\n⚠  No components were locked")
             return False
 
     def unlock_components(self, components: list[str], unlock_all: bool = False) -> bool:
@@ -899,11 +899,11 @@ class DeployManager:
         unlocked_count = 0
         for component in components:
             if not self.config.get_component(component):
-                print(f"⚠️  {component}: Not found in versions.json, skipping")
+                print(f"⚠  {component}: Not found in versions.json, skipping")
                 continue
 
             if not self.config.is_locked(component):
-                print(f"ℹ️  {component}: Already unlocked (tracking latest)")
+                print(f"ℹ  {component}: Already unlocked (tracking latest)")
                 continue
 
             locked_version = self.config.get_locked_version(component)
@@ -930,7 +930,7 @@ class DeployManager:
                 print(f"\n❌ Failed to save versions.json: {e}")
                 return False
         else:
-            print("\n⚠️  No components were unlocked")
+            print("\n⚠  No components were unlocked")
             return False
 
     def rollback_components(self, components: list[str], rollback_all: bool = False) -> bool:
@@ -957,12 +957,12 @@ class DeployManager:
         rollback_count = 0
         for component in components:
             if not self.config.get_component(component):
-                print(f"⚠️  {component}: Not found in versions.json, skipping")
+                print(f"⚠  {component}: Not found in versions.json, skipping")
                 continue
 
             locked_version = self.config.get_locked_version(component)
             if not locked_version or locked_version == "N/A":
-                print(f"⚠️  {component}: No locked version available for rollback")
+                print(f"⚠  {component}: No locked version available for rollback")
                 continue
 
             # Rollback using ComponentConfig method
@@ -986,7 +986,7 @@ class DeployManager:
                 print(f"\n❌ Failed to save versions.json: {e}")
                 return False
         else:
-            print("\n⚠️  No components were rolled back")
+            print("\n⚠  No components were rolled back")
             return False
 
     def update_components(self, force: bool = False) -> bool:
@@ -1029,7 +1029,7 @@ class DeployManager:
                         error_count += 1
                         continue
                 else:
-                    print(f"⚠️  No URL configured for {repo_name}, skipping")
+                    print(f"⚠  No URL configured for {repo_name}, skipping")
                     skipped_count += 1
                     continue
 
@@ -1048,9 +1048,9 @@ class DeployManager:
                 # Check for uncommitted changes
                 if repo.is_dirty():
                     if force:
-                        print("⚠️  WARNING: Has uncommitted changes, forcing update anyway")
+                        print("⚠  WARNING: Has uncommitted changes, forcing update anyway")
                     else:
-                        print("⚠️  Has uncommitted changes, skipping")
+                        print("⚠  Has uncommitted changes, skipping")
                         print("   Use --force to override")
                         skipped_count += 1
                         continue

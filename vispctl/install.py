@@ -533,7 +533,7 @@ def install_quadlets(
 
         if target.exists() or target.is_symlink():
             if not force:
-                print(f"  ○ {svc.file}: already installed")
+                print(color(f"  ○ {svc.file}: already installed", Colors.YELLOW))
                 skipped.append(svc.file)
                 continue
             target.unlink()

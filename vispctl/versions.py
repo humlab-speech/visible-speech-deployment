@@ -101,7 +101,7 @@ class ComponentConfig:
                                 config[component][key] = value
                 return config
             except (json.JSONDecodeError, IOError) as e:
-                print(f"⚠️  Error loading {self.filepath}: {e}")
+                print(f"⚠  Error loading {self.filepath}: {e}")
                 print("   Using default configuration")
                 return self.defaults.copy()
         return self.defaults.copy()
