@@ -642,7 +642,6 @@ class DeployManager:
         if fetch:
             print("📡 Fetching latest remote information...")
 
-        # 1. Deployment repo
         deployment_repo_status = self._check_deployment_repo(fetch)
         behind_count_str = deployment_repo_status.get("Behind Remote", "✅ 0")
         if behind_count_str.startswith("⬇️"):
@@ -651,18 +650,13 @@ class DeployManager:
             branch = deployment_repo_status.get("Branch", "main")
             print(f"   Run 'git pull origin {branch}' to update the deployment scripts")
 
-        # 2. External repos
         status_results, repos_with_changes, repos_ahead, repos_behind = self._check_external_repos(fetch)
 
-        # 3. Node build outputs
         node_build_warnings = self._check_node_build_outputs()
-
-        # Print results
         print("\n" + "=" * 100)
         print("REPOSITORY STATUS CHECK")
         print("=" * 100)
 
-        # Show deployment repo status first
         if deployment_repo_status:
             print("\n🔧 DEPLOYMENT REPOSITORY (visible-speech-deployment)")
             print("-" * 100)
@@ -673,14 +667,12 @@ class DeployManager:
         print("-" * 100)
         print(tabulate(status_results, headers="keys", tablefmt="grid"))
 
-        # Container images
         image_status_rows = self._check_container_images()
         if image_status_rows:
             print("\n🐳 CONTAINER IMAGES (non-repo builds)")
             print("-" * 100)
             print(tabulate(image_status_rows, headers="keys", tablefmt="grid"))
 
-        # Third-party images
         third_party_rows = self._check_third_party_images()
         if third_party_rows:
             print("\n📦 THIRD-PARTY IMAGES (from registries)")

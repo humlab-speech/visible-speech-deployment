@@ -164,10 +164,8 @@ class NetworkManager:
         return True
 
 
-def cmd_network(args, runner=None) -> None:
+def cmd_network(args, runner: Runner | None = None) -> None:
     """Show network information and DNS status, or perform actions like 'ensure'."""
-    from .runner import Colors, Runner, color
-
     if runner is None:
         runner = Runner()
     nm = NetworkManager(runner)
