@@ -1440,9 +1440,6 @@ Examples:
     except VispError as e:
         print(color(f"Error: {e}", Colors.RED))
         sys.exit(1)
-    except ValueError as e:
-        print(color(f"Error: {e}", Colors.RED))
-        sys.exit(1)
     except KeyboardInterrupt:
         print()
 
