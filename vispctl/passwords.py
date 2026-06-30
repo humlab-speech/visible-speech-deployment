@@ -5,7 +5,10 @@ import os
 import secrets
 import shutil
 import string
+from pathlib import Path
 from typing import Optional
+
+from .env import load_env_file
 
 
 def generate_random_string(length: int = 32) -> str:
@@ -34,17 +37,7 @@ class EnvFile:
 
     def _load(self) -> None:
         """Load variables from .env file if it exists."""
-        if not os.path.exists(self.path):
-            return
-
-        with open(self.path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    self.vars[key.strip()] = value.strip()
+        self.vars.update(load_env_file(Path(self.path)))
 
     def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Get an environment variable value."""

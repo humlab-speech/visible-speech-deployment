@@ -29,14 +29,18 @@ class ServiceManager:
         else:
             print(color("  Reloaded", Colors.GREEN))
 
-    def start(self, names: Iterable[str] | str = "all") -> None:
+    def _resolve_targets(self, names: Iterable[str] | str, reverse: bool = False) -> list[Service]:
+        """Resolve service names to a list of Service objects."""
         if names == "all":
             targets = [s for s in self.services if s.type == "container"]
         else:
             if isinstance(names, str):
                 names = [names]
             targets = [s for s in self.services if s.name in names]
+        return list(reversed(targets)) if reverse else targets
 
+    def start(self, names: Iterable[str] | str = "all") -> None:
+        targets = self._resolve_targets(names)
         for svc in targets:
             print(f"Starting {self._svc_name(svc)}...")
             res = self.runner.systemctl("start", self._svc_name(svc))
@@ -46,13 +50,7 @@ class ServiceManager:
                 print(color("  Started", Colors.GREEN))
 
     def enable(self, names: Iterable[str] | str = "all") -> None:
-        if names == "all":
-            targets = [s for s in self.services if s.type == "container"]
-        else:
-            if isinstance(names, str):
-                names = [names]
-            targets = [s for s in self.services if s.name in names]
-
+        targets = self._resolve_targets(names)
         changed = False
         for svc in targets:
             print(f"Enabling autostart for {self._svc_name(svc)}...")
@@ -75,12 +73,7 @@ class ServiceManager:
             self._reload_systemd()
 
     def stop(self, names: Iterable[str] | str = "all") -> None:
-        if names == "all":
-            targets = [s for s in reversed(self.services) if s.type == "container"]
-        else:
-            if isinstance(names, str):
-                names = [names]
-            targets = [s for s in reversed(self.services) if s.name in names]
+        targets = self._resolve_targets(names, reverse=True)
 
         for svc in targets:
             print(f"Stopping {self._svc_name(svc)}...")
@@ -91,13 +84,7 @@ class ServiceManager:
                 print(color("  Stopped", Colors.GREEN))
 
     def disable(self, names: Iterable[str] | str = "all") -> None:
-        if names == "all":
-            targets = [s for s in reversed(self.services) if s.type == "container"]
-        else:
-            if isinstance(names, str):
-                names = [names]
-            targets = [s for s in reversed(self.services) if s.name in names]
-
+        targets = self._resolve_targets(names, reverse=True)
         changed = False
         for svc in targets:
             print(f"Disabling autostart for {self._svc_name(svc)}...")

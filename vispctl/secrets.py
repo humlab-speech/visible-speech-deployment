@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
+from .env import load_all_env as _load_all_env
+from .env import load_env_file
 from .runner import Runner
 
 
@@ -14,29 +16,10 @@ class SecretManager:
         self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
 
     def load_env(self, env_file_path: Path) -> Dict[str, str]:
-        env_vars: Dict[str, str] = {}
-        if not env_file_path.exists():
-            return env_vars
-        with open(env_file_path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    env_vars[key.strip()] = value.strip()
-        return env_vars
+        return load_env_file(env_file_path)
 
     def load_all(self) -> Dict[str, str]:
-        env_vars: Dict[str, str] = {}
-        env_file = Path(self.project_dir) / ".env"
-        if env_file.exists():
-            env_vars.update(self.load_env(env_file))
-
-        secrets_file = Path(self.project_dir) / ".env.secrets"
-        if secrets_file.exists():
-            env_vars.update(self.load_env(secrets_file))
-        return env_vars
+        return _load_all_env(self.project_dir)
 
     def get_derived(self, env_vars: Dict[str, str]) -> Dict[str, str]:
         secrets: Dict[str, str] = {}

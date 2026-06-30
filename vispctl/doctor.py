@@ -11,13 +11,24 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .display import FAIL, PASS, TREE_BRANCH, TREE_LAST, TREE_SPACE, TREE_VERTICAL, WARN
 from .mongo import js_escape, mongosh_json
+from .runner import Colors
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 REPOS_PATH = _PROJECT_ROOT / "mounts" / "repositories"
 EMU_DB_NAME = "VISP_emuDB"
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg"}
 LOST_FOUND_DIR = "_lost+found"
+
+_C = Colors
+_PASS = PASS
+_WARN = WARN
+_FAIL = FAIL
+_T = TREE_BRANCH
+_L = TREE_LAST
+_I = TREE_VERTICAL
+_S = TREE_SPACE
 
 
 def _fix_id(*parts: str) -> str:
@@ -31,28 +42,7 @@ def _add_fix(fixes: list[dict], fix_id: str, desc: str, status: str) -> None:
     fixes.append({"id": fix_id, "desc": desc, "status": status})
 
 
-# ── Colour / symbol helpers ────────────────────────────────────────────────────
-
-
-class _C:
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    CYAN = "\033[0;36m"
-    DIM = "\033[2m"
-    BOLD = "\033[1m"
-    NC = "\033[0m"
-
-
-_PASS = f"{_C.GREEN}✓{_C.NC}"
-_WARN = f"{_C.YELLOW}⚠{_C.NC}"
-_FAIL = f"{_C.RED}✗{_C.NC}"
-
-# Tree-drawing characters (UTF-8 box drawing)
-_T = "├── "
-_L = "└── "
-_I = "│   "
-_S = "    "
+# ── Colour / symbol helpers (imported from display.py) ─────────────────────────
 
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────

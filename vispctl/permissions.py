@@ -19,6 +19,21 @@ class PermissionsManager:
         self.runner = runner
         self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
 
+    def _resolve_target(self, uid: int | None, gid: int | None, host_owner: bool) -> str:
+        if host_owner:
+            return "0:0"
+        target_uid = uid if uid is not None else os.getuid()
+        target_gid = gid if gid is not None else os.getgid()
+        return f"{target_uid}:{target_gid}"
+
+    def _build_cmd(self, tool: str, path: str, recursive: bool, *args: str) -> list[str]:
+        cmd = ["podman", "unshare", tool]
+        if recursive:
+            cmd.append("-R")
+        cmd.extend(args)
+        cmd.append(path)
+        return cmd
+
     def plan_fix(
         self,
         paths: Iterable[Path],
@@ -34,27 +49,12 @@ class PermissionsManager:
         maps to the host user without requiring root. This is safe and explicit: we
         will *not* run any sudo commands from this code.
         """
-        if host_owner:
-            target = "0:0"
-        else:
-            target_uid = uid if uid is not None else os.getuid()
-            target_gid = gid if gid is not None else os.getgid()
-            target = f"{target_uid}:{target_gid}"
-
+        target = self._resolve_target(uid, gid, host_owner)
         cmds: List[str] = []
         for p in paths:
             pathstr = str(p)
-            chown_cmd = ["podman", "unshare", "chown"]
-            if recursive:
-                chown_cmd.append("-R")
-            chown_cmd.extend([target, pathstr])
-
-            chmod_cmd = ["podman", "unshare", "chmod"]
-            if recursive:
-                chmod_cmd.append("-R")
-            # Ensure at least traverse permission for dirs and read for files
-            chmod_cmd.extend(["a+rx", pathstr])
-
+            chown_cmd = self._build_cmd("chown", pathstr, recursive, target)
+            chmod_cmd = self._build_cmd("chmod", pathstr, recursive, "a+rx")
             cmds.append(" ".join(chown_cmd))
             cmds.append(" ".join(chmod_cmd))
         return cmds
@@ -77,32 +77,18 @@ class PermissionsManager:
         Returns True if all operations returned 0, False otherwise.
         """
         ok = True
-
-        if host_owner:
-            target = "0:0"
-        else:
-            target_uid = uid if uid is not None else os.getuid()
-            target_gid = gid if gid is not None else os.getgid()
-            target = f"{target_uid}:{target_gid}"
+        target = self._resolve_target(uid, gid, host_owner)
 
         for p in paths:
             pathstr = str(p)
-
-            chown_cmd = ["podman", "unshare", "chown"]
-            if recursive:
-                chown_cmd.append("-R")
-            chown_cmd.extend([target, pathstr])
-
+            chown_cmd = self._build_cmd("chown", pathstr, recursive, target)
             res = self.runner.run(chown_cmd, check=False)
             if res.returncode != 0:
                 print(color(f"✗ chown failed for {pathstr}", Colors.RED))
                 ok = False
                 # do not bail out; attempt chmod too to surface errors
 
-            chmod_cmd = ["podman", "unshare", "chmod"]
-            if recursive:
-                chmod_cmd.append("-R")
-            chmod_cmd.extend(["a+rx", pathstr])
+            chmod_cmd = self._build_cmd("chmod", pathstr, recursive, "a+rx")
 
             res2 = self.runner.run(chmod_cmd, check=False)
             if res2.returncode != 0:
