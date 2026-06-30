@@ -4,7 +4,8 @@ import json
 
 from .exceptions import UserError
 from .mongo import js_escape, mongosh_json
-from .runner import Colors, color as _color
+from .runner import Colors
+from .runner import color as _color
 
 COLLECTION = "users"
 VALID_PRIVILEGES = ["createProjects", "createInviteCodes"]
@@ -107,7 +108,9 @@ def cmd_create(args) -> None:
 def cmd_activate(args) -> None:
     """Enable login for user."""
     username = args.username
-    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: true}}}})")
+    result = mongosh_json(
+        f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: true}}}})"
+    )
 
     if not result or result.get("matchedCount", 0) == 0:
         print(_color(f"User not found: {username}", Colors.RED))
@@ -120,7 +123,9 @@ def cmd_activate(args) -> None:
 def cmd_deactivate(args) -> None:
     """Disable login for user."""
     username = args.username
-    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: false}}}})")
+    result = mongosh_json(
+        f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: false}}}})"
+    )
 
     if not result or result.get("matchedCount", 0) == 0:
         print(_color(f"User not found: {username}", Colors.RED))

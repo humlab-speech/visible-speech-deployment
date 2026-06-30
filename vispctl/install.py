@@ -323,7 +323,7 @@ def verify_repository_write_access(project_dir: Path) -> bool:
         print(color(f"      podman unshare chown -R 0:0 {repos_dir}", Colors.YELLOW))
         print(
             color(
-                f"    and confirm the quadlet sets 'User={uid}:{gid}' + " f"'UserNS=keep-id:uid={uid},gid={gid}'.",
+                f"    and confirm the quadlet sets 'User={uid}:{gid}' + 'UserNS=keep-id:uid={uid},gid={gid}'.",
                 Colors.YELLOW,
             )
         )
