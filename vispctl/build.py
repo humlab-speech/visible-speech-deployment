@@ -131,7 +131,7 @@ class BuildManager:
 
             repo_path = Path.cwd() / "external" / svc_name
             if not repo_path.exists():
-                warnings.append(f"  ⚠️  {svc_name}: Repository not found at {repo_path}")
+                warnings.append(f"  ⚠  {svc_name}: Repository not found at {repo_path}")
                 continue
 
             repo = GitRepository(str(repo_path))
@@ -145,7 +145,7 @@ class BuildManager:
             if mode == "prod" and is_locked:
                 if current_commit != version:
                     warnings.append(
-                        f"  ⚠️  {svc_name}: Version mismatch in PROD mode\n"
+                        f"  ⚠  {svc_name}: Version mismatch in PROD mode\n"
                         f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
                         f"      Run: ./visp.py deploy update"
                     )
@@ -154,7 +154,7 @@ class BuildManager:
                 locked_version = comp_config.get_locked_version(svc_name)
                 if locked_version and locked_version != "N/A" and current_commit != locked_version:
                     warnings.append(
-                        f"  ℹ️  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
+                        f"  ℹ  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
                         f"      Current: {current_commit[:8]}, Locked: {locked_version[:8]}"
                     )
 
@@ -679,7 +679,7 @@ def cmd_build(
         version_warnings, is_blocking = bm.check_version_drift(ordered, mode)
 
         if version_warnings:
-            print(color("\n=== Version Check Warnings ===", Colors.YELLOW))
+            print(color("\n=== Version Check Warnings ===", Colors.CYAN))
             for warning in version_warnings:
                 print(warning)
             print()

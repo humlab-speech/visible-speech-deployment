@@ -80,12 +80,12 @@ def check_systemd_user_bus() -> None:
 
     if not xdg:
         print(
-            f"\033[33m⚠️  WARNING: XDG_RUNTIME_DIR is not set.\033[0m\n"
-            f"   systemctl --user and podman.socket will not work.\n"
-            f"   Fix for this session:\n"
+            color("⚠ WARNING: XDG_RUNTIME_DIR is not set.", Colors.YELLOW) + "\n"
+            "   systemctl --user and podman.socket will not work.\n"
+            "   Fix for this session:\n"
             f"     export XDG_RUNTIME_DIR={expected}\n"
             f"     export DBUS_SESSION_BUS_ADDRESS=unix:path={expected}/bus\n"
-            f"   Add those lines to ~/.bashrc to make it permanent.\n",
+            "   Add those lines to ~/.bashrc to make it permanent.\n",
             file=sys.stderr,
         )
         return
@@ -93,20 +93,28 @@ def check_systemd_user_bus() -> None:
     bus_path = Path(xdg) / "bus"
     if not bus_path.exists():
         print(
-            f"\033[33m⚠️  WARNING: systemd user bus not found at {bus_path}.\033[0m\n"
+            color(
+                f"⚠ WARNING: systemd user bus not found at {bus_path}.",
+                Colors.YELLOW,
+            )
+            + "\n"
             f"   XDG_RUNTIME_DIR={xdg} is set but the bus socket is missing.\n"
-            f"   This usually means the systemd user session is not running.\n"
+            "   This usually means the systemd user session is not running.\n"
             f"   Try: loginctl enable-linger {os.environ.get('USER', 'your-user')}\n"
-            f"   Then re-login or run: systemctl --user start dbus.socket\n",
+            "   Then re-login or run: systemctl --user start dbus.socket\n",
             file=sys.stderr,
         )
 
     podman_sock = Path(xdg) / "podman" / "podman.sock"
     if not podman_sock.exists():
         print(
-            f"\033[33m⚠️  WARNING: Podman socket not found at {podman_sock}.\033[0m\n"
-            f"   session-manager will fail to start containers.\n"
-            f"   Fix:\n"
-            f"     systemctl --user enable --now podman.service\n",
+            color(
+                f"⚠ WARNING: Podman socket not found at {podman_sock}.",
+                Colors.YELLOW,
+            )
+            + "\n"
+            "   session-manager will fail to start containers.\n"
+            "   Fix:\n"
+            "     systemctl --user enable --now podman.service\n",
             file=sys.stderr,
         )

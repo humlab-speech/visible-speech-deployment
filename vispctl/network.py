@@ -35,7 +35,7 @@ class NetworkManager:
 
         for net in required_networks:
             if net["name"] in existing_networks:
-                print(f"  ○ {net['name']}: exists")
+                print(color(f"  ○ {net['name']}: exists", Colors.YELLOW))
                 continue
 
             print(f"  Creating {net['name']}...")
@@ -131,7 +131,7 @@ class NetworkManager:
         print("  3. Images are preserved (no need to rebuild)")
         print("  4. Networks will be recreated automatically")
         print()
-        print(color("⚠️  WARNING: All running containers will be removed!", Colors.RED))
+        print(color("⚠  WARNING: All running containers will be removed!", Colors.RED))
         print("  Make sure you have backups of important data.")
         print()
 

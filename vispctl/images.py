@@ -306,7 +306,7 @@ class ImageManager:
             # Color code based on tag type
             if tag == "latest" or not any(char.isdigit() for char in tag):
                 tag_colored = color(tag, Colors.RED)  # Unpinned
-                status = "⚠️ "
+                status = "⚠ "
             elif "@sha256" in tag:
                 tag_colored = color(tag, Colors.GREEN)  # Digest
                 status = "✓ "
@@ -332,7 +332,7 @@ class ImageManager:
         print(color("=== Summary ===", Colors.CYAN))
         print(f"Total base images: {total}")
         if unpinned > 0:
-            print(color(f"⚠️  Unpinned images: {unpinned}", Colors.YELLOW))
+            print(color(f"⚠  Unpinned images: {unpinned}", Colors.YELLOW))
             print(
                 color(
                     "   Consider pinning to specific versions for reproducibility",
