@@ -708,8 +708,7 @@ def run_install(
       14. Build webclient dist (dev mode only, containerized Node/Composer)
       15. Build container-agent dist (dev mode only, containerized Node)
     """
-    import sys
-
+    from .exceptions import InstallationError
     from .network import NetworkManager
 
     # --- Phase 1: first-time env-file generation ---
@@ -729,9 +728,7 @@ def run_install(
             setup_env_file(auto_passwords=True, interactive=False)
             print()
         except (OSError, ValueError, RuntimeError) as e:
-            print(color(f"❌ Error setting up environment files: {e}", Colors.RED))
-            print("Please check the error and try again.")
-            sys.exit(1)
+            raise InstallationError(f"Error setting up environment files: {e}")
 
     # --- Phase 2: netavark backend check / migration ---
     nm = NetworkManager(runner)
@@ -745,32 +742,29 @@ def run_install(
         if current_backend == "cni":
             if nm.prompt_netavark_migration():
                 if not nm.migrate_to_netavark():
-                    print(color("Migration failed. Please fix the errors and try again.", Colors.RED))
-                    sys.exit(1)
+                    raise InstallationError("Netavark migration failed. Please fix the errors and try again.")
                 print()
                 print(color("✓ Migration complete!", Colors.GREEN))
                 print()
             else:
-                sys.exit(1)
+                raise InstallationError("Netavark migration required but declined by user.")
         else:
             print(color("Netavark is required for proper DNS resolution.", Colors.YELLOW))
             response = input("Configure netavark now? (yes/no): ").strip().lower()
             if response in ["yes", "y"]:
                 if not nm.configure_netavark():
-                    sys.exit(1)
+                    raise InstallationError("Failed to configure netavark.")
                 print()
                 print(color("✓ Netavark configured. Please restart Podman services.", Colors.GREEN))
                 print("  Run: podman system reset")
                 print()
             else:
-                print("Installation cancelled.")
-                sys.exit(1)
+                raise InstallationError("Installation cancelled by user.")
 
     # --- Phase 3: Podman network creation ---
     print()
     if not nm.ensure_networks_exist():
-        print(color("Failed to create networks. Please check the errors above.", Colors.RED))
-        sys.exit(1)
+        raise InstallationError("Failed to create networks. Check errors above.")
     print()
 
     systemd_dir.mkdir(parents=True, exist_ok=True)

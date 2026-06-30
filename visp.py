@@ -49,6 +49,7 @@ from pathlib import Path
 
 from vispctl.build import BUILD_CONFIGS, NODE_BUILD_CONFIGS, BuildManager, resolve_build_order
 from vispctl.cleanup_containers import cleanup_containers
+from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
 from vispctl.network import NetworkManager
@@ -1436,6 +1437,12 @@ Examples:
 
     try:
         args.func(args)
+    except VispError as e:
+        print(color(f"Error: {e}", Colors.RED))
+        sys.exit(1)
+    except ValueError as e:
+        print(color(f"Error: {e}", Colors.RED))
+        sys.exit(1)
     except KeyboardInterrupt:
         print()
 

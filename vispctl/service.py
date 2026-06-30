@@ -96,11 +96,10 @@ def resolve_services(
     project_dir: Path | None = None,
     include_disabled: bool = False,
 ) -> list[Service]:
-    """Resolve 'all' / service name → list[Service], exiting with a helpful message on error."""
-    import sys
+    """Resolve 'all' / service name → list[Service], raising on error."""
     from pathlib import Path
 
-    from .runner import Colors, color
+    from .exceptions import ServiceError
 
     if project_dir is None:
         project_dir = Path(__file__).parent.parent
@@ -118,10 +117,11 @@ def resolve_services(
         disabled = get_disabled_optional_services(Path(project_dir))
         if service_arg in disabled:
             env_var = disabled[service_arg]
-            print(color(f"Service '{service_arg}' is disabled ({env_var}=false in .env).", Colors.YELLOW))
-            print(f"Enable it by setting {env_var}=true in .env")
-            sys.exit(1)
+            raise ServiceError(
+                f"Service '{service_arg}' is disabled ({env_var}=false in .env). "
+                f"Enable it by setting {env_var}=true in .env"
+            )
 
-    print(color(f"Unknown service: {service_arg}", Colors.RED))
-    print(f"Available: {', '.join(s.name for s in available)}")
-    sys.exit(1)
+    raise ServiceError(
+        f"Unknown service: {service_arg}. Available: {', '.join(s.name for s in available)}"
+    )
