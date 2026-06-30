@@ -728,7 +728,7 @@ def run_install(
             setup_env_file(auto_passwords=True, interactive=False)
             print()
         except (OSError, ValueError, RuntimeError) as e:
-            raise InstallationError(f"Error setting up environment files: {e}")
+            raise InstallationError(f"Setting up environment files: {e}") from e
 
     # --- Phase 2: netavark backend check / migration ---
     nm = NetworkManager(runner)

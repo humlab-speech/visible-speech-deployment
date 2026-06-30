@@ -2,10 +2,17 @@
 
 import json
 
+from .exceptions import UserError
 from .mongo import js_escape, mongosh_json
 from .runner import Colors, color as _color
 
 COLLECTION = "users"
+VALID_PRIVILEGES = ["createProjects", "createInviteCodes"]
+
+
+def _validate_privilege(privilege: str) -> None:
+    if privilege not in VALID_PRIVILEGES:
+        raise UserError(f"Invalid privilege: {privilege}. Valid: {', '.join(VALID_PRIVILEGES)}")
 
 
 # ── Commands ───────────────────────────────────────────────────────────────────
@@ -42,7 +49,7 @@ def cmd_show(args) -> None:
     user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
 
     if not user:
-        raise ValueError(f"User not found: {username}")
+        raise UserError(f"User not found: {username}")
 
     print(_color(f"=== User: {username} ===", Colors.CYAN))
     print()
@@ -127,10 +134,7 @@ def cmd_grant(args) -> None:
     """Grant a privilege to user."""
     username = args.username
     privilege = args.privilege
-
-    valid_privs = ["createProjects", "createInviteCodes"]
-    if privilege not in valid_privs:
-        raise ValueError(f"Invalid privilege: {privilege}. Valid: {', '.join(valid_privs)}")
+    _validate_privilege(privilege)
 
     result = mongosh_json(
         f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{'privileges.{js_escape(privilege)}': true}}}})"
@@ -148,10 +152,7 @@ def cmd_revoke(args) -> None:
     """Revoke a privilege from user."""
     username = args.username
     privilege = args.privilege
-
-    valid_privs = ["createProjects", "createInviteCodes"]
-    if privilege not in valid_privs:
-        raise ValueError(f"Invalid privilege: {privilege}. Valid: {', '.join(valid_privs)}")
+    _validate_privilege(privilege)
 
     result = mongosh_json(
         f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{'privileges.{js_escape(privilege)}': false}}}})"
@@ -171,7 +172,7 @@ def cmd_delete(args) -> None:
 
     user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
     if not user:
-        raise ValueError(f"User not found: {username}")
+        raise UserError(f"User not found: {username}")
 
     print("About to delete user:")
     print(f"  Username: {username}")
