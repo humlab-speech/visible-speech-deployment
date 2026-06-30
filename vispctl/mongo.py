@@ -2,10 +2,10 @@
 
 import json
 import subprocess
-import sys
 from pathlib import Path
 
 from .env import load_all_env as _load_all_env
+from .exceptions import MongoError
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -38,8 +38,7 @@ def get_mongo_password() -> str:
     env = load_env()
     password = env.get("MONGO_ROOT_PASSWORD") or env.get("MONGO_INITDB_ROOT_PASSWORD")
     if not password:
-        print("Error: MONGO_ROOT_PASSWORD not found in .env or .env.secrets", file=sys.stderr)
-        sys.exit(1)
+        raise MongoError("MONGO_ROOT_PASSWORD not found in .env or .env.secrets")
     return password
 
 
@@ -53,9 +52,7 @@ def find_mongo_container() -> str:
         )
         if result.returncode == 0 and result.stdout.strip() == "true":
             return name
-    print("Error: MongoDB container not running", file=sys.stderr)
-    print("Start it with: ./visp.py start mongo", file=sys.stderr)
-    sys.exit(1)
+    raise MongoError("MongoDB container not running. Start it with: ./visp.py start mongo")
 
 
 def mongosh_json(js_command: str, database: str = DATABASE) -> list | dict | None:
@@ -82,8 +79,7 @@ def mongosh_json(js_command: str, database: str = DATABASE) -> list | dict | Non
         text=True,
     )
     if result.returncode != 0:
-        print(f"MongoDB error: {result.stderr}", file=sys.stderr)
-        sys.exit(1)
+        raise MongoError(f"mongosh failed (exit {result.returncode}): {result.stderr.strip()}")
     for line in result.stdout.strip().split("\n"):
         line = line.strip()
         if line.startswith("[") or line.startswith("{") or line == "null":

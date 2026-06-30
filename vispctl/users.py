@@ -1,7 +1,6 @@
 """VISP user management — MongoDB user CRUD operations."""
 
 import json
-import sys
 
 from .mongo import js_escape, mongosh_json
 from .runner import Colors, color as _color
@@ -43,8 +42,7 @@ def cmd_show(args) -> None:
     user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
 
     if not user:
-        print(_color(f"User not found: {username}", Colors.RED))
-        sys.exit(1)
+        raise ValueError(f"User not found: {username}")
 
     print(_color(f"=== User: {username} ===", Colors.CYAN))
     print()
@@ -132,9 +130,7 @@ def cmd_grant(args) -> None:
 
     valid_privs = ["createProjects", "createInviteCodes"]
     if privilege not in valid_privs:
-        print(_color(f"Invalid privilege: {privilege}", Colors.RED))
-        print(f"Valid privileges: {', '.join(valid_privs)}")
-        sys.exit(1)
+        raise ValueError(f"Invalid privilege: {privilege}. Valid: {', '.join(valid_privs)}")
 
     result = mongosh_json(
         f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{'privileges.{js_escape(privilege)}': true}}}})"
@@ -155,9 +151,7 @@ def cmd_revoke(args) -> None:
 
     valid_privs = ["createProjects", "createInviteCodes"]
     if privilege not in valid_privs:
-        print(_color(f"Invalid privilege: {privilege}", Colors.RED))
-        print(f"Valid privileges: {', '.join(valid_privs)}")
-        sys.exit(1)
+        raise ValueError(f"Invalid privilege: {privilege}. Valid: {', '.join(valid_privs)}")
 
     result = mongosh_json(
         f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{'privileges.{js_escape(privilege)}': false}}}})"
@@ -177,8 +171,7 @@ def cmd_delete(args) -> None:
 
     user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
     if not user:
-        print(_color(f"User not found: {username}", Colors.RED))
-        sys.exit(1)
+        raise ValueError(f"User not found: {username}")
 
     print("About to delete user:")
     print(f"  Username: {username}")
