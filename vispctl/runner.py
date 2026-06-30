@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import List, Tuple
 
+from .env import load_env_file as _load_env_file
+
 
 class Colors:
     RED = "\033[0;31m"
@@ -14,6 +16,7 @@ class Colors:
     BLUE = "\033[0;34m"
     CYAN = "\033[0;36m"
     MAGENTA = "\033[0;35m"
+    DIM = "\033[2m"
     NC = "\033[0m"
     BOLD = "\033[1m"
 
@@ -47,19 +50,12 @@ class Runner:
 
 
 def load_env_vars(env_file_path: Path) -> dict:
-    """Load environment variables from a .env file."""
-    env_vars: dict[str, str] = {}
-    if not env_file_path.exists():
-        return env_vars
-    with open(env_file_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
-                key, value = line.split("=", 1)
-                env_vars[key.strip()] = value.strip()
-    return env_vars
+    """Load environment variables from a .env file.
+
+    Deprecated: use vispctl.env.load_env_file() instead.
+    Kept for backward compatibility.
+    """
+    return _load_env_file(env_file_path)
 
 
 def parse_env_bool(value: str | None, default: bool = True) -> bool:

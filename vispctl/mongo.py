@@ -5,9 +5,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .env import load_all_env as _load_all_env
+
 _PROJECT_ROOT = Path(__file__).parent.parent
-_ENV_FILE = _PROJECT_ROOT / ".env"
-_ENV_SECRETS_FILE = _PROJECT_ROOT / ".env.secrets"
 
 DATABASE = "visp"
 MONGO_CONTAINER = "mongo"
@@ -30,16 +30,7 @@ def js_escape(s: str) -> str:
 
 def load_env() -> dict:
     """Load environment variables from .env and .env.secrets."""
-    env = {}
-    for env_file in [_ENV_FILE, _ENV_SECRETS_FILE]:
-        if env_file.exists():
-            with open(env_file) as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        k, _, v = line.partition("=")
-                        env[k.strip()] = v.strip().strip('"').strip("'")
-    return env
+    return _load_all_env(_PROJECT_ROOT)
 
 
 def get_mongo_password() -> str:

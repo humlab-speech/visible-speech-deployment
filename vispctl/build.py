@@ -239,57 +239,12 @@ class BuildManager:
         source_repo = config.get("source_repo")
         git_label_path = Path(source_repo).resolve() if source_repo else context_path
         try:
-            # Check if context is in a git repo
-            git_check = subprocess.run(
-                ["git", "rev-parse", "--git-dir"], cwd=git_label_path, capture_output=True, check=False
-            )
-            if git_check.returncode == 0:
-                # Get current commit hash
-                commit_result = subprocess.run(
-                    ["git", "rev-parse", "HEAD"], cwd=git_label_path, capture_output=True, text=True, check=False
-                )
-                if commit_result.returncode == 0:
-                    commit_hash = commit_result.stdout.strip()
-                    cmd.extend(["--label", f"git.commit={commit_hash}"])
-
-                    # Check if the source tree was dirty at build time
-                    dirty_result = subprocess.run(
-                        ["git", "status", "--porcelain"],
-                        cwd=git_label_path,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    if dirty_result.returncode == 0 and dirty_result.stdout.strip():
-                        cmd.extend(["--label", "git.dirty=true"])
-
-                    # Also add timestamp
-                    from datetime import datetime
-
-                    build_time = datetime.now().isoformat()
-                    cmd.extend(["--label", f"build.timestamp={build_time}"])
+            self._add_git_labels(cmd, git_label_path, "git.commit")
 
             # Add labels for extra source repos (if multiple repos are embedded in one image)
             for name, repo_path in config.get("extra_source_repos", {}).items():
                 extra_path = Path(repo_path).resolve()
-                extra_check = subprocess.run(
-                    ["git", "rev-parse", "--git-dir"], cwd=extra_path, capture_output=True, check=False
-                )
-                if extra_check.returncode == 0:
-                    extra_commit = subprocess.run(
-                        ["git", "rev-parse", "HEAD"], cwd=extra_path, capture_output=True, text=True, check=False
-                    )
-                    if extra_commit.returncode == 0:
-                        cmd.extend(["--label", f"git.commit.{name}={extra_commit.stdout.strip()}"])
-                    extra_dirty = subprocess.run(
-                        ["git", "status", "--porcelain"],
-                        cwd=extra_path,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    if extra_dirty.returncode == 0 and extra_dirty.stdout.strip():
-                        cmd.extend(["--label", f"git.dirty.{name}=true"])
+                self._add_git_labels(cmd, extra_path, f"git.commit.{name}")
 
             # When source_repo is set, git.commit tracks the external source but
             # Dockerfile/config changes live in the deployment repo.  Record the
@@ -322,6 +277,34 @@ class BuildManager:
         except Exception as e:
             print(color(f"✗ {svc_name} build error: {e}", Colors.RED))
             return False
+
+    def _add_git_labels(self, cmd: list[str], path: Path, label_prefix: str) -> None:
+        """Add git commit and dirty labels for a path to the build command."""
+        git_check = subprocess.run(
+            ["git", "rev-parse", "--git-dir"], cwd=path, capture_output=True, check=False
+        )
+        if git_check.returncode != 0:
+            return
+        commit_result = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True, check=False
+        )
+        if commit_result.returncode == 0:
+            commit_hash = commit_result.stdout.strip()
+            cmd.extend(["--label", f"{label_prefix}={commit_hash}"])
+            dirty_result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if dirty_result.returncode == 0 and dirty_result.stdout.strip():
+                dirty_key = label_prefix.replace("git.commit", "git.dirty", 1)
+                cmd.extend(["--label", f"{dirty_key}=true"])
+            from datetime import datetime
+
+            build_time = datetime.now().isoformat()
+            cmd.extend(["--label", f"build.timestamp={build_time}"])
 
     def build_node_project(
         self,

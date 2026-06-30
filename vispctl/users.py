@@ -4,22 +4,9 @@ import json
 import sys
 
 from .mongo import js_escape, mongosh_json
+from .runner import Colors, color as _color
 
 COLLECTION = "users"
-
-# ── Colour helpers ─────────────────────────────────────────────────────────────
-
-
-class _C:
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    CYAN = "\033[0;36m"
-    NC = "\033[0m"
-
-
-def _color(text: str, c: str) -> str:
-    return f"{c}{text}{_C.NC}"
 
 
 # ── Commands ───────────────────────────────────────────────────────────────────
@@ -35,13 +22,13 @@ def cmd_list(args) -> None:  # noqa: ARG001
         print("No users found.")
         return
 
-    print(_color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'Privileges'}", _C.CYAN))
+    print(_color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'Privileges'}", Colors.CYAN))
     print("-" * 100)
 
     for user in users:
         username = user.get("username", "N/A")[:34]
         name = user.get("fullName", "N/A")[:24]
-        active = _color("Yes", _C.GREEN) if user.get("loginAllowed") else _color("No", _C.RED)
+        active = _color("Yes", Colors.GREEN) if user.get("loginAllowed") else _color("No", Colors.RED)
 
         privs = user.get("privileges", {})
         priv_list = [k for k, v in privs.items() if v]
@@ -56,22 +43,22 @@ def cmd_show(args) -> None:
     user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
 
     if not user:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
         sys.exit(1)
 
-    print(_color(f"=== User: {username} ===", _C.CYAN))
+    print(_color(f"=== User: {username} ===", Colors.CYAN))
     print()
     print(f"  {'Full Name:':<20} {user.get('fullName', 'N/A')}")
     print(f"  {'Email:':<20} {user.get('email', 'N/A')}")
     print(f"  {'EPPN:':<20} {user.get('eppn', 'N/A')}")
-    login_status = _color("Yes", _C.GREEN) if user.get("loginAllowed") else _color("No", _C.RED)
+    login_status = _color("Yes", Colors.GREEN) if user.get("loginAllowed") else _color("No", Colors.RED)
     print(f"  {'Login Allowed:':<20} {login_status}")
     print()
-    print(_color("  Privileges:", _C.YELLOW))
+    print(_color("  Privileges:", Colors.YELLOW))
     privs = user.get("privileges", {})
     if privs:
         for k, v in privs.items():
-            status = _color("✓", _C.GREEN) if v else _color("✗", _C.RED)
+            status = _color("✓", Colors.GREEN) if v else _color("✗", Colors.RED)
             print(f"    {status} {k}")
     else:
         print("    (none)")
@@ -84,7 +71,7 @@ def cmd_create(args) -> None:
 
     existing = mongosh_json(f"db.{COLLECTION}.findOne({{email: '{js_escape(email)}'}})")
     if existing:
-        print(_color(f"User with email {email} already exists", _C.YELLOW))
+        print(_color(f"User with email {email} already exists", Colors.YELLOW))
         print(f"Username: {existing.get('username')}")
         return
 
@@ -105,11 +92,11 @@ def cmd_create(args) -> None:
     result = mongosh_json(f"db.{COLLECTION}.insertOne({json.dumps(user_doc)})")
 
     if result and result.get("acknowledged"):
-        print(_color(f"Created user: {username}", _C.GREEN))
+        print(_color(f"Created user: {username}", Colors.GREEN))
         print(f"  Email: {email}")
         print(f"  Can create projects: {getattr(args, 'can_create_projects', False)}")
     else:
-        print(_color("Failed to create user", _C.RED))
+        print(_color("Failed to create user", Colors.RED))
 
 
 def cmd_activate(args) -> None:
@@ -118,9 +105,9 @@ def cmd_activate(args) -> None:
     result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: true}}}})")
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Activated user: {username}", _C.GREEN))
+        print(_color(f"Activated user: {username}", Colors.GREEN))
     else:
         print(f"User {username} was already active")
 
@@ -131,9 +118,9 @@ def cmd_deactivate(args) -> None:
     result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: false}}}})")
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Deactivated user: {username}", _C.YELLOW))
+        print(_color(f"Deactivated user: {username}", Colors.YELLOW))
     else:
         print(f"User {username} was already inactive")
 
@@ -145,7 +132,7 @@ def cmd_grant(args) -> None:
 
     valid_privs = ["createProjects", "createInviteCodes"]
     if privilege not in valid_privs:
-        print(_color(f"Invalid privilege: {privilege}", _C.RED))
+        print(_color(f"Invalid privilege: {privilege}", Colors.RED))
         print(f"Valid privileges: {', '.join(valid_privs)}")
         sys.exit(1)
 
@@ -154,9 +141,9 @@ def cmd_grant(args) -> None:
     )
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Granted {privilege} to {username}", _C.GREEN))
+        print(_color(f"Granted {privilege} to {username}", Colors.GREEN))
     else:
         print(f"User {username} already has {privilege}")
 
@@ -168,7 +155,7 @@ def cmd_revoke(args) -> None:
 
     valid_privs = ["createProjects", "createInviteCodes"]
     if privilege not in valid_privs:
-        print(_color(f"Invalid privilege: {privilege}", _C.RED))
+        print(_color(f"Invalid privilege: {privilege}", Colors.RED))
         print(f"Valid privileges: {', '.join(valid_privs)}")
         sys.exit(1)
 
@@ -177,9 +164,9 @@ def cmd_revoke(args) -> None:
     )
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Revoked {privilege} from {username}", _C.YELLOW))
+        print(_color(f"Revoked {privilege} from {username}", Colors.YELLOW))
     else:
         print(f"User {username} didn't have {privilege}")
 
@@ -190,7 +177,7 @@ def cmd_delete(args) -> None:
 
     user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
     if not user:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
         sys.exit(1)
 
     print("About to delete user:")
@@ -200,7 +187,7 @@ def cmd_delete(args) -> None:
     print()
 
     if not getattr(args, "force", False):
-        confirm = input(_color("Are you sure? Type 'yes' to confirm: ", _C.YELLOW))
+        confirm = input(_color("Are you sure? Type 'yes' to confirm: ", Colors.YELLOW))
         if confirm.lower() != "yes":
             print("Cancelled.")
             return
@@ -208,9 +195,9 @@ def cmd_delete(args) -> None:
     result = mongosh_json(f"db.{COLLECTION}.deleteOne({{username: '{js_escape(username)}'}})")
 
     if result and result.get("deletedCount", 0) > 0:
-        print(_color(f"Deleted user: {username}", _C.GREEN))
+        print(_color(f"Deleted user: {username}", Colors.GREEN))
     else:
-        print(_color("Failed to delete user", _C.RED))
+        print(_color("Failed to delete user", Colors.RED))
 
 
 # ── Dispatch map (used by visp.py cmd_users) ───────────────────────────

@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+from .build import BUILD_CONFIGS, NODE_BUILD_CONFIGS
 from .git_repo import GitRepository
 from .versions import ComponentConfig
 
@@ -414,29 +415,16 @@ class DeployManager:
         # Check Node.js build output files exist on disk
         # (these are bind-mounted at runtime and must be present regardless of image labels)
         node_build_warnings = []
-        try:
-            import importlib.util
-            import sys
-
-            # Load NODE_BUILD_CONFIGS from visp.py via importlib
-            sys.path.insert(0, str(self.basedir))
-            spec = importlib.util.spec_from_file_location("visp", str(self.basedir / "visp.py"))
-            if spec and spec.loader:
-                vp = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(vp)  # type: ignore[union-attr]
-                node_configs = getattr(vp, "NODE_BUILD_CONFIGS", {})
-                for build_name, node_cfg in node_configs.items():
-                    output_dir = self.basedir / node_cfg["output"]
-                    verify = node_cfg.get("verify_file", "")
-                    verify_path = output_dir / verify if verify else output_dir
-                    if not verify_path.exists():
-                        node_build_warnings.append(
-                            f"  ❌ {build_name}: build output missing "
-                            f"({verify_path.relative_to(self.basedir)})\n"
-                            f"     Run: ./visp.py build {build_name}"
-                        )
-        except Exception:  # noqa: BLE001
-            pass  # Non-fatal; skip the check if import fails
+        for build_name, node_cfg in NODE_BUILD_CONFIGS.items():
+            output_dir = self.basedir / node_cfg["output"]
+            verify = node_cfg.get("verify_file", "")
+            verify_path = output_dir / verify if verify else output_dir
+            if not verify_path.exists():
+                node_build_warnings.append(
+                    f"  ❌ {build_name}: build output missing "
+                    f"({verify_path.relative_to(self.basedir)})\n"
+                    f"     Run: ./visp.py build {build_name}"
+                )
 
         # Print results
         print("\n" + "=" * 100)
@@ -462,200 +450,186 @@ class DeployManager:
         # to avoid duplication.
         image_status_rows = []
         external_repo_names = {name for name, _ in self.config.get_components()}
-        try:
-            import importlib.util
-            import sys
+        for build_name, cfg in BUILD_CONFIGS.items():
+            if not self.runner:
+                continue
 
-            sys.path.insert(0, str(self.basedir))
-            spec = importlib.util.spec_from_file_location("visp", str(self.basedir / "visp.py"))
-            if spec and spec.loader:
-                vp = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(vp)  # type: ignore[union-attr]
-                build_configs = getattr(vp, "BUILD_CONFIGS", {})
+            # Skip images that are directly tracked as external repos
+            # (their build context IS the external repo)
+            context = cfg.get("context", "")
+            is_external = any(
+                context.rstrip("/").endswith(f"/{repo_name}") for repo_name in external_repo_names
+            )
+            if is_external and not cfg.get("source_repo") and not cfg.get("depends_on"):
+                continue
 
-                for build_name, cfg in build_configs.items():
-                    if not self.runner:
-                        continue
+            image_name = f"{cfg['image']}:latest"
+            source_repo = cfg.get("source_repo")
+            depends_on = cfg.get("depends_on")
+            image_exists = self._check_image_exists(image_name)
+            image_ts = self._get_image_label(image_name, "build.timestamp") if image_exists else None
+            built_str = f"Built {image_ts[:19]}" if image_ts else ""
 
-                    # Skip images that are directly tracked as external repos
-                    # (their build context IS the external repo)
-                    context = cfg.get("context", "")
-                    is_external = any(
-                        context.rstrip("/").endswith(f"/{repo_name}") for repo_name in external_repo_names
+            # Determine what this image depends on (for display)
+            if source_repo:
+                parent = Path(source_repo).name
+            elif depends_on:
+                parent = depends_on
+            else:
+                parent = "—"
+
+            if not image_exists:
+                image_status_rows.append(
+                    {
+                        "Image": build_name,
+                        "Tracks": parent,
+                        "Status": "❌ NOT BUILT",
+                        "Detail": f"Run: ./visp.py build {build_name}",
+                    }
+                )
+                continue
+
+            # Check source_repo match (e.g. apache tracks webclient, operations-session tracks container-agent)
+            if source_repo:
+                source_path = self.basedir / source_repo
+                image_commit = self._get_image_label(image_name, "git.commit")
+                try:
+                    repo = GitRepository(str(source_path))
+                    source_commit = repo.get_current_commit()
+                except Exception:  # noqa: BLE001
+                    source_commit = None
+
+                # Also check if the deployment repo (Dockerfiles, configs) changed
+                deploy_label = self._get_image_label(image_name, "git.commit.deploy")
+                try:
+                    deploy_repo = GitRepository(str(self.basedir))
+                    deploy_commit = deploy_repo.get_current_commit()
+                except Exception:  # noqa: BLE001
+                    deploy_commit = None
+
+                source_stale = source_commit and image_commit and image_commit != source_commit
+                deploy_stale = deploy_commit and deploy_label and deploy_label != deploy_commit
+
+                if not image_commit:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "⚠️ NO LABEL",
+                            "Detail": f"{built_str} — rebuild recommended" if built_str else "No labels",
+                        }
                     )
-                    if is_external and not cfg.get("source_repo") and not cfg.get("depends_on"):
-                        continue
+                elif source_stale and deploy_stale:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "⚠️ STALE",
+                            "Detail": f"Source ({image_commit[:8]}→{source_commit[:8]}) "
+                            f"+ Dockerfile ({deploy_label[:8]}→{deploy_commit[:8]})",
+                        }
+                    )
+                elif source_stale:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "⚠️ STALE",
+                            "Detail": f"Source: image has {image_commit[:8]}, now at {source_commit[:8]}",
+                        }
+                    )
+                elif deploy_stale:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "⚠️ STALE",
+                            "Detail": f"Dockerfile/config changed ({deploy_label[:8]}→{deploy_commit[:8]})",
+                        }
+                    )
+                else:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "✅ UP TO DATE",
+                            "Detail": built_str or f"Commit {image_commit[:8]}",
+                        }
+                    )
 
-                    image_name = f"{cfg['image']}:latest"
-                    source_repo = cfg.get("source_repo")
-                    depends_on = cfg.get("depends_on")
-                    image_exists = self._check_image_exists(image_name)
-                    image_ts = self._get_image_label(image_name, "build.timestamp") if image_exists else None
-                    built_str = f"Built {image_ts[:19]}" if image_ts else ""
+            # Check depends_on chain
+            elif depends_on:
+                parent_cfg = BUILD_CONFIGS.get(depends_on, {})
+                parent_image = f"{parent_cfg['image']}:latest"
+                child_ts = image_ts
+                parent_ts = self._get_image_label(parent_image, "build.timestamp")
 
-                    # Determine what this image depends on (for display)
-                    if source_repo:
-                        parent = Path(source_repo).name
-                    elif depends_on:
-                        parent = depends_on
-                    else:
-                        parent = "—"
+                if not child_ts:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "⚠️ NO TIMESTAMP",
+                            "Detail": "Rebuild recommended",
+                        }
+                    )
+                elif parent_ts and child_ts < parent_ts:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "⚠️ STALE",
+                            "Detail": f"Built {child_ts[:19]}, parent rebuilt {parent_ts[:19]}",
+                        }
+                    )
+                else:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": parent,
+                            "Status": "✅ UP TO DATE",
+                            "Detail": built_str,
+                        }
+                    )
 
-                    if not image_exists:
-                        image_status_rows.append(
-                            {
-                                "Image": build_name,
-                                "Tracks": parent,
-                                "Status": "❌ NOT BUILT",
-                                "Detail": f"Run: ./visp.py build {build_name}",
-                            }
-                        )
-                        continue
+            # Standalone images (no source_repo, no depends_on) — e.g. octra
+            # These have Dockerfiles in the deployment repo, so git.commit
+            # tracks the deployment repo HEAD at build time.
+            else:
+                image_commit = self._get_image_label(image_name, "git.commit")
+                try:
+                    deploy_repo = GitRepository(str(self.basedir))
+                    deploy_commit = deploy_repo.get_current_commit()
+                except Exception:  # noqa: BLE001
+                    deploy_commit = None
 
-                    # Check source_repo match (e.g. apache tracks webclient, operations-session tracks container-agent)
-                    if source_repo:
-                        source_path = self.basedir / source_repo
-                        image_commit = self._get_image_label(image_name, "git.commit")
-                        try:
-                            repo = GitRepository(str(source_path))
-                            source_commit = repo.get_current_commit()
-                        except Exception:  # noqa: BLE001
-                            source_commit = None
-
-                        # Also check if the deployment repo (Dockerfiles, configs) changed
-                        deploy_label = self._get_image_label(image_name, "git.commit.deploy")
-                        try:
-                            deploy_repo = GitRepository(str(self.basedir))
-                            deploy_commit = deploy_repo.get_current_commit()
-                        except Exception:  # noqa: BLE001
-                            deploy_commit = None
-
-                        source_stale = source_commit and image_commit and image_commit != source_commit
-                        deploy_stale = deploy_commit and deploy_label and deploy_label != deploy_commit
-
-                        if not image_commit:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ NO LABEL",
-                                    "Detail": f"{built_str} — rebuild recommended" if built_str else "No labels",
-                                }
-                            )
-                        elif source_stale and deploy_stale:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ STALE",
-                                    "Detail": f"Source ({image_commit[:8]}→{source_commit[:8]}) "
-                                    f"+ Dockerfile ({deploy_label[:8]}→{deploy_commit[:8]})",
-                                }
-                            )
-                        elif source_stale:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ STALE",
-                                    "Detail": f"Source: image has {image_commit[:8]}, now at {source_commit[:8]}",
-                                }
-                            )
-                        elif deploy_stale:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ STALE",
-                                    "Detail": f"Dockerfile/config changed ({deploy_label[:8]}→{deploy_commit[:8]})",
-                                }
-                            )
-                        else:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "✅ UP TO DATE",
-                                    "Detail": built_str or f"Commit {image_commit[:8]}",
-                                }
-                            )
-
-                    # Check depends_on chain
-                    elif depends_on:
-                        parent_cfg = build_configs.get(depends_on, {})
-                        parent_image = f"{parent_cfg['image']}:latest"
-                        child_ts = image_ts
-                        parent_ts = self._get_image_label(parent_image, "build.timestamp")
-
-                        if not child_ts:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ NO TIMESTAMP",
-                                    "Detail": "Rebuild recommended",
-                                }
-                            )
-                        elif parent_ts and child_ts < parent_ts:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "⚠️ STALE",
-                                    "Detail": f"Built {child_ts[:19]}, parent rebuilt {parent_ts[:19]}",
-                                }
-                            )
-                        else:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": parent,
-                                    "Status": "✅ UP TO DATE",
-                                    "Detail": built_str,
-                                }
-                            )
-
-                    # Standalone images (no source_repo, no depends_on) — e.g. octra
-                    # These have Dockerfiles in the deployment repo, so git.commit
-                    # tracks the deployment repo HEAD at build time.
-                    else:
-                        image_commit = self._get_image_label(image_name, "git.commit")
-                        try:
-                            deploy_repo = GitRepository(str(self.basedir))
-                            deploy_commit = deploy_repo.get_current_commit()
-                        except Exception:  # noqa: BLE001
-                            deploy_commit = None
-
-                        if image_commit and deploy_commit and image_commit == deploy_commit:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": "deployment repo",
-                                    "Status": "✅ UP TO DATE",
-                                    "Detail": built_str or f"Commit {image_commit[:8]}",
-                                }
-                            )
-                        elif image_commit and deploy_commit and image_commit != deploy_commit:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": "deployment repo",
-                                    "Status": "⚠️ STALE",
-                                    "Detail": f"Image has {image_commit[:8]}, repo at {deploy_commit[:8]}",
-                                }
-                            )
-                        else:
-                            image_status_rows.append(
-                                {
-                                    "Image": build_name,
-                                    "Tracks": "deployment repo",
-                                    "Status": "✅ BUILT",
-                                    "Detail": built_str or "No build label",
-                                }
-                            )
-
-        except Exception:  # noqa: BLE001
-            pass  # Non-fatal
+                if image_commit and deploy_commit and image_commit == deploy_commit:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": "deployment repo",
+                            "Status": "✅ UP TO DATE",
+                            "Detail": built_str or f"Commit {image_commit[:8]}",
+                        }
+                    )
+                elif image_commit and deploy_commit and image_commit != deploy_commit:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": "deployment repo",
+                            "Status": "⚠️ STALE",
+                            "Detail": f"Image has {image_commit[:8]}, repo at {deploy_commit[:8]}",
+                        }
+                    )
+                else:
+                    image_status_rows.append(
+                        {
+                            "Image": build_name,
+                            "Tracks": "deployment repo",
+                            "Status": "✅ BUILT",
+                            "Detail": built_str or "No build label",
+                        }
+                    )
 
         if image_status_rows:
             print("\n🐳 CONTAINER IMAGES (non-repo builds)")
@@ -759,23 +733,12 @@ class DeployManager:
             to_build.extend(d["Image"] for d in stale_images)
         # Node build warnings already recommend per-service builds
         if node_build_warnings:
-            try:
-                import importlib.util as _ilu
-                import sys as _sys
-
-                _sys.path.insert(0, str(self.basedir))
-                _spec = _ilu.spec_from_file_location("_vp", str(self.basedir / "visp.py"))
-                if _spec and _spec.loader:
-                    _vp = _ilu.module_from_spec(_spec)
-                    _spec.loader.exec_module(_vp)
-                    for nb_name, nb_cfg in getattr(_vp, "NODE_BUILD_CONFIGS", {}).items():
-                        output_dir = self.basedir / nb_cfg["output"]
-                        verify = nb_cfg.get("verify_file", "")
-                        verify_path = output_dir / verify if verify else output_dir
-                        if not verify_path.exists() and nb_name not in to_build:
-                            to_build.append(nb_name)
-            except Exception:  # noqa: BLE001
-                pass
+            for nb_name, nb_cfg in NODE_BUILD_CONFIGS.items():
+                output_dir = self.basedir / nb_cfg["output"]
+                verify = nb_cfg.get("verify_file", "")
+                verify_path = output_dir / verify if verify else output_dir
+                if not verify_path.exists() and nb_name not in to_build:
+                    to_build.append(nb_name)
 
         # De-duplicate while preserving order
         seen: set[str] = set()
