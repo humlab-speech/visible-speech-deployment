@@ -222,244 +222,24 @@ class DeployManager:
                 "recommendation": f"Image built from {image_commit[:8]}, source at {current_commit[:8]} - rebuild needed",
             }
 
-    def check_status(self, fetch: bool = True) -> bool:
-        """
-        Check status of all repositories and report uncommitted changes.
+    def _check_container_images(self) -> list[dict]:
+        """Check status of container images from BUILD_CONFIGS.
 
-        Args:
-            fetch: Whether to fetch from remotes before checking status
+        Covers images with source_repo, depends_on chain, and standalone images.
+        Skips images whose build context is a tracked external repo.
 
         Returns:
-            True if everything is clean and up-to-date, False if any drift detected.
+            List of status row dicts for tabulate.
         """
-        print("🔍 Checking repository status...")
-
-        if fetch:
-            print("📡 Fetching latest remote information...")
-
-        # 1. Check Deployment Repository (the one we're in)
-        print("\n📦 Checking main deployment repository...")
-        deployment_repo = GitRepository(str(self.basedir))
-
-        try:
-            if fetch:
-                deployment_repo.fetch(quiet=True)
-
-            current_branch = deployment_repo.get_current_branch() or "main"
-            has_changes = deployment_repo.is_dirty()
-
-            # Calculate ahead/behind using the class method
-            # ahead = local commits not on remote (HEAD..origin = behind; origin..HEAD = ahead)
-            ahead_count = deployment_repo.count_commits_between(f"origin/{current_branch}", "HEAD")
-            behind_count = deployment_repo.count_commits_between("HEAD", f"origin/{current_branch}")
-
-            deployment_repo_status = {
-                "Repository": "visible-speech-deployment (THIS REPO)",
-                "Branch": current_branch,
-                "Has Changes": "⚠️  YES" if has_changes else "✅ NO",
-                "Behind Remote": f"⬇️ {behind_count}" if behind_count > 0 else "✅ 0",
-                "Ahead Remote": f"🚀 {ahead_count}" if ahead_count > 0 else "✅ 0",
-            }
-
-            if behind_count > 0:
-                print(f"⚠️  WARNING: Deployment repo is {behind_count} commit(s) " "behind remote!")
-                print(f"   Run 'git pull origin {current_branch}' to update " "the deployment scripts")
-
-        except Exception as e:
-            deployment_repo_status = {
-                "Repository": "visible-speech-deployment (THIS REPO)",
-                "Branch": "ERROR",
-                "Has Changes": "❌ ERROR",
-                "Behind Remote": f"Error: {str(e)}",
-                "Ahead Remote": "N/A",
-            }
-
-        # 2. Check External Component Repositories
-        status_results = []
-        repos_with_changes = []
-        repos_ahead = []
-        repos_behind = []
-
-        for repo_name, comp_data in self.config.get_components():
-            repo_path = self.external_dir / repo_name
-            repo = GitRepository(str(repo_path))
-
-            # Get version info from config
-            version = comp_data.get("version", "latest")
-            locked_version = comp_data.get("locked_version", "N/A")
-            is_locked = self.config.is_locked(repo_name)
-
-            # Format lock status
-            lock_status = "🔒 LOCKED" if is_locked else "🔓 UNLOCKED"
-            lock_details = f"at {version[:8]}" if is_locked else "tracking latest"
-
-            # Check if repo exists
-            if not repo.exists():
-                status_results.append(
-                    {
-                        "Repository": repo_name,
-                        "Lock Status": f"{lock_status} ({lock_details})",
-                        "Current Commit": "N/A",
-                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
-                        "Status": "❌ MISSING",
-                        "Sync Status": "Repository not cloned",
-                    }
-                )
-                continue
-
-            if not repo.is_git_repo():
-                status_results.append(
-                    {
-                        "Repository": repo_name,
-                        "Lock Status": f"{lock_status} ({lock_details})",
-                        "Current Commit": "N/A",
-                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
-                        "Status": "❌ NOT GIT",
-                        "Sync Status": "Not a git repository",
-                    }
-                )
-                continue
-
-            try:
-                # Use GitRepository methods
-                if fetch:
-                    try:
-                        repo.fetch(quiet=True)
-                    except subprocess.CalledProcessError:
-                        pass  # Fetch failed, continue with cached data
-
-                # Get current commit using the class
-                current_commit = (repo.get_current_commit() or "N/A")[:8]
-                current_commit_full = repo.get_current_commit() or "N/A"
-
-                # Check for uncommitted changes using the class
-                has_changes = repo.is_dirty()
-
-                # Check build status if runner is available
-                build_info = {"status": "N/A", "recommendation": ""}
-                if self.runner and current_commit_full != "N/A":
-                    build_info = self._get_build_status(repo_name, current_commit_full)
-
-                # Check sync status with remote
-                sync_status = "✅ SYNCED"
-                sync_details = []
-
-                try:
-                    current_branch = repo.get_current_branch() or "main"
-
-                    # Check if remote exists
-                    remote_url = repo.get_remote_url()
-
-                    if remote_url:
-                        # Check if remote branch exists
-                        if repo.has_remote_branch(current_branch):
-                            # Calculate ahead/behind using class methods
-                            # ahead = local commits not on remote (origin..HEAD = ahead; HEAD..origin = behind)
-                            ahead_count = repo.count_commits_between(f"origin/{current_branch}", "HEAD")
-                            behind_count = repo.count_commits_between("HEAD", f"origin/{current_branch}")
-
-                            if ahead_count > 0:
-                                repos_ahead.append(repo_name)
-                                sync_details.append(f"🚀 {ahead_count} ahead")
-                                sync_status = "🚀 AHEAD"
-
-                            if behind_count > 0:
-                                repos_behind.append(repo_name)
-                                sync_details.append(f"⬇️ {behind_count} behind")
-                                sync_status = "⬇️ BEHIND" if sync_status == "✅ SYNCED" else "🔄 DIVERGED"
-                        else:
-                            sync_details.append("Remote branch not found")
-                            sync_status = "❓ NO REMOTE BRANCH"
-                    else:
-                        sync_details.append("No remote configured")
-                        sync_status = "🏠 LOCAL ONLY"
-
-                except Exception:
-                    sync_details.append("Error checking remote")
-                    sync_status = "❌ ERROR"
-
-                # Determine overall status
-                if has_changes:
-                    repos_with_changes.append(repo_name)
-                    overall_status = "⚠️  HAS CHANGES"
-                else:
-                    overall_status = "✅ CLEAN"
-
-                # Combine sync details
-                sync_desc = ", ".join(sync_details) if sync_details else "Up to date"
-
-                status_results.append(
-                    {
-                        "Repository": repo_name,
-                        "Lock Status": f"{lock_status} ({lock_details})",
-                        "Current Commit": current_commit,
-                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
-                        "Status": overall_status,
-                        "Build Status": build_info["status"],
-                        "Sync Status": f"{sync_status} - {sync_desc}",
-                    }
-                )
-
-            except Exception as e:
-                status_results.append(
-                    {
-                        "Repository": repo_name,
-                        "Lock Status": f"{lock_status} ({lock_details})",
-                        "Current Commit": "ERROR",
-                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
-                        "Status": "❌ ERROR",
-                        "Sync Status": f"Error: {str(e)}",
-                    }
-                )
-
-        # Check Node.js build output files exist on disk
-        # (these are bind-mounted at runtime and must be present regardless of image labels)
-        node_build_warnings = []
-        for build_name, node_cfg in NODE_BUILD_CONFIGS.items():
-            output_dir = self.basedir / node_cfg["output"]
-            verify = node_cfg.get("verify_file", "")
-            verify_path = output_dir / verify if verify else output_dir
-            if not verify_path.exists():
-                node_build_warnings.append(
-                    f"  ❌ {build_name}: build output missing "
-                    f"({verify_path.relative_to(self.basedir)})\n"
-                    f"     Run: ./visp.py build {build_name}"
-                )
-
-        # Print results
-        print("\n" + "=" * 100)
-        print("REPOSITORY STATUS CHECK")
-        print("=" * 100)
-
-        # Show deployment repo status first
-        if deployment_repo_status:
-            print("\n🔧 DEPLOYMENT REPOSITORY (visible-speech-deployment)")
-            print("-" * 100)
-            print(tabulate([deployment_repo_status], headers="keys", tablefmt="grid"))
-            print()
-
-        print("📚 EXTERNAL COMPONENT REPOSITORIES")
-        print("-" * 100)
-        print(tabulate(status_results, headers="keys", tablefmt="grid"))
-
-        # Check ALL container images from BUILD_CONFIGS
-        # This covers: images with source_repo (apache, jupyter-session),
-        # and standalone images (octra, session-proxy, etc.).
-        # Images whose source is an external repo (session-manager, wsrng-server, etc.)
-        # are already tracked in the external repos table above — we skip those here
-        # to avoid duplication.
-        image_status_rows = []
+        image_status_rows: list[dict] = []
         external_repo_names = {name for name, _ in self.config.get_components()}
+
         for build_name, cfg in BUILD_CONFIGS.items():
             if not self.runner:
                 continue
 
-            # Skip images that are directly tracked as external repos
-            # (their build context IS the external repo)
             context = cfg.get("context", "")
-            is_external = any(
-                context.rstrip("/").endswith(f"/{repo_name}") for repo_name in external_repo_names
-            )
+            is_external = any(context.rstrip("/").endswith(f"/{repo_name}") for repo_name in external_repo_names)
             if is_external and not cfg.get("source_repo") and not cfg.get("depends_on"):
                 continue
 
@@ -470,7 +250,6 @@ class DeployManager:
             image_ts = self._get_image_label(image_name, "build.timestamp") if image_exists else None
             built_str = f"Built {image_ts[:19]}" if image_ts else ""
 
-            # Determine what this image depends on (for display)
             if source_repo:
                 parent = Path(source_repo).name
             elif depends_on:
@@ -489,7 +268,6 @@ class DeployManager:
                 )
                 continue
 
-            # Check source_repo match (e.g. apache tracks webclient, operations-session tracks container-agent)
             if source_repo:
                 source_path = self.basedir / source_repo
                 image_commit = self._get_image_label(image_name, "git.commit")
@@ -499,7 +277,6 @@ class DeployManager:
                 except Exception:  # noqa: BLE001
                     source_commit = None
 
-                # Also check if the deployment repo (Dockerfiles, configs) changed
                 deploy_label = self._get_image_label(image_name, "git.commit.deploy")
                 try:
                     deploy_repo = GitRepository(str(self.basedir))
@@ -557,7 +334,6 @@ class DeployManager:
                         }
                     )
 
-            # Check depends_on chain
             elif depends_on:
                 parent_cfg = BUILD_CONFIGS.get(depends_on, {})
                 parent_image = f"{parent_cfg['image']}:latest"
@@ -592,9 +368,6 @@ class DeployManager:
                         }
                     )
 
-            # Standalone images (no source_repo, no depends_on) — e.g. octra
-            # These have Dockerfiles in the deployment repo, so git.commit
-            # tracks the deployment repo HEAD at build time.
             else:
                 image_commit = self._get_image_label(image_name, "git.commit")
                 try:
@@ -631,26 +404,28 @@ class DeployManager:
                         }
                     )
 
-        if image_status_rows:
-            print("\n🐳 CONTAINER IMAGES (non-repo builds)")
-            print("-" * 100)
-            print(tabulate(image_status_rows, headers="keys", tablefmt="grid"))
+        return image_status_rows
 
-        # Show third-party (pulled) images — these are pinned in quadlet files
-        third_party_rows = []
+    def _check_third_party_images(self) -> list[dict]:
+        """Scan quadlet files for third-party images and check if they are pulled.
+
+        Returns:
+            List of status row dicts for tabulate.
+        """
+        from glob import glob as glob_fn
+
+        from .quadlets import get_current_mode
+
+        third_party_rows: list[dict] = []
         try:
-            # Find Image= lines in quadlets that reference registries (not localhost/)
-            import glob
-
-            mode = "dev"  # TODO: detect current mode
+            mode = get_current_mode()
             quadlet_dir = self.basedir / "quadlets" / mode
-            for qfile in sorted(glob.glob(str(quadlet_dir / "*.container"))):
+            for qfile in sorted(glob_fn(str(quadlet_dir / "*.container"))):
                 with open(qfile) as f:
                     for line in f:
                         if line.startswith("Image=") and "localhost/" not in line:
                             image_ref = line.strip().split("=", 1)[1]
                             svc_name = Path(qfile).stem
-                            # Check if image is pulled locally
                             if self.runner:
                                 exists = self._check_image_exists(image_ref)
                                 status = "✅ Pulled" if exists else "❌ Not pulled"
@@ -660,6 +435,253 @@ class DeployManager:
         except Exception:  # noqa: BLE001
             pass
 
+        return third_party_rows
+
+    def _check_deployment_repo(self, fetch: bool) -> dict:
+        """Check the deployment repository status.
+
+        Args:
+            fetch: Whether to fetch from remote before checking.
+
+        Returns:
+            Dict with Repository, Branch, Has Changes, Behind Remote, Ahead Remote.
+        """
+        deployment_repo = GitRepository(str(self.basedir))
+
+        try:
+            if fetch:
+                deployment_repo.fetch(quiet=True)
+
+            current_branch = deployment_repo.get_current_branch() or "main"
+            has_changes = deployment_repo.is_dirty()
+
+            ahead_count = deployment_repo.count_commits_between(f"origin/{current_branch}", "HEAD")
+            behind_count = deployment_repo.count_commits_between("HEAD", f"origin/{current_branch}")
+
+            return {
+                "Repository": "visible-speech-deployment (THIS REPO)",
+                "Branch": current_branch,
+                "Has Changes": "⚠️  YES" if has_changes else "✅ NO",
+                "Behind Remote": f"⬇️ {behind_count}" if behind_count > 0 else "✅ 0",
+                "Ahead Remote": f"🚀 {ahead_count}" if ahead_count > 0 else "✅ 0",
+            }
+
+        except Exception as e:
+            return {
+                "Repository": "visible-speech-deployment (THIS REPO)",
+                "Branch": "ERROR",
+                "Has Changes": "❌ ERROR",
+                "Behind Remote": f"Error: {str(e)}",
+                "Ahead Remote": "N/A",
+            }
+
+    def _check_external_repos(self, fetch: bool) -> tuple[list[dict], list[str], list[str], list[str]]:
+        """Check all external component repositories.
+
+        Args:
+            fetch: Whether to fetch from remotes before checking.
+
+        Returns:
+            Tuple of (status_results, repos_with_changes, repos_ahead, repos_behind).
+        """
+        status_results: list[dict] = []
+        repos_with_changes: list[str] = []
+        repos_ahead: list[str] = []
+        repos_behind: list[str] = []
+
+        for repo_name, comp_data in self.config.get_components():
+            repo_path = self.external_dir / repo_name
+            repo = GitRepository(str(repo_path))
+
+            version = comp_data.get("version", "latest")
+            locked_version = comp_data.get("locked_version", "N/A")
+            is_locked = self.config.is_locked(repo_name)
+
+            lock_status = "🔒 LOCKED" if is_locked else "🔓 UNLOCKED"
+            lock_details = f"at {version[:8]}" if is_locked else "tracking latest"
+
+            if not repo.exists():
+                status_results.append(
+                    {
+                        "Repository": repo_name,
+                        "Lock Status": f"{lock_status} ({lock_details})",
+                        "Current Commit": "N/A",
+                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
+                        "Status": "❌ MISSING",
+                        "Sync Status": "Repository not cloned",
+                    }
+                )
+                continue
+
+            if not repo.is_git_repo():
+                status_results.append(
+                    {
+                        "Repository": repo_name,
+                        "Lock Status": f"{lock_status} ({lock_details})",
+                        "Current Commit": "N/A",
+                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
+                        "Status": "❌ NOT GIT",
+                        "Sync Status": "Not a git repository",
+                    }
+                )
+                continue
+
+            try:
+                if fetch:
+                    try:
+                        repo.fetch(quiet=True)
+                    except subprocess.CalledProcessError:
+                        pass
+
+                current_commit = (repo.get_current_commit() or "N/A")[:8]
+                current_commit_full = repo.get_current_commit() or "N/A"
+
+                has_changes = repo.is_dirty()
+
+                build_info: dict = {"status": "N/A", "recommendation": ""}
+                if self.runner and current_commit_full != "N/A":
+                    build_info = self._get_build_status(repo_name, current_commit_full)
+
+                sync_status = "✅ SYNCED"
+                sync_details: list[str] = []
+
+                try:
+                    current_branch = repo.get_current_branch() or "main"
+                    remote_url = repo.get_remote_url()
+
+                    if remote_url:
+                        if repo.has_remote_branch(current_branch):
+                            ahead_count = repo.count_commits_between(f"origin/{current_branch}", "HEAD")
+                            behind_count = repo.count_commits_between("HEAD", f"origin/{current_branch}")
+
+                            if ahead_count > 0:
+                                repos_ahead.append(repo_name)
+                                sync_details.append(f"🚀 {ahead_count} ahead")
+                                sync_status = "🚀 AHEAD"
+
+                            if behind_count > 0:
+                                repos_behind.append(repo_name)
+                                sync_details.append(f"⬇️ {behind_count} behind")
+                                sync_status = "⬇️ BEHIND" if sync_status == "✅ SYNCED" else "🔄 DIVERGED"
+                        else:
+                            sync_details.append("Remote branch not found")
+                            sync_status = "❓ NO REMOTE BRANCH"
+                    else:
+                        sync_details.append("No remote configured")
+                        sync_status = "🏠 LOCAL ONLY"
+
+                except Exception:
+                    sync_details.append("Error checking remote")
+                    sync_status = "❌ ERROR"
+
+                if has_changes:
+                    repos_with_changes.append(repo_name)
+                    overall_status = "⚠️  HAS CHANGES"
+                else:
+                    overall_status = "✅ CLEAN"
+
+                sync_desc = ", ".join(sync_details) if sync_details else "Up to date"
+
+                status_results.append(
+                    {
+                        "Repository": repo_name,
+                        "Lock Status": f"{lock_status} ({lock_details})",
+                        "Current Commit": current_commit,
+                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
+                        "Status": overall_status,
+                        "Build Status": build_info["status"],
+                        "Sync Status": f"{sync_status} - {sync_desc}",
+                    }
+                )
+
+            except Exception as e:
+                status_results.append(
+                    {
+                        "Repository": repo_name,
+                        "Lock Status": f"{lock_status} ({lock_details})",
+                        "Current Commit": "ERROR",
+                        "Locked Version": (locked_version[:8] if locked_version != "N/A" else "N/A"),
+                        "Status": "❌ ERROR",
+                        "Sync Status": f"Error: {str(e)}",
+                    }
+                )
+
+        return status_results, repos_with_changes, repos_ahead, repos_behind
+
+    def _check_node_build_outputs(self) -> list[str]:
+        """Check Node.js build output files exist on disk.
+
+        Returns:
+            List of warning strings for missing build outputs.
+        """
+        node_build_warnings: list[str] = []
+        for build_name, node_cfg in NODE_BUILD_CONFIGS.items():
+            output_dir = self.basedir / node_cfg["output"]
+            verify = node_cfg.get("verify_file", "")
+            verify_path = output_dir / verify if verify else output_dir
+            if not verify_path.exists():
+                node_build_warnings.append(
+                    f"  ❌ {build_name}: build output missing "
+                    f"({verify_path.relative_to(self.basedir)})\n"
+                    f"     Run: ./visp.py build {build_name}"
+                )
+        return node_build_warnings
+
+    def check_status(self, fetch: bool = True) -> bool:
+        """
+        Check status of all repositories and report uncommitted changes.
+
+        Args:
+            fetch: Whether to fetch from remotes before checking status
+
+        Returns:
+            True if everything is clean and up-to-date, False if any drift detected.
+        """
+        print("🔍 Checking repository status...")
+
+        if fetch:
+            print("📡 Fetching latest remote information...")
+
+        # 1. Deployment repo
+        deployment_repo_status = self._check_deployment_repo(fetch)
+        behind_count_str = deployment_repo_status.get("Behind Remote", "✅ 0")
+        if behind_count_str.startswith("⬇️"):
+            behind_count = int(behind_count_str.split()[1])
+            print(f"⚠️  WARNING: Deployment repo is {behind_count} commit(s) behind remote!")
+            branch = deployment_repo_status.get("Branch", "main")
+            print(f"   Run 'git pull origin {branch}' to update the deployment scripts")
+
+        # 2. External repos
+        status_results, repos_with_changes, repos_ahead, repos_behind = self._check_external_repos(fetch)
+
+        # 3. Node build outputs
+        node_build_warnings = self._check_node_build_outputs()
+
+        # Print results
+        print("\n" + "=" * 100)
+        print("REPOSITORY STATUS CHECK")
+        print("=" * 100)
+
+        # Show deployment repo status first
+        if deployment_repo_status:
+            print("\n🔧 DEPLOYMENT REPOSITORY (visible-speech-deployment)")
+            print("-" * 100)
+            print(tabulate([deployment_repo_status], headers="keys", tablefmt="grid"))
+            print()
+
+        print("📚 EXTERNAL COMPONENT REPOSITORIES")
+        print("-" * 100)
+        print(tabulate(status_results, headers="keys", tablefmt="grid"))
+
+        # Container images
+        image_status_rows = self._check_container_images()
+        if image_status_rows:
+            print("\n🐳 CONTAINER IMAGES (non-repo builds)")
+            print("-" * 100)
+            print(tabulate(image_status_rows, headers="keys", tablefmt="grid"))
+
+        # Third-party images
+        third_party_rows = self._check_third_party_images()
         if third_party_rows:
             print("\n📦 THIRD-PARTY IMAGES (from registries)")
             print("-" * 100)
@@ -998,9 +1020,9 @@ class DeployManager:
             version = comp_data.get("version", "latest")
             is_locked = self.config.is_locked(repo_name)
 
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * 60}")
             print(f"Updating {repo_name}...")
-            print(f"{'='*60}")
+            print(f"{'=' * 60}")
 
             # Clone if doesn't exist
             if not repo.exists():

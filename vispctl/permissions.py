@@ -13,6 +13,8 @@ from typing import Iterable, List
 
 from .runner import Colors, Runner, color
 
+_PROJECT_DIR = Path(__file__).parent.parent
+
 
 class PermissionsManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
@@ -113,3 +115,161 @@ class PermissionsManager:
             except OSError:
                 mismatched.append((p, None))
         return mismatched
+
+
+def cmd_fix_permissions(args, project_dir: Path | None = None, runner: Runner | None = None) -> None:
+    """Fix file ownership and permissions using 'podman unshare'."""
+    from .permissions import PermissionsManager
+
+    if project_dir is None:
+        project_dir = _PROJECT_DIR
+    if runner is None:
+        runner = Runner()
+
+    if not args.paths:
+        from .install import (
+            MONGO_CONTAINER_GID,
+            MONGO_CONTAINER_UID,
+            MONGO_MOUNT_MODE,
+            _resolve_rootless_host_id,
+            fix_mongo_mount_ownership,
+            fix_writable_permissions,
+            get_container_writable_dirs,
+            normalize_repository_ownership,
+        )
+
+        writable_dirs = get_container_writable_dirs(project_dir)
+        existing_dirs = [p for p in writable_dirs if p.exists()]
+        missing_dirs = [p for p in writable_dirs if not p.exists()]
+
+        print(color("=== Install-Equivalent Permission Fix Plan ===", Colors.CYAN))
+
+        if args.recursive or args.host_owner:
+            print(
+                color(
+                    "Note: --recursive and --host-owner only apply with explicit --path targets; "
+                    "the default mode mirrors './visp.py install'.",
+                    Colors.YELLOW,
+                )
+            )
+
+        for p in missing_dirs:
+            print(color(f"! Path does not exist: {p.relative_to(project_dir)}", Colors.YELLOW))
+
+        for p in existing_dirs:
+            print(f"  chmod 777 {p}")
+            print(f"  # fallback if needed: podman unshare chmod 777 {p}")
+
+        mongo_mounts = [
+            project_dir / "mounts/mongo/data",
+            project_dir / "mounts/mongo/logs",
+        ]
+        for p in mongo_mounts:
+            if p.exists():
+                print(f"  podman unshare chown -R 999:999 {p}")
+                print(f"  podman unshare chmod -R u+rwX,go-rwx {p}")
+                host_uid = _resolve_rootless_host_id(MONGO_CONTAINER_UID, "uid")
+                host_gid = _resolve_rootless_host_id(MONGO_CONTAINER_GID, "gid")
+                if host_uid is not None and host_gid is not None:
+                    print("  # if rootless podman cannot access the path, run as root:")
+                    print(f"  sudo chown -R {host_uid}:{host_gid} {p}")
+                    print(f"  sudo chmod -R {MONGO_MOUNT_MODE} {p}")
+                else:
+                    print("  # if rootless podman cannot access the path, inspect uid/gid maps and chown as root")
+
+        repos_dir = project_dir / "mounts/repositories"
+        if repos_dir.exists():
+            print(f"  podman unshare chown -R 0:0 {repos_dir}")
+
+        if not args.apply:
+            print()
+            print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
+            return
+
+        print()
+        print(color("Applying install-equivalent permission fixes...", Colors.CYAN))
+        perm_fixed = fix_writable_permissions(project_dir)
+        mongo_fixed = fix_mongo_mount_ownership(project_dir)
+        repos_ok = normalize_repository_ownership(project_dir)
+
+        print(f"  Container-writable directories fixed: {perm_fixed}")
+        print(f"  Mongo mount paths normalized: {mongo_fixed}")
+        if repos_ok:
+            print("  Repository ownership normalized")
+        else:
+            print(color("  Repository ownership normalization failed", Colors.YELLOW))
+        return
+
+    if args.paths:
+        paths = [Path(p) for p in args.paths]
+
+    existing = [p for p in paths if p.exists()]
+    missing = [p for p in paths if not p.exists()]
+    for p in missing:
+        print(color(f"! Path does not exist: {p}", Colors.YELLOW))
+
+    if not existing:
+        print(
+            color(
+                "No existing target paths to operate on. Use --path to specify one.",
+                Colors.YELLOW,
+            )
+        )
+        return
+
+    pm = PermissionsManager(runner)
+    planned = pm.plan_fix(
+        existing,
+        recursive=args.recursive,
+        host_owner=args.host_owner,
+    )
+
+    print(color("=== Permission Fix Plan ===", Colors.CYAN))
+    for c in planned:
+        print(f"  {c}")
+
+    if not args.apply:
+        print()
+        print(color("Dry run complete. Re-run with --apply to make changes.", Colors.YELLOW))
+        return
+
+    print()
+    print(color("Applying permission fixes...", Colors.CYAN))
+
+    ok = pm.apply_fix(
+        existing,
+        recursive=args.recursive,
+        host_owner=args.host_owner,
+    )
+
+    if ok:
+        print(color("Permissions fixed", Colors.GREEN))
+    else:
+        print(color("One or more operations failed", Colors.RED))
+
+    mismatched = pm.verify_host_ownership(existing)
+    if mismatched:
+        print()
+        print(
+            color(
+                "Ownership check: some paths are not owned by the current user on the host:",
+                Colors.YELLOW,
+            )
+        )
+        for p, uid in mismatched:
+            if uid is None:
+                print(f"  - {p}: cannot stat (permission denied)")
+            else:
+                print(f"  - {p}: host uid={uid} (current user uid={os.getuid()})")
+        print(
+            color(
+                "Note: this can be normal under rootless Podman userns "
+                "mapping. If you passed --host-owner and host ownership "
+                "does not match, your system's userns mapping doesn't map "
+                "namespace 0 to your host UID. In that case you can either "
+                "remove files inside the namespace (podman unshare rm -rf) "
+                "or manually chown as admin outside this script "
+                "(not recommended for normal operation).",
+                Colors.YELLOW,
+            )
+        )
