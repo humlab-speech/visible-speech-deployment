@@ -11,15 +11,14 @@ import os
 from pathlib import Path
 from typing import Iterable, List
 
+from .config import get_config
 from .runner import Colors, Runner, color
-
-_PROJECT_DIR = Path(__file__).parent.parent
 
 
 class PermissionsManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
         self.runner = runner
-        self.project_dir = Path(project_dir) if project_dir else _PROJECT_DIR
+        self.project_dir = Path(project_dir) if project_dir else get_config().project_dir
 
     def _resolve_target(self, uid: int | None, gid: int | None, host_owner: bool) -> str:
         if host_owner:
@@ -120,7 +119,7 @@ class PermissionsManager:
 def cmd_fix_permissions(args, project_dir: Path | None = None, runner: Runner | None = None) -> None:
     """Fix file ownership and permissions using 'podman unshare'."""
     if project_dir is None:
-        project_dir = _PROJECT_DIR
+        project_dir = get_config().project_dir
     if runner is None:
         runner = Runner()
 

@@ -57,6 +57,7 @@ from vispctl.build import (
     cmd_build_list as _cmd_build_list,
 )
 from vispctl.cleanup_containers import cleanup_containers
+from vispctl.config import get_config, init_config
 from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
@@ -81,16 +82,10 @@ from vispctl.service import (
 from vispctl.service_manager import ServiceManager
 from vispctl.status import show_container_list, show_network_list, show_quadlet_table
 
-# Configuration
-PROJECT_DIR = Path(__file__).parent.resolve()
-SYSTEMD_QUADLETS_DIR = Path.home() / ".config/containers/systemd"
-
 SERVICES = DEFAULT_SERVICES
 NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
 BUILDABLE_SERVICES = list(BUILD_CONFIGS.keys())
 ALL_BUILDABLE = BUILDABLE_SERVICES + list(NODE_BUILD_CONFIGS.keys())
-
-RUNNER = Runner()
 
 
 def _container_services(services: list[Service]) -> list[Service]:
@@ -103,13 +98,13 @@ def _container_services(services: list[Service]) -> list[Service]:
 
 def cmd_status(args):  # noqa: ARG001
     """Show status of all services and containers."""
+    cfg = get_config()
     print(color("=== VISP Service Status ===", Colors.CYAN))
     print()
 
     runtime_services = get_runtime_services()
 
-    # Use ServiceManager for service status
-    sm = ServiceManager(RUNNER, runtime_services)
+    sm = ServiceManager(cfg.runner, runtime_services)
     sm.status()
 
     disabled_optional_services = get_disabled_optional_services()
@@ -120,13 +115,13 @@ def cmd_status(args):  # noqa: ARG001
             print(f"  ○ {service_name}: disabled via {env_var}=false in .env")
 
     print()
-    show_quadlet_table(runtime_services, get_current_mode(), RUNNER, SYSTEMD_QUADLETS_DIR, render_quadlet_template)
+    show_quadlet_table(runtime_services, get_current_mode(), cfg.runner, cfg.systemd_dir, render_quadlet_template)
 
     print()
-    show_container_list(RUNNER)
+    show_container_list(cfg.runner)
 
     print()
-    show_network_list(RUNNER)
+    show_network_list(cfg.runner)
 
 
 # === Log Commands ===
@@ -134,14 +129,15 @@ def cmd_status(args):  # noqa: ARG001
 
 def cmd_logs(args):
     """View logs from services (and optionally debug diagnostics)."""
+    cfg = get_config()
     view_logs(
         args,
-        runner=RUNNER,
+        runner=cfg.runner,
         container_log_files=CONTAINER_LOG_FILES,
-        systemd_dir=SYSTEMD_QUADLETS_DIR,
+        systemd_dir=cfg.systemd_dir,
         get_runtime_services=get_runtime_services,
         get_all_services=lambda: get_runtime_services(include_disabled=True),
-        resolve_services=lambda s: resolve_services(s, PROJECT_DIR),
+        resolve_services=lambda s: resolve_services(s, cfg.project_dir),
         container_services=_container_services,
     )
 
@@ -151,35 +147,40 @@ def cmd_logs(args):
 
 def cmd_start(args):
     """Start service(s)."""
-    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    cfg = get_config()
+    sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     services = args.services
     if not services or services == ["all"]:
-        target_names = [svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR))]
+        target_names = [svc.name for svc in _container_services(resolve_services("all", cfg.project_dir))]
         sm.start(target_names)
     else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR)]
+        target_names = [svc.name for s in services for svc in resolve_services(s, cfg.project_dir)]
         sm.start(target_names)
 
 
 def cmd_stop(args):
     """Stop service(s)."""
-    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    cfg = get_config()
+    sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     services = args.services
     if not services or services == ["all"]:
         sm.stop("all")
     else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR, include_disabled=True)]
+        target_names = [
+            svc.name for s in services for svc in resolve_services(s, cfg.project_dir, include_disabled=True)
+        ]
         sm.stop(target_names)
 
 
 def cmd_up(args):
     """Enable and start service(s)."""
-    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    cfg = get_config()
+    sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     services = args.services
     if not services or services == ["all"]:
-        target_names = [svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR))]
+        target_names = [svc.name for svc in _container_services(resolve_services("all", cfg.project_dir))]
     else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR)]
+        target_names = [svc.name for s in services for svc in resolve_services(s, cfg.project_dir)]
 
     sm.enable(target_names)
     sm.start(target_names)
@@ -187,14 +188,17 @@ def cmd_up(args):
 
 def cmd_down(args):
     """Stop and disable service(s)."""
-    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    cfg = get_config()
+    sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     services = args.services
     if not services or services == ["all"]:
         target_names = [
-            svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR, include_disabled=True))
+            svc.name for svc in _container_services(resolve_services("all", cfg.project_dir, include_disabled=True))
         ]
     else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR, include_disabled=True)]
+        target_names = [
+            svc.name for s in services for svc in resolve_services(s, cfg.project_dir, include_disabled=True)
+        ]
 
     sm.stop(target_names)
     sm.disable(target_names)
@@ -202,7 +206,8 @@ def cmd_down(args):
 
 def cmd_restart(args):
     """Restart service(s) or entire cluster."""
-    sm = ServiceManager(RUNNER, get_runtime_services(include_disabled=True))
+    cfg = get_config()
+    sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     services = args.services
 
     if not services or services == ["all"]:
@@ -212,11 +217,10 @@ def cmd_restart(args):
         sm.stop("all")
         print()
         print(color("Starting services...", Colors.GREEN))
-        target_names = [svc.name for svc in _container_services(resolve_services("all", PROJECT_DIR))]
+        target_names = [svc.name for svc in _container_services(resolve_services("all", cfg.project_dir))]
         sm.start(target_names)
     else:
-        # For individual services, stop then start the specific names
-        target_names = [svc.name for s in services for svc in resolve_services(s, PROJECT_DIR)]
+        target_names = [svc.name for s in services for svc in resolve_services(s, cfg.project_dir)]
         sm.stop(target_names)
         sm.start(target_names)
 
@@ -233,12 +237,13 @@ def cmd_install(args):
     """Link quadlet files to systemd directory."""
     from vispctl.install import run_install
 
+    cfg = get_config()
     mode = getattr(args, "mode", None) or get_current_mode()
-    services = resolve_services(args.service, PROJECT_DIR)
+    services = resolve_services(args.service, cfg.project_dir)
     run_install(
-        project_dir=PROJECT_DIR,
-        systemd_dir=SYSTEMD_QUADLETS_DIR,
-        runner=RUNNER,
+        project_dir=cfg.project_dir,
+        systemd_dir=cfg.systemd_dir,
+        runner=cfg.runner,
         mode=mode,
         service_arg=args.service,
         services=services,
@@ -251,19 +256,19 @@ def cmd_install(args):
 
 def cmd_uninstall(args):
     """Remove quadlet links from systemd directory."""
-    services = resolve_services(args.service, PROJECT_DIR, include_disabled=True)
+    cfg = get_config()
+    services = resolve_services(args.service, cfg.project_dir, include_disabled=True)
 
-    # Stop services first
     if not args.keep_running:
         print(color("Stopping services...", Colors.YELLOW))
-        sm = ServiceManager(RUNNER, SERVICES)
+        sm = ServiceManager(cfg.runner, SERVICES)
         sm.stop("all")
 
     print()
     print(color("Removing links...", Colors.CYAN))
 
     for svc in services:
-        target = SYSTEMD_QUADLETS_DIR / svc.file
+        target = cfg.systemd_dir / svc.file
 
         if target.is_symlink() or target.exists():
             target.unlink()
@@ -273,25 +278,22 @@ def cmd_uninstall(args):
 
     print()
 
-    # Remove Podman secrets using SecretManager
     print(color("Removing Podman secrets...", Colors.CYAN))
     from vispctl.secrets import SecretManager
 
-    sm = SecretManager(RUNNER)
+    sm = SecretManager(cfg.runner)
     visp_secrets = sm.list_secrets()
     if visp_secrets:
         sm.remove_secrets(visp_secrets)
     else:
         print("  No VISP secrets found")
 
-    # Optionally remove Podman networks
     if getattr(args, "remove_networks", False):
         print()
         print(color("Removing Podman networks...", Colors.CYAN))
-        # systemd prefixes network unit names with "systemd-" at runtime
         visp_networks = [f"systemd-{svc.name}" for svc in NETWORK_SERVICES]
         for net_name in visp_networks:
-            rc, _, stderr = RUNNER.run_quiet(["podman", "network", "rm", net_name])
+            rc, _, stderr = cfg.runner.run_quiet(["podman", "network", "rm", net_name])
             if rc == 0:
                 print(color(f"  ✓ {net_name}: removed", Colors.GREEN))
             elif "no such network" in stderr.lower() or "not found" in stderr.lower():
@@ -306,8 +308,9 @@ def cmd_uninstall(args):
 
 def cmd_reload(args):  # noqa: ARG001
     """Reload systemd daemon to pick up quadlet changes."""
+    cfg = get_config()
     print("Reloading systemd daemon...")
-    result = RUNNER.systemctl("daemon-reload")
+    result = cfg.runner.systemctl("daemon-reload")
     if result.returncode == 0:
         print(color("Done. Quadlet changes are now active.", Colors.GREEN))
     else:
@@ -315,13 +318,14 @@ def cmd_reload(args):  # noqa: ARG001
 
 
 def cmd_apply(args):
+    cfg = get_config()
     _cmd_apply(
         args,
-        project_dir=PROJECT_DIR,
-        systemd_dir=SYSTEMD_QUADLETS_DIR,
-        runner=RUNNER,
-        build_configs=BUILD_CONFIGS,
-        network_services=NETWORK_SERVICES,
+        project_dir=cfg.project_dir,
+        systemd_dir=cfg.systemd_dir,
+        runner=cfg.runner,
+        build_configs=cfg.build_configs,
+        network_services=cfg.network_services,
     )
 
 
@@ -358,15 +362,14 @@ def cmd_mode(args):
 
 def cmd_exec(args):
     """Execute command in container."""
-    container = args.container
-    RUNNER.run(["podman", "exec", "-it", container, *args.exec_command], check=False)
+    cfg = get_config()
+    cfg.runner.run(["podman", "exec", "-it", args.container, *args.exec_command], check=False)
 
 
 def cmd_shell(args):
     """Open shell in container."""
-    container = args.container
-    shell = args.shell or "/bin/bash"
-    RUNNER.run(["podman", "exec", "-it", container, shell], check=False)
+    cfg = get_config()
+    cfg.runner.run(["podman", "exec", "-it", args.container, args.shell or "/bin/bash"], check=False)
 
 
 def cmd_cleanup_containers(args):
@@ -404,17 +407,19 @@ def cmd_session_doctor(args):
 
 
 def cmd_build(args):
+    cfg = get_config()
     _cmd_build(
         args,
-        runner=RUNNER,
-        build_configs=BUILD_CONFIGS,
-        node_configs=NODE_BUILD_CONFIGS,
-        all_buildable=ALL_BUILDABLE,
+        runner=cfg.runner,
+        build_configs=cfg.build_configs,
+        node_configs=cfg.node_configs,
+        all_buildable=cfg.all_buildable,
     )
 
 
 def cmd_build_list(args):  # noqa: ARG001
-    _cmd_build_list(args, build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
+    cfg = get_config()
+    _cmd_build_list(args, build_configs=cfg.build_configs, node_configs=cfg.node_configs)
 
 
 # === Debug Commands ===
@@ -448,7 +453,8 @@ def cmd_debug(args):
 
 
 def cmd_network(args):
-    _cmd_network(args, runner=RUNNER)
+    cfg = get_config()
+    _cmd_network(args, runner=cfg.runner)
 
 
 def cmd_images(args):
@@ -456,14 +462,16 @@ def cmd_images(args):
     if hasattr(args, "subcommand") and args.subcommand == "base":
         return cmd_images_base(args)
 
-    im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
+    cfg = get_config()
+    im = ImageManager(cfg.runner, cfg.build_configs, cfg.network_services)
     im.display_visp_images()
     im.display_network_info()
 
 
 def cmd_images_base(args):  # noqa: ARG001
     """List all base images used in Dockerfiles."""
-    im = ImageManager(RUNNER, BUILD_CONFIGS, NETWORK_SERVICES)
+    cfg = get_config()
+    im = ImageManager(cfg.runner, cfg.build_configs, cfg.network_services)
     im.display_base_images()
 
 
@@ -474,7 +482,8 @@ def cmd_deploy_status(args):
     """Show repository status and version drift."""
     from vispctl.deploy import DeployManager
 
-    dm = DeployManager(runner=RUNNER)
+    cfg = get_config()
+    dm = DeployManager(runner=cfg.runner)
     all_clean = dm.check_status(fetch=not getattr(args, "no_fetch", False))
 
     if getattr(args, "strict", False) and not all_clean:
@@ -535,7 +544,8 @@ def cmd_deploy_update(args):
 
 
 def cmd_fix_permissions(args):
-    _cmd_fix_permissions(args, project_dir=PROJECT_DIR, runner=RUNNER)
+    cfg = get_config()
+    _cmd_fix_permissions(args, project_dir=cfg.project_dir, runner=cfg.runner)
 
 
 # === User Management Commands ===
@@ -587,7 +597,8 @@ def cmd_backup(args):
     """Backup MongoDB database to timestamped tar.gz file."""
     from vispctl.backup import BackupManager
 
-    bm = BackupManager(RUNNER)
+    cfg = get_config()
+    bm = BackupManager(cfg.runner)
     out = bm.backup(output=getattr(args, "output", None), dry_run=getattr(args, "dry_run", False))
     if out is None:
         sys.exit(1)
@@ -598,7 +609,8 @@ def cmd_restore(args):
     """Restore MongoDB database from backup file."""
     from vispctl.backup import BackupManager
 
-    bm = BackupManager(RUNNER)
+    cfg = get_config()
+    bm = BackupManager(cfg.runner)
     ok = bm.restore(Path(args.backup_file), force=getattr(args, "force", False))
     if not ok:
         sys.exit(1)
@@ -616,6 +628,15 @@ def _check_systemd_user_bus() -> None:
 
 def main():
     _check_systemd_user_bus()
+
+    runner = Runner()
+    init_config(
+        runner=runner,
+        build_configs=BUILD_CONFIGS,
+        node_configs=NODE_BUILD_CONFIGS,
+        all_buildable=ALL_BUILDABLE,
+        network_services=NETWORK_SERVICES,
+    )
 
     parser = argparse.ArgumentParser(
         description="VISP Control - Unified management tool for VISP Podman deployment",

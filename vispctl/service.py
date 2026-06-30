@@ -56,10 +56,11 @@ def get_disabled_optional_services(project_dir: Path | None = None) -> dict[str,
     """Return {service_name: env_var} for optional services that are disabled in .env."""
     from pathlib import Path
 
+    from .config import get_config
     from .runner import load_env_vars, parse_env_bool
 
     if project_dir is None:
-        project_dir = Path(__file__).parent.parent
+        project_dir = get_config().project_dir
     env_vars = load_env_vars(Path(project_dir) / ".env")
     return {
         svc: var
@@ -79,10 +80,11 @@ def get_runtime_services(
     """
     from pathlib import Path
 
+    from .config import get_config
     from .quadlets import get_current_mode
 
     if project_dir is None:
-        project_dir = Path(__file__).parent.parent
+        project_dir = get_config().project_dir
     mode = get_current_mode()
     services = [s for s in DEFAULT_SERVICES if not (s.dev_only and mode != "dev")]
     if include_disabled:
@@ -99,10 +101,11 @@ def resolve_services(
     """Resolve 'all' / service name → list[Service], raising on error."""
     from pathlib import Path
 
+    from .config import get_config
     from .exceptions import ServiceError
 
     if project_dir is None:
-        project_dir = Path(__file__).parent.parent
+        project_dir = get_config().project_dir
     available = get_runtime_services(Path(project_dir), include_disabled=include_disabled)
 
     if service_arg == "all":
@@ -122,6 +125,4 @@ def resolve_services(
                 f"Enable it by setting {env_var}=true in .env"
             )
 
-    raise ServiceError(
-        f"Unknown service: {service_arg}. Available: {', '.join(s.name for s in available)}"
-    )
+    raise ServiceError(f"Unknown service: {service_arg}. Available: {', '.join(s.name for s in available)}")

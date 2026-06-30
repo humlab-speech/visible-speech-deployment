@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
+from .config import get_config
 from .env import load_all_env as _load_all_env
 from .env import load_env_file
 from .runner import Runner
@@ -13,7 +14,7 @@ from .runner import Runner
 class SecretManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
         self.runner = runner
-        self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
+        self.project_dir = Path(project_dir) if project_dir else get_config().project_dir
 
     def load_env(self, env_file_path: Path) -> Dict[str, str]:
         return load_env_file(env_file_path)
