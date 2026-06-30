@@ -637,10 +637,9 @@ def cmd_build(
     runner=None,
     build_configs=None,
     node_configs=None,
-    all_buildable=None,
+    all_buildable: list[str] | None = None,
 ) -> None:
     """Build container images and node projects."""
-    from .runner import Colors, color
 
     if getattr(args, "list", False):
         cmd_build_list(args, build_configs=build_configs, node_configs=node_configs)
@@ -727,9 +726,8 @@ def cmd_build(
         )
 
 
-def cmd_build_list(args, build_configs=None, node_configs=None):  # noqa: ARG001
+def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa: ARG001
     """List buildable services."""
-    from .runner import Colors, color
 
     print(color("=== Buildable Container Images ===", Colors.CYAN))
     print()

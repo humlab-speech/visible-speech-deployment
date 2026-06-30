@@ -138,7 +138,7 @@ def cmd_apply(
     from .service_manager import ServiceManager
 
     if project_dir is None:
-        project_dir = Path(__file__).parent.parent
+        project_dir = _PROJECT_DIR
     if systemd_dir is None:
         systemd_dir = Path.home() / ".config/containers/systemd"
 

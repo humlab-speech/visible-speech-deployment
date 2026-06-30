@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Tuple
 
@@ -72,10 +74,6 @@ def parse_env_bool(value: str | None, default: bool = True) -> bool:
 
 def check_systemd_user_bus() -> None:
     """Warn early if the systemd user bus is unavailable."""
-    import os
-    import sys
-    from pathlib import Path
-
     xdg = os.environ.get("XDG_RUNTIME_DIR", "")
     uid = os.getuid()
     expected = f"/run/user/{uid}"

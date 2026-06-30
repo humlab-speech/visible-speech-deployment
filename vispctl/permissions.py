@@ -19,7 +19,7 @@ _PROJECT_DIR = Path(__file__).parent.parent
 class PermissionsManager:
     def __init__(self, runner: Runner, project_dir: Path | None = None):
         self.runner = runner
-        self.project_dir = Path(project_dir) if project_dir else Path(__file__).parent.parent
+        self.project_dir = Path(project_dir) if project_dir else _PROJECT_DIR
 
     def _resolve_target(self, uid: int | None, gid: int | None, host_owner: bool) -> str:
         if host_owner:
@@ -119,8 +119,6 @@ class PermissionsManager:
 
 def cmd_fix_permissions(args, project_dir: Path | None = None, runner: Runner | None = None) -> None:
     """Fix file ownership and permissions using 'podman unshare'."""
-    from .permissions import PermissionsManager
-
     if project_dir is None:
         project_dir = _PROJECT_DIR
     if runner is None:

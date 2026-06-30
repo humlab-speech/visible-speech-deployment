@@ -60,9 +60,8 @@ from vispctl.cleanup_containers import cleanup_containers
 from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
+from vispctl.network import cmd_network as _cmd_network
 from vispctl.permissions import cmd_fix_permissions as _cmd_fix_permissions
-
-# Use the new modular managers where appropriate
 from vispctl.quadlets import (
     cmd_apply as _cmd_apply,
 )
@@ -449,8 +448,6 @@ def cmd_debug(args):
 
 
 def cmd_network(args):
-    from vispctl.network import cmd_network as _cmd_network
-
     _cmd_network(args, runner=RUNNER)
 
 
