@@ -214,7 +214,7 @@ def cmd_restart(args):
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
         print(color("Stopping services...", Colors.YELLOW))
-        names = _resolve_service_names(args, cfg, include_disabled=True)
+        names = _resolve_service_names(args, cfg, filter_containers=True, include_disabled=True)
         sm.stop(names)
         print()
         print(color("Starting services...", Colors.GREEN))
@@ -262,8 +262,9 @@ def cmd_uninstall(args):
 
     if not args.keep_running:
         print(color("Stopping services...", Colors.YELLOW))
-        sm = ServiceManager(cfg.runner, SERVICES)
-        sm.stop("all")
+        sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
+        names = [svc.name for svc in services]
+        sm.stop(names)
 
     print()
     print(color("Removing links...", Colors.CYAN))
