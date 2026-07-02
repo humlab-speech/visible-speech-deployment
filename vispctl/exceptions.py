@@ -10,6 +10,7 @@ __all__ = [
     "DeployError",
     "InstallationError",
     "MongoError",
+    "NetworkError",
     "ServiceError",
     "UserError",
     "VispError",
@@ -46,3 +47,7 @@ class DeployError(VispError):
 
 class InstallationError(VispError):
     """Install-phase failure (netavark, networks, quadlets)."""
+
+
+class NetworkError(VispError):
+    """Podman network ensure or configuration failure."""

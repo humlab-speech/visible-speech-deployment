@@ -1,19 +1,6 @@
-import importlib.util
 import types
-from pathlib import Path
 
-
-def load_visp_module():
-    import sys
-
-    proj = str(Path.cwd())
-    if proj not in sys.path:
-        sys.path.insert(0, proj)
-
-    spec = importlib.util.spec_from_file_location("vp", str(Path.cwd() / "visp.py"))
-    vp = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(vp)
-    return vp
+import vispctl.network as net_mod
 
 
 class FakeNM:
@@ -30,13 +17,12 @@ class FakeNM:
 
 
 def test_cmd_network_ensure_invokes_manager(monkeypatch, capsys):
-    vp = load_visp_module()
-
-    # Monkeypatch NetworkManager to our fake
-    monkeypatch.setattr(vp, "NetworkManager", FakeNM)
+    runner = type("FakeRunner", (), {})()
+    monkeypatch.setattr(net_mod, "NetworkManager", FakeNM)
+    monkeypatch.setattr(net_mod, "Runner", lambda: runner)
 
     args = types.SimpleNamespace(action="ensure")
-    vp.cmd_network(args)
+    net_mod.cmd_network(args, runner=runner)
 
     out = capsys.readouterr().out
     assert "Ensuring required Podman networks exist" in out
@@ -44,8 +30,6 @@ def test_cmd_network_ensure_invokes_manager(monkeypatch, capsys):
 
 
 def test_cmd_network_status_prints_backend(monkeypatch, capsys):
-    vp = load_visp_module()
-
     class FakeNM2:
         def __init__(self, runner):
             pass
@@ -53,10 +37,12 @@ def test_cmd_network_status_prints_backend(monkeypatch, capsys):
         def check_netavark(self):
             return (False, "cni")
 
-    monkeypatch.setattr(vp, "NetworkManager", FakeNM2)
+    runner = type("FakeRunner", (), {})()
+    monkeypatch.setattr(net_mod, "NetworkManager", FakeNM2)
+    monkeypatch.setattr(net_mod, "Runner", lambda: runner)
 
     args = types.SimpleNamespace(action=None)
-    vp.cmd_network(args)
+    net_mod.cmd_network(args, runner=runner)
 
     out = capsys.readouterr().out
     assert "Backend: cni" in out

@@ -93,6 +93,33 @@ def _container_services(services: list[Service]) -> list[Service]:
     return [s for s in services if s.type == "container"]
 
 
+def _resolve_service_names(
+    args: argparse.Namespace,
+    cfg: object,
+    filter_containers: bool = False,
+    include_disabled: bool = False,
+) -> list[str]:
+    """Resolve args.services to a list of service names.
+
+    When args.services is empty or ['all'], resolves all services.
+    Otherwise, resolves each named service individually.
+    """
+    services = args.services
+    if not services or services == ["all"]:
+        resolved = resolve_services("all", cfg.project_dir, include_disabled=include_disabled)
+        if filter_containers:
+            resolved = _container_services(resolved)
+        return [svc.name for svc in resolved]
+    else:
+        names: list[str] = []
+        for s in services:
+            resolved = resolve_services(s, cfg.project_dir, include_disabled=include_disabled)
+            if filter_containers:
+                resolved = _container_services(resolved)
+            names.extend(svc.name for svc in resolved)
+        return names
+
+
 # === Status Commands ===
 
 
@@ -149,80 +176,56 @@ def cmd_start(args):
     """Start service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    services = args.services
-    if not services or services == ["all"]:
-        target_names = [svc.name for svc in _container_services(resolve_services("all", cfg.project_dir))]
-        sm.start(target_names)
-    else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, cfg.project_dir)]
-        sm.start(target_names)
+    names = _resolve_service_names(args, cfg, filter_containers=True)
+    sm.start(names)
 
 
 def cmd_stop(args):
     """Stop service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    services = args.services
-    if not services or services == ["all"]:
+    if not args.services or args.services == ["all"]:
         sm.stop("all")
     else:
-        target_names = [
-            svc.name for s in services for svc in resolve_services(s, cfg.project_dir, include_disabled=True)
-        ]
-        sm.stop(target_names)
+        names = _resolve_service_names(args, cfg, include_disabled=True)
+        sm.stop(names)
 
 
 def cmd_up(args):
     """Enable and start service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    services = args.services
-    if not services or services == ["all"]:
-        target_names = [svc.name for svc in _container_services(resolve_services("all", cfg.project_dir))]
-    else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, cfg.project_dir)]
-
-    sm.enable(target_names)
-    sm.start(target_names)
+    names = _resolve_service_names(args, cfg, filter_containers=True)
+    sm.enable(names)
+    sm.start(names)
 
 
 def cmd_down(args):
     """Stop and disable service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    services = args.services
-    if not services or services == ["all"]:
-        target_names = [
-            svc.name for svc in _container_services(resolve_services("all", cfg.project_dir, include_disabled=True))
-        ]
-    else:
-        target_names = [
-            svc.name for s in services for svc in resolve_services(s, cfg.project_dir, include_disabled=True)
-        ]
-
-    sm.stop(target_names)
-    sm.disable(target_names)
+    names = _resolve_service_names(args, cfg, filter_containers=True, include_disabled=True)
+    sm.stop(names)
+    sm.disable(names)
 
 
 def cmd_restart(args):
     """Restart service(s) or entire cluster."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    services = args.services
-
-    if not services or services == ["all"]:
+    if not args.services or args.services == ["all"]:
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
         print(color("Stopping services...", Colors.YELLOW))
         sm.stop("all")
         print()
         print(color("Starting services...", Colors.GREEN))
-        target_names = [svc.name for svc in _container_services(resolve_services("all", cfg.project_dir))]
-        sm.start(target_names)
+        names = _resolve_service_names(args, cfg, filter_containers=True)
+        sm.start(names)
     else:
-        target_names = [svc.name for s in services for svc in resolve_services(s, cfg.project_dir)]
-        sm.stop(target_names)
-        sm.start(target_names)
+        names = _resolve_service_names(args, cfg)
+        sm.stop(names)
+        sm.start(names)
 
 
 # === Network Backend Management ===

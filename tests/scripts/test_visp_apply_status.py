@@ -100,9 +100,12 @@ def test_cmd_apply_nothing_to_do(tmp_path, monkeypatch, capsys):
 
 
 def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
-    vp = load_visp_module()
-    monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
-
+    import vispctl.images as img_mod
+    import vispctl.service as svc_mod
+    import vispctl.service_manager as sm_mod
+    from vispctl import quadlets as q_mod
+    from vispctl.build import BUILD_CONFIGS, NODE_BUILD_CONFIGS
+    from vispctl.config import init_config
     from vispctl.service import Service
 
     drifted_svc = Service("mongo", "container", "mongo.container")
@@ -110,17 +113,14 @@ def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
     quad_dir = tmp_path / "quadlets" / "dev"
     quad_dir.mkdir(parents=True)
     (quad_dir / "mongo.container").write_text("new content")
-    monkeypatch.setattr(vp, "get_quadlets_dir", lambda m=None: quad_dir)
+    monkeypatch.setattr(q_mod, "get_quadlets_dir", lambda m=None: quad_dir)
     (tmp_path / "systemd").mkdir(exist_ok=True)
 
-    from vispctl import quadlets as q_mod
-
+    monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(q_mod, "get_quadlet_drift", lambda *a, **kw: ([drifted_svc], []))
-
-    import vispctl.service as svc_mod
-
+    monkeypatch.setattr(q_mod, "render_quadlet_template", lambda t: t)
     monkeypatch.setattr(svc_mod, "resolve_services", lambda s, *a, **kw: [drifted_svc])
-    monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
+    monkeypatch.setattr(svc_mod, "get_runtime_services", lambda *a, **kw: [drifted_svc])
 
     restarted = {}
 
@@ -134,23 +134,32 @@ def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
         def start(self, names):
             restarted["start"] = names
 
-    monkeypatch.setattr(vp, "ServiceManager", FakeSM)
+    monkeypatch.setattr(sm_mod, "ServiceManager", FakeSM)
+    monkeypatch.setattr(
+        img_mod, "ImageManager", lambda *a, **kw: type("FakeIM", (), {"get_stale_containers": lambda self, s: []})()
+    )
 
-    runner = vp.Runner()
-    runner._run = lambda *a, **kw: None
-    vp.init_config(
+    runner = type(
+        "FakeRunner", (), {"systemctl": lambda self, *a, **kw: types.SimpleNamespace(returncode=0, stderr="")}
+    )()
+    init_config(
         runner=runner,
         systemd_dir=tmp_path / "systemd",
         project_dir=tmp_path,
-        build_configs=vp.BUILD_CONFIGS,
-        node_configs=vp.NODE_BUILD_CONFIGS,
-        all_buildable=vp.ALL_BUILDABLE,
-        network_services=vp.NETWORK_SERVICES,
+        build_configs=BUILD_CONFIGS,
+        node_configs=NODE_BUILD_CONFIGS,
+        network_services=[],
     )
-    monkeypatch.setattr(runner, "systemctl", lambda *a, **kw: types.SimpleNamespace(returncode=0, stderr=""))
 
     args = types.SimpleNamespace(service="all")
-    vp.cmd_apply(args)
+    q_mod.cmd_apply(
+        args,
+        project_dir=tmp_path,
+        systemd_dir=tmp_path / "systemd",
+        runner=runner,
+        build_configs=BUILD_CONFIGS,
+        network_services=[],
+    )
 
     out = capsys.readouterr().out
     assert "mongo.container" in out

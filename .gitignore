@@ -55,6 +55,7 @@ mounts/session-manager
 restart-wsrng-server.sh
 run_git_clone_in_container.sh
 .vscode
+.kilo
 visp-server
 mounts/repositories
 docker/artic/arctic

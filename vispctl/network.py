@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Tuple
 
+from .exceptions import NetworkError
 from .runner import Colors, Runner, color
 
 
@@ -177,9 +178,7 @@ def cmd_network(args, runner: Runner | None = None) -> None:
             print(color("  Networks ensured", Colors.GREEN))
         else:
             print(color("  Failed to ensure networks", Colors.RED))
-            import sys
-
-            sys.exit(1)
+            raise NetworkError("Failed to ensure required Podman networks")
         return
 
     print(color("=== Network Backend ===", Colors.CYAN))

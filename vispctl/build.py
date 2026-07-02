@@ -10,9 +10,37 @@ from pathlib import Path
 from typing import Any, Dict
 
 from .config import get_config
+from .exceptions import BuildError
 from .runner import Colors, Runner, color
 
 NODE_BUILD_MARKER = ".build-marker"
+
+# Whitelist of valid Angular build configurations for --config CLI argument.
+# Used to prevent command injection when the config is interpolated into build_cmd.
+VALID_BUILD_CONFIGS: set[str] = {
+    "visp",
+    "visp-demo",
+    "visp-pdf-server",
+    "datalab",
+    "visp-local",
+    "visp.dev",
+    "production",
+    "development",
+}
+
+
+def validate_build_config(build_config: str | None) -> str | None:
+    """Validate a build configuration name against the whitelist.
+
+    Raises BuildError if the config is not in the allowed set.
+    """
+    if build_config is None:
+        return None
+    if build_config not in VALID_BUILD_CONFIGS:
+        raise BuildError(
+            f"Invalid build config: {build_config!r}. " f"Allowed values: {', '.join(sorted(VALID_BUILD_CONFIGS))}"
+        )
+    return build_config
 
 
 class BuildManager:
@@ -320,6 +348,7 @@ class BuildManager:
         build_cmd_template = config.get("build_cmd", "npm run build")
         if "{config}" in build_cmd_template:
             cfg = build_config or config.get("default_config", "production")
+            validate_build_config(cfg)
             build_cmd = build_cmd_template.format(config=cfg)
         else:
             build_cmd = build_cmd_template

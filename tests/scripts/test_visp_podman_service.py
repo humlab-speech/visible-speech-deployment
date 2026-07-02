@@ -177,40 +177,36 @@ def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
     assert "whisperx" not in start_targets
 
 
-def test_resolve_services_reports_disabled_optional_service(monkeypatch, capsys):
+def test_resolve_services_reports_disabled_optional_service(monkeypatch):
     import vispctl.quadlets as q_mod
     import vispctl.runner as r_mod
+    from vispctl.config import get_config, init_config
+    from vispctl.exceptions import ServiceError
 
-    vp = load_visp_module()  # noqa: F841
+    init_config()
     monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
 
     from vispctl.service import resolve_services
 
-    with pytest.raises(SystemExit):
-        resolve_services("whisperx", vp.get_config().project_dir)
-
-    out = capsys.readouterr().out
-    assert "disabled" in out
-    assert "WHISPERX_ENABLED=true" in out
+    with pytest.raises(ServiceError, match="WHISPERX_ENABLED=true"):
+        resolve_services("whisperx", get_config().project_dir)
 
 
-def test_resolve_services_reports_disabled_local_idp(monkeypatch, capsys):
+def test_resolve_services_reports_disabled_local_idp(monkeypatch):
     import vispctl.quadlets as q_mod
     import vispctl.runner as r_mod
+    from vispctl.config import get_config, init_config
+    from vispctl.exceptions import ServiceError
 
-    vp = load_visp_module()
+    init_config()
     monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"LOCAL_IDP_ENABLED": "false"})
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
 
     from vispctl.service import resolve_services
 
-    with pytest.raises(SystemExit):
-        resolve_services("local-idp", vp.get_config().project_dir)
-
-    out = capsys.readouterr().out
-    assert "disabled" in out
-    assert "LOCAL_IDP_ENABLED=true" in out
+    with pytest.raises(ServiceError, match="LOCAL_IDP_ENABLED=true"):
+        resolve_services("local-idp", get_config().project_dir)
 
 
 def test_get_runtime_services_includes_mongo_express_in_dev(monkeypatch):

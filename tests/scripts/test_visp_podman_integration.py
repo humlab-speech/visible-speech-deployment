@@ -1,17 +1,9 @@
-import importlib.util
 import types
-from pathlib import Path
 
-
-def load_visp_module():
-    spec = importlib.util.spec_from_file_location("vp", str(Path.cwd() / "visp.py"))
-    vp = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(vp)
-    return vp
+import vispctl.build as build_mod
 
 
 def test_cmd_build_delegates_to_buildmanager(monkeypatch):
-    vp = load_visp_module()
     called = {}
 
     class FakeBM:
@@ -46,17 +38,32 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
             called.setdefault("prepared", []).append(svc_name)
             return True
 
-    # Monkeypatch BuildManager in the loaded module
-    monkeypatch.setattr(vp, "BuildManager", FakeBM)
+    runner = type("FakeRunner", (), {})()
+    monkeypatch.setattr(build_mod, "BuildManager", FakeBM)
+    monkeypatch.setattr(build_mod, "Runner", lambda: runner)
+
+    all_buildable = list(build_mod.BUILD_CONFIGS.keys()) + list(build_mod.NODE_BUILD_CONFIGS.keys())
 
     # Test node target (single service)
     args = types.SimpleNamespace(
         services=["container-agent"], list=False, no_cache=False, pull=False, config=None, force=True
     )
-    vp.cmd_build(args)
+    build_mod.cmd_build(
+        args,
+        runner=runner,
+        build_configs=build_mod.BUILD_CONFIGS,
+        node_configs=build_mod.NODE_BUILD_CONFIGS,
+        all_buildable=all_buildable,
+    )
     assert called.get("node")[0] == "container-agent"
 
     # Test image build path (single service)
     args2 = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True)
-    vp.cmd_build(args2)
+    build_mod.cmd_build(
+        args2,
+        runner=runner,
+        build_configs=build_mod.BUILD_CONFIGS,
+        node_configs=build_mod.NODE_BUILD_CONFIGS,
+        all_buildable=all_buildable,
+    )
     assert "apache" in called.get("images", [])
