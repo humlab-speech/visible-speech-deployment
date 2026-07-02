@@ -184,11 +184,8 @@ def cmd_stop(args):
     """Stop service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    if not args.services or args.services == ["all"]:
-        sm.stop("all")
-    else:
-        names = _resolve_service_names(args, cfg, include_disabled=True)
-        sm.stop(names)
+    names = _resolve_service_names(args, cfg, include_disabled=True)
+    sm.stop(names)
 
 
 def cmd_up(args):
@@ -217,11 +214,12 @@ def cmd_restart(args):
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
         print(color("Stopping services...", Colors.YELLOW))
-        sm.stop("all")
+        names = _resolve_service_names(args, cfg, include_disabled=True)
+        sm.stop(names)
         print()
         print(color("Starting services...", Colors.GREEN))
-        names = _resolve_service_names(args, cfg, filter_containers=True)
-        sm.start(names)
+        start_names = _resolve_service_names(args, cfg, filter_containers=True)
+        sm.start(start_names)
     else:
         names = _resolve_service_names(args, cfg)
         sm.stop(names)

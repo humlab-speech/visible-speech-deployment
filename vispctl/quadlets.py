@@ -11,7 +11,8 @@ import shutil
 from pathlib import Path
 
 from .config import get_config
-from .runner import Colors, color, load_env_vars
+from .env import load_env_file
+from .runner import Colors, color
 from .service import Service
 
 _DEFAULT_MODE = "dev"
@@ -27,7 +28,7 @@ def render_quadlet_template(content: str) -> str:
     project_dir = _get_project_dir()
     content = content.replace("@@PROJECT_DIR@@", str(project_dir))
     content = content.replace("@@UID@@", str(os.getuid()))
-    env_vars = load_env_vars(project_dir / ".env")
+    env_vars = load_env_file(project_dir / ".env")
     for key, value in env_vars.items():
         content = content.replace(f"@@{key}@@", value)
     return content

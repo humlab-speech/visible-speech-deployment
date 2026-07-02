@@ -16,7 +16,7 @@ def _init_config_for_test(tmp_path):
 
 def test_render_replaces_project_dir(tmp_path, monkeypatch):
     _init_config_for_test(tmp_path)
-    monkeypatch.setattr(q, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(q, "load_env_file", lambda _: {})
     result = q.render_quadlet_template("Volume=@@PROJECT_DIR@@/mounts/data:/data:Z")
     assert str(tmp_path) in result
     assert "@@PROJECT_DIR@@" not in result
@@ -24,7 +24,7 @@ def test_render_replaces_project_dir(tmp_path, monkeypatch):
 
 def test_render_replaces_uid(tmp_path, monkeypatch):
     _init_config_for_test(tmp_path)
-    monkeypatch.setattr(q, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(q, "load_env_file", lambda _: {})
     result = q.render_quadlet_template("User=@@UID@@")
     assert str(os.getuid()) in result
     assert "@@UID@@" not in result
@@ -32,7 +32,7 @@ def test_render_replaces_uid(tmp_path, monkeypatch):
 
 def test_render_replaces_env_vars(tmp_path, monkeypatch):
     _init_config_for_test(tmp_path)
-    monkeypatch.setattr(q, "load_env_vars", lambda _: {"BASE_DOMAIN": "visp.local"})
+    monkeypatch.setattr(q, "load_env_file", lambda _: {"BASE_DOMAIN": "visp.local"})
     result = q.render_quadlet_template("ServerName=@@BASE_DOMAIN@@")
     assert "visp.local" in result
     assert "@@BASE_DOMAIN@@" not in result
@@ -40,14 +40,14 @@ def test_render_replaces_env_vars(tmp_path, monkeypatch):
 
 def test_render_leaves_unknown_tokens_intact(tmp_path, monkeypatch):
     _init_config_for_test(tmp_path)
-    monkeypatch.setattr(q, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(q, "load_env_file", lambda _: {})
     result = q.render_quadlet_template("Foo=@@UNKNOWN@@")
     assert "@@UNKNOWN@@" in result
 
 
 def test_render_multiple_substitutions(tmp_path, monkeypatch):
     _init_config_for_test(tmp_path)
-    monkeypatch.setattr(q, "load_env_vars", lambda _: {"A": "alpha", "B": "beta"})
+    monkeypatch.setattr(q, "load_env_file", lambda _: {"A": "alpha", "B": "beta"})
     result = q.render_quadlet_template("x=@@A@@ y=@@B@@")
     assert "alpha" in result
     assert "beta" in result

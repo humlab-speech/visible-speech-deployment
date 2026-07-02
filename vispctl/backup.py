@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -77,6 +78,21 @@ class BackupManager:
             print(f"  Would run: podman cp mongo:{archive_in_container} {output_path}")
             return output_path
 
+        # Write password to temp file inside container (avoids CLI exposure)
+        b64_pwd = base64.b64encode(mongo_password.encode()).decode()
+        self.runner.run(
+            [
+                "podman",
+                "exec",
+                "-i",
+                "mongo",
+                "sh",
+                "-c",
+                f"echo '{b64_pwd}' | base64 -d > /tmp/.mongo_pwd",
+            ],
+            check=False,
+        )
+
         # Run mongodump inside container
         print("Running mongodump...")
         res = self.runner.run(
@@ -86,13 +102,17 @@ class BackupManager:
                 "mongo",
                 "mongodump",
                 "--username=root",
-                f"--password={mongo_password}",
+                "--passwordFile=/tmp/.mongo_pwd",
                 "--authenticationDatabase=admin",
                 f"--out={backup_dir}",
             ]
         )
         if res.returncode != 0:
             print(color("✗ Backup failed", Colors.RED))
+            self.runner.run(
+                ["podman", "exec", "mongo", "rm", "-f", "/tmp/.mongo_pwd"],
+                check=False,
+            )
             return None
 
         # Compress inside container
@@ -112,6 +132,10 @@ class BackupManager:
         )
         if res.returncode != 0:
             print(color("✗ Compression failed", Colors.RED))
+            self.runner.run(
+                ["podman", "exec", "mongo", "rm", "-f", "/tmp/.mongo_pwd"],
+                check=False,
+            )
             return None
 
         # Copy backup out of container
@@ -119,10 +143,25 @@ class BackupManager:
         res = self.runner.run(["podman", "cp", f"mongo:{archive_in_container}", str(output_path)])
         if res.returncode != 0:
             print(color("✗ Copy failed", Colors.RED))
+            self.runner.run(
+                ["podman", "exec", "mongo", "rm", "-f", "/tmp/.mongo_pwd"],
+                check=False,
+            )
             return None
 
         # Cleanup inside container
-        self.runner.run(["podman", "exec", "mongo", "rm", "-rf", backup_dir, archive_in_container])
+        self.runner.run(
+            [
+                "podman",
+                "exec",
+                "mongo",
+                "rm",
+                "-rf",
+                backup_dir,
+                archive_in_container,
+                "/tmp/.mongo_pwd",
+            ]
+        )
 
         # Verify file
         if output_path.exists():
@@ -203,6 +242,21 @@ class BackupManager:
             print(color("✗ MONGO_ROOT_PASSWORD not found", Colors.RED))
             return False
 
+        # Write password to temp file inside container (avoids CLI exposure)
+        b64_pwd = base64.b64encode(mongo_password.encode()).decode()
+        self.runner.run(
+            [
+                "podman",
+                "exec",
+                "-i",
+                "mongo",
+                "sh",
+                "-c",
+                f"echo '{b64_pwd}' | base64 -d > /tmp/.mongo_pwd",
+            ],
+            check=False,
+        )
+
         res = self.runner.run(
             [
                 "podman",
@@ -210,7 +264,7 @@ class BackupManager:
                 "mongo",
                 "mongorestore",
                 "--username=root",
-                f"--password={mongo_password}",
+                "--passwordFile=/tmp/.mongo_pwd",
                 "--authenticationDatabase=admin",
                 "--drop",
                 backup_dir,
@@ -218,7 +272,18 @@ class BackupManager:
         )
 
         # Cleanup
-        self.runner.run(["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz", backup_dir])
+        self.runner.run(
+            [
+                "podman",
+                "exec",
+                "mongo",
+                "rm",
+                "-rf",
+                "/tmp/restore.tar.gz",
+                backup_dir,
+                "/tmp/.mongo_pwd",
+            ]
+        )
 
         if res.returncode != 0:
             print(color("✗ Restore failed", Colors.RED))

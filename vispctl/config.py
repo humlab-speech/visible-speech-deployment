@@ -29,9 +29,13 @@ if TYPE_CHECKING:
 __all__ = ["VispConfig", "get_config", "init_config"]
 
 
-@dataclass(frozen=True)
+@dataclass
 class VispConfig:
-    """Immutable configuration for the VISP deployment tool.
+    """Configuration for the VISP deployment tool.
+
+    Logically immutable after init_config() is called, but structurally
+    mutable to allow dict and list fields (build_configs, node_configs,
+    all_buildable, network_services) to be populated at runtime.
 
     Attributes:
         project_dir: Root of the visible-speech-deployment repository.
@@ -50,6 +54,10 @@ class VispConfig:
     node_configs: dict[str, dict] = field(default_factory=dict)
     all_buildable: list[str] = field(default_factory=list)
     network_services: list["Service"] = field(default_factory=list)
+
+    def is_initialized(self) -> bool:
+        """Return True if the runner has been set."""
+        return self.runner is not None
 
 
 _config: VispConfig | None = None

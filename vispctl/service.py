@@ -57,11 +57,12 @@ def get_disabled_optional_services(project_dir: Path | None = None) -> dict[str,
     from pathlib import Path
 
     from .config import get_config
-    from .runner import load_env_vars, parse_env_bool
+    from .env import load_env_file
+    from .runner import parse_env_bool
 
     if project_dir is None:
         project_dir = get_config().project_dir
-    env_vars = load_env_vars(Path(project_dir) / ".env")
+    env_vars = load_env_file(Path(project_dir) / ".env")
     return {
         svc: var
         for svc, var in OPTIONAL_SERVICE_ENV_FLAGS.items()

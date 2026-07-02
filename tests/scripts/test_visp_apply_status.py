@@ -5,7 +5,7 @@ import sys
 import types
 from pathlib import Path
 
-import vispctl.runner as r_mod
+import vispctl.env as env_mod
 
 
 def load_visp_module():
@@ -37,7 +37,7 @@ def test_cmd_status_outputs_service_header(tmp_path, monkeypatch, capsys):
     (tmp_path / "systemd").mkdir(exist_ok=True)
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {})
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
 
@@ -65,7 +65,7 @@ def test_cmd_status_shows_disabled_optional_service(tmp_path, monkeypatch, capsy
     (tmp_path / "systemd").mkdir(exist_ok=True)
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {"WHISPERX_ENABLED": "false"})
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "render_quadlet_template", lambda t: t)
 
