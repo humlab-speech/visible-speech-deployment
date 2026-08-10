@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
 from .config import get_config
 from .runner import Colors, Runner, color
 from .secrets import SecretManager
+
+_MONGO_CONFIG_PATH = "/tmp/.visp_mongo_conf"
 
 
 class BackupManager:
@@ -35,6 +40,41 @@ class BackupManager:
         """Load MongoDB root password from secrets."""
         env = self.sm.load_all()
         return env.get("MONGO_ROOT_PASSWORD")
+
+    def _write_mongo_config(self, mongo_password: str, container_path: str) -> bool:
+        """Write a mongodump/mongorestore `--config` YAML file into the container.
+
+        The file holds only the password; all other options stay on the CLI. This
+        avoids exposing the password via the process command line (visible in `ps`).
+        """
+        payload = f"password: {json.dumps(mongo_password)}\n"
+        host_path = None
+        try:
+            with tempfile.NamedTemporaryFile("w", delete=False) as f:
+                host_path = f.name
+                f.write(payload)
+            os.chmod(host_path, 0o600)
+            res = self.runner.run(["podman", "cp", host_path, f"mongo:{container_path}"], check=False)
+            if res.returncode != 0:
+                return False
+            self.runner.run(
+                ["podman", "exec", "mongo", "chmod", "600", container_path],
+                check=False,
+            )
+            return True
+        finally:
+            if host_path:
+                try:
+                    os.unlink(host_path)
+                except OSError:
+                    pass
+
+    def _remove_mongo_config(self, container_path: str) -> None:
+        """Remove the temporary config file from the container."""
+        self.runner.run(
+            ["podman", "exec", "mongo", "rm", "-f", container_path],
+            check=False,
+        )
 
     def backup(self, output: Path | None = None, dry_run: bool = False) -> Path | None:
         """Perform a MongoDB backup and return the path to the created archive.
@@ -74,8 +114,8 @@ class BackupManager:
             )
             print(
                 f"  Would run: podman exec mongo mongodump "
-                f"--username=root --password=*** "
-                f"--authenticationDatabase=admin --out={backup_dir}"
+                f"--config={_MONGO_CONFIG_PATH} "
+                f"--username=root --authenticationDatabase=admin --out={backup_dir}"
             )
             print(f"  Would run: podman exec mongo tar -czf " f"{archive_in_container} -C /tmp {backup_name}")
             print(f"  Would run: podman cp mongo:{archive_in_container} {output_path}")
@@ -92,63 +132,70 @@ class BackupManager:
         output_path: Path,
     ) -> Path | None:
         """Core backup logic."""
-        # Run mongodump inside container
-        print("Running mongodump...")
-        res = self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "mongodump",
-                "--username=root",
-                f"--password={mongo_password}",
-                "--authenticationDatabase=admin",
-                f"--out={backup_dir}",
-            ]
-        )
-        if res.returncode != 0:
-            print(color("✗ Backup failed", Colors.RED))
+        if not self._write_mongo_config(mongo_password, _MONGO_CONFIG_PATH):
+            print(color("✗ Could not write mongodump config file", Colors.RED))
             return None
 
-        # Compress inside container
-        print("\nCompressing backup...")
-        res = self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "tar",
-                "-czf",
-                archive_in_container,
-                "-C",
-                "/tmp",
-                backup_name,
-            ]
-        )
-        if res.returncode != 0:
-            print(color("✗ Compression failed", Colors.RED))
-            return None
+        try:
+            # Run mongodump inside container
+            print("Running mongodump...")
+            res = self.runner.run(
+                [
+                    "podman",
+                    "exec",
+                    "mongo",
+                    "mongodump",
+                    f"--config={_MONGO_CONFIG_PATH}",
+                    "--username=root",
+                    "--authenticationDatabase=admin",
+                    f"--out={backup_dir}",
+                ]
+            )
+            if res.returncode != 0:
+                print(color("✗ Backup failed", Colors.RED))
+                return None
 
-        # Copy backup out of container
-        print(f"\nCopying to {output_path}...")
-        res = self.runner.run(["podman", "cp", f"mongo:{archive_in_container}", str(output_path)])
-        if res.returncode != 0:
-            print(color("✗ Copy failed", Colors.RED))
-            return None
+            # Compress inside container
+            print("\nCompressing backup...")
+            res = self.runner.run(
+                [
+                    "podman",
+                    "exec",
+                    "mongo",
+                    "tar",
+                    "-czf",
+                    archive_in_container,
+                    "-C",
+                    "/tmp",
+                    backup_name,
+                ]
+            )
+            if res.returncode != 0:
+                print(color("✗ Compression failed", Colors.RED))
+                return None
 
-        # Cleanup inside container
-        self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "rm",
-                "-rf",
-                backup_dir,
-                archive_in_container,
-            ],
-            check=False,
-        )
+            # Copy backup out of container
+            print(f"\nCopying to {output_path}...")
+            res = self.runner.run(["podman", "cp", f"mongo:{archive_in_container}", str(output_path)])
+            if res.returncode != 0:
+                print(color("✗ Copy failed", Colors.RED))
+                return None
+
+            # Cleanup inside container
+            self.runner.run(
+                [
+                    "podman",
+                    "exec",
+                    "mongo",
+                    "rm",
+                    "-rf",
+                    backup_dir,
+                    archive_in_container,
+                ],
+                check=False,
+            )
+        finally:
+            self._remove_mongo_config(_MONGO_CONFIG_PATH)
 
         # Verify file
         if output_path.exists():
@@ -231,19 +278,26 @@ class BackupManager:
             print(color("✗ MONGO_ROOT_PASSWORD not found", Colors.RED))
             return False
 
-        res = self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "mongorestore",
-                "--username=root",
-                f"--password={mongo_password}",
-                "--authenticationDatabase=admin",
-                "--drop",
-                backup_dir,
-            ]
-        )
+        if not self._write_mongo_config(mongo_password, _MONGO_CONFIG_PATH):
+            print(color("✗ Could not write mongorestore config file", Colors.RED))
+            return False
+
+        try:
+            res = self.runner.run(
+                [
+                    "podman",
+                    "exec",
+                    "mongo",
+                    "mongorestore",
+                    f"--config={_MONGO_CONFIG_PATH}",
+                    "--username=root",
+                    "--authenticationDatabase=admin",
+                    "--drop",
+                    backup_dir,
+                ]
+            )
+        finally:
+            self._remove_mongo_config(_MONGO_CONFIG_PATH)
 
         # Cleanup
         self.runner.run(
