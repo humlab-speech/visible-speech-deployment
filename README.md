@@ -60,9 +60,16 @@ nano .env  # Optional: adjust BASE_DOMAIN, ADMIN_EMAIL, optional services, etc.
 |---------|-------------|------------|
 | `DEVELOPMENT_MODE` | `true` | `false` |
 | Source code | Mounted for hot-reload | Baked into images |
+| session-manager | nodemon restarts on `src/` edits | `node src/index.js`, rebuild to change |
 | `LOG_LEVEL` | `debug` | `info` |
 
 Switch modes with `./visp.py install --mode <dev|prod> --force && ./visp.py reload`.
+
+In dev mode, editing `external/session-manager/src/` restarts the service in ~2s with no
+rebuild. Add dependencies with `./visp.py npm session-manager -- install <pkg>` (which runs
+npm inside the service image, not on the host) followed by
+`./visp.py restart session-manager`. Note that a reload drops in-memory session state, so
+running Jupyter sessions must be restarted — see AGENTS.md for the full caveats.
 
 ## Common `visp.py` Commands
 
@@ -85,6 +92,10 @@ Switch modes with `./visp.py install --mode <dev|prod> --force && ./visp.py relo
 ./visp.py build                      # Build everything
 ./visp.py build <target>             # e.g. apache, session-manager, webclient
 ./visp.py build <target> --no-cache  # Clean rebuild
+
+# Dependencies for dev source-mounted services (runs npm inside the service image)
+./visp.py npm session-manager -- install <pkg>
+./visp.py npm session-manager -- ci  # Restore node_modules from the lockfile
 
 # Database
 ./visp.py backup                     # Dump MongoDB → timestamped .tar.gz

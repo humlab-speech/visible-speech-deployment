@@ -1,4 +1,12 @@
-"""VISP user management — MongoDB user CRUD operations."""
+"""VISP user management — MongoDB user CRUD operations.
+
+VISP has two parallel role systems (see AGENTS.md). This module deals only with
+the *system* level: ``users.system_role`` is either ``sys_admin`` (super user,
+can reach the admin panel and create projects) or ``user`` (everyone else).
+
+Project-level roles live on ``projects.members[].role`` and are managed from the
+web UI by a project's admins, not from here.
+"""
 
 import json
 import sys
@@ -6,6 +14,15 @@ import sys
 from .mongo import mongosh_json
 
 COLLECTION = "users"
+
+SYSTEM_ROLE_SYS_ADMIN = "sys_admin"
+SYSTEM_ROLE_USER = "user"
+VALID_SYSTEM_ROLES = [SYSTEM_ROLE_SYS_ADMIN, SYSTEM_ROLE_USER]
+
+
+def _system_role(user: dict) -> str:
+    """Read a user's system role, failing closed on anything unrecognised."""
+    return SYSTEM_ROLE_SYS_ADMIN if user.get("system_role") == SYSTEM_ROLE_SYS_ADMIN else SYSTEM_ROLE_USER
 
 # ── Colour helpers ─────────────────────────────────────────────────────────────
 
@@ -28,26 +45,24 @@ def _color(text: str, c: str) -> str:
 def cmd_list(args) -> None:  # noqa: ARG001
     """List all users."""
     users = mongosh_json(
-        f"db.{COLLECTION}.find({{}}, {{username: 1, fullName: 1, email: 1, loginAllowed: 1, privileges: 1}}).toArray()"
+        f"db.{COLLECTION}.find({{}}, {{username: 1, fullName: 1, email: 1, loginAllowed: 1, system_role: 1}}).toArray()"
     )
 
     if not users:
         print("No users found.")
         return
 
-    print(_color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'Privileges'}", _C.CYAN))
+    print(_color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'System role'}", _C.CYAN))
     print("-" * 100)
 
     for user in users:
         username = user.get("username", "N/A")[:34]
         name = user.get("fullName", "N/A")[:24]
         active = _color("Yes", _C.GREEN) if user.get("loginAllowed") else _color("No", _C.RED)
+        role = _system_role(user)
+        role_str = _color(role, _C.YELLOW) if role == SYSTEM_ROLE_SYS_ADMIN else role
 
-        privs = user.get("privileges", {})
-        priv_list = [k for k, v in privs.items() if v]
-        priv_str = ", ".join(priv_list) if priv_list else "-"
-
-        print(f"{username:<35} {name:<25} {active:<17} {priv_str}")
+        print(f"{username:<35} {name:<25} {active:<17} {role_str}")
 
 
 def cmd_show(args) -> None:
@@ -66,15 +81,25 @@ def cmd_show(args) -> None:
     print(f"  {'EPPN:':<20} {user.get('eppn', 'N/A')}")
     login_status = _color("Yes", _C.GREEN) if user.get("loginAllowed") else _color("No", _C.RED)
     print(f"  {'Login Allowed:':<20} {login_status}")
+    role = _system_role(user)
+    role_str = _color(role, _C.YELLOW) if role == SYSTEM_ROLE_SYS_ADMIN else role
+    print(f"  {'System Role:':<20} {role_str}")
     print()
-    print(_color("  Privileges:", _C.YELLOW))
-    privs = user.get("privileges", {})
-    if privs:
-        for k, v in privs.items():
-            status = _color("✓", _C.GREEN) if v else _color("✗", _C.RED)
-            print(f"    {status} {k}")
+
+    memberships = mongosh_json(
+        f"db.projects.find({{'members.username': '{username}'}}, {{id: 1, name: 1, members: 1}}).toArray()"
+    ) or []
+    print(_color("  Project roles:", _C.YELLOW))
+    if memberships:
+        for project in memberships:
+            member = next(
+                (m for m in project.get("members", []) if m.get("username") == username),
+                {},
+            )
+            project_role = member.get("role") or "researcher"
+            print(f"    {project.get('name', project.get('id'))}: {project_role}")
     else:
-        print("    (none)")
+        print("    (not a member of any project)")
 
 
 def cmd_create(args) -> None:
@@ -96,10 +121,7 @@ def cmd_create(args) -> None:
         "eppn": email,
         "username": username,
         "loginAllowed": True,
-        "privileges": {
-            "createProjects": getattr(args, "can_create_projects", False),
-            "createInviteCodes": False,
-        },
+        "system_role": SYSTEM_ROLE_SYS_ADMIN if getattr(args, "sys_admin", False) else SYSTEM_ROLE_USER,
     }
 
     result = mongosh_json(f"db.{COLLECTION}.insertOne({json.dumps(user_doc)})")
@@ -107,7 +129,7 @@ def cmd_create(args) -> None:
     if result and result.get("acknowledged"):
         print(_color(f"Created user: {username}", _C.GREEN))
         print(f"  Email: {email}")
-        print(f"  Can create projects: {getattr(args, 'can_create_projects', False)}")
+        print(f"  System role: {user_doc['system_role']}")
     else:
         print(_color("Failed to create user", _C.RED))
 
@@ -138,50 +160,40 @@ def cmd_deactivate(args) -> None:
         print(f"User {username} was already inactive")
 
 
-def cmd_grant(args) -> None:
-    """Grant a privilege to user."""
+def cmd_set_system_role(args) -> None:
+    """Set a user's system role (sys_admin or user)."""
     username = args.username
-    privilege = args.privilege
+    role = args.role
 
-    valid_privs = ["createProjects", "createInviteCodes"]
-    if privilege not in valid_privs:
-        print(_color(f"Invalid privilege: {privilege}", _C.RED))
-        print(f"Valid privileges: {', '.join(valid_privs)}")
+    if role not in VALID_SYSTEM_ROLES:
+        print(_color(f"Invalid system role: {role}", _C.RED))
+        print(f"Valid system roles: {', '.join(VALID_SYSTEM_ROLES)}")
         sys.exit(1)
 
+    # Never leave the installation without a super user: demoting the last
+    # sys_admin would lock everyone out of the admin panel and project creation.
+    if role != SYSTEM_ROLE_SYS_ADMIN:
+        current = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{username}'}})")
+        if current and _system_role(current) == SYSTEM_ROLE_SYS_ADMIN:
+            remaining = mongosh_json(
+                f"db.{COLLECTION}.countDocuments({{system_role: '{SYSTEM_ROLE_SYS_ADMIN}', "
+                f"username: {{$ne: '{username}'}}}})"
+            )
+            if not remaining:
+                print(_color(f"{username} is the last sys_admin — promote another user first", _C.RED))
+                sys.exit(1)
+
     result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{'privileges.{privilege}': true}}}})"
+        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{system_role: '{role}'}}}})"
     )
 
     if not result or result.get("matchedCount", 0) == 0:
         print(_color(f"User not found: {username}", _C.RED))
-    elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Granted {privilege} to {username}", _C.GREEN))
-    else:
-        print(f"User {username} already has {privilege}")
-
-
-def cmd_revoke(args) -> None:
-    """Revoke a privilege from user."""
-    username = args.username
-    privilege = args.privilege
-
-    valid_privs = ["createProjects", "createInviteCodes"]
-    if privilege not in valid_privs:
-        print(_color(f"Invalid privilege: {privilege}", _C.RED))
-        print(f"Valid privileges: {', '.join(valid_privs)}")
         sys.exit(1)
-
-    result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{'privileges.{privilege}': false}}}})"
-    )
-
-    if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Revoked {privilege} from {username}", _C.YELLOW))
+        print(_color(f"Set system role of {username} to {role}", _C.GREEN))
     else:
-        print(f"User {username} didn't have {privilege}")
+        print(f"User {username} already has system role {role}")
 
 
 def cmd_delete(args) -> None:
@@ -226,8 +238,7 @@ COMMANDS: dict = {
     "enable": cmd_activate,
     "deactivate": cmd_deactivate,
     "disable": cmd_deactivate,
-    "grant": cmd_grant,
-    "revoke": cmd_revoke,
+    "set-system-role": cmd_set_system_role,
     "delete": cmd_delete,
     "rm": cmd_delete,
 }

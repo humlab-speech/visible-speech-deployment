@@ -18,6 +18,7 @@ Commands:
   build       Build container images (supports --no-cache, --pull)
   exec        Execute command in container
   shell       Open shell in container
+  npm         Run npm inside a service image (dev source-mounted services)
   backup      Backup MongoDB database to tar.gz
   restore     Restore MongoDB database from backup
 
@@ -34,6 +35,11 @@ Backup/Restore examples:
   ./visp.py backup -o /backups/db.tar.gz  # Backup to specific path
   ./visp.py restore backup.tar.gz         # Restore with confirmation
   ./visp.py restore backup.tar.gz --force # Restore without confirmation
+
+Dev hot-reload examples (session-manager source is bind-mounted in dev mode):
+  ./visp.py npm session-manager -- install foo   # Add a dependency (no image rebuild)
+  ./visp.py npm session-manager -- ci            # Restore node_modules from the lockfile
+  ./visp.py restart session-manager              # Required after dependency changes
 
 Mode examples:
   ./visp.py mode                          # Show current mode
@@ -52,6 +58,7 @@ from vispctl.cleanup_containers import cleanup_containers
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
 from vispctl.network import NetworkManager
+from vispctl.npm import NPM_SERVICES, run_npm
 
 # Use the new modular managers where appropriate
 from vispctl.quadlets import get_current_mode, get_quadlets_dir, render_quadlet_template, set_current_mode
@@ -437,6 +444,17 @@ def cmd_shell(args):
     container = args.container
     shell = args.shell or "/bin/bash"
     RUNNER.run(["podman", "exec", "-it", container, shell], check=False)
+
+
+def cmd_npm(args):
+    """Run npm inside a service's image against its bind-mounted host source tree."""
+    # Strip only a leading "--" separator; later ones are meaningful (npm run x -- --flag)
+    npm_args = list(args.npm_args)
+    if npm_args and npm_args[0] == "--":
+        npm_args = npm_args[1:]
+    rc = run_npm(RUNNER, PROJECT_DIR, args.service, npm_args)
+    if rc != 0:
+        sys.exit(rc)
 
 
 def cmd_cleanup_containers(args):
@@ -1141,6 +1159,16 @@ Examples:
     p_shell.add_argument("container", help="Container name (e.g. apache, session-manager)")
     p_shell.add_argument("--shell", default="/bin/bash", help="Shell to use (default: /bin/bash)")
 
+    # npm
+    p_npm = subparsers.add_parser("npm", help="Run npm inside a service image (dev source-mounted services)")
+    p_npm.set_defaults(func=cmd_npm)
+    p_npm.add_argument("service", help=f"Service name ({', '.join(sorted(NPM_SERVICES))})")
+    p_npm.add_argument(
+        "npm_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments passed to npm (prefix with -- , e.g. -- install foo)",
+    )
+
     # cleanup-containers
     p_cleanup = subparsers.add_parser(
         "cleanup-containers",
@@ -1352,7 +1380,7 @@ Examples:
     p_u_create.add_argument("email", help="User email address")
     p_u_create.add_argument("--first-name", "-f", help="First name")
     p_u_create.add_argument("--last-name", "-l", help="Last name")
-    p_u_create.add_argument("--can-create-projects", "-p", action="store_true", help="Allow user to create projects")
+    p_u_create.add_argument("--sys-admin", "-s", action="store_true", help="Create the user as a system admin")
 
     p_u_activate = p_users_sub.add_parser("activate", aliases=["enable"], help="Enable user login")
     p_u_activate.add_argument("username", help="Username to activate")
@@ -1360,13 +1388,11 @@ Examples:
     p_u_deactivate = p_users_sub.add_parser("deactivate", aliases=["disable"], help="Disable user login")
     p_u_deactivate.add_argument("username", help="Username to deactivate")
 
-    p_u_grant = p_users_sub.add_parser("grant", help="Grant privilege to user")
-    p_u_grant.add_argument("username", help="Username")
-    p_u_grant.add_argument("privilege", help="Privilege (createProjects, createInviteCodes)")
-
-    p_u_revoke = p_users_sub.add_parser("revoke", help="Revoke privilege from user")
-    p_u_revoke.add_argument("username", help="Username")
-    p_u_revoke.add_argument("privilege", help="Privilege to revoke")
+    # System roles only. Project roles (project_admin/researcher) are per-project
+    # and are managed from the web UI by that project's admins.
+    p_u_set_system_role = p_users_sub.add_parser("set-system-role", help="Set user's system role")
+    p_u_set_system_role.add_argument("username", help="Username")
+    p_u_set_system_role.add_argument("role", choices=["sys_admin", "user"], help="System role")
 
     p_u_delete = p_users_sub.add_parser("delete", aliases=["rm"], help="Delete user")
     p_u_delete.add_argument("username", help="Username to delete")

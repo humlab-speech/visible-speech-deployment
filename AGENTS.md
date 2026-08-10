@@ -100,6 +100,8 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `octra.*`, `
   over WebSocket, spawns short-lived operations containers (using `visp-jupyter-session` image)
   to run EMU-DB setup via container-agent, and manages long-lived Jupyter session containers.
   Source in `external/session-manager/`.
+  - In dev mode the source tree is bind-mounted and nodemon hot-reloads on every `src/` edit —
+    no rebuild. See "Dev vs Prod: session-manager hot reload" below.
 - **mongo** — MongoDB database
 - **matomo** (optional) — Matomo analytics web interface (`docker.io/library/matomo:5`). Provides
   usage tracking for the VISP platform. Accessed at `https://matomo.BASE_DOMAIN` via Apache
@@ -155,6 +157,58 @@ image. A full `build webclient` + `build apache` is needed for any change.
 isn't visible inside the Apache container, check which directory is mounted at `/var/www/html/api`.
 In dev mode it should be the source `external/webclient/api/`, NOT `external/webclient/dist/api/`.
 Run: `podman inspect apache --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{"\\n"}}{{end}}' | grep api`
+
+### Dev vs Prod: session-manager hot reload (important!)
+
+**Dev mode** bind-mounts the whole source tree and replaces the image `CMD` with nodemon
+(`quadlets/dev/session-manager.container`):
+```
+Volume=…/external/session-manager:/session-manager:rw,z
+Exec=/session-manager/node_modules/.bin/nodemon --signal SIGTERM --delay 2 --watch src --ext js,json --exec "node src/index.js"
+```
+Editing anything under `src/` restarts the app in ~2s — **no `./visp.py build session-manager`**.
+nodemon needs no image change: the Dockerfile's `npm ci` installs devDependencies, so it is
+already in the image. Note the `--exec` form: the repo's `nodemon.json` is visible through the
+mount and also sets `exec`, and nodemon *appends* a trailing script argument to it — passing
+`… src/index.js` there yields `node src/index.js src/index.js`.
+
+**Prod mode** bakes `src/` and `node_modules` into the image and runs `node src/index.js`.
+Any change needs a full rebuild. The prod quadlet has no source mount — never add one.
+
+**Installing dependencies** — use `./visp.py npm`, *not* host npm:
+```bash
+./visp.py npm session-manager -- install some-package
+./visp.py restart session-manager     # required; nodemon only watches src/
+```
+This runs npm **inside the service image** so `node_modules` is built by the runtime that
+will execute it. Installing on the host is a trap: the host toolchain differs from the image
+(e.g. host Node 22/glibc 2.43 vs image Node 24/glibc 2.36), so any dependency with a compiled native
+addon builds against the host and then fails to load in the container — glibc is forward
+incompatible. It also keeps the Dockerfile's "no Node.js required on the host" property.
+
+Commit `package-lock.json` — the image build runs `npm ci` from it, so prod picks up the
+dependency on the next `./visp.py build session-manager`.
+
+⚠️ **After bumping the Node major in the Dockerfile, re-run `./visp.py npm session-manager -- ci`.**
+Rebuilding the image is not enough: the bind-mounted host `node_modules` is what dev actually
+executes, and it was installed by the *previous* Node. Rebuild → reinstall → restart.
+
+⚠️ **Why the whole directory and not just `src/`:** a bind-mounted *file* pins the inode, and
+editors and npm both save by atomic rename — so a `package.json` file-mount would show stale
+contents forever after the first `npm install`. Mounting the directory avoids this and makes
+`package.json` (hence the startup version banner) live too.
+
+⚠️ **Reloads drop in-memory state.** `SessionManager.refreshSessions()` only *prunes* dead
+sessions — it never re-imports live containers — so every reload orphans running Jupyter
+sessions and users must restart them. Browser WebSockets reconnect only lazily, on the next
+send (`system.service.ts`), so a page refresh is often needed. The transcription queue
+recovers itself (`WhisperService.cancelRuns()` resets `running` → `queued`), but the import
+queue does **not**: an item flipped to `processing` when the process dies stays stuck, since
+`processNextImportItem()` only retries `pending`.
+
+⚠️ **`./visp.py deploy status` will report session-manager as needing a rebuild** whenever
+you commit source, because it compares the image's `git.commit` label against HEAD. In dev
+that label no longer describes the running code — the bind mount does.
 
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
@@ -727,39 +781,90 @@ This only needs to be run once; the unit persists across reboots.
 
 ---
 
-## User management — post-install checklist
+## Permissions: two parallel role systems
 
-After a fresh install or when a new user logs in for the first time, their MongoDB
-document is created automatically by `index.php` with **no privileges**. You must
-grant the necessary privileges manually using `visp-users.py`.
+VISP has **two independent role systems**. Role *definitions* live in MongoDB but are
+re-seeded from `external/session-manager/src/ApiServer.class.js` on every boot — that
+file, not the database, is the source of truth for what a role may do.
+
+### System level — `users.system_role`, defined in `system_roles`
+
+| Role | `sysAdminPanel` | `createProjects` |
+|---|---|---|
+| `sys_admin` | ✅ | ✅ |
+| `user` | ❌ | ❌ |
+
+SysAdmins are the super users: they alone reach the system-wide admin panel (`/admin`)
+and create projects. Everyone else is a plain `user` and can only act inside projects
+they belong to.
+
+### Project level — `projects.members[].role`, defined in `project_roles`
+
+| Role | `createInviteCodes` | `manageProjectMembers` | `editProjectFiles` |
+|---|---|---|---|
+| `project_admin` | ✅ | ✅ | ✅ |
+| `researcher` | ❌ | ✅ | ✅ |
+
+The only thing a Researcher cannot do inside their project is issue invite codes.
+A SysAdmin implicitly holds every project permission in every project, without being
+a member. The creator of a project becomes its ProjectAdmin.
+
+Backend entry points: `getSystemPermissions(user)` for system-level checks,
+`getProjectPermissions(project, user)` for everything project-scoped. Never check
+membership and permission separately — `getProjectPermissions` already returns all-false
+for non-members, and handles the sysadmin override.
+
+⚠️ Removing or demoting the **last** ProjectAdmin of a project is refused, as is
+demoting the last `sys_admin` via vispctl. Projects and the installation must always
+retain someone who can administer them.
+
+### Invite codes
+
+Every code names exactly one **project** and one **project role**, and may optionally
+be restricted to a single **EPPN**. Redeeming a code sets `loginAllowed: true`,
+`system_role: 'user'`, and adds the account to that project with that role — codes
+never grant a system role. They are managed per project from the project's hamburger
+menu (**Invitation codes**), by that project's admins.
+
+### Managing users
 
 ```bash
-# See all users and their current privileges
-python3 visp-users.py list
+# See all users and their system role
+./visp.py users list
 
-# Show details for a specific user
-python3 visp-users.py show <username>   # username = eppn with @ → _at_ and . → _dot_
+# Show details for a specific user, including per-project roles
+./visp.py users show <username>   # username = eppn with @ → _at_ and . → _dot_
 
-# Grant project-creation rights (required to use the app meaningfully)
-python3 visp-users.py grant <username> createProjects
-
-# Grant invite-code creation (optional, admin users only)
-python3 visp-users.py grant <username> createInviteCodes
+# Promote/demote a system admin (project roles are managed in the web UI)
+./visp.py users set-system-role <username> sys_admin
+./visp.py users set-system-role <username> user
 
 # Activate / deactivate login entirely
-python3 visp-users.py activate <username>
-python3 visp-users.py deactivate <username>
+./visp.py users activate <username>
+./visp.py users deactivate <username>
 ```
 
-**⚠️ After any fresh deployment / first login, always run:**
+**⚠️ After any fresh deployment, confirm at least one user is `sys_admin`:**
 ```bash
-python3 visp-users.py list
+./visp.py users list
 ```
-…and confirm the test user (and any real users) have `createProjects` granted.
-Without it, users can log in but cannot create or access projects.
+Without one, nobody can create projects or reach the admin panel. The test user created
+by `?login=<TEST_USER_LOGIN_KEY>` gets `loginAllowed: true` automatically but is a plain
+`user` — promote it explicitly.
 
-Test user created by `?login=<TEST_USER_LOGIN_KEY>` gets `loginAllowed: true`
-automatically, but `createProjects` is **not** set — it must be granted explicitly.
+### Migrating an older database
+
+`scripts/migrate-permissions.py` converts a pre-two-tier database: it renames `roles`
+→ `system_roles`, seeds `project_roles`, folds the old `users.privileges` booleans into
+`system_role`, gives every project member a project role (the first member — always the
+creator — becomes ProjectAdmin), and rewrites invite codes from `projectIds[]` to a
+single `projectId` plus `eppn`. It is idempotent and dry-run by default.
+
+```bash
+./scripts/migrate-permissions.py            # dry run — reports what would change
+./scripts/migrate-permissions.py --apply
+./visp.py restart session-manager
+```
 
 ---
 
@@ -823,7 +928,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `docker/apache/Dockerfile` | `debian:trixie-20260406` | date-pinned | Trixie = Debian 13 (testing). Update date when new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `docker/octra/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `docker/octra/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
-| `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | patch+alpine pinned ✅ | Node 20 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+| `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
 | `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | fully pinned ✅ | Dev image only — not deployed |
 | `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
@@ -834,8 +939,8 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | fully pinned ✅ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
 | `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | fully pinned ✅ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
-| `external/session-manager/Dockerfile` | `node:20.20.2-bookworm-slim` + `debian:bookworm-20260505-slim` | fully pinned ✅ | Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
-| `external/wsrng-server/Dockerfile` | `node:20.20.2-alpine3.22` | fully pinned ✅ | Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+| `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | fully pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
+| `external/wsrng-server/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 
 ### Update procedure
 

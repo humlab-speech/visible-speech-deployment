@@ -700,6 +700,7 @@ def run_install(
       6. Container-writable permissions + Mongo + repository ownership/write check
       7. Tracker config (vc.js)
       8. Dev certs + local IdP files (dev mode only)
+      8b. node_modules for dev source-mounted services (dev mode only)
       9. Service-specific .env files
       10. Quadlet installation
       11. Cleanup stale disabled-service quadlets
@@ -843,6 +844,18 @@ def run_install(
         if base_domain:
             ensure_certs(project_dir, base_domain)
         setup_local_idp_files(project_dir, env_vars)
+        print()
+
+    # --- Phase 8b: node_modules for dev source-mounted services (dev only) ---
+    # The dev quadlet bind-mounts external/session-manager over /session-manager,
+    # which shadows the node_modules baked into the image — so the host tree needs
+    # its own copy, installed through the image to match the container's runtime.
+    if mode == "dev":
+        from .npm import NPM_SERVICES, ensure_node_modules
+
+        print(color("Checking dev source-mount dependencies...", Colors.CYAN))
+        for npm_service in sorted(NPM_SERVICES):
+            ensure_node_modules(runner, project_dir, npm_service)
         print()
 
     # --- Phase 9: service-specific .env files ---
