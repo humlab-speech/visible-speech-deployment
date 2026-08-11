@@ -829,7 +829,6 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
 | `docker/session-proxy/Dockerfile` | `alpine:3.23` | minor pinned ✅ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
 | `docker/whisper/Dockerfile` | `debian:bookworm-20260406-slim` | date-pinned | ⚠️ This Dockerfile is **not used** — superseded by WhisperVault |
-| `docker/whisperx/Dockerfile` | `python:3.11.15-slim` | patch pinned | ⚠️ This Dockerfile is **not used** — build system uses `external/WhisperVault/container/Containerfile` |
 | `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | patch pinned ✅ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
 | `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | fully pinned ✅ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
 | `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
