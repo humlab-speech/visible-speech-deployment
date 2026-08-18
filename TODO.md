@@ -140,7 +140,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     component's repo (fetch first if the SHA is not local). Coordinate with D5.
   - Verify: lock webclient, move `external/webclient` to another commit,
     `./visp.py deploy rollback webclient` → repo is back at the locked SHA.
-- [ ] **6. `apply` stale-image detection is dead (wrong container name)**
+- [x] **6. `apply` stale-image detection is dead (wrong container name)**
   - `vispctl/images.py:122` — inspects `systemd-<name>`, but quadlet containers are
     named `<name>` (only networks get the `systemd-` prefix). Always returns `[]`,
     so `apply` prints "all containers are running the latest images" while

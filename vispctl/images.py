@@ -119,7 +119,9 @@ class ImageManager:
         for svc in services:
             if svc.type != "container":
                 continue
-            container_name = f"systemd-{svc.name}"
+            # Quadlet containers are named after the unit (no "systemd-" prefix;
+            # only networks get that prefix).
+            container_name = svc.name
 
             # Get the image ID the running container was launched with
             rc, running_id, _ = self.runner.run_quiet(["podman", "inspect", container_name, "--format", "{{.ImageID}}"])
