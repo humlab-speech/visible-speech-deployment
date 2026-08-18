@@ -933,6 +933,49 @@ class DeployManager:
             print("\n⚠  No components were unlocked")
             return False
 
+    def _checkout_locked_version(self, component: str, locked_version: str) -> bool:
+        """Check out *locked_version* in the component's git repository.
+
+        Fetches first if the commit is not available locally, and updates
+        submodules if the component declares them. Refuses to run when the
+        working tree is dirty (to avoid clobbering local changes). Returns True
+        on success (or when already at the locked version), False on failure.
+        """
+        comp_data = self.config.get_component(component) or {}
+        repo_path = self.external_dir / component
+        repo = GitRepository(str(repo_path), comp_data.get("url"))
+
+        if not repo.is_git_repo():
+            print(f"⚠  {component}: not a git repository at {repo_path}, skipping checkout")
+            return False
+
+        current = repo.get_current_commit()
+        if current == locked_version:
+            print(f"   {component} already at {locked_version[:8]}")
+            return True
+
+        if repo.is_dirty():
+            print(f"⚠  {component}: has uncommitted changes, skipping checkout")
+            return False
+
+        # Fetch if the commit is not available locally.
+        if repo.get_commit_info(locked_version) is None:
+            print(f"   Fetching {locked_version[:8]} from remote...")
+            try:
+                repo.fetch(quiet=True)
+            except subprocess.CalledProcessError as e:
+                print(f"❌ {component}: fetch failed: {e}")
+                return False
+
+        try:
+            repo.checkout(locked_version)
+            if comp_data.get("submodules", False):
+                repo.submodule_update()
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"❌ {component}: checkout failed: {e}")
+            return False
+
     def rollback_components(self, components: list[str], rollback_all: bool = False) -> bool:
         """
         Rollback components to their locked versions.
@@ -965,14 +1008,17 @@ class DeployManager:
                 print(f"⚠  {component}: No locked version available for rollback")
                 continue
 
-            # Rollback using ComponentConfig method
-            success = self.config.rollback(component)
+            # Check out the locked version in the git repository first. Only update
+            # versions.json if the checkout succeeds, so a failed checkout never
+            # leaves versions.json pointing at a version the repo isn't actually at.
+            if not self._checkout_locked_version(component, locked_version):
+                print(f"✗ {component}: checkout failed, versions.json left unchanged")
+                continue
 
-            if success:
-                print(f"✓ {component}: Rolled back to {locked_version[:8]}")
-                rollback_count += 1
-            else:
-                print(f"✗ {component}: Failed to rollback")
+            # Update versions.json (version := locked_version)
+            self.config.rollback(component)
+            print(f"✓ {component}: Rolled back to {locked_version[:8]}")
+            rollback_count += 1
 
         # Save updated config
         if rollback_count > 0:
@@ -980,7 +1026,7 @@ class DeployManager:
                 self.config.save()
                 print(f"\n✅ Successfully rolled back {rollback_count} component(s)")
                 print("   Changes saved to versions.json")
-                print("   Run 'visp.py deploy update' to checkout rolled back versions")
+                print("   Repositories checked out to the locked versions")
                 return True
             except Exception as e:
                 print(f"\n❌ Failed to save versions.json: {e}")

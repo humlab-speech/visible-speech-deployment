@@ -130,7 +130,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ### Phase 2 — Broken features (silent no-ops / dead code)
 
-- [ ] **5. `deploy rollback` never checks out the locked version**
+- [x] **5. `deploy rollback` never checks out the locked version**
   - `vispctl/deploy.py:936-990` — only rewrites versions.json
     (`version := locked_version`), then instructs `deploy update` — which *skips
     locked components* (`deploy.py:1042-1046`). `GitRepository.checkout`
