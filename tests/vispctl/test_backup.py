@@ -106,3 +106,105 @@ def test_restore_success(tmp_path):
 
     res = bm.restore(backup, force=True)
     assert res is True
+
+
+# ── Deterministic restore-dir resolution ──────────────────────────────────────
+
+
+class ResolveRunner:
+    """Configurable fake runner for _resolve_restore_dir tests."""
+
+    def __init__(self, test_dir_exists=True, find_dirs=()):
+        self.test_dir_exists = test_dir_exists
+        self.find_dirs = list(find_dirs)
+        self.calls = []
+
+    def run_quiet(self, cmd):
+        self.calls.append(cmd)
+        if "test" in cmd and "-d" in cmd:
+            return (0 if self.test_dir_exists else 1), "", ""
+        if "find" in cmd:
+            return 0, "\n".join(self.find_dirs), ""
+        return 0, "", ""
+
+    def run(self, cmd, capture=False, check=True, **kwargs):
+        self.calls.append(cmd)
+        return _Result(returncode=0)
+
+
+def test_resolve_restore_dir_from_tarball_name(tmp_path):
+    """Derives the dir from a visp_mongodb_*.tar.gz name when it exists."""
+    runner = ResolveRunner(test_dir_exists=True, find_dirs=["/tmp/visp_mongodb_6.0.14_20260101_120000"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    assert (
+        bm._resolve_restore_dir("visp_mongodb_6.0.14_20260101_120000.tar.gz")
+        == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+    )
+
+
+def test_resolve_restore_dir_prefers_name_over_stale(tmp_path):
+    """Even with a stale dir present, the name-derived dir is used (not head -1)."""
+    # find would list the stale dir first, but the name-derived dir wins.
+    runner = ResolveRunner(
+        test_dir_exists=True, find_dirs=["/tmp/visp_mongodb_STALE", "/tmp/visp_mongodb_6.0.14_20260101_120000"]
+    )
+    bm = BackupManager(runner, project_dir=tmp_path)
+    assert (
+        bm._resolve_restore_dir("visp_mongodb_6.0.14_20260101_120000.tar.gz")
+        == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+    )
+
+
+def test_resolve_restore_dir_falls_back_to_single_dir(tmp_path):
+    """A renamed tarball falls back to the single visp_mongodb_* dir."""
+    runner = ResolveRunner(find_dirs=["/tmp/visp_mongodb_6.0.14_20260101_120000"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    assert bm._resolve_restore_dir("renamed_backup.tar.gz") == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+
+
+def test_resolve_restore_dir_ambiguous_returns_none(tmp_path):
+    """Multiple leftover dirs (and no name match) → ambiguous → None."""
+    runner = ResolveRunner(find_dirs=["/tmp/visp_mongodb_a", "/tmp/visp_mongodb_b"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    assert bm._resolve_restore_dir("renamed.tar.gz") is None
+
+
+def test_resolve_restore_dir_none_found(tmp_path):
+    """No dir found → None."""
+    runner = ResolveRunner(find_dirs=[])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    assert bm._resolve_restore_dir("renamed.tar.gz") is None
+
+
+def test_restore_uses_derived_dir_and_cleans_stale(tmp_path):
+    """restore cleans stale dirs first and restores from the name-derived dir."""
+
+    class TrackingRunner(FakeRunner):
+        def __init__(self, tmpdir):
+            super().__init__(tmpdir)
+            self.mongorestore_dir = None
+            self.cleaned_stale = False
+
+        def run_quiet(self, cmd):
+            if "test" in cmd and "-d" in cmd:
+                return 0, "", ""  # derived dir exists
+            return super().run_quiet(cmd)
+
+        def run(self, cmd, capture=False, check=True, **kwargs):
+            if "find" in cmd and "-exec" in cmd:
+                self.cleaned_stale = True
+            if "mongorestore" in cmd:
+                self.mongorestore_dir = cmd[-1]
+            return super().run(cmd, capture=capture, check=check, **kwargs)
+
+    runner = TrackingRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz"
+    backup.write_bytes(b"x")
+
+    res = bm.restore(backup, force=True)
+    assert res is True
+    assert runner.cleaned_stale is True
+    assert runner.mongorestore_dir == "/tmp/visp_mongodb_6.0.14_20260101_120000"

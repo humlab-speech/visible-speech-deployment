@@ -111,7 +111,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     secrets); `uninstall all` keeps the current behavior.
   - Verify: `podman secret ls` before/after `./visp.py uninstall mongo
     --keep-running` — only mongo's secrets are gone.
-- [ ] **3. `restore` can restore from a stale extracted directory**
+- [x] **3. `restore` can restore from a stale extracted directory**
   - `vispctl/backup.py:250-273` — `find /tmp -maxdepth 1 -name "visp_mongodb_*"` +
     `splitlines()[0]` picks an arbitrary match if a previously interrupted restore
     left a dir in the container's /tmp.
