@@ -93,7 +93,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ### Phase 1 — Safety-critical (wrong-target destruction / data loss)
 
-- [ ] **1. `session-doctor` false-positive orphan proxies (destructive)**
+- [x] **1. `session-doctor` false-positive orphan proxies (destructive)**
   - `vispctl/session_doctor.py:111-131` — proxy discovery uses substring
     `name=-proxy` + `endswith("-proxy")`, so it flags the core VISP service
     `podman-socket-proxy` *and* non-VISP host containers (e.g. `kiwix-proxy`) as
