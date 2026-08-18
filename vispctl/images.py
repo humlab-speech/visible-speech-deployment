@@ -84,26 +84,36 @@ class ImageManager:
         return networks
 
     def get_container_networks(self) -> Dict[str, str]:
-        """Get network connections for running containers.
+        """Get network connections for running VISP containers.
+
+        Intersects the running containers with the known VISP container service
+        names (quadlet containers are named ``<name>`` — no ``systemd-`` prefix)
+        and records the network IDs each is connected to.
 
         Returns:
             Dict mapping container_name -> network_ids
         """
-        container_networks = {}
+        from .service import DEFAULT_SERVICES
+
+        visp_containers = {svc.name for svc in DEFAULT_SERVICES if svc.type == "container"}
         rc, stdout, _ = self.runner.run_quiet(["podman", "ps", "--format", "{{.Names}}"])
-        if rc == 0 and stdout:
-            for container in stdout.split("\n"):
-                if container.startswith("systemd-"):
-                    rc, nets, _ = self.runner.run_quiet(
-                        [
-                            "podman",
-                            "inspect",
-                            container,
-                            "--format",
-                            "{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}",
-                        ]
-                    )
-                    container_networks[container] = nets.strip() if nets else "none"
+        if rc != 0 or not stdout:
+            return {}
+        running = {line.strip() for line in stdout.splitlines() if line.strip()}
+
+        container_networks = {}
+        for name in sorted(visp_containers & running):
+            rc, nets, _ = self.runner.run_quiet(
+                [
+                    "podman",
+                    "inspect",
+                    name,
+                    "--format",
+                    "{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}",
+                ]
+            )
+            if rc == 0:
+                container_networks[name] = nets.strip() if nets.strip() else "none"
         return container_networks
 
     def get_stale_containers(self, services: List[Service]) -> List[Service]:

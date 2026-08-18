@@ -148,7 +148,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - Fix: drop the `systemd-` prefix.
   - Verify: rebuild a quadlet service image (e.g. `./visp.py build wsrng-server`),
     then `./visp.py apply wsrng-server` → detects the stale container and restarts it.
-- [ ] **7. `images` "Container Network Connections" always empty (same prefix bug)**
+- [x] **7. `images` "Container Network Connections" always empty (same prefix bug)**
   - `vispctl/images.py:96` — filters `podman ps` names by `startswith("systemd-")`,
     which matches no quadlet container.
   - Fix: iterate the known VISP container service names instead. (May be superseded
