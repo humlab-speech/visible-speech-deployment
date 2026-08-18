@@ -153,7 +153,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     which matches no quadlet container.
   - Fix: iterate the known VISP container service names instead. (May be superseded
     by D1 if this section moves to `network`.)
-- [ ] **8. `debug` / `logs --debug`: "Service Status:" section always empty**
+- [x] **8. `debug` / `logs --debug`: "Service Status:" section always empty**
   - `vispctl/logs.py:143-144` + `vispctl/runner.py:47-48` — `systemctl status`
     output is captured (`capture=True`) and the `CompletedProcess` is discarded.
   - Fix: print the captured stdout+stderr under the label.
