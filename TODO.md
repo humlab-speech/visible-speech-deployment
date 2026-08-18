@@ -34,6 +34,11 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 - [ ] **D1 — `status` vs `deploy status`: naming, scope & visual language**
   (supersedes the older "Merge `status` and `deploy status`" item further down)
+  **DECIDED 2026-08-18:** No rename, no merge, no `health` command. Keep `status`
+  (runtime) and `deploy status` (source/build drift) as separate commands. Restyle
+  `status` to the tabulate-grid + symbol look used by `deploy status` so both share
+  one visual dialect. Container list filtered to VISP-only, with `--all` to show all
+  host containers (sub-decision a). Keep the `debug` alias (sub-decision b).
   - They check orthogonal things (runtime state vs source/build drift) and use two
     incompatible visual dialects (`=== Cyan ===` + ●○✓! symbols vs emoji + tabulate
     grid tables; `deploy.py` is the only emoji module in the codebase).
@@ -49,27 +54,40 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     add `--all`. (b) keep or remove the `debug` alias (it is a pure wrapper of
     `logs --debug`)?
 - [ ] **D2 — `logs <single-service>` follows by default**
+  **DECIDED 2026-08-18:** Keep follow-by-default for single-service logs; document it
+  more prominently (help text + README). `logs all` stays non-follow.
   - Documented in the `--no-follow` help, but surprising; `logs all` does not follow.
   - Decide: keep the documented behavior (and document it harder) or make all log
     viewing non-follow by default.
 - [ ] **D3 — `fix-permissions --path` default ownership**
+  **DECIDED 2026-08-18:** Change the default to host-owner — i.e. chown to the host
+  user who owns the VISP root folder (the deploying user; a service user in prod).
+  This is the current `--host-owner` behavior, now made the default.
   - The default chowns to the host uid *interpreted inside* the unshare namespace
     (→ container-owned on this host); `--host-owner` is the intuitive behavior but
     is not documented as the one you usually want.
   - Decide: change the default to host-owner, or document the namespace mapping
     in the help text.
 - [ ] **D4 — `restore` semantics**
+  **DECIDED 2026-08-18:** Require an explicit `--drop` flag (default: no drop). Add
+  stop-services guidance to the help text and strengthen the confirmation prompt.
   - Runs `mongorestore --drop` unconditionally; the help text and prompt never
     mention `--drop` or that services should be stopped first.
   - Decide: require an explicit `--drop` flag (default: no drop), add stop-services
     guidance, strengthen the confirmation prompt.
 - [ ] **D5 — `deploy update` and pinned versions**
+  **DECIDED 2026-08-18:** "Track latest branch" is the intended semantics for
+  `update`; document it. Pinned checkout is `deploy rollback`'s job (item 5).
+  Doc note: "update tracks the latest branch for unlocked components; pin with
+  `deploy lock`, check out a pinned version with `deploy rollback`."
   - `update` only `git pull`s unlocked repos; a pinned `version` (commit SHA/tag) in
     versions.json is never checked out by any command.
   - Decide: should `update` check out the configured version, or is "track latest
     branch" the intended semantics (in which case document it)?
   - Related: item 5 (rollback) implements the checkout that `update` currently lacks.
 - [ ] **D6 — Exit-code policy for `status` / `images`**
+  **DECIDED 2026-08-18:** Add a `--strict` flag to `status` and `images`: non-zero
+  exit on any health problem (down service / stale image). Default stays exit 0.
   - Everything exits 0 regardless of health (only `deploy status --strict` can fail).
   - Decide: add `--strict` to `status`/`images`? Non-zero on any down service?
 
