@@ -103,7 +103,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     `visp.proxyFor` label). Never put other `-proxy` containers in the cleanup plan.
   - Verify: `./visp.py session-doctor --problems` no longer lists
     `podman-socket-proxy`; the cleanup plan contains only real session sidecars.
-- [ ] **2. `uninstall <service>` removes ALL podman secrets**
+- [x] **2. `uninstall <service>` removes ALL podman secrets**
   - `visp.py:283-291` — `list_secrets()` returns every `visp_*` secret and all are
     removed even for `uninstall mongo`, breaking other services' secret injection
     until the next install.

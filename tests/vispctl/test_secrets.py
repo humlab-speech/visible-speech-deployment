@@ -1,4 +1,8 @@
-from vispctl.secrets import SecretManager
+from vispctl.secrets import (
+    SecretManager,
+    parse_quadlet_secret_map,
+    secrets_to_remove_for_uninstall,
+)
 
 
 class FakeRunner:
@@ -73,3 +77,82 @@ def test_create_remove_list_secrets():
 
     sm.remove_secrets(["visp_test"])
     assert any(c[0][:3] == ["podman", "secret", "rm"] for c in fr.calls)
+
+
+# ── Scoped uninstall secret removal ───────────────────────────────────────────
+
+
+def test_parse_quadlet_secret_map(tmp_path):
+    """parse_quadlet_secret_map maps each service to its Secret= references."""
+    (tmp_path / "mongo.container").write_text(
+        "ContainerImage=localhost/visp-mongo:latest\n"
+        "Secret=visp_mongo_root_password,type=env,target=MONGO_INITDB_ROOT_PASSWORD\n"
+    )
+    (tmp_path / "apache.container").write_text(
+        "ContainerImage=localhost/visp-apache:latest\n"
+        "Secret=visp_api_access_token,type=env,target=HS_API_ACCESS_TOKEN\n"
+        "Secret=visp_mongo_root_password,type=env,target=MONGO_ROOT_PASSWORD\n"
+        "# Secret=commented_out should be ignored\n"
+    )
+    (tmp_path / "artic.container").write_text("ContainerImage=localhost/visp-artic:latest\n")
+    (tmp_path / "visp-net.network").write_text("NetworkName=systemd-visp-net\n")
+
+    mapping = parse_quadlet_secret_map(tmp_path)
+
+    assert mapping["mongo"] == {"visp_mongo_root_password"}
+    assert mapping["apache"] == {"visp_api_access_token", "visp_mongo_root_password"}
+    # No Secret= lines → omitted; .network files are ignored
+    assert "artic" not in mapping
+    assert "visp-net" not in mapping
+
+
+def test_parse_quadlet_secret_map_missing_dir(tmp_path):
+    """A missing quadlets dir yields an empty map (no crash)."""
+    assert parse_quadlet_secret_map(tmp_path / "does-not-exist") == {}
+
+
+def test_uninstall_all_removes_everything():
+    """remove_all=True returns every existing secret."""
+    existing = ["visp_a", "visp_b", "visp_c"]
+    assert secrets_to_remove_for_uninstall({"mongo"}, {}, existing, remove_all=True) == [
+        "visp_a",
+        "visp_b",
+        "visp_c",
+    ]
+
+
+def test_uninstall_single_removes_only_exclusive_secrets():
+    """A service's exclusive secrets are removed; shared ones are kept."""
+    secret_map = {
+        "mongo": {"visp_mongo_root_password"},
+        "local-idp": {"visp_ssp_admin_password", "visp_ssp_salt"},
+        "apache": {"visp_api_access_token", "visp_mongo_root_password"},
+    }
+    existing = [
+        "visp_mongo_root_password",
+        "visp_ssp_admin_password",
+        "visp_ssp_salt",
+        "visp_api_access_token",
+    ]
+
+    # Uninstalling local-idp removes its two exclusive SSP secrets only.
+    removed = secrets_to_remove_for_uninstall({"local-idp"}, secret_map, existing)
+    assert removed == ["visp_ssp_admin_password", "visp_ssp_salt"]
+
+    # Uninstalling mongo removes nothing: its only secret is shared with apache.
+    assert secrets_to_remove_for_uninstall({"mongo"}, secret_map, existing) == []
+
+
+def test_uninstall_keeps_shared_secret_for_other_services():
+    """Uninstalling one of several users of a shared secret keeps the secret."""
+    secret_map = {
+        "mongo": {"visp_mongo_root_password"},
+        "session-manager": {"visp_mongo_root_password", "visp_api_access_token"},
+        "wsrng-server": {"visp_mongo_root_password"},
+    }
+    existing = ["visp_mongo_root_password", "visp_api_access_token"]
+
+    # mongo's secret is still needed by session-manager and wsrng-server.
+    assert secrets_to_remove_for_uninstall({"mongo"}, secret_map, existing) == []
+    # session-manager's exclusive secret (api token) is removed; shared one kept.
+    assert secrets_to_remove_for_uninstall({"session-manager"}, secret_map, existing) == ["visp_api_access_token"]

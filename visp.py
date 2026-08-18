@@ -288,14 +288,30 @@ def cmd_uninstall(args):
     print()
 
     print(color("Removing Podman secrets...", Colors.CYAN))
-    from vispctl.secrets import SecretManager
+    from vispctl.secrets import (
+        SecretManager,
+        parse_quadlet_secret_map,
+        secrets_to_remove_for_uninstall,
+    )
 
     sm = SecretManager(cfg.runner)
-    visp_secrets = sm.list_secrets()
-    if visp_secrets:
-        sm.remove_secrets(visp_secrets)
-    else:
+    existing = sm.list_secrets()
+    if not existing:
         print("  No VISP secrets found")
+    elif args.service == "all":
+        sm.remove_secrets(existing)
+    else:
+        quadlets_dir = cfg.project_dir / "quadlets" / get_current_mode()
+        secret_map = parse_quadlet_secret_map(quadlets_dir)
+        uninstalled = {svc.name for svc in services}
+        to_remove = secrets_to_remove_for_uninstall(uninstalled, secret_map, existing)
+        if to_remove:
+            sm.remove_secrets(to_remove)
+        else:
+            print("  (no secrets removed — every referenced secret is shared with other services)")
+        kept = [s for s in existing if s not in to_remove]
+        if kept:
+            print(color(f"  Kept {len(kept)} secret(s) still used by other services", Colors.DIM))
 
     if getattr(args, "remove_networks", False):
         print()
