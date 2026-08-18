@@ -1,3 +1,4 @@
+import subprocess
 import sys
 from pathlib import Path
 
@@ -42,6 +43,42 @@ class FakeRunner:
             except Exception:
                 pass
         return _Result(returncode=0)
+
+
+class FailingRunner:
+    """Faithfully simulates Runner.run: with check=True a non-zero returncode
+    raises CalledProcessError (exactly like the real Runner). Commands whose
+    argv contains any of *fail_substrings* fail with returncode 1.
+    """
+
+    def __init__(self, tmpdir, fail_substrings=(), version_out="mongod version v4.4.3"):
+        self.tmpdir = Path(tmpdir)
+        self.fail_substrings = list(fail_substrings)
+        self.version_out = version_out
+        self.calls = []
+
+    def _should_fail(self, cmd):
+        return any(s in arg for arg in cmd for s in self.fail_substrings)
+
+    def run(self, cmd, capture=False, check=True, **kwargs):
+        self.calls.append(("run", cmd))
+        if cmd[:2] == ["podman", "cp"]:
+            try:
+                Path(cmd[-1]).write_bytes(b"dummy")
+            except Exception:
+                pass
+        rc = 1 if self._should_fail(cmd) else 0
+        if check and rc != 0:
+            raise subprocess.CalledProcessError(rc, cmd)
+        return _Result(returncode=rc, stdout="", stderr="simulated failure" if rc else "")
+
+    def run_quiet(self, cmd):
+        self.calls.append(("run_quiet", cmd))
+        if "mongod" in cmd:
+            return 0, self.version_out, ""
+        if "find" in cmd:
+            return 0, "/tmp/visp_mongodb_6.0.14_20260101_120000", ""
+        return 0, "", ""
 
 
 def test_list_backups(tmp_path):
@@ -208,3 +245,62 @@ def test_restore_uses_derived_dir_and_cleans_stale(tmp_path):
     assert res is True
     assert runner.cleaned_stale is True
     assert runner.mongorestore_dir == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+
+
+# ── Failure paths (no traceback, friendly error, falsy return) ────────────────
+
+
+def test_backup_mongodump_failure_returns_none(tmp_path, capsys):
+    """A failing mongodump returns None with a friendly error (no traceback)."""
+    runner = FailingRunner(tmp_path, fail_substrings=["mongodump"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    out = bm.backup(output=tmp_path / "out.tar.gz", dry_run=False)
+
+    assert out is None
+    assert "Backup failed" in capsys.readouterr().out
+
+
+def test_restore_corrupt_archive_returns_false(tmp_path, capsys):
+    """A failing extract (corrupt archive) returns False, no traceback."""
+    runner = FailingRunner(tmp_path, fail_substrings=["-xzf"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = tmp_path / "test.tar.gz"
+    backup.write_bytes(b"corrupt")
+
+    res = bm.restore(backup, force=True)
+
+    assert res is False
+    assert "Failed to extract" in capsys.readouterr().out
+
+
+def test_restore_mongorestore_failure_returns_false(tmp_path, capsys):
+    """A failing mongorestore returns False with a friendly error, no traceback."""
+    # "--drop" is unique to the mongorestore command (the backup file path in the
+    # earlier cp step also lives under a tmp dir named after this test).
+    runner = FailingRunner(tmp_path, fail_substrings=["--drop"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = tmp_path / "test.tar.gz"
+    backup.write_bytes(b"x")
+
+    res = bm.restore(backup, force=True)
+
+    assert res is False
+    assert "Restore failed" in capsys.readouterr().out
+
+
+def test_backup_copy_failure_returns_none(tmp_path, capsys):
+    """A failing podman cp (copy out) returns None, no traceback."""
+    runner = FailingRunner(tmp_path, fail_substrings=["mongo:/tmp/visp_mongodb"])
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    out = bm.backup(output=tmp_path / "out.tar.gz", dry_run=False)
+
+    assert out is None
+    assert "Copy failed" in capsys.readouterr().out

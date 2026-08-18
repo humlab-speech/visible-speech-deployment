@@ -119,7 +119,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     verify it exists, and clean up leftover `visp_mongodb_*` dirs in /tmp.
   - Verify: pre-create a decoy dir in the mongo container's /tmp, restore a real
     backup, confirm the correct dir is used.
-- [ ] **4. `backup`/`restore` crash with raw tracebacks on failure**
+- [x] **4. `backup`/`restore` crash with raw tracebacks on failure**
   - `vispctl/backup.py` — `Runner.run` defaults to `check=True`, so a failing
     mongodump/tar/podman-cp/mongorestore raises `CalledProcessError` instead of the
     friendly "✗ Backup failed" / "✗ Restore failed" path (dead code today).

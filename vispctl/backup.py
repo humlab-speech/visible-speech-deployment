@@ -220,7 +220,8 @@ class BackupManager:
                     "--username=root",
                     "--authenticationDatabase=admin",
                     f"--out={backup_dir}",
-                ]
+                ],
+                check=False,
             )
             if res.returncode != 0:
                 print(color("✗ Backup failed", Colors.RED))
@@ -239,7 +240,8 @@ class BackupManager:
                     "-C",
                     "/tmp",
                     backup_name,
-                ]
+                ],
+                check=False,
             )
             if res.returncode != 0:
                 print(color("✗ Compression failed", Colors.RED))
@@ -247,7 +249,10 @@ class BackupManager:
 
             # Copy backup out of container
             print(f"\nCopying to {output_path}...")
-            res = self.runner.run(["podman", "cp", f"mongo:{archive_in_container}", str(output_path)])
+            res = self.runner.run(
+                ["podman", "cp", f"mongo:{archive_in_container}", str(output_path)],
+                check=False,
+            )
             if res.returncode != 0:
                 print(color("✗ Copy failed", Colors.RED))
                 return None
@@ -295,7 +300,7 @@ class BackupManager:
                 return False
 
         # Copy file into container
-        res = self.runner.run(["podman", "cp", str(b), "mongo:/tmp/restore.tar.gz"])
+        res = self.runner.run(["podman", "cp", str(b), "mongo:/tmp/restore.tar.gz"], check=False)
         if res.returncode != 0:
             print(color("✗ Failed to copy backup into container", Colors.RED))
             return False
@@ -315,7 +320,8 @@ class BackupManager:
                 "/tmp/restore.tar.gz",
                 "-C",
                 "/tmp",
-            ]
+            ],
+            check=False,
         )
         if res.returncode != 0:
             print(color("✗ Failed to extract backup inside container", Colors.RED))
@@ -354,7 +360,8 @@ class BackupManager:
                     "--authenticationDatabase=admin",
                     "--drop",
                     backup_dir,
-                ]
+                ],
+                check=False,
             )
         finally:
             self._remove_mongo_config(_MONGO_CONFIG_PATH)
