@@ -317,3 +317,39 @@ def test_build_node_project_rejects_malicious_config(tmp_path):
 
     with pytest.raises(BuildError, match="Invalid build config"):
         bm.build_node_project("webclient", config, build_config="visp.dev; cat /etc/shadow")
+
+
+def test_build_list_image_uses_localhost_prefix(capsys):
+    """--list must show the full localhost/ image tag (the convention quadlets use)."""
+    from vispctl.build import cmd_build_list
+
+    args = object()
+    cmd_build_list(
+        args,
+        build_configs={"apache": {"image": "visp-apache", "context": "./docker/apache"}},
+        node_configs={},
+    )
+
+    out = capsys.readouterr().out
+    assert "localhost/visp-apache:latest" in out
+    assert "Image: visp-apache:latest" not in out
+
+
+def test_build_list_available_configs_match_whitelist(capsys):
+    """--list 'Available configs' must list every whitelisted config, incl. the default."""
+    from vispctl.build import cmd_build_list
+
+    args = object()
+    cmd_build_list(
+        args,
+        build_configs={},
+        node_configs={
+            "webclient": {"source": "./s", "output": "./o", "description": "d", "default_config": "visp.dev"}
+        },
+    )
+
+    out = capsys.readouterr().out
+    line = next(ln for ln in out.splitlines() if "Available configs" in ln)
+    listed = {c.strip() for c in line.split(":", 1)[1].split(",")}
+    assert listed == VALID_BUILD_CONFIGS
+    assert "visp.dev" in line

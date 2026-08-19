@@ -772,7 +772,7 @@ def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa
     print()
     for name, config in (build_configs or {}).items():
         print(f"  {color(name, Colors.BLUE)}")
-        print(f"    Image: {config['image']}:latest")
+        print(f"    Image: localhost/{config['image']}:latest")
         print(f"    Context: {config['context']}")
         if config.get("description"):
             print(f"    Description: {config['description']}")
@@ -793,5 +793,5 @@ def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa
         print(f"    Description: {config['description']}")
         if config.get("default_config"):
             print(f"    Default config: {config['default_config']}")
-            print("    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local")
+            print(f"    Available configs: {', '.join(sorted(VALID_BUILD_CONFIGS))}")
         print()

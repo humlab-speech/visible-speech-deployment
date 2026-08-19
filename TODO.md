@@ -238,7 +238,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     symlink branch (`vispctl/status.py:35-49`) are the same stale vocabulary.
   - Fix: reword help + table (e.g. "Quadlet Units" / "installed"); drop or fix the
     symlink branch.
-- [ ] **23. `build --list` output inconsistencies**
+- [x] **23. `build --list` output inconsistencies**
   - Prints `visp-*:latest` without the `localhost/` prefix that the quadlets and
     AGENTS.md mandate (`vispctl/build.py:768`).
   - "Available configs" omits the default `visp.dev` and the whitelist's
