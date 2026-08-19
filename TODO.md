@@ -197,7 +197,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - `vispctl/install.py:554-573` — cleanup only covers `.env`-disabled optionals,
     not `dev_only` services (`mongo-express`, `local-idp`) on a mode switch.
   - Fix: also remove dev-only units when installing in prod mode.
-- [ ] **15. `cleanup-containers`: blind confirm + uncaught EOFError**
+- [x] **15. `cleanup-containers`: blind confirm + uncaught EOFError**
   - `vispctl/cleanup_containers.py:46` — the prompt doesn't list which containers
     will be removed; without `-y` in a non-interactive context `input()` raises an
     uncaught `EOFError` (only OSError/RuntimeError/ValueError are caught,

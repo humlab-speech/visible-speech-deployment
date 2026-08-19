@@ -10,7 +10,7 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
 
     runner = Runner()
     prefix_filters = ["hsapp-session-", "visp-session-"]
-    container_ids = []
+    containers: list[tuple[str, str]] = []  # (id, name)
 
     if mode == "running":
         base_cmd = ["podman", "ps", "--format", "{{.ID}} {{.Names}}"]
@@ -32,10 +32,10 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
             cid, name = parts
             if "session-manager" in name:
                 continue
-            if cid not in container_ids:
-                container_ids.append(cid)
+            if cid not in [c[0] for c in containers]:
+                containers.append((cid, name))
 
-    if not container_ids:
+    if not containers:
         return {
             "status": "ok",
             "message": "No session containers found to clean up.",
@@ -43,12 +43,22 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
         }
 
     if not yes:
-        choice = input("Proceed with cleanup of session containers? (y/N): ").strip().lower()
+        print(f"Would remove {len(containers)} session container(s):")
+        for cid, name in containers:
+            print(f"  - {name} ({cid[:12]})")
+        try:
+            choice = input("Proceed with cleanup? (y/N): ").strip().lower()
+        except EOFError:
+            return {
+                "status": "cancelled",
+                "message": "No confirmation received (non-interactive). Re-run with -y to confirm.",
+                "removed": 0,
+            }
         if choice not in ("y", "yes"):
             return {"status": "cancelled", "message": "No containers removed", "removed": 0}
 
     removed = 0
-    for cid in container_ids:
+    for cid, _name in containers:
         # stop if running
         if runner.run(["podman", "ps", "--filter", f"id={cid}", "--quiet"], capture=True, check=False).stdout.strip():
             runner.run(["podman", "stop", cid], check=False)
