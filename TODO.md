@@ -204,7 +204,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     `visp.py:391`).
   - Fix: itemize the matched containers in the prompt (like session-doctor's plan);
     catch EOFError → abort cleanly.
-- [ ] **16. Mongo password on the process command line (`users`, `doctor`)**
+- [x] **16. Mongo password on the process command line (`users`, `doctor`)**
   - `vispctl/mongo.py:60-78` — passes `-p <pw>` to `mongosh` (visible in `ps`),
     while `backup.py:44-49` deliberately uses a 0600 `--config` file for the same
     credential.
