@@ -193,7 +193,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - `visp.py:272-279` — after uninstall→install→reload, a previously `down`ed
     service stays disabled across reboot until `visp.py up` is run.
   - Fix: remove the drop-in (and its empty dir) for each uninstalled service.
-- [ ] **14. `install --mode prod` leaves dev-only quadlets installed**
+- [x] **14. `install --mode prod` leaves dev-only quadlets installed**
   - `vispctl/install.py:554-573` — cleanup only covers `.env`-disabled optionals,
     not `dev_only` services (`mongo-express`, `local-idp`) on a mode switch.
   - Fix: also remove dev-only units when installing in prod mode.
