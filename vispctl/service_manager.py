@@ -77,14 +77,36 @@ class ServiceManager:
                 continue
 
             dropin = self._autostart_dropin(svc)
+            removed_dropin = False
             if dropin.exists():
                 dropin.unlink()
                 if not any(dropin.parent.iterdir()):
                     dropin.parent.rmdir()
+                removed_dropin = True
                 changed = True
-                print(color("  Enabled", Colors.GREEN))
+
+            # Cross-check the actual systemd state: a manual
+            # 'systemctl --user disable' leaves no drop-in behind, so
+            # drop-in absence alone is not proof the unit starts at boot.
+            # Quadlet units report 'generated'; if the unit is not loaded
+            # yet (no daemon-reload after install), is-enabled fails and we
+            # keep the previous assumption.
+            state_res = self.runner.systemctl("is-enabled", self._svc_name(svc))
+            state = state_res.stdout.strip() if state_res.returncode == 0 else "generated"
+
+            if state in ("enabled", "generated", "indirect"):
+                if removed_dropin:
+                    print(color("  Enabled", Colors.GREEN))
+                else:
+                    print("  Already enabled")
+            elif state == "static":
+                print(color("  Static unit — no [Install] section, nothing to enable", Colors.YELLOW))
             else:
-                print("  Already enabled")
+                res = self.runner.systemctl("enable", self._svc_name(svc))
+                if res.returncode != 0:
+                    print(color(f"  Failed: {res.stderr.strip()}", Colors.RED))
+                else:
+                    print(color("  Enabled", Colors.GREEN))
 
         if changed:
             self._reload_systemd()

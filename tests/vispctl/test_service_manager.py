@@ -20,6 +20,7 @@ class FakeRunner:
             def __init__(self):
                 self.returncode = 0
                 self.stderr = ""
+                self.stdout = "generated\n"
 
         return R()
 
@@ -122,6 +123,72 @@ def test_enable_disable_skip_networks(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "skipped" in out
     assert not (tmp_path / "visp-net.network.d").exists()
+
+
+class IsEnabledRunner:
+    def __init__(self, state="generated"):
+        self.state = state
+        self.systemctl_calls = []
+
+    def run_quiet(self, cmd):
+        return 0, "", ""
+
+    def systemctl(self, *args, **kwargs):
+        self.systemctl_calls.append(args)
+
+        class R:
+            returncode = 0
+            stderr = ""
+            stdout = ""
+
+        r = R()
+        if args and args[0] == "is-enabled":
+            r.stdout = f"{self.state}\n"
+        return r
+
+
+def test_enable_already_enabled_generated(tmp_path, capsys):
+    # No drop-in and systemd reports 'generated' (quadlet units) → no action.
+    (tmp_path / "mongo.container").write_text("[Install]\nWantedBy=default.target\n")
+    fr = IsEnabledRunner("generated")
+    m = ServiceManager(fr, DEFAULT_SERVICES, systemd_dir=tmp_path)
+
+    m.enable("mongo")
+    out = capsys.readouterr().out
+
+    assert "Already enabled" in out
+    assert ("enable", "mongo.service") not in fr.systemctl_calls
+
+
+def test_enable_reenables_manually_disabled_unit(tmp_path, capsys):
+    # No drop-in, but a manual 'systemctl --user disable' put the unit in a
+    # disabled state → 'up' must re-enable it, not report 'Already enabled'.
+    (tmp_path / "mongo.container").write_text("[Install]\nWantedBy=default.target\n")
+    fr = IsEnabledRunner("disabled")
+    m = ServiceManager(fr, DEFAULT_SERVICES, systemd_dir=tmp_path)
+
+    m.enable("mongo")
+    out = capsys.readouterr().out
+
+    assert "Already enabled" not in out
+    assert "Enabled" in out
+    assert ("enable", "mongo.service") in fr.systemctl_calls
+
+
+def test_enable_removes_dropin_and_reports_enabled(tmp_path, capsys):
+    (tmp_path / "mongo.container").write_text("[Install]\nWantedBy=default.target\n")
+    dropin_dir = tmp_path / "mongo.container.d"
+    dropin_dir.mkdir()
+    (dropin_dir / "90-visp-autostart.conf").write_text("[Install]\nWantedBy=\n")
+    fr = IsEnabledRunner("generated")
+    m = ServiceManager(fr, DEFAULT_SERVICES, systemd_dir=tmp_path)
+
+    m.enable("mongo")
+    out = capsys.readouterr().out
+
+    assert not (dropin_dir / "90-visp-autostart.conf").exists()
+    assert "Enabled" in out
+    assert ("enable", "mongo.service") not in fr.systemctl_calls
 
 
 def test_enable_disable(tmp_path, capsys):

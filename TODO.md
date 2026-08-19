@@ -219,7 +219,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 - [x] **19. `build --config` silently ignored for non-webclient builds**
   - `vispctl/build.py:349-354` — warn (or error) when `--config` is given for a
     target whose build template has no `{config}` placeholder.
-- [ ] **20. `up` "Already enabled" false positive**
+- [x] **20. `up` "Already enabled" false positive**
   - `vispctl/service_manager.py:62-70` — enabled is inferred from drop-in absence
     only; a manual `systemctl --user disable` would be misreported as enabled.
   - Fix: cross-check with `systemctl --user is-enabled`.
