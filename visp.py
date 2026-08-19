@@ -100,29 +100,23 @@ def _container_services(services: list[Service]) -> list[Service]:
     return [s for s in services if s.type == "container"]
 
 
-def _resolve_service_names(
-    args: argparse.Namespace,
-    cfg: object,
-    filter_containers: bool = False,
-    include_disabled: bool = False,
-) -> list[str]:
+def _resolve_service_names(args: argparse.Namespace, cfg: object, include_disabled: bool = False) -> list[str]:
     """Resolve args.services to a list of service names.
 
     When args.services is empty or ['all'], resolves all services.
     Otherwise, resolves each named service individually.
+
+    Network services are included — ServiceManager skips them with a note
+    (their units come up via Requires= from the containers).
     """
     services = args.services
     if not services or services == ["all"]:
         resolved = resolve_services("all", cfg.project_dir, include_disabled=include_disabled)
-        if filter_containers:
-            resolved = _container_services(resolved)
         return [svc.name for svc in resolved]
     else:
         names: list[str] = []
         for s in services:
             resolved = resolve_services(s, cfg.project_dir, include_disabled=include_disabled)
-            if filter_containers:
-                resolved = _container_services(resolved)
             names.extend(svc.name for svc in resolved)
         return names
 
@@ -183,7 +177,7 @@ def cmd_start(args):
     """Start service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    names = _resolve_service_names(args, cfg, filter_containers=True)
+    names = _resolve_service_names(args, cfg)
     sm.start(names)
 
 
@@ -199,7 +193,7 @@ def cmd_up(args):
     """Enable and start service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    names = _resolve_service_names(args, cfg, filter_containers=True)
+    names = _resolve_service_names(args, cfg)
     sm.enable(names)
     sm.start(names)
 
@@ -208,7 +202,7 @@ def cmd_down(args):
     """Stop and disable service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    names = _resolve_service_names(args, cfg, filter_containers=True, include_disabled=True)
+    names = _resolve_service_names(args, cfg, include_disabled=True)
     sm.stop(names)
     sm.disable(names)
 
@@ -221,11 +215,11 @@ def cmd_restart(args):
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
         print(color("Stopping services...", Colors.YELLOW))
-        names = _resolve_service_names(args, cfg, filter_containers=True, include_disabled=True)
+        names = _resolve_service_names(args, cfg, include_disabled=True)
         sm.stop(names)
         print()
         print(color("Starting services...", Colors.GREEN))
-        start_names = _resolve_service_names(args, cfg, filter_containers=True)
+        start_names = _resolve_service_names(args, cfg)
         sm.start(start_names)
     else:
         names = _resolve_service_names(args, cfg)

@@ -158,7 +158,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     output is captured (`capture=True`) and the `CompletedProcess` is discarded.
   - Fix: print the captured stdout+stderr under the label.
   - Verify: `./visp.py debug mongo` shows unit state, main PID, and recent journal.
-- [ ] **9. `stop all` / `uninstall` / `restart <network>`: bogus `.service` errors**
+- [x] **9. `stop all` / `uninstall` / `restart <network>`: bogus `.service` errors**
   - `vispctl/service_manager.py:18-19` always appends `.service`; network units are
     `<name>-network.service` and don't need stopping anyway. `stop all` and
     `uninstall` print two guaranteed "Unit … not loaded" errors; `start <network>`

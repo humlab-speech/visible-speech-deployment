@@ -147,7 +147,10 @@ def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
     start_targets = called["start"][0]
     assert isinstance(start_targets, list)
     assert "session-manager" in start_targets
-    assert "visp-net" not in start_targets
+    # Networks are passed through to ServiceManager, which skips them with a note
+    # (their units come up via Requires= from the containers).
+    assert "visp-net" in stop_targets
+    assert "visp-net" in start_targets
 
 
 def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):

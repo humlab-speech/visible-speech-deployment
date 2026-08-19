@@ -62,6 +62,59 @@ def test_start_stop(capsys):
     assert "Stopped" in out
 
 
+def test_start_stop_skip_networks(capsys):
+    # Network quadlets generate '<name>-network.service' units, not '<name>.service',
+    # and are pulled up via Requires= — lifecycle commands must not call systemctl on them.
+    services = DEFAULT_SERVICES
+    fr = FakeRunner()
+    m = ServiceManager(fr, services)
+
+    m.start("visp-net")
+    out = capsys.readouterr().out
+    assert "visp-net.service" not in out
+    assert "skipped" in out
+    assert not any("visp-net.service" in arg for call in fr.systemctl_calls for arg in call)
+
+    m.stop("visp-net")
+    out = capsys.readouterr().out
+    assert "skipped" in out
+    assert not any("visp-net.service" in arg for call in fr.systemctl_calls for arg in call)
+
+
+def test_stop_all_skips_networks(capsys):
+    services = DEFAULT_SERVICES
+    fr = FakeRunner()
+    m = ServiceManager(fr, services)
+
+    m.stop("all")
+    out = capsys.readouterr().out
+    # Containers are stopped, networks are skipped with a note.
+    assert "Stopping mongo.service" in out
+    assert "visp-net.service" not in out
+    assert "octra-net.service" not in out
+    assert out.count("skipped") == 2
+    stopped = [arg for call in fr.systemctl_calls if call[0] == "stop" for arg in call]
+    assert "visp-net.service" not in stopped
+    assert "octra-net.service" not in stopped
+    assert "mongo.service" in stopped
+
+
+def test_enable_disable_skip_networks(tmp_path, capsys):
+    services = DEFAULT_SERVICES
+    fr = FakeRunner()
+    m = ServiceManager(fr, services, systemd_dir=tmp_path)
+
+    m.disable("visp-net")
+    out = capsys.readouterr().out
+    assert "skipped" in out
+    assert not (tmp_path / "visp-net.network.d").exists()
+
+    m.enable("visp-net")
+    out = capsys.readouterr().out
+    assert "skipped" in out
+    assert not (tmp_path / "visp-net.network.d").exists()
+
+
 def test_enable_disable(tmp_path, capsys):
     services = DEFAULT_SERVICES
     fr = FakeRunner()

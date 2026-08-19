@@ -32,16 +32,25 @@ class ServiceManager:
     def _resolve_targets(self, names: Iterable[str] | str, reverse: bool = False) -> list[Service]:
         """Resolve service names to a list of Service objects."""
         if names == "all":
-            targets = [s for s in self.services if s.type == "container"]
+            targets = list(self.services)
         else:
             if isinstance(names, str):
                 names = [names]
             targets = [s for s in self.services if s.name in names]
         return list(reversed(targets)) if reverse else targets
 
+    @staticmethod
+    def _note_skip_network(svc: Service) -> None:
+        # Network quadlets generate '<name>-network.service' units that are pulled
+        # up via Requires= from the containers — no lifecycle action is needed.
+        print(color(f"  ○ {svc.name}: network — skipped (comes up via Requires= from containers)", Colors.DIM))
+
     def start(self, names: Iterable[str] | str = "all") -> None:
         targets = self._resolve_targets(names)
         for svc in targets:
+            if svc.type == "network":
+                self._note_skip_network(svc)
+                continue
             print(f"Starting {self._svc_name(svc)}...")
             res = self.runner.systemctl("start", self._svc_name(svc))
             if res.returncode != 0:
@@ -53,6 +62,9 @@ class ServiceManager:
         targets = self._resolve_targets(names)
         changed = False
         for svc in targets:
+            if svc.type == "network":
+                self._note_skip_network(svc)
+                continue
             print(f"Enabling autostart for {self._svc_name(svc)}...")
             source = self.systemd_dir / svc.file
             if not source.exists():
@@ -76,6 +88,9 @@ class ServiceManager:
         targets = self._resolve_targets(names, reverse=True)
 
         for svc in targets:
+            if svc.type == "network":
+                self._note_skip_network(svc)
+                continue
             print(f"Stopping {self._svc_name(svc)}...")
             res = self.runner.systemctl("stop", self._svc_name(svc))
             if res.returncode != 0:
@@ -87,6 +102,9 @@ class ServiceManager:
         targets = self._resolve_targets(names, reverse=True)
         changed = False
         for svc in targets:
+            if svc.type == "network":
+                self._note_skip_network(svc)
+                continue
             print(f"Disabling autostart for {self._svc_name(svc)}...")
             source = self.systemd_dir / svc.file
             if not source.exists():
