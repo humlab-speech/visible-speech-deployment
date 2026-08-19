@@ -231,7 +231,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ### Phase 4 — Docs & polish
 
-- [ ] **22. Stale "link" wording for install/uninstall**
+- [x] **22. Stale "link" wording for install/uninstall**
   - Help says "Link quadlet files to systemd" / "Overwrite existing links" /
     "Remove quadlet links", but the code renders templates and copies files
     (`vispctl/install.py:541-545`). The `=== Quadlet Links ===` table and its dead

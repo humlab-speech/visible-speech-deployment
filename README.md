@@ -75,8 +75,8 @@ running Jupyter sessions must be restarted — see AGENTS.md for the full caveat
 
 ```bash
 # Lifecycle
-./visp.py install [--mode dev|prod]  # Link quadlets + create secrets
-./visp.py uninstall                  # Remove quadlet links + secrets
+./visp.py install [--mode dev|prod]  # Install quadlet units + create secrets
+./visp.py uninstall                  # Remove quadlet units + secrets
 ./visp.py reload                     # systemctl --user daemon-reload
 ./visp.py start all / stop all / restart all
 ./visp.py restart <service>

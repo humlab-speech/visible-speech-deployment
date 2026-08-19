@@ -10,8 +10,8 @@ Commands:
   up          Enable and start service(s)
   down        Stop and disable service(s)
   restart     Restart service(s) or entire cluster
-  install     Link quadlet files to systemd directory
-  uninstall   Remove quadlet links from systemd directory
+  install     Install quadlet units into the systemd directory
+  uninstall   Remove quadlet units from the systemd directory
   reload      Reload systemd daemon (after quadlet changes)
   apply       Apply quadlet changes in one step (install --force + reload + restart)
   mode        Show or set deployment mode (dev/prod)
@@ -235,7 +235,7 @@ def cmd_restart(args):
 
 
 def cmd_install(args):
-    """Link quadlet files to systemd directory."""
+    """Install quadlet units into the systemd directory."""
     from vispctl.install import run_install
 
     cfg = get_config()
@@ -256,7 +256,7 @@ def cmd_install(args):
 
 
 def cmd_uninstall(args):
-    """Remove quadlet links from systemd directory."""
+    """Remove quadlet units from the systemd directory."""
     cfg = get_config()
     services = resolve_services(args.service, cfg.project_dir, include_disabled=True)
 
@@ -267,7 +267,7 @@ def cmd_uninstall(args):
         sm.stop(names)
 
     print()
-    print(color("Removing links...", Colors.CYAN))
+    print(color("Removing units...", Colors.CYAN))
 
     for svc in services:
         target = cfg.systemd_dir / svc.file
@@ -705,7 +705,7 @@ Examples:
   visp-ctl down all            # Stop and disable all services
   visp-ctl restart all         # Restart entire cluster
   visp-ctl restart mongo       # Restart just mongo
-  visp-ctl install all         # Link all quadlets
+  visp-ctl install all         # Install all quadlet units
   visp-ctl reload              # Reload systemd after quadlet changes
   visp-ctl debug mongo         # Debug mongo startup issues
   visp-ctl shell session-manager  # Open bash in session-manager
@@ -769,14 +769,16 @@ Examples:
     p_restart.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # install
-    p_install = subparsers.add_parser("install", aliases=["i"], help="Link quadlet files to systemd")
+    p_install = subparsers.add_parser("install", aliases=["i"], help="Install quadlet units into the systemd directory")
     p_install.set_defaults(func=cmd_install)
     p_install.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
-    p_install.add_argument("-f", "--force", action="store_true", help="Overwrite existing links")
+    p_install.add_argument("-f", "--force", action="store_true", help="Overwrite already-installed units")
     p_install.add_argument("-m", "--mode", choices=["dev", "prod"], help="Deployment mode (dev or prod)")
 
     # uninstall
-    p_uninstall = subparsers.add_parser("uninstall", aliases=["u"], help="Remove quadlet links")
+    p_uninstall = subparsers.add_parser(
+        "uninstall", aliases=["u"], help="Remove quadlet units from the systemd directory"
+    )
     p_uninstall.set_defaults(func=cmd_uninstall)
     p_uninstall.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_uninstall.add_argument("--keep-running", action="store_true", help="Don't stop services first")
