@@ -176,7 +176,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ### Phase 3 — UX & consistency
 
-- [ ] **11. Piped output reordering (systemic)**
+- [x] **11. Piped output reordering (systemic)**
   - `vispctl/runner.py:36-40` — non-captured subprocesses inherit the pipe while
     Python `print` is block-buffered, so raw output appears *before* the headers
     when piped (affects `status`, `images`, `logs`, `debug`, `backup`).

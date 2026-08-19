@@ -49,6 +49,7 @@ Mode examples:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -1124,6 +1125,12 @@ Examples:
         args.func(args)
     except VispError as e:
         print(color(f"Error: {e}", Colors.RED))
+        sys.exit(1)
+    except BrokenPipeError:
+        # A downstream consumer (e.g. 'head') closed the pipe. Redirect stdout
+        # to devnull so the interpreter-shutdown flush doesn't raise again.
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
         sys.exit(1)
     except KeyboardInterrupt:
         print()

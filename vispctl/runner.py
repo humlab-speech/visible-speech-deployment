@@ -33,10 +33,18 @@ class Runner:
     This intentionally mirrors the small API used in `visp.py`.
     """
 
+    @staticmethod
+    def _flush_stdio() -> None:
+        # Ensure buffered Python output reaches the pipe before a non-captured
+        # child writes to it, keeping header/label ordering when piped.
+        sys.stdout.flush()
+        sys.stderr.flush()
+
     def run(self, cmd: List[str], capture: bool = False, check: bool = True, **kwargs) -> subprocess.CompletedProcess:
         """Run a command. Accepts additional subprocess.run kwargs like 'input'."""
         if capture:
             return subprocess.run(cmd, capture_output=True, text=True, check=check, **kwargs)
+        self._flush_stdio()
         return subprocess.run(cmd, check=check, **kwargs)
 
     def run_quiet(self, cmd: List[str]) -> Tuple[int, str, str]:
@@ -48,6 +56,7 @@ class Runner:
         return self.run(["systemctl", "--user", *args], capture=True, check=check)
 
     def journalctl(self, *args) -> subprocess.CompletedProcess:
+        self._flush_stdio()
         return subprocess.run(["journalctl", "--user", *args])
 
 
