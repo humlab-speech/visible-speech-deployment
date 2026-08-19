@@ -184,7 +184,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     echo).
   - Verify: `./visp.py status | head -5` starts with the cyan header, not raw
     `podman ps` output.
-- [ ] **12. `status`: duplicate header + stale "(PoC)" label**
+- [x] **12. `status`: duplicate header + stale "(PoC)" label**
   - `visp.py:129` + `vispctl/service_manager.py:112` — two near-identical headers;
     the first has no body; "(PoC)" is a leftover from the quadlet-migration PoC.
   - Fix: keep one header. Update `tests/vispctl/test_service_manager.py`, which

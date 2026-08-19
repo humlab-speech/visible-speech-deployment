@@ -34,6 +34,15 @@ def test_status_prints(capsys):
         assert s.name in captured
 
 
+def test_status_header_single_and_no_poc_label(capsys):
+    services = DEFAULT_SERVICES
+    m = ServiceManager(FakeRunner(), services)
+    m.status()
+    out = capsys.readouterr().out
+    assert out.count("VISP Service Status") == 1
+    assert "(PoC)" not in out
+
+
 def test_network_status_shows_active(capsys):
     # Ensure network services are shown as active when podman network exists
     services = DEFAULT_SERVICES

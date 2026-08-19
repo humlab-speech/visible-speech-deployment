@@ -127,7 +127,7 @@ class ServiceManager:
             self._reload_systemd()
 
     def status(self) -> None:
-        print(color("=== VISP Service Status (PoC) ===", Colors.CYAN))
+        print(color("=== VISP Service Status ===", Colors.CYAN))
         for svc in self.services:
             if svc.type == "network":
                 # For networks, check Podman network existence

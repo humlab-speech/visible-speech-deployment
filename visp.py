@@ -128,8 +128,6 @@ def _resolve_service_names(args: argparse.Namespace, cfg: object, include_disabl
 def cmd_status(args):  # noqa: ARG001
     """Show status of all services and containers."""
     cfg = get_config()
-    print(color("=== VISP Service Status ===", Colors.CYAN))
-    print()
 
     runtime_services = get_runtime_services()
 

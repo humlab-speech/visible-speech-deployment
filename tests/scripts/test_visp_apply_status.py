@@ -29,7 +29,8 @@ def test_cmd_status_outputs_service_header(tmp_path, monkeypatch, capsys):
             pass
 
         def status(self):
-            pass
+            # Mirrors ServiceManager.status(), which owns the single header.
+            print("=== VISP Service Status ===")
 
     runner = vp.Runner()
     runner._run = lambda *a, **kw: None
