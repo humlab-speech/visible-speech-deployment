@@ -351,6 +351,13 @@ class BuildManager:
             validate_build_config(cfg)
             build_cmd = build_cmd_template.format(config=cfg)
         else:
+            if build_config:
+                print(
+                    color(
+                        f"  ⚠ --config {build_config} ignored: {name} does not use build configs (webclient only)",
+                        Colors.YELLOW,
+                    )
+                )
             build_cmd = build_cmd_template
 
         container_image = config.get("container_image", "node:20-alpine")

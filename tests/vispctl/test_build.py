@@ -65,6 +65,56 @@ def test_build_node_project_invokes_podman_run(tmp_path):
     assert "node:fake" in runner.last_cmd
 
 
+def test_build_node_project_warns_on_ignored_config(tmp_path, capsys):
+    # Projects whose build_cmd has no {config} placeholder ignore --config —
+    # that must be visible, not silent.
+    source = tmp_path / "src"
+    output = tmp_path / "out"
+    source.mkdir()
+    (source / "package.json").write_text("{}")
+
+    config = {
+        "source": str(source.resolve()),
+        "output": str(output.resolve()),
+        "description": "test",
+        "build_cmd": "npm run build",
+        "verify_file": "main.js",
+        "container_image": "node:fake",
+    }
+
+    runner = FakeRunner()
+    bm = BuildManager(runner, build_configs={}, node_configs={})
+
+    success = bm.build_node_project("container-agent", config, build_config="visp.dev")
+    assert success is True
+    out = capsys.readouterr().out
+    assert "--config visp.dev ignored" in out
+    assert "container-agent" in out
+
+
+def test_build_node_project_no_warning_without_config(tmp_path, capsys):
+    source = tmp_path / "src"
+    output = tmp_path / "out"
+    source.mkdir()
+    (source / "package.json").write_text("{}")
+
+    config = {
+        "source": str(source.resolve()),
+        "output": str(output.resolve()),
+        "description": "test",
+        "build_cmd": "npm run build",
+        "verify_file": "main.js",
+        "container_image": "node:fake",
+    }
+
+    runner = FakeRunner()
+    bm = BuildManager(runner, build_configs={}, node_configs={})
+
+    success = bm.build_node_project("container-agent", config)
+    assert success is True
+    assert "ignored" not in capsys.readouterr().out
+
+
 def test_build_node_project_runs_pre_build(tmp_path):
     """When a config has pre_build_cmd, it should run a separate container first."""
     source = tmp_path / "src"
