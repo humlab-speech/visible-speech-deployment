@@ -105,3 +105,67 @@ def test_rollback_missing_locked_version_skips(tmp_path):
 
     assert ok is False
     assert _head(repo_dir) == sha2  # repo untouched
+
+
+# ── _build_status_summary ─────────────────────────────────────────────────────
+
+
+def _repo_row(name, build_status):
+    return {"Repository": name, "Build Status": build_status}
+
+
+def _image_row(image, status):
+    return {"Image": image, "Status": status, "Detail": ""}
+
+
+def test_summary_includes_dirty_build_and_image_warnings(tmp_path):
+    dm = DeployManager(basedir=str(tmp_path))
+
+    status_results = [
+        _repo_row("session-manager", "✅ UP TO DATE ⚠ DIRTY BUILD"),
+        _repo_row("wsrng-server", "⚠ UNKNOWN"),
+        _repo_row("artic", "✅ UP TO DATE"),
+    ]
+    image_rows = [
+        _image_row("octra", "⚠ NO LABEL"),
+        _image_row("matomo", "⚠ NO TIMESTAMP"),
+        _image_row("whisperx", "✅ UP TO DATE"),
+    ]
+
+    lines, all_clean = dm._build_status_summary(status_results, image_rows, [], [], [], [])
+    out = "\n".join(lines)
+
+    assert "Dirty builds (rebuild from clean state recommended): session-manager" in out
+    assert "Build status unknown (image has no git label): wsrng-server" in out
+    assert "Container images missing git labels: octra" in out
+    assert "Container images missing build timestamps: matomo" in out
+    assert not all_clean
+
+    # Recommended actions include builds for every problem component.
+    assert any("build" in line and "session-manager" in line for line in lines)
+    assert any("build" in line and "wsrng-server" in line for line in lines)
+    assert any("build" in line and "octra" in line for line in lines)
+    assert any("build" in line and "matomo" in line for line in lines)
+
+
+def test_summary_all_clean(tmp_path):
+    dm = DeployManager(basedir=str(tmp_path))
+
+    status_results = [_repo_row("artic", "✅ UP TO DATE")]
+    image_rows = [_image_row("octra", "✅ UP TO DATE")]
+
+    lines, all_clean = dm._build_status_summary(status_results, image_rows, [], [], [], [])
+
+    assert all_clean
+    assert "✅ All repositories are clean and synced!" in lines
+
+
+def test_summary_dirty_build_alone_is_not_clean(tmp_path):
+    dm = DeployManager(basedir=str(tmp_path))
+
+    status_results = [_repo_row("session-manager", "✅ UP TO DATE ⚠ DIRTY BUILD")]
+
+    lines, all_clean = dm._build_status_summary(status_results, [], [], [], [], [])
+
+    assert not all_clean
+    assert "All repositories are clean" not in "\n".join(lines)

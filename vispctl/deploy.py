@@ -682,15 +682,47 @@ class DeployManager:
         print("=" * 100)
 
         # Summary
+        summary_lines, all_clean = self._build_status_summary(
+            status_results,
+            image_status_rows,
+            repos_with_changes,
+            repos_ahead,
+            repos_behind,
+            node_build_warnings,
+        )
+
+        for line in summary_lines:
+            print(line)
+        print("=" * 100)
+
+        return all_clean
+
+    def _build_status_summary(
+        self,
+        status_results: list[dict],
+        image_status_rows: list[dict],
+        repos_with_changes: list[str],
+        repos_ahead: list[str],
+        repos_behind: list[str],
+        node_build_warnings: list[str],
+    ) -> tuple[list[str], bool]:
+        """Build the situation-overview / recommended-actions summary lines.
+
+        Returns ``(summary_lines, all_clean)``.
+        """
         summary_lines = []
 
         # Check build status
         needs_rebuild = [r for r in status_results if r.get("Build Status", "").startswith("⚠ STALE")]
         not_built = [r for r in status_results if r.get("Build Status", "").startswith("❌ NOT BUILT")]
+        dirty_builds = [r for r in status_results if "⚠ DIRTY BUILD" in r.get("Build Status", "")]
+        unknown_builds = [r for r in status_results if r.get("Build Status", "").startswith("⚠ UNKNOWN")]
 
         # Add container image warnings to summary
         stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠ STALE")]
         not_built_images = [d for d in image_status_rows if d["Status"].startswith("❌ NOT BUILT")]
+        no_label_images = [d for d in image_status_rows if d["Status"].startswith("⚠ NO LABEL")]
+        no_timestamp_images = [d for d in image_status_rows if d["Status"].startswith("⚠ NO TIMESTAMP")]
 
         # ── Situation overview ────────────────────────────────────────
         if repos_with_changes:
@@ -710,6 +742,14 @@ class DeployManager:
             names = [r["Repository"] for r in needs_rebuild]
             summary_lines.append(f"⚠  Components need rebuild (source changed): {', '.join(names)}")
 
+        if dirty_builds:
+            names = [r["Repository"] for r in dirty_builds]
+            summary_lines.append(f"⚠  Dirty builds (rebuild from clean state recommended): {', '.join(names)}")
+
+        if unknown_builds:
+            names = [r["Repository"] for r in unknown_builds]
+            summary_lines.append(f"⚠  Build status unknown (image has no git label): {', '.join(names)}")
+
         if not_built_images:
             names = [d["Image"] for d in not_built_images]
             summary_lines.append(f"❌ Container images not built: {', '.join(names)}")
@@ -717,6 +757,14 @@ class DeployManager:
         if stale_images:
             names = [d["Image"] for d in stale_images]
             summary_lines.append(f"⚠  Container images need rebuild: {', '.join(names)}")
+
+        if no_label_images:
+            names = [d["Image"] for d in no_label_images]
+            summary_lines.append(f"⚠  Container images missing git labels: {', '.join(names)}")
+
+        if no_timestamp_images:
+            names = [d["Image"] for d in no_timestamp_images]
+            summary_lines.append(f"⚠  Container images missing build timestamps: {', '.join(names)}")
 
         if node_build_warnings:
             summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
@@ -741,10 +789,18 @@ class DeployManager:
             to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in not_built)
         if needs_rebuild:
             to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
+        if dirty_builds:
+            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in dirty_builds)
+        if unknown_builds:
+            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in unknown_builds)
         if not_built_images:
             to_build.extend(d["Image"] for d in not_built_images)
         if stale_images:
             to_build.extend(d["Image"] for d in stale_images)
+        if no_label_images:
+            to_build.extend(d["Image"] for d in no_label_images)
+        if no_timestamp_images:
+            to_build.extend(d["Image"] for d in no_timestamp_images)
         # Node build warnings already recommend per-service builds
         if node_build_warnings:
             for nb_name, nb_cfg in NODE_BUILD_CONFIGS.items():
@@ -769,8 +825,14 @@ class DeployManager:
         restart_candidates: list[str] = []
         if needs_rebuild:
             restart_candidates.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
+        if dirty_builds:
+            restart_candidates.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in dirty_builds)
         if stale_images:
             restart_candidates.extend(d["Image"] for d in stale_images)
+        if no_label_images:
+            restart_candidates.extend(d["Image"] for d in no_label_images)
+        if no_timestamp_images:
+            restart_candidates.extend(d["Image"] for d in no_timestamp_images)
         if restart_candidates:
             seen_r: set[str] = set()
             unique_restarts = [n for n in restart_candidates if n not in seen_r and not seen_r.add(n)]  # type: ignore[func-returns-value]
@@ -783,8 +845,12 @@ class DeployManager:
             and not node_build_warnings
             and not needs_rebuild
             and not not_built
+            and not dirty_builds
+            and not unknown_builds
             and not stale_images
             and not not_built_images
+            and not no_label_images
+            and not no_timestamp_images
         )
 
         if all_clean:
@@ -795,11 +861,7 @@ class DeployManager:
             for i, cmd in enumerate(actions, 1):
                 summary_lines.append(f"  {i}. {cmd}")
 
-        for line in summary_lines:
-            print(line)
-        print("=" * 100)
-
-        return all_clean
+        return summary_lines, all_clean
 
     def lock_components(self, components: list[str], lock_all: bool = False) -> bool:
         """

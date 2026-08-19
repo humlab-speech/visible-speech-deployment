@@ -209,7 +209,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     while `backup.py:44-49` deliberately uses a 0600 `--config` file for the same
     credential.
   - Fix: reuse the backup config-file pattern in `vispctl/mongo.py`.
-- [ ] **17. `deploy status` summary drops non-STALE problem rows**
+- [x] **17. `deploy status` summary drops non-STALE problem rows**
   - `vispctl/deploy.py:688` — the recommended-actions filter matches only
     `startswith("⚠ STALE")`, so `DIRTY BUILD` / `NO LABEL` / `NO TIMESTAMP` rows are
     visible in the table but never summarized.
