@@ -657,6 +657,15 @@ class DeployManager:
         print("REPOSITORY STATUS CHECK")
         print("=" * 100)
 
+        if not Path(self.config.filepath).exists():
+            print()
+            print(
+                "⚠  versions.json not found — no versions are locked; "
+                "all components show as UNLOCKED (tracking latest)."
+            )
+            print("   Run './visp.py deploy lock --all' to record the current versions.")
+            print()
+
         if deployment_repo_status:
             print("\n🔧 DEPLOYMENT REPOSITORY (visible-speech-deployment)")
             print("-" * 100)
