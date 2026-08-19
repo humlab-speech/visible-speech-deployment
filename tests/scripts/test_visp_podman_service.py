@@ -186,6 +186,62 @@ def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
     assert "whisperx" not in start_targets
 
 
+def _fake_exec_env(monkeypatch, vp, returncode):
+    """Monkeypatch get_config/get_runtime_services for cmd_exec/cmd_shell tests."""
+    from vispctl.service import Service
+
+    calls = {}
+
+    class FakeRunner:
+        def run(self, cmd, **kwargs):
+            calls["cmd"] = cmd
+            calls["kwargs"] = kwargs
+
+            class R:
+                pass
+
+            r = R()
+            r.returncode = returncode
+            return r
+
+    cfg = types.SimpleNamespace(runner=FakeRunner())
+    monkeypatch.setattr(vp, "get_config", lambda: cfg)
+    monkeypatch.setattr(vp, "get_runtime_services", lambda **kw: [Service("mongo", "container", "mongo.container")])
+    return calls
+
+
+def test_cmd_exec_propagates_exit_code(monkeypatch):
+    vp = load_visp_module()
+    _fake_exec_env(monkeypatch, vp, returncode=125)
+
+    with pytest.raises(SystemExit) as exc:
+        vp.cmd_exec(types.SimpleNamespace(container="mongo", exec_command=["echo", "hi"]))
+    assert exc.value.code == 125
+
+
+def test_cmd_shell_propagates_exit_code(monkeypatch):
+    vp = load_visp_module()
+    _fake_exec_env(monkeypatch, vp, returncode=1)
+
+    with pytest.raises(SystemExit) as exc:
+        vp.cmd_shell(types.SimpleNamespace(container="mongo", shell="/bin/bash"))
+    assert exc.value.code == 1
+
+
+def test_cmd_exec_warns_on_unknown_container(monkeypatch, capsys):
+    vp = load_visp_module()
+    _fake_exec_env(monkeypatch, vp, returncode=0)
+
+    vp.cmd_exec(types.SimpleNamespace(container="nosuch", exec_command=["echo", "hi"]))
+    out = capsys.readouterr().out
+    assert "Warning" in out
+    assert "nosuch" in out
+
+    vp.cmd_exec(types.SimpleNamespace(container="mongo", exec_command=["echo", "hi"]))
+    out = capsys.readouterr().out
+    assert "Warning" not in out
+
+
 def test_resolve_services_reports_disabled_optional_service(monkeypatch):
     import vispctl.env as env_mod
     import vispctl.quadlets as q_mod

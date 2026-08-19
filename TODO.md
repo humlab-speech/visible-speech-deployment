@@ -168,7 +168,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     up via `Requires=` from the containers) and make the commands consistent.
   - Verify: `./visp.py stop all` and `./visp.py uninstall --keep-running` produce
     no red errors.
-- [ ] **10. `exec`/`shell` swallow failures (always exit 0)**
+- [x] **10. `exec`/`shell` swallow failures (always exit 0)**
   - `visp.py:368,374` — `check=False` discards podman's exit code; no validation
     that the container name is a known VISP service either.
   - Fix: propagate the exit code; warn (not hard-fail) for unknown container names.

@@ -379,16 +379,33 @@ def cmd_mode(args):
 # === Container Commands ===
 
 
+def _warn_if_unknown_container(name: str) -> None:
+    """Warn (not fail) when the target is not a known VISP container service.
+
+    Unknown names are still attempted — session containers and other host
+    containers are legitimate exec targets.
+    """
+    known = {s.name for s in get_runtime_services(include_disabled=True) if s.type == "container"}
+    if name not in known:
+        print(color(f"Warning: '{name}' is not a known VISP container service — continuing anyway", Colors.YELLOW))
+
+
 def cmd_exec(args):
     """Execute command in container."""
     cfg = get_config()
-    cfg.runner.run(["podman", "exec", "-it", args.container, *args.exec_command], check=False)
+    _warn_if_unknown_container(args.container)
+    result = cfg.runner.run(["podman", "exec", "-it", args.container, *args.exec_command], check=False)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
 
 
 def cmd_shell(args):
     """Open shell in container."""
     cfg = get_config()
-    cfg.runner.run(["podman", "exec", "-it", args.container, args.shell or "/bin/bash"], check=False)
+    _warn_if_unknown_container(args.container)
+    result = cfg.runner.run(["podman", "exec", "-it", args.container, args.shell or "/bin/bash"], check=False)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
 
 
 def cmd_npm(args):
