@@ -223,7 +223,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - `vispctl/service_manager.py:62-70` — enabled is inferred from drop-in absence
     only; a manual `systemctl --user disable` would be misreported as enabled.
   - Fix: cross-check with `systemctl --user is-enabled`.
-- [ ] **21. `doctor` nits**
+- [x] **21. `doctor` nits**
   - `--only` doesn't strip whitespace around IDs (`visp.py:576`).
   - `--apply` without `--fix` is a silent no-op (`vispctl/doctor.py:544`) → warn.
   - Unguarded `iterdir()`/`stat()` can traceback on a permission-denied project

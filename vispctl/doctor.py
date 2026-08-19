@@ -370,175 +370,187 @@ def _diagnose_project(
         report["issues"].append("Repository directory missing on disk")
         return report
 
-    db_path = _emu_db_path(pid)
-    if not db_path.exists():
-        report["warnings"].append("emuDB not set up yet (no Data/VISP_emuDB/)")
-        return report
+    try:
+        db_path = _emu_db_path(pid)
+        if not db_path.exists():
+            report["warnings"].append("emuDB not set up yet (no Data/VISP_emuDB/)")
+            return report
 
-    # DBconfig.json
-    dbconfig = db_path / "VISP_DBconfig.json"
-    if not dbconfig.exists():
-        report["issues"].append("VISP_DBconfig.json missing")
+        # DBconfig.json
+        dbconfig = db_path / "VISP_DBconfig.json"
+        if not dbconfig.exists():
+            report["issues"].append("VISP_DBconfig.json missing")
 
-    # Stale cache
-    cache = db_path / "VISP_emuDBcache.sqlite"
-    if cache.exists():
-        if fix_cache:
-            try:
-                cache.unlink()
-                report["warnings"].append("Stale emuDB cache deleted (--fix-cache)")
-            except PermissionError:
-                # File owned by container user namespace — use podman unshare
-                result = subprocess.run(["podman", "unshare", "rm", "-f", str(cache)], capture_output=True, check=False)
-                if result.returncode == 0:
-                    report["warnings"].append("Stale emuDB cache deleted via podman unshare (--fix-cache)")
-                else:
-                    report["issues"].append(f"Cannot delete stale cache (permission denied): {cache}")
-        else:
-            report["warnings"].append("Stale emuDB cache present (may cause load_emuDB failures, use --fix-cache)")
+        # Stale cache
+        cache = db_path / "VISP_emuDBcache.sqlite"
+        if cache.exists():
+            if fix_cache:
+                try:
+                    cache.unlink()
+                    report["warnings"].append("Stale emuDB cache deleted (--fix-cache)")
+                except PermissionError:
+                    # File owned by container user namespace — use podman unshare
+                    result = subprocess.run(
+                        ["podman", "unshare", "rm", "-f", str(cache)], capture_output=True, check=False
+                    )
+                    if result.returncode == 0:
+                        report["warnings"].append("Stale emuDB cache deleted via podman unshare (--fix-cache)")
+                    else:
+                        report["issues"].append(f"Cannot delete stale cache (permission denied): {cache}")
+            else:
+                report["warnings"].append("Stale emuDB cache present (may cause load_emuDB failures, use --fix-cache)")
 
-    # Gather data from both sources
-    mongo_sessions = {s["name"]: s for s in project.get("sessions", []) if not s.get("deleted")}
-    disk_sessions = _disk_sessions(pid)
-    bundle_lists = _bundle_list_entries(pid)
+        # Gather data from both sources
+        mongo_sessions = {s["name"]: s for s in project.get("sessions", []) if not s.get("deleted")}
+        disk_sessions = _disk_sessions(pid)
+        bundle_lists = _bundle_list_entries(pid)
 
-    # Combine the union of session names, optionally filtered
-    all_session_names = sorted(set(mongo_sessions.keys()) | set(disk_sessions.keys()))
-    if session_filter:
-        all_session_names = [n for n in all_session_names if n == session_filter]
+        # Combine the union of session names, optionally filtered
+        all_session_names = sorted(set(mongo_sessions.keys()) | set(disk_sessions.keys()))
+        if session_filter:
+            all_session_names = [n for n in all_session_names if n == session_filter]
 
-    for ses_name in all_session_names:
-        in_mongo = ses_name in mongo_sessions
-        on_disk = ses_name in disk_sessions
-        ses_report = {
-            "name": ses_name,
-            "in_mongo": in_mongo,
-            "on_disk": on_disk,
-            "bundles": [],
-        }
-
-        if in_mongo and not on_disk:
-            report["issues"].append(f"Session '{ses_name}' in MongoDB but missing on disk")
-        elif on_disk and not in_mongo:
-            report["warnings"].append(f"Session '{ses_name}' on disk but not in MongoDB (orphan)")
-
-        # Gather bundle info from disk
-        disk_bndls = _disk_bundles(disk_sessions[ses_name]) if on_disk else {}
-
-        # Gather expected bundles from MongoDB files
-        mongo_files = {}
-        if in_mongo:
-            for f in mongo_sessions[ses_name].get("files", []):
-                bndl_name = _file_to_bundle_name(f["name"])
-                mongo_files[bndl_name] = f
-
-        # Union of bundle names, optionally filtered
-        all_bundle_names = sorted(set(disk_bndls.keys()) | set(mongo_files.keys()))
-        if bundle_filter:
-            all_bundle_names = [n for n in all_bundle_names if n == bundle_filter]
-
-        for bndl_name in all_bundle_names:
-            bndl_on_disk = bndl_name in disk_bndls
-            bndl_in_mongo = bndl_name in mongo_files
-            bndl_report = {
-                "name": bndl_name,
-                "on_disk": bndl_on_disk,
-                "in_mongo": bndl_in_mongo,
-                "audio_files": [],
-                "has_annot": False,
-                "transcriptions": [],
-                "in_bundle_lists": [],
+        for ses_name in all_session_names:
+            in_mongo = ses_name in mongo_sessions
+            on_disk = ses_name in disk_sessions
+            ses_report = {
+                "name": ses_name,
+                "in_mongo": in_mongo,
+                "on_disk": on_disk,
+                "bundles": [],
             }
 
-            if bndl_on_disk:
-                bndl_path = disk_bndls[bndl_name]
-                audio = _audio_files(bndl_path)
-                bndl_report["audio_files"] = [{"name": f.name, "size": f.stat().st_size} for f in audio]
-                bndl_report["has_annot"] = _has_annot(bndl_path)
-                bndl_report["transcriptions"] = _has_transcription(bndl_path)
-                report["stats"]["audio_files"] += len(audio)
-                report["stats"]["total_audio_bytes"] += sum(f.stat().st_size for f in audio)
-                report["stats"]["bundles"] += 1
-                if bndl_report["transcriptions"]:
-                    report["stats"]["transcriptions"] += 1
+            if in_mongo and not on_disk:
+                report["issues"].append(f"Session '{ses_name}' in MongoDB but missing on disk")
+            elif on_disk and not in_mongo:
+                report["warnings"].append(f"Session '{ses_name}' on disk but not in MongoDB (orphan)")
 
-            # Check bundle list presence
-            for bl_name, bl_entries in bundle_lists.items():
-                if (ses_name, bndl_name) in bl_entries:
-                    bndl_report["in_bundle_lists"].append(bl_name)
+            # Gather bundle info from disk
+            disk_bndls = _disk_bundles(disk_sessions[ses_name]) if on_disk else {}
 
-            if bndl_on_disk and not bndl_in_mongo:
-                report["warnings"].append(f"Bundle '{bndl_name}' in session '{ses_name}' on disk but not in MongoDB")
-            if bndl_in_mongo and not bndl_on_disk:
-                report["issues"].append(f"Bundle '{bndl_name}' in session '{ses_name}' in MongoDB but missing on disk")
-            if bndl_on_disk and not bndl_report["audio_files"]:
-                report["issues"].append(f"Bundle '{bndl_name}' in session '{ses_name}' has no audio file")
-            if bndl_on_disk and not bndl_report["has_annot"]:
-                report["warnings"].append(f"Bundle '{bndl_name}' in session '{ses_name}' has no annotation file")
-            if bndl_on_disk and not bndl_report["in_bundle_lists"]:
-                report["warnings"].append(f"Bundle '{bndl_name}' in session '{ses_name}' missing from all bundle lists")
+            # Gather expected bundles from MongoDB files
+            mongo_files = {}
+            if in_mongo:
+                for f in mongo_sessions[ses_name].get("files", []):
+                    bndl_name = _file_to_bundle_name(f["name"])
+                    mongo_files[bndl_name] = f
 
-            ses_report["bundles"].append(bndl_report)
+            # Union of bundle names, optionally filtered
+            all_bundle_names = sorted(set(disk_bndls.keys()) | set(mongo_files.keys()))
+            if bundle_filter:
+                all_bundle_names = [n for n in all_bundle_names if n == bundle_filter]
 
-        report["sessions"].append(ses_report)
+            for bndl_name in all_bundle_names:
+                bndl_on_disk = bndl_name in disk_bndls
+                bndl_in_mongo = bndl_name in mongo_files
+                bndl_report = {
+                    "name": bndl_name,
+                    "on_disk": bndl_on_disk,
+                    "in_mongo": bndl_in_mongo,
+                    "audio_files": [],
+                    "has_annot": False,
+                    "transcriptions": [],
+                    "in_bundle_lists": [],
+                }
 
-    # ── Bundle list internal consistency (from audit) ──────────────────────────
-    bl_dir = _emu_db_path(pid) / "bundleLists"
-    if bl_dir.exists():
-        bl_raw: dict[str, list[dict] | str] = {}
-        for f in sorted(bl_dir.glob("*.json")):
-            try:
-                bl_raw[f.name] = json.loads(f.read_text())
-            except json.JSONDecodeError as e:
-                bl_raw[f.name] = f"PARSE_ERROR: {e}"
+                if bndl_on_disk:
+                    bndl_path = disk_bndls[bndl_name]
+                    audio = _audio_files(bndl_path)
+                    bndl_report["audio_files"] = [{"name": f.name, "size": f.stat().st_size} for f in audio]
+                    bndl_report["has_annot"] = _has_annot(bndl_path)
+                    bndl_report["transcriptions"] = _has_transcription(bndl_path)
+                    report["stats"]["audio_files"] += len(audio)
+                    report["stats"]["total_audio_bytes"] += sum(f.stat().st_size for f in audio)
+                    report["stats"]["bundles"] += 1
+                    if bndl_report["transcriptions"]:
+                        report["stats"]["transcriptions"] += 1
 
-        for fname, entries in bl_raw.items():
-            if isinstance(entries, str):
-                report["issues"].append(f"bundleLists/{fname}: {entries}")
-                continue
+                # Check bundle list presence
+                for bl_name, bl_entries in bundle_lists.items():
+                    if (ses_name, bndl_name) in bl_entries:
+                        bndl_report["in_bundle_lists"].append(bl_name)
 
-            for entry in entries:
-                ses, bndl = entry.get("session", "?"), entry.get("name", "?")
-                ses_dir = db_path / f"{ses}_ses"
-                if not ses_dir.exists():
-                    report["issues"].append(
-                        f"bundleLists/{fname}: references session '{ses}' but {ses}_ses/ missing on disk"
+                if bndl_on_disk and not bndl_in_mongo:
+                    report["warnings"].append(
+                        f"Bundle '{bndl_name}' in session '{ses_name}' on disk but not in MongoDB"
                     )
-                elif not (ses_dir / f"{bndl}_bndl").exists():
+                if bndl_in_mongo and not bndl_on_disk:
                     report["issues"].append(
-                        f"bundleLists/{fname}: references bundle '{bndl}' in '{ses}' but {bndl}_bndl/ missing"
+                        f"Bundle '{bndl_name}' in session '{ses_name}' in MongoDB but missing on disk"
+                    )
+                if bndl_on_disk and not bndl_report["audio_files"]:
+                    report["issues"].append(f"Bundle '{bndl_name}' in session '{ses_name}' has no audio file")
+                if bndl_on_disk and not bndl_report["has_annot"]:
+                    report["warnings"].append(f"Bundle '{bndl_name}' in session '{ses_name}' has no annotation file")
+                if bndl_on_disk and not bndl_report["in_bundle_lists"]:
+                    report["warnings"].append(
+                        f"Bundle '{bndl_name}' in session '{ses_name}' missing from all bundle lists"
                     )
 
-        # Check if bundle list files are consistent with each other
-        bl_lists = [v for v in bl_raw.values() if isinstance(v, list)]
-        if len(bl_lists) > 1:
-            canonical = bl_lists[0]
-            if not all(v == canonical for v in bl_lists[1:]):
-                report["warnings"].append("Bundle list files differ from each other")
+                ses_report["bundles"].append(bndl_report)
 
-    # ── Duplicate annotation item IDs (from audit) ─────────────────────────────
-    disk_ses = _disk_sessions(pid)
-    for ses_name, ses_path in disk_ses.items():
-        for bndl_name, bndl_path in _disk_bundles(ses_path).items():
-            for annot_path in sorted(bndl_path.glob("*_annot.json")):
+            report["sessions"].append(ses_report)
+
+        # ── Bundle list internal consistency (from audit) ──────────────────────────
+        bl_dir = _emu_db_path(pid) / "bundleLists"
+        if bl_dir.exists():
+            bl_raw: dict[str, list[dict] | str] = {}
+            for f in sorted(bl_dir.glob("*.json")):
                 try:
-                    annot = json.loads(annot_path.read_text())
+                    bl_raw[f.name] = json.loads(f.read_text())
                 except json.JSONDecodeError as e:
-                    report["issues"].append(f"{ses_name}/{bndl_name}/{annot_path.name}: invalid JSON: {e}")
+                    bl_raw[f.name] = f"PARSE_ERROR: {e}"
+
+            for fname, entries in bl_raw.items():
+                if isinstance(entries, str):
+                    report["issues"].append(f"bundleLists/{fname}: {entries}")
                     continue
 
-                seen: dict[int, str] = {}
-                for level in annot.get("levels", []):
-                    level_name = level.get("name", "?")
-                    for item in level.get("items", []):
-                        item_id = item.get("id")
-                        if item_id in seen:
-                            report["issues"].append(
-                                f"{ses_name}/{bndl_name}/{annot_path.name}: "
-                                f"duplicate item id={item_id} (levels '{seen[item_id]}' and '{level_name}')"
-                            )
-                        else:
-                            seen[item_id] = level_name
+                for entry in entries:
+                    ses, bndl = entry.get("session", "?"), entry.get("name", "?")
+                    ses_dir = db_path / f"{ses}_ses"
+                    if not ses_dir.exists():
+                        report["issues"].append(
+                            f"bundleLists/{fname}: references session '{ses}' but {ses}_ses/ missing on disk"
+                        )
+                    elif not (ses_dir / f"{bndl}_bndl").exists():
+                        report["issues"].append(
+                            f"bundleLists/{fname}: references bundle '{bndl}' in '{ses}' but {bndl}_bndl/ missing"
+                        )
+
+            # Check if bundle list files are consistent with each other
+            bl_lists = [v for v in bl_raw.values() if isinstance(v, list)]
+            if len(bl_lists) > 1:
+                canonical = bl_lists[0]
+                if not all(v == canonical for v in bl_lists[1:]):
+                    report["warnings"].append("Bundle list files differ from each other")
+
+        # ── Duplicate annotation item IDs (from audit) ─────────────────────────────
+        disk_ses = _disk_sessions(pid)
+        for ses_name, ses_path in disk_ses.items():
+            for bndl_name, bndl_path in _disk_bundles(ses_path).items():
+                for annot_path in sorted(bndl_path.glob("*_annot.json")):
+                    try:
+                        annot = json.loads(annot_path.read_text())
+                    except json.JSONDecodeError as e:
+                        report["issues"].append(f"{ses_name}/{bndl_name}/{annot_path.name}: invalid JSON: {e}")
+                        continue
+
+                    seen: dict[int, str] = {}
+                    for level in annot.get("levels", []):
+                        level_name = level.get("name", "?")
+                        for item in level.get("items", []):
+                            item_id = item.get("id")
+                            if item_id in seen:
+                                report["issues"].append(
+                                    f"{ses_name}/{bndl_name}/{annot_path.name}: "
+                                    f"duplicate item id={item_id} (levels '{seen[item_id]}' and '{level_name}')"
+                                )
+                            else:
+                                seen[item_id] = level_name
+    except OSError as e:
+        report["issues"].append(f"Cannot fully scan project on disk ({e.__class__.__name__}): {e}")
+        return report
 
     # ── Apply fixes if requested ───────────────────────────────────────────────
     if fix and db_path.exists():
@@ -725,6 +737,17 @@ def _find_disk_orphans(mongo_project_ids: set[str]) -> list[str]:
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 
+def parse_only_ids(raw: str | None) -> set[str] | None:
+    """Parse a comma-separated ``--only`` value into a set of fix IDs.
+
+    Whitespace around IDs is ignored; empty parts are dropped. Returns ``None``
+    when no value was given (all fixes in scope).
+    """
+    if not raw:
+        return None
+    return {part.strip() for part in raw.split(",") if part.strip()}
+
+
 def run_doctor(
     project_id: str | None = None,
     show_files: bool = True,
@@ -739,6 +762,9 @@ def run_doctor(
     bundle_filter: str | None = None,
 ) -> int:
     """Run the doctor check. Returns the total number of issues (errors, not warnings)."""
+
+    if apply and not fix:
+        print(f"{_WARN} {_C.YELLOW}--apply has no effect without --fix{_C.NC}")
 
     # Fetch projects from MongoDB
     if project_id:

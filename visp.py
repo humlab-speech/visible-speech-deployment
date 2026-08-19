@@ -624,10 +624,9 @@ def cmd_users(args):
 
 def cmd_doctor(args):
     """Tree-view project health overview with full consistency checks."""
-    from vispctl.doctor import run_doctor
+    from vispctl.doctor import parse_only_ids, run_doctor
 
-    only_raw = getattr(args, "only", None)
-    only_ids = set(only_raw.split(",")) if only_raw else None
+    only_ids = parse_only_ids(getattr(args, "only", None))
 
     issues = run_doctor(
         project_id=getattr(args, "project_id", None),
