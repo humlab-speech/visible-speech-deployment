@@ -189,7 +189,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     the first has no body; "(PoC)" is a leftover from the quadlet-migration PoC.
   - Fix: keep one header. Update `tests/vispctl/test_service_manager.py`, which
     asserts the "(PoC)" string.
-- [ ] **13. `uninstall` leaves `90-visp-autostart.conf` drop-ins behind**
+- [x] **13. `uninstall` leaves `90-visp-autostart.conf` drop-ins behind**
   - `visp.py:272-279` — after uninstall→install→reload, a previously `down`ed
     service stays disabled across reboot until `visp.py up` is run.
   - Fix: remove the drop-in (and its empty dir) for each uninstalled service.

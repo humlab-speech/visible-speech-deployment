@@ -87,7 +87,7 @@ from vispctl.service import (
     get_runtime_services,
     resolve_services,
 )
-from vispctl.service_manager import ServiceManager
+from vispctl.service_manager import ServiceManager, autostart_dropin
 from vispctl.status import show_container_list, show_network_list, show_quadlet_table
 
 SERVICES = DEFAULT_SERVICES
@@ -277,6 +277,15 @@ def cmd_uninstall(args):
             print(color(f"  ✓ {svc.file}: removed", Colors.GREEN))
         else:
             print(color(f"  ○ {svc.file}: not installed", Colors.YELLOW))
+
+        # Remove any autostart drop-in so a previously 'down'ed service is not
+        # left disabled after uninstall → install.
+        dropin = autostart_dropin(cfg.systemd_dir, svc)
+        if dropin.exists():
+            dropin.unlink()
+            if not any(dropin.parent.iterdir()):
+                dropin.parent.rmdir()
+            print(color(f"  ✓ {svc.file}.d/90-visp-autostart.conf: removed", Colors.GREEN))
 
     print()
 

@@ -9,6 +9,11 @@ from .runner import Colors, Runner, color
 from .service import Service
 
 
+def autostart_dropin(systemd_dir: Path, svc: Service) -> Path:
+    """Path of the visp autostart drop-in for a service unit."""
+    return systemd_dir / f"{svc.file}.d" / "90-visp-autostart.conf"
+
+
 class ServiceManager:
     def __init__(self, runner: Runner, services: Iterable[Service], systemd_dir: Path | None = None):
         self.runner = runner
@@ -19,7 +24,7 @@ class ServiceManager:
         return f"{svc.name}.service"
 
     def _autostart_dropin(self, svc: Service) -> Path:
-        return self.systemd_dir / f"{svc.file}.d" / "90-visp-autostart.conf"
+        return autostart_dropin(self.systemd_dir, svc)
 
     def _reload_systemd(self) -> None:
         print("Reloading systemd daemon...")
