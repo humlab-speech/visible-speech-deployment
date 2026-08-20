@@ -16,9 +16,18 @@ Commands:
   apply       Apply quadlet changes in one step (install --force + reload + restart)
   mode        Show or set deployment mode (dev/prod)
   build       Build container images (supports --no-cache, --pull)
+  images      List VISP container images and build status
   exec        Execute command in container
   shell       Open shell in container
   npm         Run npm inside a service image (dev source-mounted services)
+  debug       Shorthand for 'logs --debug'
+  network     Show network info and DNS status
+  deploy      Manage deployments: version control, git repos, status
+  users       Manage users in MongoDB
+  doctor      Project health overview: tree view + emuDB consistency checks
+  session-doctor  Diagnose session containers, proxy sidecars, and socket dirs
+  fix-permissions  Fix ownership and permissions for mount paths using podman unshare
+  cleanup-containers  Stop and remove session containers (legacy and current naming)
   backup      Backup MongoDB database to tar.gz
   restore     Restore MongoDB database from backup
 
@@ -698,22 +707,22 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  visp-ctl status              # Show all service status
-  visp-ctl logs -f             # Follow all logs
-  visp-ctl logs session-manager -n 200  # Last 200 lines from session-manager
-  visp-ctl up all              # Enable and start all services
-  visp-ctl down all            # Stop and disable all services
-  visp-ctl restart all         # Restart entire cluster
-  visp-ctl restart mongo       # Restart just mongo
-  visp-ctl install all         # Install all quadlet units
-  visp-ctl reload              # Reload systemd after quadlet changes
-  visp-ctl debug mongo         # Debug mongo startup issues
-  visp-ctl shell session-manager  # Open bash in session-manager
-  visp-ctl exec mongo mongosh  # Run mongosh in mongo container
-  visp-ctl deploy status       # Check git repo versions and drift
-  visp-ctl deploy lock webclient  # Lock webclient to current version
-  visp-ctl deploy unlock --all # Unlock all components to track latest
-  visp-ctl deploy update       # Update repos to configured versions
+  ./visp.py status              # Show all service status
+  ./visp.py logs -f             # Follow all logs
+  ./visp.py logs session-manager -n 200  # Last 200 lines from session-manager
+  ./visp.py up all              # Enable and start all services
+  ./visp.py down all            # Stop and disable all services
+  ./visp.py restart all         # Restart entire cluster
+  ./visp.py restart mongo       # Restart just mongo
+  ./visp.py install all         # Install all quadlet units
+  ./visp.py reload              # Reload systemd after quadlet changes
+  ./visp.py debug mongo         # Debug mongo startup issues
+  ./visp.py shell session-manager  # Open bash in session-manager
+  ./visp.py exec mongo mongosh  # Run mongosh in mongo container
+  ./visp.py deploy status       # Check git repo versions and drift
+  ./visp.py deploy lock webclient  # Lock webclient to current version
+  ./visp.py deploy unlock --all # Unlock all components to track latest
+  ./visp.py deploy update       # Update repos to configured versions
 """,
     )
 

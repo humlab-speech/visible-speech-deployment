@@ -243,7 +243,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     AGENTS.md mandate (`vispctl/build.py:768`).
   - "Available configs" omits the default `visp.dev` and the whitelist's
     `production`/`development` (`:789` vs `:20-29`).
-- [ ] **24. Stale docs**
+- [x] **24. Stale docs**
   - AGENTS.md still references `visp-users.py` (repo layout + user-management
     section) although the file no longer exists — the tool is `./visp.py users`.
   - `visp.py` module docstring (`visp.py:5-22`) omits users, doctor,

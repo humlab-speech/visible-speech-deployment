@@ -144,8 +144,8 @@ See `./visp.py --help` for the full command reference.
 
 3. Grant user privileges:
    ```bash
-   python3 visp-users.py list
-   python3 visp-users.py grant <username> createProjects
+    ./visp.py users list
+    ./visp.py users grant <username> createProjects
    ```
    See [AGENTS.md](AGENTS.md) → *User management* for details.
 
