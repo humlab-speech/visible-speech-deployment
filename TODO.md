@@ -249,7 +249,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - `visp.py` module docstring (`visp.py:5-22`) omits users, doctor,
     session-doctor, fix-permissions, images, cleanup-containers, and deploy.
   - Top-level `--help` epilog examples still say `visp-ctl` (`visp.py:648-663`).
-- [ ] **25. Nits**
+- [x] **25. Nits**
   - `images`: headerless "Backend:" line floating between sections
     (`vispctl/images.py:248-258`).
   - `images base`: multi-stage Dockerfiles listed once per FROM with no stage

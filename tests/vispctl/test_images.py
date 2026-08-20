@@ -89,3 +89,58 @@ def test_get_container_networks_empty_when_none_running():
 
     im = ImageManager(FakeRunner())
     assert im.get_container_networks() == {}
+
+
+# ── Tag pinning heuristic ──────────────────────────────────────────────────────
+
+
+def test_classify_tag_pinned():
+    from vispctl.images import _classify_tag
+
+    assert _classify_tag("2.4.67") == "pinned"
+    assert _classify_tag("3.23") == "pinned"
+    assert _classify_tag("20.20.2-alpine3.22") == "pinned"
+    assert _classify_tag("trixie-20260406") == "pinned"
+    assert _classify_tag("20260406") == "pinned"
+
+
+def test_classify_tag_unpinned():
+    from vispctl.images import _classify_tag
+
+    assert _classify_tag("latest") == "unpinned"
+    assert _classify_tag("bookworm") == "unpinned"
+    assert _classify_tag("stable") == "unpinned"
+    # Bare major tags can still move (point releases)
+    assert _classify_tag("3") == "unpinned"
+    assert _classify_tag("24") == "unpinned"
+
+
+def test_classify_tag_digest():
+    from vispctl.images import _classify_tag
+
+    assert _classify_tag("@sha256:abc123") == "digest"
+
+
+# ── Base image stage labels ────────────────────────────────────────────────────
+
+
+def test_scan_base_images_includes_stage_names(tmp_path, monkeypatch):
+    """Multi-stage Dockerfiles report the stage name per FROM line."""
+    from vispctl import images as images_mod
+
+    dockerfile = tmp_path / "docker" / "octra" / "Dockerfile"
+    dockerfile.parent.mkdir(parents=True)
+    dockerfile.write_text(
+        "FROM node:24.15.0 AS builder\n"
+        "RUN npm ci\n"
+        "FROM httpd:2.4.67\n"
+        "COPY --from=builder /app /usr/share/apache2/htdocs\n"
+    )
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+
+    im = ImageManager(runner=None)
+    base = im.scan_base_images()
+
+    assert base["node:24.15.0"] == [("docker/octra/Dockerfile", "builder")]
+    assert base["httpd:2.4.67"] == [("docker/octra/Dockerfile", None)]

@@ -365,6 +365,10 @@ def cmd_apply(args):
     )
 
 
+def _mode_color(mode: str) -> str:
+    return Colors.GREEN if mode == "prod" else Colors.CYAN
+
+
 def cmd_mode(args):
     """Show or set deployment mode."""
     new_mode = getattr(args, "new_mode", None)
@@ -373,7 +377,7 @@ def cmd_mode(args):
         # Set mode
         old_mode = get_current_mode()
         set_current_mode(new_mode)
-        print(f"Mode changed from {color(old_mode, Colors.YELLOW)} to {color(new_mode, Colors.GREEN)}")
+        print(f"Mode changed from {color(old_mode, _mode_color(old_mode))} to {color(new_mode, _mode_color(new_mode))}")
         print()
         print(color("To apply the new mode:", Colors.CYAN))
         print(f"  1. ./visp.py install --mode {new_mode} --force")
@@ -384,7 +388,7 @@ def cmd_mode(args):
         current = get_current_mode()
         print(color("=== Deployment Mode ===", Colors.CYAN))
         print()
-        print(f"  Current mode: {color(current, Colors.GREEN if current == 'prod' else Colors.YELLOW)}")
+        print(f"  Current mode: {color(current, _mode_color(current))}")
         print()
         print(color("Mode differences:", Colors.CYAN))
         print("  dev      - Source code mounts, container-agent mounted")
@@ -663,6 +667,16 @@ def cmd_backup(args):
 
     cfg = get_config()
     bm = BackupManager(cfg.runner)
+
+    if getattr(args, "backup_command", None) == "list":
+        backups = bm.list_backups()
+        if not backups:
+            print("No backup files found in the current directory.")
+            return
+        for p in backups:
+            print(f"  {p}  ({p.stat().st_size / (1024 * 1024):.1f} MB)")
+        return
+
     out = bm.backup(output=getattr(args, "output", None), dry_run=getattr(args, "dry_run", False))
     if out is None:
         sys.exit(1)
@@ -1037,6 +1051,8 @@ Examples:
         action="store_true",
         help="Do a dry-run (show actions without making changes)",
     )
+    p_backup_sub = p_backup.add_subparsers(dest="backup_command", metavar="")
+    p_backup_sub.add_parser("list", help="List existing backup files in the current directory")
 
     # restore
     p_restore = subparsers.add_parser("restore", help="Restore MongoDB database from backup")

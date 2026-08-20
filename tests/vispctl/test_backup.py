@@ -304,3 +304,8 @@ def test_backup_copy_failure_returns_none(tmp_path, capsys):
 
     assert out is None
     assert "Copy failed" in capsys.readouterr().out
+
+
+def test_list_backups_empty_dir(tmp_path):
+    bm = BackupManager(FakeRunner(tmp_path), project_dir=tmp_path)
+    assert bm.list_backups(tmp_path) == []

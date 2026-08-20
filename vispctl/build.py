@@ -157,7 +157,7 @@ class BuildManager:
             version = comp_data.get("version", "latest")
             is_locked = comp_config.is_locked(svc_name)
 
-            repo_path = Path.cwd() / "external" / svc_name
+            repo_path = get_config().project_dir / "external" / svc_name
             if not repo_path.exists():
                 warnings.append(f"  ⚠  {svc_name}: Repository not found at {repo_path}")
                 continue
@@ -260,9 +260,6 @@ class BuildManager:
             cmd.extend(["--build-arg", f"{key}={value}"])
 
         # Add git commit label if we're building from a git repo
-        import subprocess
-        from pathlib import Path
-
         context_path = Path(context).resolve()
         # Use source_repo for git.commit label when the build context is not the source
         # (e.g. apache embeds webclient, operations-session embeds container-agent)
