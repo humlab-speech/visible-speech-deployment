@@ -13,6 +13,7 @@ from .runner import Colors, Runner, color
 from .secrets import SecretManager
 
 _MONGO_CONFIG_PATH = "/tmp/.visp_mongo_conf"
+_RESTORE_EXTRACT_DIR = "/tmp/visp_restore_extract"
 
 
 class BackupManager:
@@ -34,7 +35,7 @@ class BackupManager:
         d = Path(directory) if directory else Path(".")
         if not d.exists():
             return []
-        return sorted([p for p in d.glob("*.tar.gz") if p.is_file()])
+        return sorted(p for p in d.glob("visp_mongodb_*.tar.gz") if p.is_file())
 
     def _get_mongo_password(self) -> str | None:
         """Load MongoDB root password from secrets."""
@@ -76,51 +77,60 @@ class BackupManager:
             check=False,
         )
 
-    def _cleanup_stale_backup_dirs(self) -> None:
-        """Remove any stale ``visp_mongodb_*`` dirs left in the container's /tmp.
+    def _prepare_extract_dir(self) -> None:
+        """Wipe and recreate the dedicated restore-extract dir in the container.
 
-        A previously interrupted restore can leave an extracted dir behind; if it
-        is present when a new restore runs, the old ``find ... | head -1`` logic
-        could pick it up instead of the freshly extracted archive.
+        Extracting into a fresh, dedicated dir confines any archive misbehavior
+        and replaces the old stale-``visp_mongodb_*``-dir cleanup.
         """
         self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "find",
-                "/tmp",
-                "-maxdepth",
-                "1",
-                "-name",
-                "visp_mongodb_*",
-                "-type",
-                "d",
-                "-exec",
-                "rm",
-                "-rf",
-                "{}",
-                ";",
-            ],
+            ["podman", "exec", "mongo", "rm", "-rf", _RESTORE_EXTRACT_DIR],
+            check=False,
+        )
+        self.runner.run(
+            ["podman", "exec", "mongo", "mkdir", "-p", _RESTORE_EXTRACT_DIR],
             check=False,
         )
 
+    def _validate_archive_members(self) -> bool | None:
+        """Check archive members before extraction as root inside the container.
+
+        GNU tar strips leading '/' but not '..' components, and it follows
+        symlink members during extraction — any of these could write outside
+        the extract dir (including the bind-mounted mongo data dir).
+
+        Returns True if all members are safe, False if any member is unsafe,
+        None if the archive contents could not be listed at all.
+        """
+        rc, out, _ = self.runner.run_quiet(["podman", "exec", "mongo", "tar", "-tvzf", "/tmp/restore.tar.gz"])
+        if rc != 0:
+            return None
+        for line in out.splitlines():
+            if not line.strip():
+                continue
+            # tar -tvf: <type><mode> <owner>:<group> <size> <date> <time> <name> [-> link]
+            if line[0] in ("l", "h"):
+                return False
+            parts = line.split(" ", 5)
+            if len(parts) < 6:
+                return False
+            name = parts[5].split(" -> ")[0]
+            if name.startswith("/") or ".." in name.split("/"):
+                return False
+        return True
+
     def _resolve_restore_dir(self, tarball_name: str) -> str | None:
-        """Determine the extracted backup dir inside the container's /tmp.
+        """Determine the extracted backup dir inside the restore-extract dir.
 
         Prefers the dir derived from the tarball name — a ``visp.py backup``
         archive is named ``visp_mongodb_<version>_<timestamp>.tar.gz`` and its
-        top-level dir is the same name without the ``.tar.gz``. Falls back to the
-        single ``visp_mongodb_*`` dir left after the stale-dir cleanup. Returns
-        None if the dir cannot be determined unambiguously.
+        top-level dir is the same name without the ``.tar.gz``. Falls back to
+        the single ``visp_mongodb_*`` dir in the (freshly wiped) extract dir.
+        Returns None if the dir cannot be determined unambiguously.
         """
-        stem = tarball_name
-        for suffix in (".tar.gz", ".tgz"):
-            if stem.endswith(suffix):
-                stem = stem[: -len(suffix)]
-                break
+        stem = tarball_name.removesuffix(".tar.gz").removesuffix(".tgz")
         if stem.startswith("visp_mongodb_"):
-            candidate = f"/tmp/{stem}"
+            candidate = f"{_RESTORE_EXTRACT_DIR}/{stem}"
             rc, _, _ = self.runner.run_quiet(["podman", "exec", "mongo", "test", "-d", candidate])
             if rc == 0:
                 return candidate
@@ -131,7 +141,7 @@ class BackupManager:
                 "exec",
                 "mongo",
                 "find",
-                "/tmp",
+                _RESTORE_EXTRACT_DIR,
                 "-maxdepth",
                 "1",
                 "-name",
@@ -305,80 +315,79 @@ class BackupManager:
             print(color("✗ Failed to copy backup into container", Colors.RED))
             return False
 
-        # Remove stale visp_mongodb_* dirs from any previously interrupted restore
-        # so they can't be mistaken for the archive we are about to extract.
-        self._cleanup_stale_backup_dirs()
-
-        # Extract archive inside container
-        res = self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "tar",
-                "-xzf",
-                "/tmp/restore.tar.gz",
-                "-C",
-                "/tmp",
-            ],
-            check=False,
-        )
-        if res.returncode != 0:
-            print(color("✗ Failed to extract backup inside container", Colors.RED))
-            return False
-
-        # Determine the extracted directory deterministically (derive it from the
-        # tarball name; fall back to the single dir left after the stale cleanup).
-        backup_dir = self._resolve_restore_dir(b.name)
-        if not backup_dir:
-            print(color("✗ Could not find backup directory in archive", Colors.RED))
-            self.runner.run(
-                ["podman", "exec", "mongo", "rm", "-f", "/tmp/restore.tar.gz"],
-                check=False,
-            )
-            return False
-
-        # Run mongorestore
-        mongo_password = self._get_mongo_password()
-        if not mongo_password:
-            print(color("✗ MONGO_ROOT_PASSWORD not found", Colors.RED))
-            return False
-
-        if not self._write_mongo_config(mongo_password, _MONGO_CONFIG_PATH):
-            print(color("✗ Could not write mongorestore config file", Colors.RED))
-            return False
-
         try:
+            # Wipe the dedicated extract dir so leftovers from an interrupted
+            # restore can't be mistaken for the archive we are about to extract.
+            self._prepare_extract_dir()
+
+            # Reject traversal/link members before extracting as root.
+            safe = self._validate_archive_members()
+            if safe is None:
+                print(color("✗ Could not list backup archive contents", Colors.RED))
+                return False
+            if not safe:
+                print(color("✗ Backup archive contains unsafe path or link members", Colors.RED))
+                return False
+
+            # Extract archive inside container (confined to the extract dir)
             res = self.runner.run(
                 [
                     "podman",
                     "exec",
                     "mongo",
-                    "mongorestore",
-                    f"--config={_MONGO_CONFIG_PATH}",
-                    "--username=root",
-                    "--authenticationDatabase=admin",
-                    "--drop",
-                    backup_dir,
+                    "tar",
+                    "-xzf",
+                    "/tmp/restore.tar.gz",
+                    "-C",
+                    _RESTORE_EXTRACT_DIR,
                 ],
                 check=False,
             )
-        finally:
-            self._remove_mongo_config(_MONGO_CONFIG_PATH)
+            if res.returncode != 0:
+                print(color("✗ Failed to extract backup inside container", Colors.RED))
+                return False
 
-        # Cleanup
-        self.runner.run(
-            [
-                "podman",
-                "exec",
-                "mongo",
-                "rm",
-                "-rf",
-                "/tmp/restore.tar.gz",
-                backup_dir,
-            ],
-            check=False,
-        )
+            # Determine the extracted directory deterministically (derive it from the
+            # tarball name; fall back to the single dir left in the extract dir).
+            backup_dir = self._resolve_restore_dir(b.name)
+            if not backup_dir:
+                print(color("✗ Could not find backup directory in archive", Colors.RED))
+                return False
+
+            # Run mongorestore
+            mongo_password = self._get_mongo_password()
+            if not mongo_password:
+                print(color("✗ MONGO_ROOT_PASSWORD not found", Colors.RED))
+                return False
+
+            if not self._write_mongo_config(mongo_password, _MONGO_CONFIG_PATH):
+                print(color("✗ Could not write mongorestore config file", Colors.RED))
+                return False
+
+            try:
+                res = self.runner.run(
+                    [
+                        "podman",
+                        "exec",
+                        "mongo",
+                        "mongorestore",
+                        f"--config={_MONGO_CONFIG_PATH}",
+                        "--username=root",
+                        "--authenticationDatabase=admin",
+                        "--drop",
+                        backup_dir,
+                    ],
+                    check=False,
+                )
+            finally:
+                self._remove_mongo_config(_MONGO_CONFIG_PATH)
+        finally:
+            # Best-effort cleanup: the tarball holds full DB contents and must
+            # not linger in the running container on any failure path.
+            self.runner.run(
+                ["podman", "exec", "mongo", "rm", "-rf", "/tmp/restore.tar.gz", _RESTORE_EXTRACT_DIR],
+                check=False,
+            )
 
         if res.returncode != 0:
             print(color("✗ Restore failed", Colors.RED))

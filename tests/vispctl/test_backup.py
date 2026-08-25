@@ -28,7 +28,7 @@ class FakeRunner:
             return 0, self.version_out, ""
         # find command in restore
         if "find" in cmd:
-            return 0, "/tmp/visp_mongodb_6.0.14_20260101_120000", ""
+            return 0, "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000", ""
         return 0, "", ""
 
     def run(self, cmd, capture=False, check=True, **kwargs):
@@ -77,21 +77,24 @@ class FailingRunner:
         if "mongod" in cmd:
             return 0, self.version_out, ""
         if "find" in cmd:
-            return 0, "/tmp/visp_mongodb_6.0.14_20260101_120000", ""
+            return 0, "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000", ""
         return 0, "", ""
 
 
 def test_list_backups(tmp_path):
     d = tmp_path / "backups"
     d.mkdir()
-    f1 = d / "a.tar.gz"
-    f2 = d / "b.tar.gz"
+    f1 = d / "visp_mongodb_6.0.14_20260101_120000.tar.gz"
+    f2 = d / "visp_mongodb_6.0.14_20260102_130000.tar.gz"
+    other = d / "unrelated.tar.gz"
     f1.write_text("x")
     f2.write_text("y")
+    other.write_text("z")
 
     bm = BackupManager(FakeRunner(tmp_path), project_dir=tmp_path)
     backups = bm.list_backups(directory=d)
     assert backups == sorted([f1, f2])
+    assert other not in backups
 
 
 def test_backup_dry_run(tmp_path):
@@ -171,11 +174,13 @@ class ResolveRunner:
 
 def test_resolve_restore_dir_from_tarball_name(tmp_path):
     """Derives the dir from a visp_mongodb_*.tar.gz name when it exists."""
-    runner = ResolveRunner(test_dir_exists=True, find_dirs=["/tmp/visp_mongodb_6.0.14_20260101_120000"])
+    runner = ResolveRunner(
+        test_dir_exists=True, find_dirs=["/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"]
+    )
     bm = BackupManager(runner, project_dir=tmp_path)
     assert (
         bm._resolve_restore_dir("visp_mongodb_6.0.14_20260101_120000.tar.gz")
-        == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+        == "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"
     )
 
 
@@ -183,25 +188,34 @@ def test_resolve_restore_dir_prefers_name_over_stale(tmp_path):
     """Even with a stale dir present, the name-derived dir is used (not head -1)."""
     # find would list the stale dir first, but the name-derived dir wins.
     runner = ResolveRunner(
-        test_dir_exists=True, find_dirs=["/tmp/visp_mongodb_STALE", "/tmp/visp_mongodb_6.0.14_20260101_120000"]
+        test_dir_exists=True,
+        find_dirs=[
+            "/tmp/visp_restore_extract/visp_mongodb_STALE",
+            "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000",
+        ],
     )
     bm = BackupManager(runner, project_dir=tmp_path)
     assert (
         bm._resolve_restore_dir("visp_mongodb_6.0.14_20260101_120000.tar.gz")
-        == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+        == "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"
     )
 
 
 def test_resolve_restore_dir_falls_back_to_single_dir(tmp_path):
     """A renamed tarball falls back to the single visp_mongodb_* dir."""
-    runner = ResolveRunner(find_dirs=["/tmp/visp_mongodb_6.0.14_20260101_120000"])
+    runner = ResolveRunner(find_dirs=["/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"])
     bm = BackupManager(runner, project_dir=tmp_path)
-    assert bm._resolve_restore_dir("renamed_backup.tar.gz") == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+    assert (
+        bm._resolve_restore_dir("renamed_backup.tar.gz")
+        == "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"
+    )
 
 
 def test_resolve_restore_dir_ambiguous_returns_none(tmp_path):
     """Multiple leftover dirs (and no name match) → ambiguous → None."""
-    runner = ResolveRunner(find_dirs=["/tmp/visp_mongodb_a", "/tmp/visp_mongodb_b"])
+    runner = ResolveRunner(
+        find_dirs=["/tmp/visp_restore_extract/visp_mongodb_a", "/tmp/visp_restore_extract/visp_mongodb_b"]
+    )
     bm = BackupManager(runner, project_dir=tmp_path)
     assert bm._resolve_restore_dir("renamed.tar.gz") is None
 
@@ -213,14 +227,15 @@ def test_resolve_restore_dir_none_found(tmp_path):
     assert bm._resolve_restore_dir("renamed.tar.gz") is None
 
 
-def test_restore_uses_derived_dir_and_cleans_stale(tmp_path):
-    """restore cleans stale dirs first and restores from the name-derived dir."""
+def test_restore_wipes_extract_dir_and_uses_derived_dir(tmp_path):
+    """restore wipes the dedicated extract dir and restores from the name-derived dir."""
 
     class TrackingRunner(FakeRunner):
         def __init__(self, tmpdir):
             super().__init__(tmpdir)
             self.mongorestore_dir = None
-            self.cleaned_stale = False
+            self.wiped_extract_dir = False
+            self.created_extract_dir = False
 
         def run_quiet(self, cmd):
             if "test" in cmd and "-d" in cmd:
@@ -228,8 +243,10 @@ def test_restore_uses_derived_dir_and_cleans_stale(tmp_path):
             return super().run_quiet(cmd)
 
         def run(self, cmd, capture=False, check=True, **kwargs):
-            if "find" in cmd and "-exec" in cmd:
-                self.cleaned_stale = True
+            if "rm" in cmd and "/tmp/visp_restore_extract" in cmd:
+                self.wiped_extract_dir = True
+            if "mkdir" in cmd and "/tmp/visp_restore_extract" in cmd:
+                self.created_extract_dir = True
             if "mongorestore" in cmd:
                 self.mongorestore_dir = cmd[-1]
             return super().run(cmd, capture=capture, check=check, **kwargs)
@@ -243,8 +260,50 @@ def test_restore_uses_derived_dir_and_cleans_stale(tmp_path):
 
     res = bm.restore(backup, force=True)
     assert res is True
-    assert runner.cleaned_stale is True
-    assert runner.mongorestore_dir == "/tmp/visp_mongodb_6.0.14_20260101_120000"
+    assert runner.wiped_extract_dir is True
+    assert runner.created_extract_dir is True
+    assert runner.mongorestore_dir == "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"
+
+
+# ── Archive member validation (traversal / link members) ──────────────────────
+
+
+def _restore_with_tar_listing(tmp_path, listing):
+    class ListingRunner(FakeRunner):
+        def run_quiet(self, cmd):
+            if "tar" in cmd and "-tvzf" in cmd:
+                return 0, listing, ""
+            return super().run_quiet(cmd)
+
+    runner = ListingRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+    backup = tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz"
+    backup.write_bytes(b"x")
+    return bm.restore(backup, force=True), runner
+
+
+def test_restore_rejects_traversal_members(tmp_path, capsys):
+    res, runner = _restore_with_tar_listing(tmp_path, "-rw-r--r-- root/root 5 2026-01-01 12:00 ../../evil\n")
+    assert res is False
+    assert "unsafe" in capsys.readouterr().out
+    assert not any("mongorestore" in c for c in runner.calls)
+
+
+def test_restore_rejects_symlink_members(tmp_path, capsys):
+    res, runner = _restore_with_tar_listing(tmp_path, "lrwxrwxrwx root/root 0 2026-01-01 12:00 link -> /data\n")
+    assert res is False
+    assert "unsafe" in capsys.readouterr().out
+    assert not any("mongorestore" in c for c in runner.calls)
+
+
+def test_restore_accepts_safe_members(tmp_path):
+    listing = (
+        "drwxr-xr-x root/root 0 2026-01-01 12:00 visp_mongodb_6.0.14_20260101_120000/\n"
+        "-rw-r--r-- root/root 5 2026-01-01 12:00 visp_mongodb_6.0.14_20260101_120000/db/coll.bson\n"
+    )
+    res, _ = _restore_with_tar_listing(tmp_path, listing)
+    assert res is True
 
 
 # ── Failure paths (no traceback, friendly error, falsy return) ────────────────
