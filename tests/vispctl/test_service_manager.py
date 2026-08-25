@@ -144,6 +144,9 @@ class IsEnabledRunner:
         r = R()
         if args and args[0] == "is-enabled":
             r.stdout = f"{self.state}\n"
+            # Real systemctl is-enabled exits non-zero for everything that is
+            # not enabled/indirect (disabled, static, masked, generated, ...).
+            r.returncode = 0 if self.state in ("enabled", "indirect") else 1
         return r
 
 

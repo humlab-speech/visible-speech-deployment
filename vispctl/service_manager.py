@@ -14,6 +14,20 @@ def autostart_dropin(systemd_dir: Path, svc: Service) -> Path:
     return systemd_dir / f"{svc.file}.d" / "90-visp-autostart.conf"
 
 
+def remove_autostart_dropin(systemd_dir: Path, svc: Service) -> bool:
+    """Remove the visp autostart drop-in (and its dir if left empty).
+
+    Returns True if the drop-in existed and was removed.
+    """
+    dropin = autostart_dropin(systemd_dir, svc)
+    if not dropin.exists():
+        return False
+    dropin.unlink()
+    if not any(dropin.parent.iterdir()):
+        dropin.parent.rmdir()
+    return True
+
+
 class ServiceManager:
     def __init__(self, runner: Runner, services: Iterable[Service], systemd_dir: Path | None = None):
         self.runner = runner
@@ -76,23 +90,18 @@ class ServiceManager:
                 print(color(f"  Failed: {source} is not installed", Colors.RED))
                 continue
 
-            dropin = self._autostart_dropin(svc)
-            removed_dropin = False
-            if dropin.exists():
-                dropin.unlink()
-                if not any(dropin.parent.iterdir()):
-                    dropin.parent.rmdir()
-                removed_dropin = True
+            removed_dropin = remove_autostart_dropin(self.systemd_dir, svc)
+            if removed_dropin:
                 changed = True
 
             # Cross-check the actual systemd state: a manual
             # 'systemctl --user disable' leaves no drop-in behind, so
             # drop-in absence alone is not proof the unit starts at boot.
-            # Quadlet units report 'generated'; if the unit is not loaded
-            # yet (no daemon-reload after install), is-enabled fails and we
-            # keep the previous assumption.
+            # is-enabled exits non-zero for disabled/static/masked units, so
+            # trust stdout; it is empty only when the unit is not loaded yet
+            # (no daemon-reload after install) — fall back to 'generated'.
             state_res = self.runner.systemctl("is-enabled", self._svc_name(svc))
-            state = state_res.stdout.strip() if state_res.returncode == 0 else "generated"
+            state = state_res.stdout.strip() or "generated"
 
             if state in ("enabled", "generated", "indirect"):
                 if removed_dropin:
