@@ -1,5 +1,7 @@
+import io
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 
 # Ensure project package is importable when running tests
@@ -136,13 +138,36 @@ def test_restore_missing_file(tmp_path):
     assert res is False
 
 
+def _make_tarball(
+    path: Path,
+    entries: list[tuple[str, bytes]] = (),
+    links: list[tuple[str, str]] = (),
+    fifos: list[str] = (),
+) -> Path:
+    """Build a real .tar.gz: entries=(name, content), links=(name, target), fifos=[names]."""
+    with tarfile.open(path, "w:gz") as tf:
+        for name, content in entries:
+            ti = tarfile.TarInfo(name)
+            ti.size = len(content)
+            tf.addfile(ti, io.BytesIO(content))
+        for name, target in links:
+            ti = tarfile.TarInfo(name)
+            ti.type = tarfile.SYMTYPE
+            ti.linkname = target
+            tf.addfile(ti)
+        for name in fifos:
+            ti = tarfile.TarInfo(name)
+            ti.type = tarfile.FIFOTYPE
+            tf.addfile(ti)
+    return path
+
+
 def test_restore_success(tmp_path):
     runner = FakeRunner(tmp_path)
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
 
-    backup = tmp_path / "test.tar.gz"
-    backup.write_bytes(b"x")
+    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
 
     res = bm.restore(backup, force=True)
     assert res is True
@@ -255,8 +280,7 @@ def test_restore_wipes_extract_dir_and_uses_derived_dir(tmp_path):
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
 
-    backup = tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz"
-    backup.write_bytes(b"x")
+    backup = _make_tarball(tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz", [("db/coll.bson", b"data")])
 
     res = bm.restore(backup, force=True)
     assert res is True
@@ -265,44 +289,61 @@ def test_restore_wipes_extract_dir_and_uses_derived_dir(tmp_path):
     assert runner.mongorestore_dir == "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000"
 
 
-# ── Archive member validation (traversal / link members) ──────────────────────
+# ── Archive member validation (real tarballs, not faked listings) ─────────────
 
 
-def _restore_with_tar_listing(tmp_path, listing):
-    class ListingRunner(FakeRunner):
-        def run_quiet(self, cmd):
-            if "tar" in cmd and "-tvzf" in cmd:
-                return 0, listing, ""
-            return super().run_quiet(cmd)
-
-    runner = ListingRunner(tmp_path)
+def _restore_tarball(tmp_path, tarball_path):
+    runner = FakeRunner(tmp_path)
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
-    backup = tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz"
-    backup.write_bytes(b"x")
-    return bm.restore(backup, force=True), runner
+    return bm.restore(tarball_path, force=True), runner
 
 
 def test_restore_rejects_traversal_members(tmp_path, capsys):
-    res, runner = _restore_with_tar_listing(tmp_path, "-rw-r--r-- root/root 5 2026-01-01 12:00 ../../evil\n")
+    tb = _make_tarball(tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz", [("../../evil", b"x")])
+    res, runner = _restore_tarball(tmp_path, tb)
     assert res is False
     assert "unsafe" in capsys.readouterr().out
-    assert not any("mongorestore" in c for c in runner.calls)
+    assert not any(c[0] == "run" and c[1][:2] == ["podman", "cp"] for c in runner.calls)  # rejected before copy
+    assert not any("mongorestore" in str(c) for c in runner.calls)
+
+
+def test_restore_rejects_absolute_paths(tmp_path, capsys):
+    tb = _make_tarball(tmp_path / "b.tar.gz", [("/etc/passwd", b"x")])
+    res, _ = _restore_tarball(tmp_path, tb)
+    assert res is False
+    assert "unsafe" in capsys.readouterr().out
 
 
 def test_restore_rejects_symlink_members(tmp_path, capsys):
-    res, runner = _restore_with_tar_listing(tmp_path, "lrwxrwxrwx root/root 0 2026-01-01 12:00 link -> /data\n")
+    tb = _make_tarball(tmp_path / "b.tar.gz", links=[("link", "/data")])
+    res, _ = _restore_tarball(tmp_path, tb)
     assert res is False
     assert "unsafe" in capsys.readouterr().out
-    assert not any("mongorestore" in c for c in runner.calls)
+
+
+def test_restore_rejects_fifo_members(tmp_path, capsys):
+    # A FIFO named like a .bson file would make mongorestore block forever.
+    tb = _make_tarball(tmp_path / "b.tar.gz", fifos=["db/coll.bson"])
+    res, _ = _restore_tarball(tmp_path, tb)
+    assert res is False
+    assert "unsafe" in capsys.readouterr().out
+
+
+def test_restore_rejects_unreadable_archive(tmp_path, capsys):
+    tb = tmp_path / "b.tar.gz"
+    tb.write_bytes(b"not a tarball")
+    res, _ = _restore_tarball(tmp_path, tb)
+    assert res is False
+    assert "not a readable tar.gz" in capsys.readouterr().out
 
 
 def test_restore_accepts_safe_members(tmp_path):
-    listing = (
-        "drwxr-xr-x root/root 0 2026-01-01 12:00 visp_mongodb_6.0.14_20260101_120000/\n"
-        "-rw-r--r-- root/root 5 2026-01-01 12:00 visp_mongodb_6.0.14_20260101_120000/db/coll.bson\n"
+    tb = _make_tarball(
+        tmp_path / "visp_mongodb_6.0.14_20260101_120000.tar.gz",
+        [("visp_mongodb_6.0.14_20260101_120000/db/coll.bson", b"data")],
     )
-    res, _ = _restore_with_tar_listing(tmp_path, listing)
+    res, _ = _restore_tarball(tmp_path, tb)
     assert res is True
 
 
@@ -327,8 +368,7 @@ def test_restore_corrupt_archive_returns_false(tmp_path, capsys):
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
 
-    backup = tmp_path / "test.tar.gz"
-    backup.write_bytes(b"corrupt")
+    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"corrupt")])
 
     res = bm.restore(backup, force=True)
 
@@ -344,8 +384,7 @@ def test_restore_mongorestore_failure_returns_false(tmp_path, capsys):
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
 
-    backup = tmp_path / "test.tar.gz"
-    backup.write_bytes(b"x")
+    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
 
     res = bm.restore(backup, force=True)
 

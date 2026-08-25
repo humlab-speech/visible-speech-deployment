@@ -144,8 +144,9 @@ class IsEnabledRunner:
         r = R()
         if args and args[0] == "is-enabled":
             r.stdout = f"{self.state}\n"
-            # Real systemctl is-enabled exits non-zero for everything that is
-            # not enabled/indirect (disabled, static, masked, generated, ...).
+            # Real systemctl is-enabled exits non-zero for disabled/static/masked
+            # units. The code no longer depends on the exit code, but keep the
+            # fake faithful so a regression back to rc-based logic is caught.
             r.returncode = 0 if self.state in ("enabled", "indirect") else 1
         return r
 
@@ -191,6 +192,22 @@ def test_enable_removes_dropin_and_reports_enabled(tmp_path, capsys):
 
     assert not (dropin_dir / "90-visp-autostart.conf").exists()
     assert "Enabled" in out
+    assert ("enable", "mongo.service") not in fr.systemctl_calls
+
+
+def test_enable_not_loaded_unit_says_reload(tmp_path, capsys):
+    # is-enabled prints nothing to stdout when the unit is not loaded yet
+    # (installed but no daemon-reload) — say so instead of claiming 'Already enabled'.
+    (tmp_path / "mongo.container").write_text("[Install]\nWantedBy=default.target\n")
+    fr = IsEnabledRunner("")
+    m = ServiceManager(fr, DEFAULT_SERVICES, systemd_dir=tmp_path)
+
+    m.enable("mongo")
+    out = capsys.readouterr().out
+
+    assert "Already enabled" not in out
+    assert "Not loaded yet" in out
+    assert "./visp.py reload" in out
     assert ("enable", "mongo.service") not in fr.systemctl_calls
 
 

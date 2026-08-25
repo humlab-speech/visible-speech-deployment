@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import os
+import tarfile
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -92,31 +94,29 @@ class BackupManager:
             check=False,
         )
 
-    def _validate_archive_members(self) -> bool | None:
-        """Check archive members before extraction as root inside the container.
+    def _validate_archive_members(self, archive: Path) -> bool | None:
+        """Check archive members before the archive is extracted in the container.
 
-        GNU tar strips leading '/' but not '..' components, and it follows
-        symlink members during extraction — any of these could write outside
-        the extract dir (including the bind-mounted mongo data dir).
+        The archive is extracted as root inside the mongo container. Reject
+        members that could write outside the extract dir ('..' components,
+        absolute paths) or that are not plain files/dirs (symlinks, hardlinks,
+        devices, FIFOs — a FIFO named like a .bson file would hang
+        mongorestore). GNU tar itself rejects '..' members and strips leading
+        '/', so this is defense in depth, not the only line of defense.
 
+        Validates the local file — the exact artifact that gets copied in.
         Returns True if all members are safe, False if any member is unsafe,
-        None if the archive contents could not be listed at all.
+        None if the file could not be read as a tar.gz at all.
         """
-        rc, out, _ = self.runner.run_quiet(["podman", "exec", "mongo", "tar", "-tvzf", "/tmp/restore.tar.gz"])
-        if rc != 0:
+        try:
+            with tarfile.open(archive, "r:gz") as tf:
+                for m in tf.getmembers():
+                    if not (m.isfile() or m.isdir()):
+                        return False
+                    if m.name.startswith("/") or ".." in m.name.split("/"):
+                        return False
+        except (tarfile.TarError, OSError, EOFError, gzip.BadGzipFile):
             return None
-        for line in out.splitlines():
-            if not line.strip():
-                continue
-            # tar -tvf: <type><mode> <owner>:<group> <size> <date> <time> <name> [-> link]
-            if line[0] in ("l", "h"):
-                return False
-            parts = line.split(" ", 5)
-            if len(parts) < 6:
-                return False
-            name = parts[5].split(" -> ")[0]
-            if name.startswith("/") or ".." in name.split("/"):
-                return False
         return True
 
     def _resolve_restore_dir(self, tarball_name: str) -> str | None:
@@ -309,6 +309,15 @@ class BackupManager:
                 print("Restore cancelled.")
                 return False
 
+        # Reject unsafe members before copying into the container.
+        safe = self._validate_archive_members(b)
+        if safe is None:
+            print(color("✗ Backup archive is not a readable tar.gz", Colors.RED))
+            return False
+        if not safe:
+            print(color("✗ Backup archive contains unsafe path or link members", Colors.RED))
+            return False
+
         # Copy file into container
         res = self.runner.run(["podman", "cp", str(b), "mongo:/tmp/restore.tar.gz"], check=False)
         if res.returncode != 0:
@@ -319,15 +328,6 @@ class BackupManager:
             # Wipe the dedicated extract dir so leftovers from an interrupted
             # restore can't be mistaken for the archive we are about to extract.
             self._prepare_extract_dir()
-
-            # Reject traversal/link members before extracting as root.
-            safe = self._validate_archive_members()
-            if safe is None:
-                print(color("✗ Could not list backup archive contents", Colors.RED))
-                return False
-            if not safe:
-                print(color("✗ Backup archive contains unsafe path or link members", Colors.RED))
-                return False
 
             # Extract archive inside container (confined to the extract dir)
             res = self.runner.run(

@@ -99,9 +99,12 @@ class ServiceManager:
             # drop-in absence alone is not proof the unit starts at boot.
             # is-enabled exits non-zero for disabled/static/masked units, so
             # trust stdout; it is empty only when the unit is not loaded yet
-            # (no daemon-reload after install) — fall back to 'generated'.
+            # (no daemon-reload after install).
             state_res = self.runner.systemctl("is-enabled", self._svc_name(svc))
-            state = state_res.stdout.strip() or "generated"
+            state = state_res.stdout.strip()
+            if not state:
+                print(color("  Not loaded yet — run ./visp.py reload if newly installed", Colors.YELLOW))
+                continue
 
             if state in ("enabled", "generated", "indirect"):
                 if removed_dropin:

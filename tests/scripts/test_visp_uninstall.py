@@ -77,3 +77,20 @@ def test_cmd_uninstall_without_dropin(tmp_path, monkeypatch, capsys):
     assert not (systemd_dir / "mongo.container").exists()
     out = capsys.readouterr().out
     assert "90-visp-autostart.conf" not in out
+
+
+def test_cmd_uninstall_all_removes_every_secret(tmp_path, monkeypatch, capsys):
+    """'uninstall all' must remove every existing secret (remove_all wiring)."""
+    vp = load_visp_module()
+    _setup(tmp_path, monkeypatch, vp)
+
+    removed: list = []
+    monkeypatch.setattr(secrets_mod.SecretManager, "list_secrets", lambda self: ["visp_a", "visp_b"])
+    monkeypatch.setattr(secrets_mod.SecretManager, "remove_secrets", lambda self, names: removed.extend(names))
+
+    args = types.SimpleNamespace(service="all", keep_running=True, remove_networks=False)
+    vp.cmd_uninstall(args)
+
+    assert sorted(removed) == ["visp_a", "visp_b"]
+    out = capsys.readouterr().out
+    assert "Kept" not in out
