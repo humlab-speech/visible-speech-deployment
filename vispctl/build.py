@@ -98,7 +98,7 @@ class BuildManager:
                 target = cfg.get("target")
 
                 print(color(f"Building {svc_name}...", Colors.BLUE))
-                print(f"  Image: {cfg['image']}:latest")
+                print(f"  Image: localhost/{cfg['image']}:latest")
                 print(f"  Context: {cfg['context']}")
                 if description:
                     print(f"  Description: {description}")

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .config import get_config
 from .display import FAIL, PASS, TREE_BRANCH, TREE_LAST, TREE_SPACE, TREE_VERTICAL, WARN
+from .exceptions import UserError
 from .mongo import js_escape, mongosh_json
 from .runner import Colors
 
@@ -764,7 +765,7 @@ def run_doctor(
     """Run the doctor check. Returns the total number of issues (errors, not warnings)."""
 
     if apply and not fix:
-        print(f"{_WARN} {_C.YELLOW}--apply has no effect without --fix{_C.NC}")
+        raise UserError("--apply requires --fix")
 
     # Fetch projects from MongoDB
     if project_id:

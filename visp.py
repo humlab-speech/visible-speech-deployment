@@ -85,6 +85,7 @@ from vispctl.quadlets import (
 )
 from vispctl.quadlets import (
     get_current_mode,
+    get_quadlets_dir,
     render_quadlet_template,
     set_current_mode,
 )
@@ -96,7 +97,7 @@ from vispctl.service import (
     get_runtime_services,
     resolve_services,
 )
-from vispctl.service_manager import ServiceManager, autostart_dropin
+from vispctl.service_manager import ServiceManager, remove_autostart_dropin
 from vispctl.status import show_container_list, show_network_list, show_quadlet_table
 
 SERVICES = DEFAULT_SERVICES
@@ -289,11 +290,7 @@ def cmd_uninstall(args):
 
         # Remove any autostart drop-in so a previously 'down'ed service is not
         # left disabled after uninstall → install.
-        dropin = autostart_dropin(cfg.systemd_dir, svc)
-        if dropin.exists():
-            dropin.unlink()
-            if not any(dropin.parent.iterdir()):
-                dropin.parent.rmdir()
+        if remove_autostart_dropin(cfg.systemd_dir, svc):
             print(color(f"  ✓ {svc.file}.d/90-visp-autostart.conf: removed", Colors.GREEN))
 
     print()
@@ -309,13 +306,12 @@ def cmd_uninstall(args):
     existing = sm.list_secrets()
     if not existing:
         print("  No VISP secrets found")
-    elif args.service == "all":
-        sm.remove_secrets(existing)
     else:
-        quadlets_dir = cfg.project_dir / "quadlets" / get_current_mode()
-        secret_map = parse_quadlet_secret_map(quadlets_dir)
+        secret_map = parse_quadlet_secret_map(get_quadlets_dir(get_current_mode()))
         uninstalled = {svc.name for svc in services}
-        to_remove = secrets_to_remove_for_uninstall(uninstalled, secret_map, existing)
+        to_remove = secrets_to_remove_for_uninstall(
+            uninstalled, secret_map, existing, remove_all=(args.service == "all")
+        )
         if to_remove:
             sm.remove_secrets(to_remove)
         else:
@@ -408,7 +404,10 @@ def _warn_if_unknown_container(name: str) -> None:
     """
     known = {s.name for s in get_runtime_services(include_disabled=True) if s.type == "container"}
     if name not in known:
-        print(color(f"Warning: '{name}' is not a known VISP container service — continuing anyway", Colors.YELLOW))
+        print(
+            color(f"Warning: '{name}' is not a known VISP container service — continuing anyway", Colors.YELLOW),
+            file=sys.stderr,
+        )
 
 
 def cmd_exec(args):
@@ -1051,7 +1050,7 @@ Examples:
         action="store_true",
         help="Do a dry-run (show actions without making changes)",
     )
-    p_backup_sub = p_backup.add_subparsers(dest="backup_command", metavar="")
+    p_backup_sub = p_backup.add_subparsers(dest="backup_command")
     p_backup_sub.add_parser("list", help="List existing backup files in the current directory")
 
     # restore
@@ -1162,9 +1161,10 @@ Examples:
     except BrokenPipeError:
         # A downstream consumer (e.g. 'head') closed the pipe. Redirect stdout
         # to devnull so the interpreter-shutdown flush doesn't raise again.
+        # Exit 141 (128+SIGPIPE) — the shell convention for "reader went away".
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, sys.stdout.fileno())
-        sys.exit(1)
+        sys.exit(141)
     except KeyboardInterrupt:
         print()
 

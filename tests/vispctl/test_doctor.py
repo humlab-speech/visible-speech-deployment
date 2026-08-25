@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from vispctl.doctor import _diagnose_project, parse_only_ids, run_doctor
+from vispctl.exceptions import UserError
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -47,12 +48,12 @@ def test_parse_only_ids_blank_returns_empty_set():
 # ── --apply without --fix ──────────────────────────────────────────────────────
 
 
-def test_apply_without_fix_warns(capsys):
-    with patch("vispctl.doctor.mongosh_json", return_value=[]):
-        run_doctor(apply=True, fix=False)
-
-    out = capsys.readouterr().out
-    assert "--apply has no effect without --fix" in out
+def test_apply_without_fix_raises():
+    with patch("vispctl.doctor.mongosh_json", return_value=[]) as m:
+        with pytest.raises(UserError, match="--apply requires --fix"):
+            run_doctor(apply=True, fix=False)
+    # The error must precede any database access.
+    m.assert_not_called()
 
 
 def test_apply_with_fix_does_not_warn(capsys):

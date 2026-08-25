@@ -584,7 +584,7 @@ def cleanup_dev_only_services(services: list[Service], mode: str, systemd_dir: P
     if mode != "prod":
         return
 
-    from vispctl.service_manager import autostart_dropin
+    from vispctl.service_manager import remove_autostart_dropin
 
     for svc in services:
         if not svc.dev_only:
@@ -593,11 +593,7 @@ def cleanup_dev_only_services(services: list[Service], mode: str, systemd_dir: P
         if target.exists() or target.is_symlink():
             target.unlink()
             print(color(f"  ○ {svc.file}: removed (dev-only, mode=prod)", Colors.YELLOW))
-        dropin = autostart_dropin(systemd_dir, svc)
-        if dropin.exists():
-            dropin.unlink()
-            if not any(dropin.parent.iterdir()):
-                dropin.parent.rmdir()
+        remove_autostart_dropin(systemd_dir, svc)
 
 
 def _ensure_webclient_dist(project_dir: Path, runner: Runner) -> None:

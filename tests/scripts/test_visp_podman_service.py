@@ -233,13 +233,14 @@ def test_cmd_exec_warns_on_unknown_container(monkeypatch, capsys):
     _fake_exec_env(monkeypatch, vp, returncode=0)
 
     vp.cmd_exec(types.SimpleNamespace(container="nosuch", exec_command=["echo", "hi"]))
-    out = capsys.readouterr().out
-    assert "Warning" in out
-    assert "nosuch" in out
+    err = capsys.readouterr().err
+    assert "Warning" in err
+    assert "nosuch" in err
 
     vp.cmd_exec(types.SimpleNamespace(container="mongo", exec_command=["echo", "hi"]))
-    out = capsys.readouterr().out
-    assert "Warning" not in out
+    captured = capsys.readouterr()
+    assert "Warning" not in captured.out
+    assert "Warning" not in captured.err
 
 
 def test_resolve_services_reports_disabled_optional_service(monkeypatch):

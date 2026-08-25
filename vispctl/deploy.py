@@ -1,5 +1,6 @@
 """Deployment management for VISP - version control, repository updates, status checking."""
 
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -1012,6 +1013,10 @@ class DeployManager:
         working tree is dirty (to avoid clobbering local changes). Returns True
         on success (or when already at the locked version), False on failure.
         """
+        if not re.fullmatch(r"[0-9a-fA-F]{7,40}", locked_version):
+            print(f"⚠  {component}: locked version {locked_version!r} is not a git SHA, skipping checkout")
+            return False
+
         comp_data = self.config.get_component(component) or {}
         repo_path = self.external_dir / component
         repo = GitRepository(str(repo_path), comp_data.get("url"))
