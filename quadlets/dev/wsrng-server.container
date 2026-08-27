@@ -10,6 +10,7 @@ Network=visp-net.network
 EnvironmentFile=@@PROJECT_DIR@@/external/wsrng-server/.env
 Secret=visp_mongo_root_password,type=env,target=MONGO_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
+Volume=@@PROJECT_DIR@@/mounts/wsrng-server/logs:/wsrng-server/logs:Z
 
 # Pin this container's real service identity (node = uid 1000 / gid 1000 in the
 # node base image) to the host repository owner via rootless keep-id. Audio that

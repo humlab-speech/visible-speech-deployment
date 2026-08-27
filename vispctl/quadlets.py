@@ -10,25 +10,25 @@ import os
 import shutil
 from pathlib import Path
 
-from .runner import Colors, color, load_env_vars
+from .config import get_config
+from .env import load_env_file
+from .runner import Colors, color
 from .service import Service
 
-# ---------------------------------------------------------------------------
-# Mode and template helpers
-# ---------------------------------------------------------------------------
-
-# Resolved at import time from the location of this file's package root
-_PROJECT_DIR = Path(__file__).parent.parent.resolve()
-_QUADLETS_BASE_DIR = _PROJECT_DIR / "quadlets"
-_MODE_FILE = _PROJECT_DIR / ".visp-mode"
 _DEFAULT_MODE = "dev"
+
+
+def _get_project_dir() -> Path:
+    """Return project directory from config."""
+    return get_config().project_dir
 
 
 def render_quadlet_template(content: str) -> str:
     """Replace @@PLACEHOLDER@@ tokens in a quadlet file with live system values."""
-    content = content.replace("@@PROJECT_DIR@@", str(_PROJECT_DIR))
+    project_dir = _get_project_dir()
+    content = content.replace("@@PROJECT_DIR@@", str(project_dir))
     content = content.replace("@@UID@@", str(os.getuid()))
-    env_vars = load_env_vars(_PROJECT_DIR / ".env")
+    env_vars = load_env_file(project_dir / ".env")
     for key, value in env_vars.items():
         content = content.replace(f"@@{key}@@", value)
     return content
@@ -36,21 +36,22 @@ def render_quadlet_template(content: str) -> str:
 
 def get_current_mode() -> str:
     """Return the current deployment mode (dev or prod) from .visp-mode file."""
-    if _MODE_FILE.exists():
-        return _MODE_FILE.read_text().strip()
+    mode_file = _get_project_dir() / ".visp-mode"
+    if mode_file.exists():
+        return mode_file.read_text().strip()
     return _DEFAULT_MODE
 
 
 def set_current_mode(mode: str) -> None:
     """Persist the deployment mode to .visp-mode."""
-    _MODE_FILE.write_text(mode)
+    (_get_project_dir() / ".visp-mode").write_text(mode)
 
 
 def get_quadlets_dir(mode: str | None = None) -> Path:
     """Return the quadlets source directory for the given (or current) mode."""
     if mode is None:
         mode = get_current_mode()
-    return _QUADLETS_BASE_DIR / mode
+    return _get_project_dir() / "quadlets" / mode
 
 
 def get_quadlet_drift(
@@ -121,3 +122,91 @@ def setup_service_env_files(project_dir: Path) -> None:
         print(color("  ✓ Created external/wsrng-server/.env (MONGO_PASSWORD via Podman Secret)", Colors.GREEN))
     else:
         print(color("  ⚠ external/wsrng-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
+
+
+def cmd_apply(
+    args,
+    project_dir: Path | None = None,
+    systemd_dir: Path | None = None,
+    runner=None,
+    build_configs=None,
+    network_services=None,
+) -> None:
+    """Apply quadlet changes and restart containers running stale images."""
+    from .images import ImageManager
+    from .install import install_quadlets
+    from .service import get_runtime_services, resolve_services
+    from .service_manager import ServiceManager
+
+    if project_dir is None:
+        project_dir = get_config().project_dir
+    if systemd_dir is None:
+        systemd_dir = get_config().systemd_dir
+
+    service = getattr(args, "service", "all")
+    mode = get_current_mode()
+    quadlets_dir = get_quadlets_dir(mode)
+    services = resolve_services(service, project_dir)
+
+    drifted, not_installed = get_quadlet_drift(services, quadlets_dir, systemd_dir, render_quadlet_template)
+
+    im = ImageManager(runner, build_configs or {}, network_services or [])
+    stale_image = im.get_stale_containers(services)
+    quadlet_names = {s.name for s in drifted + not_installed}
+    stale_image_only = [s for s in stale_image if s.name not in quadlet_names]
+
+    if not drifted and not not_installed and not stale_image_only:
+        print(
+            color(
+                f"All quadlets are up to date and all containers are running the latest images ({mode} mode).",
+                Colors.GREEN,
+            )
+        )
+        return
+
+    to_update = drifted + not_installed
+    if to_update:
+        print(color(f"=== Applying quadlet changes ({mode} mode) ===", Colors.CYAN))
+        print()
+        if drifted:
+            print(color(f"  Out of date ({len(drifted)}):", Colors.YELLOW))
+            for svc in drifted:
+                print(f"    - {svc.file}")
+        if not_installed:
+            print(color(f"  Not installed ({len(not_installed)}):", Colors.YELLOW))
+            for svc in not_installed:
+                print(f"    - {svc.file}")
+        print()
+
+        print(color("Installing quadlets...", Colors.CYAN))
+        install_quadlets(quadlets_dir, systemd_dir, to_update, render_quadlet_template, force=True)
+        print()
+
+        print(color("Reloading systemd daemon...", Colors.CYAN))
+        result = runner.systemctl("daemon-reload")
+        if result.returncode != 0:
+            print(color(f"  daemon-reload failed: {result.stderr}", Colors.RED))
+            return
+        print(color("  Daemon reloaded", Colors.GREEN))
+        print()
+
+    quadlet_restart = [svc for svc in to_update if svc.file.endswith(".container")]
+    restart_targets = quadlet_restart + stale_image_only
+
+    if not restart_targets:
+        print(color("No container services to restart.", Colors.GREEN))
+        return
+
+    if stale_image_only:
+        print(color(f"  Stale image ({len(stale_image_only)}):", Colors.YELLOW))
+        for svc in stale_image_only:
+            print(f"    - {svc.name}")
+        print()
+
+    print(color(f"Restarting {len(restart_targets)} service(s)...", Colors.CYAN))
+    sm = ServiceManager(runner, get_runtime_services(project_dir, include_disabled=True))
+    target_names = [svc.name for svc in restart_targets]
+    sm.stop(target_names)
+    sm.start(target_names)
+    print()
+    print(color("Done.", Colors.GREEN))

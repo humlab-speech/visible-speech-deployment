@@ -15,7 +15,6 @@ Dockerfiles/Containerfiles define **how to build** container images. They are pa
 - `wsrng-server/` - WebSocket recording server
 - `octra/` - OCTRA annotation tool
 - `whisper/` - Whisper transcription service
-- `whisperx/` - WhisperX transcription service
 - `labjs/` - Lab.js experimental software
 - `hs-wsr-client/` - Speech recognition client
 

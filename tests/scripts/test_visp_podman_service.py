@@ -104,11 +104,11 @@ def test_cmd_down_all_skips_dev_only_services_in_prod(monkeypatch):
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
 
+    import vispctl.env as env_mod
     import vispctl.quadlets as q_mod
-    import vispctl.runner as r_mod
 
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "prod")
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {})
 
     args = types.SimpleNamespace(services=["all"])
     vp.cmd_down(args)
@@ -139,7 +139,10 @@ def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
 
     args = types.SimpleNamespace(services=["all"])
     vp.cmd_restart(args)
-    assert called.get("stop") and called["stop"][0] == "all"
+    assert called.get("stop")
+    stop_targets = called["stop"][0]
+    assert isinstance(stop_targets, list)
+    assert "session-manager" in stop_targets
     assert called.get("start")
     start_targets = called["start"][0]
     assert isinstance(start_targets, list)
@@ -163,63 +166,62 @@ def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
 
     monkeypatch.setattr(vp, "ServiceManager", FakeSM)
 
-    import vispctl.runner as r_mod
+    import vispctl.env as env_mod
 
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {"WHISPERX_ENABLED": "false"})
 
     args = types.SimpleNamespace(services=["all"])
     vp.cmd_restart(args)
 
-    assert called.get("stop") and called["stop"][0] == "all"
+    assert called.get("stop")
+    stop_targets = called["stop"][0]
+    assert isinstance(stop_targets, list)
+    assert "session-manager" in stop_targets
     assert called.get("start")
     start_targets = called["start"][0]
     assert "session-manager" in start_targets
     assert "whisperx" not in start_targets
 
 
-def test_resolve_services_reports_disabled_optional_service(monkeypatch, capsys):
+def test_resolve_services_reports_disabled_optional_service(monkeypatch):
+    import vispctl.env as env_mod
     import vispctl.quadlets as q_mod
-    import vispctl.runner as r_mod
+    from vispctl.config import get_config, init_config
+    from vispctl.exceptions import ServiceError
 
-    vp = load_visp_module()  # noqa: F841
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"WHISPERX_ENABLED": "false"})
+    init_config()
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {"WHISPERX_ENABLED": "false"})
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
 
     from vispctl.service import resolve_services
 
-    with pytest.raises(SystemExit):
-        resolve_services("whisperx", vp.PROJECT_DIR)
-
-    out = capsys.readouterr().out
-    assert "disabled" in out
-    assert "WHISPERX_ENABLED=true" in out
+    with pytest.raises(ServiceError, match="WHISPERX_ENABLED=true"):
+        resolve_services("whisperx", get_config().project_dir)
 
 
-def test_resolve_services_reports_disabled_local_idp(monkeypatch, capsys):
+def test_resolve_services_reports_disabled_local_idp(monkeypatch):
+    import vispctl.env as env_mod
     import vispctl.quadlets as q_mod
-    import vispctl.runner as r_mod
+    from vispctl.config import get_config, init_config
+    from vispctl.exceptions import ServiceError
 
-    vp = load_visp_module()
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {"LOCAL_IDP_ENABLED": "false"})
+    init_config()
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {"LOCAL_IDP_ENABLED": "false"})
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
 
     from vispctl.service import resolve_services
 
-    with pytest.raises(SystemExit):
-        resolve_services("local-idp", vp.PROJECT_DIR)
-
-    out = capsys.readouterr().out
-    assert "disabled" in out
-    assert "LOCAL_IDP_ENABLED=true" in out
+    with pytest.raises(ServiceError, match="LOCAL_IDP_ENABLED=true"):
+        resolve_services("local-idp", get_config().project_dir)
 
 
 def test_get_runtime_services_includes_mongo_express_in_dev(monkeypatch):
+    import vispctl.env as env_mod
     import vispctl.quadlets as q_mod
-    import vispctl.runner as r_mod
 
     load_visp_module()
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {})
 
     from vispctl.service import get_runtime_services
 
@@ -228,12 +230,12 @@ def test_get_runtime_services_includes_mongo_express_in_dev(monkeypatch):
 
 
 def test_get_runtime_services_excludes_mongo_express_in_prod(monkeypatch):
+    import vispctl.env as env_mod
     import vispctl.quadlets as q_mod
-    import vispctl.runner as r_mod
 
     load_visp_module()
     monkeypatch.setattr(q_mod, "get_current_mode", lambda: "prod")
-    monkeypatch.setattr(r_mod, "load_env_vars", lambda _: {})
+    monkeypatch.setattr(env_mod, "load_env_file", lambda _: {})
 
     from vispctl.service import get_runtime_services
 

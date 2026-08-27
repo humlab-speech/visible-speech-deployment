@@ -20,24 +20,22 @@ def load_visp_module():
 def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     vp = load_visp_module()
 
-    # Stub podman inspect to return not-found (so it prints container-not-found)
-    monkeypatch.setattr(vp.RUNNER, "run_quiet", lambda cmd: (1, "", ""))
+    runner = vp.Runner()
+    runner._run = lambda *a, **kw: (1, "", "")
+    vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
 
-    # Replace SYSTEMD_QUADLETS_DIR with a temp dir and create a rendered file
-    sys_dir = tmp_path / "systemd"
     quad_dir = tmp_path / "quadlets" / "dev"
     quad_dir.mkdir(parents=True)
-    sys_dir.mkdir(parents=True)
+    (tmp_path / "systemd").mkdir(parents=True)
 
     svc_file = "session-manager.container"
     source = quad_dir / svc_file
     source.write_text("content")
-    target = sys_dir / svc_file
-    target.write_text("content")  # rendered template (not a symlink)
+    target = tmp_path / "systemd" / svc_file
+    target.write_text("content")
 
-    monkeypatch.setattr(vp, "SYSTEMD_QUADLETS_DIR", sys_dir)
+    (tmp_path / ".visp-mode").write_text("dev")
 
-    # Call cmd_debug
     args = types.SimpleNamespace(service="session-manager")
     vp.cmd_debug(args)
 

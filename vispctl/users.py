@@ -1,7 +1,7 @@
-"""VISP user management — MongoDB user CRUD operations.
+"""VISP user management - MongoDB user CRUD operations.
 
 VISP has two parallel role systems (see AGENTS.md). This module deals only with
-the *system* level: ``users.system_role`` is either ``sys_admin`` (super user,
+the system level: ``users.system_role`` is either ``sys_admin`` (super user,
 can reach the admin panel and create projects) or ``user`` (everyone else).
 
 Project-level roles live on ``projects.members[].role`` and are managed from the
@@ -9,9 +9,11 @@ web UI by a project's admins, not from here.
 """
 
 import json
-import sys
 
-from .mongo import mongosh_json
+from .exceptions import UserError
+from .mongo import js_escape, mongosh_json
+from .runner import Colors
+from .runner import color as _color
 
 COLLECTION = "users"
 
@@ -24,22 +26,13 @@ def _system_role(user: dict) -> str:
     """Read a user's system role, failing closed on anything unrecognised."""
     return SYSTEM_ROLE_SYS_ADMIN if user.get("system_role") == SYSTEM_ROLE_SYS_ADMIN else SYSTEM_ROLE_USER
 
-# ── Colour helpers ─────────────────────────────────────────────────────────────
+
+def _validate_system_role(role: str) -> None:
+    if role not in VALID_SYSTEM_ROLES:
+        raise UserError(f"Invalid system role: {role}. Valid: {', '.join(VALID_SYSTEM_ROLES)}")
 
 
-class _C:
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    CYAN = "\033[0;36m"
-    NC = "\033[0m"
-
-
-def _color(text: str, c: str) -> str:
-    return f"{c}{text}{_C.NC}"
-
-
-# ── Commands ───────────────────────────────────────────────────────────────────
+# -- Commands -----------------------------------------------------------------
 
 
 def cmd_list(args) -> None:  # noqa: ARG001
@@ -52,15 +45,15 @@ def cmd_list(args) -> None:  # noqa: ARG001
         print("No users found.")
         return
 
-    print(_color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'System role'}", _C.CYAN))
+    print(_color(f"{'Username':<35} {'Name':<25} {'Active':<8} {'System role'}", Colors.CYAN))
     print("-" * 100)
 
     for user in users:
         username = user.get("username", "N/A")[:34]
         name = user.get("fullName", "N/A")[:24]
-        active = _color("Yes", _C.GREEN) if user.get("loginAllowed") else _color("No", _C.RED)
+        active = _color("Yes", Colors.GREEN) if user.get("loginAllowed") else _color("No", Colors.RED)
         role = _system_role(user)
-        role_str = _color(role, _C.YELLOW) if role == SYSTEM_ROLE_SYS_ADMIN else role
+        role_str = _color(role, Colors.YELLOW) if role == SYSTEM_ROLE_SYS_ADMIN else role
 
         print(f"{username:<35} {name:<25} {active:<17} {role_str}")
 
@@ -68,28 +61,27 @@ def cmd_list(args) -> None:  # noqa: ARG001
 def cmd_show(args) -> None:
     """Show detailed user info."""
     username = args.username
-    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{username}'}})")
+    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
 
     if not user:
-        print(_color(f"User not found: {username}", _C.RED))
-        sys.exit(1)
+        raise UserError(f"User not found: {username}")
 
-    print(_color(f"=== User: {username} ===", _C.CYAN))
+    print(_color(f"=== User: {username} ===", Colors.CYAN))
     print()
     print(f"  {'Full Name:':<20} {user.get('fullName', 'N/A')}")
     print(f"  {'Email:':<20} {user.get('email', 'N/A')}")
     print(f"  {'EPPN:':<20} {user.get('eppn', 'N/A')}")
-    login_status = _color("Yes", _C.GREEN) if user.get("loginAllowed") else _color("No", _C.RED)
+    login_status = _color("Yes", Colors.GREEN) if user.get("loginAllowed") else _color("No", Colors.RED)
     print(f"  {'Login Allowed:':<20} {login_status}")
     role = _system_role(user)
-    role_str = _color(role, _C.YELLOW) if role == SYSTEM_ROLE_SYS_ADMIN else role
+    role_str = _color(role, Colors.YELLOW) if role == SYSTEM_ROLE_SYS_ADMIN else role
     print(f"  {'System Role:':<20} {role_str}")
     print()
 
     memberships = mongosh_json(
-        f"db.projects.find({{'members.username': '{username}'}}, {{id: 1, name: 1, members: 1}}).toArray()"
+        f"db.projects.find({{'members.username': '{js_escape(username)}'}}, {{id: 1, name: 1, members: 1}}).toArray()"
     ) or []
-    print(_color("  Project roles:", _C.YELLOW))
+    print(_color("  Project roles:", Colors.YELLOW))
     if memberships:
         for project in memberships:
             member = next(
@@ -107,9 +99,9 @@ def cmd_create(args) -> None:
     email = args.email
     username = email.replace("@", "_at_").replace(".", "_dot_")
 
-    existing = mongosh_json(f"db.{COLLECTION}.findOne({{email: '{email}'}})")
+    existing = mongosh_json(f"db.{COLLECTION}.findOne({{email: '{js_escape(email)}'}})")
     if existing:
-        print(_color(f"User with email {email} already exists", _C.YELLOW))
+        print(_color(f"User with email {email} already exists", Colors.YELLOW))
         print(f"Username: {existing.get('username')}")
         return
 
@@ -127,22 +119,24 @@ def cmd_create(args) -> None:
     result = mongosh_json(f"db.{COLLECTION}.insertOne({json.dumps(user_doc)})")
 
     if result and result.get("acknowledged"):
-        print(_color(f"Created user: {username}", _C.GREEN))
+        print(_color(f"Created user: {username}", Colors.GREEN))
         print(f"  Email: {email}")
         print(f"  System role: {user_doc['system_role']}")
     else:
-        print(_color("Failed to create user", _C.RED))
+        print(_color("Failed to create user", Colors.RED))
 
 
 def cmd_activate(args) -> None:
     """Enable login for user."""
     username = args.username
-    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: true}}}})")
+    result = mongosh_json(
+        f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: true}}}})"
+    )
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Activated user: {username}", _C.GREEN))
+        print(_color(f"Activated user: {username}", Colors.GREEN))
     else:
         print(f"User {username} was already active")
 
@@ -150,12 +144,14 @@ def cmd_activate(args) -> None:
 def cmd_deactivate(args) -> None:
     """Disable login for user."""
     username = args.username
-    result = mongosh_json(f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{loginAllowed: false}}}})")
+    result = mongosh_json(
+        f"db.{COLLECTION}.updateOne({{username: '{js_escape(username)}'}}, {{$set: {{loginAllowed: false}}}})"
+    )
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
+        print(_color(f"User not found: {username}", Colors.RED))
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Deactivated user: {username}", _C.YELLOW))
+        print(_color(f"Deactivated user: {username}", Colors.YELLOW))
     else:
         print(f"User {username} was already inactive")
 
@@ -164,34 +160,30 @@ def cmd_set_system_role(args) -> None:
     """Set a user's system role (sys_admin or user)."""
     username = args.username
     role = args.role
+    _validate_system_role(role)
 
-    if role not in VALID_SYSTEM_ROLES:
-        print(_color(f"Invalid system role: {role}", _C.RED))
-        print(f"Valid system roles: {', '.join(VALID_SYSTEM_ROLES)}")
-        sys.exit(1)
+    escaped_username = js_escape(username)
 
     # Never leave the installation without a super user: demoting the last
     # sys_admin would lock everyone out of the admin panel and project creation.
     if role != SYSTEM_ROLE_SYS_ADMIN:
-        current = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{username}'}})")
+        current = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{escaped_username}'}})")
         if current and _system_role(current) == SYSTEM_ROLE_SYS_ADMIN:
             remaining = mongosh_json(
                 f"db.{COLLECTION}.countDocuments({{system_role: '{SYSTEM_ROLE_SYS_ADMIN}', "
-                f"username: {{$ne: '{username}'}}}})"
+                f"username: {{$ne: '{escaped_username}'}}}})"
             )
             if not remaining:
-                print(_color(f"{username} is the last sys_admin — promote another user first", _C.RED))
-                sys.exit(1)
+                raise UserError(f"{username} is the last sys_admin - promote another user first")
 
     result = mongosh_json(
-        f"db.{COLLECTION}.updateOne({{username: '{username}'}}, {{$set: {{system_role: '{role}'}}}})"
+        f"db.{COLLECTION}.updateOne({{username: '{escaped_username}'}}, {{$set: {{system_role: '{role}'}}}})"
     )
 
     if not result or result.get("matchedCount", 0) == 0:
-        print(_color(f"User not found: {username}", _C.RED))
-        sys.exit(1)
+        raise UserError(f"User not found: {username}")
     elif result.get("modifiedCount", 0) > 0:
-        print(_color(f"Set system role of {username} to {role}", _C.GREEN))
+        print(_color(f"Set system role of {username} to {role}", Colors.GREEN))
     else:
         print(f"User {username} already has system role {role}")
 
@@ -200,10 +192,9 @@ def cmd_delete(args) -> None:
     """Delete a user."""
     username = args.username
 
-    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{username}'}})")
+    user = mongosh_json(f"db.{COLLECTION}.findOne({{username: '{js_escape(username)}'}})")
     if not user:
-        print(_color(f"User not found: {username}", _C.RED))
-        sys.exit(1)
+        raise UserError(f"User not found: {username}")
 
     print("About to delete user:")
     print(f"  Username: {username}")
@@ -212,20 +203,20 @@ def cmd_delete(args) -> None:
     print()
 
     if not getattr(args, "force", False):
-        confirm = input(_color("Are you sure? Type 'yes' to confirm: ", _C.YELLOW))
+        confirm = input(_color("Are you sure? Type 'yes' to confirm: ", Colors.YELLOW))
         if confirm.lower() != "yes":
             print("Cancelled.")
             return
 
-    result = mongosh_json(f"db.{COLLECTION}.deleteOne({{username: '{username}'}})")
+    result = mongosh_json(f"db.{COLLECTION}.deleteOne({{username: '{js_escape(username)}'}})")
 
     if result and result.get("deletedCount", 0) > 0:
-        print(_color(f"Deleted user: {username}", _C.GREEN))
+        print(_color(f"Deleted user: {username}", Colors.GREEN))
     else:
-        print(_color("Failed to delete user", _C.RED))
+        print(_color("Failed to delete user", Colors.RED))
 
 
-# ── Dispatch map (used by visp.py cmd_users) ───────────────────────────
+# -- Dispatch map (used by visp.py cmd_users) ---------------------------------
 
 COMMANDS: dict = {
     "list": cmd_list,

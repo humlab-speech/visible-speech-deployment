@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Tuple
 
+from .exceptions import NetworkError
 from .runner import Colors, Runner, color
 
 
@@ -35,7 +36,7 @@ class NetworkManager:
 
         for net in required_networks:
             if net["name"] in existing_networks:
-                print(f"  ○ {net['name']}: exists")
+                print(color(f"  ○ {net['name']}: exists", Colors.YELLOW))
                 continue
 
             print(f"  Creating {net['name']}...")
@@ -131,7 +132,7 @@ class NetworkManager:
         print("  3. Images are preserved (no need to rebuild)")
         print("  4. Networks will be recreated automatically")
         print()
-        print(color("⚠️  WARNING: All running containers will be removed!", Colors.RED))
+        print(color("⚠  WARNING: All running containers will be removed!", Colors.RED))
         print("  Make sure you have backups of important data.")
         print()
 
@@ -162,3 +163,33 @@ class NetworkManager:
             return False
         print(color("  ✓ System reset complete", Colors.GREEN))
         return True
+
+
+def cmd_network(args, runner: Runner | None = None) -> None:
+    """Show network information and DNS status, or perform actions like 'ensure'."""
+    if runner is None:
+        runner = Runner()
+    nm = NetworkManager(runner)
+
+    if getattr(args, "action", None) == "ensure":
+        print(color("Ensuring required Podman networks exist...", Colors.CYAN))
+        ok = nm.ensure_networks_exist()
+        if ok:
+            print(color("  Networks ensured", Colors.GREEN))
+        else:
+            print(color("  Failed to ensure networks", Colors.RED))
+            raise NetworkError("Failed to ensure required Podman networks")
+        return
+
+    print(color("=== Network Backend ===", Colors.CYAN))
+    is_net, backend = nm.check_netavark()
+    if is_net:
+        print(color(f"  Backend: {backend} (recommended)", Colors.GREEN))
+    else:
+        print(
+            color(
+                f"  Backend: {backend} (CNI - consider upgrading to netavark)",
+                Colors.YELLOW,
+            )
+        )
+    print()

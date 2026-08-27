@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from .config import get_config
 from .runner import Colors, Runner, color
 from .service import Service
 
@@ -143,7 +143,7 @@ class ImageManager:
         Returns:
             Dict mapping "image:tag" -> [list of Dockerfile paths]
         """
-        base_dir = Path(__file__).parent.parent
+        base_dir = get_config().project_dir
         dockerfiles = []
 
         # Search in docker/ and external/
@@ -221,12 +221,10 @@ class ImageManager:
         for image_name, build_name in sorted(expected_images.items()):
             if image_name in found_images:
                 info = found_images[image_name]
-                print(
-                    f"  {color('✓', Colors.GREEN)} {color(build_name, Colors.BLUE):25} " f"{image_name}:{info['tag']}"
-                )
+                print(f"  {color('✓', Colors.GREEN)} {color(build_name, Colors.BLUE):25} {image_name}:{info['tag']}")
                 print(f"      Size: {info['size']:12}  Created: {info['created']}")
             else:
-                print(f"  {color('✗', Colors.RED)} {color(build_name, Colors.BLUE):25} " f"{image_name} (not built)")
+                print(f"  {color('✗', Colors.RED)} {color(build_name, Colors.BLUE):25} {image_name} (not built)")
             print()
 
         # Summary
@@ -308,7 +306,7 @@ class ImageManager:
             # Color code based on tag type
             if tag == "latest" or not any(char.isdigit() for char in tag):
                 tag_colored = color(tag, Colors.RED)  # Unpinned
-                status = "⚠️ "
+                status = "⚠ "
             elif "@sha256" in tag:
                 tag_colored = color(tag, Colors.GREEN)  # Digest
                 status = "✓ "
@@ -334,7 +332,7 @@ class ImageManager:
         print(color("=== Summary ===", Colors.CYAN))
         print(f"Total base images: {total}")
         if unpinned > 0:
-            print(color(f"⚠️  Unpinned images: {unpinned}", Colors.YELLOW))
+            print(color(f"⚠  Unpinned images: {unpinned}", Colors.YELLOW))
             print(
                 color(
                     "   Consider pinning to specific versions for reproducibility",

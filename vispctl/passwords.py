@@ -2,16 +2,19 @@
 
 import getpass
 import os
-import random
+import secrets
 import shutil
 import string
+from pathlib import Path
 from typing import Optional
+
+from .env import load_env_file
 
 
 def generate_random_string(length: int = 32) -> str:
     """Generate a random string for passwords."""
     chars = string.ascii_letters + string.digits
-    return "".join(random.choice(chars) for _ in range(length))
+    return "".join(secrets.choice(chars) for _ in range(length))
 
 
 class EnvFile:
@@ -34,17 +37,7 @@ class EnvFile:
 
     def _load(self) -> None:
         """Load variables from .env file if it exists."""
-        if not os.path.exists(self.path):
-            return
-
-        with open(self.path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    self.vars[key.strip()] = value.strip()
+        self.vars.update(load_env_file(Path(self.path)))
 
     def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Get an environment variable value."""
@@ -120,10 +113,10 @@ def setup_env_file(auto_passwords: bool = True, interactive: bool = False) -> No
     current_mongo_pass = secrets.get("MONGO_ROOT_PASSWORD")  # Check secrets file
 
     if mongo_data_exists and current_mongo_pass:
-        print("⚠️  MongoDB database already exists with data.")
+        print("⚠  MongoDB database already exists with data.")
         print("   Keeping existing MONGO_ROOT_PASSWORD to avoid authentication issues.")
     elif mongo_data_exists and not current_mongo_pass:
-        print("⚠️  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env.secrets!")
+        print("⚠  WARNING: MongoDB data exists but no MONGO_ROOT_PASSWORD in .env.secrets!")
         if interactive or input("   Set MongoDB password now? (y/n): ").lower() == "y":
             password = getpass.getpass("   Enter MONGO_ROOT_PASSWORD: ")
             secrets.set("MONGO_ROOT_PASSWORD", password, "MongoDB root password")
@@ -166,13 +159,13 @@ def setup_env_file(auto_passwords: bool = True, interactive: bool = False) -> No
             print(f"✅ Generated {var}")
         else:
             # Manual mode: skip
-            print(f"⚠️  {var} not set (use --auto-passwords or --interactive-passwords)")
+            print(f"⚠  {var} not set (use --auto-passwords or --interactive-passwords)")
 
     # 4. Remove any password variables from .env (they should only be in .env.secrets)
     # This handles leftover keys from .env-example that were copied with empty values
     for var in password_vars.keys():
         if var in env.vars:
-            print(f"ℹ️  Removing {var} from .env (passwords belong in .env.secrets)")
+            print(f"ℹ  Removing {var} from .env (passwords belong in .env.secrets)")
             del env.vars[var]
 
     # Save both files

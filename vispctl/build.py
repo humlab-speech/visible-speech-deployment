@@ -9,9 +9,38 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
 
+from .config import get_config
+from .exceptions import BuildError
 from .runner import Colors, Runner, color
 
 NODE_BUILD_MARKER = ".build-marker"
+
+# Whitelist of valid Angular build configurations for --config CLI argument.
+# Used to prevent command injection when the config is interpolated into build_cmd.
+VALID_BUILD_CONFIGS: set[str] = {
+    "visp",
+    "visp-demo",
+    "visp-pdf-server",
+    "datalab",
+    "visp-local",
+    "visp.dev",
+    "production",
+    "development",
+}
+
+
+def validate_build_config(build_config: str | None) -> str | None:
+    """Validate a build configuration name against the whitelist.
+
+    Raises BuildError if the config is not in the allowed set.
+    """
+    if build_config is None:
+        return None
+    if build_config not in VALID_BUILD_CONFIGS:
+        raise BuildError(
+            f"Invalid build config: {build_config!r}. " f"Allowed values: {', '.join(sorted(VALID_BUILD_CONFIGS))}"
+        )
+    return build_config
 
 
 class BuildManager:
@@ -130,7 +159,7 @@ class BuildManager:
 
             repo_path = Path.cwd() / "external" / svc_name
             if not repo_path.exists():
-                warnings.append(f"  ⚠️  {svc_name}: Repository not found at {repo_path}")
+                warnings.append(f"  ⚠  {svc_name}: Repository not found at {repo_path}")
                 continue
 
             repo = GitRepository(str(repo_path))
@@ -144,7 +173,7 @@ class BuildManager:
             if mode == "prod" and is_locked:
                 if current_commit != version:
                     warnings.append(
-                        f"  ⚠️  {svc_name}: Version mismatch in PROD mode\n"
+                        f"  ⚠  {svc_name}: Version mismatch in PROD mode\n"
                         f"      Current: {current_commit[:8]}, Expected: {version[:8]}\n"
                         f"      Run: ./visp.py deploy update"
                     )
@@ -153,7 +182,7 @@ class BuildManager:
                 locked_version = comp_config.get_locked_version(svc_name)
                 if locked_version and locked_version != "N/A" and current_commit != locked_version:
                     warnings.append(
-                        f"  ℹ️  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
+                        f"  ℹ  {svc_name}: Differs from locked version (this is OK in dev mode)\n"
                         f"      Current: {current_commit[:8]}, Locked: {locked_version[:8]}"
                     )
 
@@ -164,7 +193,8 @@ class BuildManager:
         if not prepare:
             return True
 
-        context_dir = Path(__file__).parent.parent / config["context"]
+        project_dir = get_config().project_dir
+        context_dir = project_dir / config["context"]
 
         if prepare == "container-agent":
             agent_cfg = self.node_configs.get("container-agent")
@@ -172,7 +202,7 @@ class BuildManager:
                 print(color("  ✗ container-agent build config missing", Colors.RED))
                 return False
 
-            agent_source = Path(__file__).parent.parent / agent_cfg["source"]
+            agent_source = project_dir / agent_cfg["source"]
             agent_dest = context_dir / "container-agent"
 
             if not agent_source.exists():
@@ -239,64 +269,19 @@ class BuildManager:
         source_repo = config.get("source_repo")
         git_label_path = Path(source_repo).resolve() if source_repo else context_path
         try:
-            # Check if context is in a git repo
-            git_check = subprocess.run(
-                ["git", "rev-parse", "--git-dir"], cwd=git_label_path, capture_output=True, check=False
-            )
-            if git_check.returncode == 0:
-                # Get current commit hash
-                commit_result = subprocess.run(
-                    ["git", "rev-parse", "HEAD"], cwd=git_label_path, capture_output=True, text=True, check=False
-                )
-                if commit_result.returncode == 0:
-                    commit_hash = commit_result.stdout.strip()
-                    cmd.extend(["--label", f"git.commit={commit_hash}"])
-
-                    # Check if the source tree was dirty at build time
-                    dirty_result = subprocess.run(
-                        ["git", "status", "--porcelain"],
-                        cwd=git_label_path,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    if dirty_result.returncode == 0 and dirty_result.stdout.strip():
-                        cmd.extend(["--label", "git.dirty=true"])
-
-                    # Also add timestamp
-                    from datetime import datetime
-
-                    build_time = datetime.now().isoformat()
-                    cmd.extend(["--label", f"build.timestamp={build_time}"])
+            self._add_git_labels(cmd, git_label_path, "git.commit")
 
             # Add labels for extra source repos (if multiple repos are embedded in one image)
             for name, repo_path in config.get("extra_source_repos", {}).items():
                 extra_path = Path(repo_path).resolve()
-                extra_check = subprocess.run(
-                    ["git", "rev-parse", "--git-dir"], cwd=extra_path, capture_output=True, check=False
-                )
-                if extra_check.returncode == 0:
-                    extra_commit = subprocess.run(
-                        ["git", "rev-parse", "HEAD"], cwd=extra_path, capture_output=True, text=True, check=False
-                    )
-                    if extra_commit.returncode == 0:
-                        cmd.extend(["--label", f"git.commit.{name}={extra_commit.stdout.strip()}"])
-                    extra_dirty = subprocess.run(
-                        ["git", "status", "--porcelain"],
-                        cwd=extra_path,
-                        capture_output=True,
-                        text=True,
-                        check=False,
-                    )
-                    if extra_dirty.returncode == 0 and extra_dirty.stdout.strip():
-                        cmd.extend(["--label", f"git.dirty.{name}=true"])
+                self._add_git_labels(cmd, extra_path, f"git.commit.{name}")
 
             # When source_repo is set, git.commit tracks the external source but
             # Dockerfile/config changes live in the deployment repo.  Record the
             # deployment repo commit too so deploy status can detect stale images
             # when only the Dockerfile changed.
             if source_repo:
-                deploy_path = Path(__file__).parent.parent.resolve()
+                deploy_path = get_config().project_dir
                 deploy_commit = subprocess.run(
                     ["git", "rev-parse", "HEAD"], cwd=deploy_path, capture_output=True, text=True, check=False
                 )
@@ -323,6 +308,32 @@ class BuildManager:
             print(color(f"✗ {svc_name} build error: {e}", Colors.RED))
             return False
 
+    def _add_git_labels(self, cmd: list[str], path: Path, label_prefix: str) -> None:
+        """Add git commit and dirty labels for a path to the build command."""
+        git_check = subprocess.run(["git", "rev-parse", "--git-dir"], cwd=path, capture_output=True, check=False)
+        if git_check.returncode != 0:
+            return
+        commit_result = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True, check=False
+        )
+        if commit_result.returncode == 0:
+            commit_hash = commit_result.stdout.strip()
+            cmd.extend(["--label", f"{label_prefix}={commit_hash}"])
+            dirty_result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if dirty_result.returncode == 0 and dirty_result.stdout.strip():
+                dirty_key = label_prefix.replace("git.commit", "git.dirty", 1)
+                cmd.extend(["--label", f"{dirty_key}=true"])
+            from datetime import datetime
+
+            build_time = datetime.now().isoformat()
+            cmd.extend(["--label", f"build.timestamp={build_time}"])
+
     def build_node_project(
         self,
         name: str,
@@ -330,12 +341,14 @@ class BuildManager:
         no_cache: bool = False,
         build_config: str = None,
     ) -> bool:
-        source_dir = Path(__file__).parent.parent / config["source"]
-        output_dir = Path(__file__).parent.parent / config["output"]
+        project_dir = get_config().project_dir
+        source_dir = project_dir / config["source"]
+        output_dir = project_dir / config["output"]
 
         build_cmd_template = config.get("build_cmd", "npm run build")
         if "{config}" in build_cmd_template:
             cfg = build_config or config.get("default_config", "production")
+            validate_build_config(cfg)
             build_cmd = build_cmd_template.format(config=cfg)
         else:
             build_cmd = build_cmd_template
@@ -649,3 +662,129 @@ NODE_BUILD_CONFIGS: dict[str, dict] = {
         "container_image": "node:22.22.2",
     },
 }
+
+
+def cmd_build(
+    args,
+    runner=None,
+    build_configs=None,
+    node_configs=None,
+    all_buildable: list[str] | None = None,
+) -> None:
+    """Build container images and node projects."""
+
+    if getattr(args, "list", False):
+        cmd_build_list(args, build_configs=build_configs, node_configs=node_configs)
+        return
+
+    no_cache = getattr(args, "no_cache", False)
+    pull = getattr(args, "pull", False)
+    raw_services = getattr(args, "services", ["all"])
+    build_config = getattr(args, "config", None)
+    force = getattr(args, "force", False)
+
+    if "all" in raw_services:
+        requested = list(all_buildable)
+    else:
+        unknown = [s for s in raw_services if s not in all_buildable]
+        if unknown:
+            print(color(f"Error: Unknown service(s): {', '.join(unknown)}", Colors.RED))
+            print(f"Buildable services: {', '.join(all_buildable)}")
+            return
+        requested = list(raw_services)
+
+    ordered, auto_added = resolve_build_order(requested, build_configs, node_configs)
+
+    if auto_added:
+        print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
+        print()
+
+    bm = BuildManager(runner, build_configs=build_configs, node_configs=node_configs)
+
+    if not force:
+        from .quadlets import get_current_mode
+
+        mode = get_current_mode()
+        version_warnings, is_blocking = bm.check_version_drift(ordered, mode)
+
+        if version_warnings:
+            print(color("\n=== Version Check Warnings ===", Colors.CYAN))
+            for warning in version_warnings:
+                print(warning)
+            print()
+            if is_blocking:
+                print(color("Cannot build in PROD mode with version mismatches.", Colors.RED))
+                print("   Options:")
+                print("   1. Run: ./visp.py deploy update")
+                print("   2. Use --force to override (not recommended)")
+                print()
+                return
+            print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
+            print()
+
+    print(color("=== Building VISP Services ===", Colors.CYAN))
+    print(f"  Order: {' -> '.join(ordered)}")
+    print()
+
+    if no_cache:
+        print(color("Building with --no-cache (clean rebuild)", Colors.YELLOW))
+    if pull:
+        print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
+    if no_cache or pull:
+        print()
+
+    results = bm.run_builds(ordered, no_cache=no_cache, pull=pull, build_config=build_config)
+
+    print(color("=== Build Summary ===", Colors.CYAN))
+    if results["success"]:
+        print(color(f"  Successful: {', '.join(results['success'])}", Colors.GREEN))
+    if results["skipped"]:
+        print(
+            color(
+                f"  Skipped (missing deps): {', '.join(results['skipped'])}",
+                Colors.YELLOW,
+            )
+        )
+    if results["failed"]:
+        print(color(f"  Failed: {', '.join(results['failed'])}", Colors.RED))
+
+    if results["failed"]:
+        print()
+        print(
+            color(
+                "Tip: Use --no-cache to force a clean rebuild if you're having issues",
+                Colors.YELLOW,
+            )
+        )
+
+
+def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa: ARG001
+    """List buildable services."""
+
+    print(color("=== Buildable Container Images ===", Colors.CYAN))
+    print()
+    for name, config in (build_configs or {}).items():
+        print(f"  {color(name, Colors.BLUE)}")
+        print(f"    Image: {config['image']}:latest")
+        print(f"    Context: {config['context']}")
+        if config.get("description"):
+            print(f"    Description: {config['description']}")
+        if config.get("target"):
+            print(f"    Target: {config['target']}")
+        if config.get("depends_on"):
+            print(f"    Depends on: {config['depends_on']}")
+        if config.get("prepare_context"):
+            print(f"    Requires: {config['prepare_context']} to be built first")
+        print()
+
+    print(color("=== Buildable Node.js Projects (containerized) ===", Colors.CYAN))
+    print()
+    for name, config in (node_configs or {}).items():
+        print(f"  {color(name, Colors.BLUE)}")
+        print(f"    Source: {config['source']}")
+        print(f"    Output: {config['output']}")
+        print(f"    Description: {config['description']}")
+        if config.get("default_config"):
+            print(f"    Default config: {config['default_config']}")
+            print("    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local")
+        print()

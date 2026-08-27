@@ -23,31 +23,24 @@ import json
 import subprocess
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).parent.parent
-SESSIONS_DIR = _PROJECT_ROOT / "mounts" / "sessions"
-
-# ── Colour / symbol helpers ────────────────────────────────────────────────────
-
-
-class _C:
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    CYAN = "\033[0;36m"
-    DIM = "\033[2m"
-    BOLD = "\033[1m"
-    NC = "\033[0m"
+from .config import get_config
+from .display import FAIL, PASS, TREE_BRANCH, TREE_LAST, TREE_SPACE, TREE_VERTICAL, WARN
+from .runner import Colors
 
 
-_PASS = f"{_C.GREEN}✓{_C.NC}"
-_WARN = f"{_C.YELLOW}⚠{_C.NC}"
-_FAIL = f"{_C.RED}✗{_C.NC}"
+def _get_sessions_dir() -> Path:
+    """Return the sessions mount directory from config."""
+    return get_config().project_dir / "mounts" / "sessions"
 
-# Tree-drawing characters (UTF-8 box drawing)
-_T = "├── "
-_L = "└── "
-_I = "│   "
-_S = "    "
+
+_C = Colors
+_PASS = PASS
+_WARN = WARN
+_FAIL = FAIL
+_T = TREE_BRANCH
+_L = TREE_LAST
+_I = TREE_VERTICAL
+_S = TREE_SPACE
 
 
 # ── Podman helpers ─────────────────────────────────────────────────────────────
@@ -144,9 +137,10 @@ def _collect_socket_dirs() -> dict[str, dict]:
     Returns {dir_name: {path, has_ui_sock, has_proxy_sock}}.
     """
     dirs = {}
-    if not SESSIONS_DIR.exists():
+    sessions_dir = _get_sessions_dir()
+    if not sessions_dir.exists():
         return dirs
-    for d in sorted(SESSIONS_DIR.iterdir()):
+    for d in sorted(sessions_dir.iterdir()):
         if not d.is_dir():
             continue
         dirs[d.name] = {

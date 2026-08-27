@@ -55,6 +55,7 @@ mounts/session-manager
 restart-wsrng-server.sh
 run_git_clone_in_container.sh
 .vscode
+.kilo
 visp-server
 mounts/repositories
 docker/artic/arctic
@@ -94,9 +95,6 @@ mounts/vscode/
 # WhisperX model cache and outputs (host mounts)
 mounts/whisperx/models/*
 mounts/whisperx/outputs/*
-
-# Local test scripts for the whisperx image (not intended for repo)
-docker/whisperx/*.sh
 /ARCHIVE/
 
 # Downloaded fonts for air-gapped builds (use scripts/download-fonts.sh to populate)

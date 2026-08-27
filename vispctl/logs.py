@@ -202,7 +202,7 @@ def view_logs(
     get_all_services:
         Callable returning ALL services including disabled ones (for debug info).
     resolve_services:
-        Callable that validates/resolves a service name string, calling sys.exit on error.
+        Callable that validates/resolves a service name string, raising ServiceError on error.
     container_services:
         Callable that filters a service list to container-type services only.
     """

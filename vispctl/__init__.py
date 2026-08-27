@@ -3,5 +3,5 @@
 This package contains runner and manager abstractions used by the CLI.
 """
 
-__all__ = ["runner", "services"]
+__all__ = ["config", "runner", "services"]
 __version__ = "0.1.0"

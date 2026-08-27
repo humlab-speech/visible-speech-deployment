@@ -235,7 +235,7 @@ def test_socket_dir_collection(tmp_path):
     empty = sessions_dir / "visp-session-stale-user-Cd34"
     empty.mkdir()
 
-    with patch("vispctl.session_doctor.SESSIONS_DIR", sessions_dir):
+    with patch("vispctl.session_doctor._get_sessions_dir", return_value=sessions_dir):
         dirs = _collect_socket_dirs()
 
     assert len(dirs) == 2
