@@ -85,6 +85,7 @@ CONTAINER_WRITABLE_DIRS = [
     Path("mounts/api-logs/logs"),
     Path("mounts/apache/apache/logs/apache2"),
     Path("mounts/apache/apache/logs/shibboleth"),
+    Path("mounts/apache/php-sessions"),
     Path("mounts/session-manager/logs"),
     Path("mounts/sessions"),
     Path("mounts/matomo/html"),

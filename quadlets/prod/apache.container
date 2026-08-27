@@ -55,6 +55,10 @@ Volume=@@PROJECT_DIR@@/certs:/etc/certs:Z
 Volume=@@PROJECT_DIR@@/certs/letsencrypt:/certs/letsencrypt:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/uploads:/tmp/uploads:Z
 Volume=@@PROJECT_DIR@@/mounts/apache/apache/php.ini:/etc/php/8.4/apache2/php.ini:Z
+# PHP's session store. Kept on the host so restarting apache does not sign
+# every user out - the store is in-image otherwise, and shibd's session cache
+# goes with it, leaving browsers holding a cookie for a session nothing knows.
+Volume=@@PROJECT_DIR@@/mounts/apache/php-sessions:/var/lib/php/sessions:Z
 Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z

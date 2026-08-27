@@ -108,3 +108,6 @@ COMMIT_MESSAGE.md
 NETAVARK_MIGRATION.md
 docker/session-manager/files/Transcription.ipynb
 johan-todo.md
+
+# PHP session store (runtime state)
+mounts/apache/php-sessions/*
