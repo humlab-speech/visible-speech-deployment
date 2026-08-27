@@ -1,0 +1,8 @@
+1. When opening the dialog "Invitation codes" in the webclient, there is a loading indicator and underneath we have a box where it says "No invite codes created yet.", but how can the system know there are no invite codes if it's still loading the data?
+
+Task: Check what the loading indicator actually refers to, if it refers to the loading of the invite codes data, then the text "No invite codes created yet." should not be shown until the loading is complete.
+
+
+2. When the user is pressing "Create invite code", there needs to be both a loading indicator of some sort, and also a blocking of the button until loading is complete so the user does not accidentally click twice, thinking nothing happened the first time and then getting multiple invite codes generated.
+
+3. In the invite code dialog, when an invite code is generated, the user can select a role for it that should be assigned to the user using the code, however, the roles are "Admin", "Analyzer" and "Transcriber", which are different from the titles a user can be assigned in the account menu "profile-meta" classed box. These needs to be synced with one another. The possible roles should be "System admin", "Project admin" and "Researcher". Where the System admin is a sort of system super user that has access to the special system admin panel. The "Project admin" can create new projects and invite codes, but they can't access the sysadmin panel or any projects they don't belong to. The "Researcher" also can't access any projects they don't belong to and can not create projects or create invite codes, but they can edit the files inside a project they are assigned to.
