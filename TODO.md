@@ -68,13 +68,14 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
     is not documented as the one you usually want.
   - Decide: change the default to host-owner, or document the namespace mapping
     in the help text.
-- [ ] **D4 — `restore` semantics**
+- [x] **D4 — `restore` semantics**
   **DECIDED 2026-08-18:** Require an explicit `--drop` flag (default: no drop). Add
   stop-services guidance to the help text and strengthen the confirmation prompt.
-  - Runs `mongorestore --drop` unconditionally; the help text and prompt never
-    mention `--drop` or that services should be stopped first.
-  - Decide: require an explicit `--drop` flag (default: no drop), add stop-services
-    guidance, strengthen the confirmation prompt.
+  **IMPLEMENTED:** `restore` now takes `--drop` (default off — existing collections
+  are kept). The confirmation prompt states the drop behaviour, advises stopping the
+  services that write to MongoDB first, and notes that no automatic backup is taken.
+  - Was: ran `mongorestore --drop` unconditionally; help/prompt never mentioned
+    `--drop` or stopping services first.
 - [ ] **D5 — `deploy update` and pinned versions**
   **DECIDED 2026-08-18:** "Track latest branch" is the intended semantics for
   `update`; document it. Pinned checkout is `deploy rollback`'s job (item 5).

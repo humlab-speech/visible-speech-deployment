@@ -699,7 +699,11 @@ def cmd_restore(args):
 
     cfg = get_config()
     bm = BackupManager(cfg.runner)
-    ok = bm.restore(Path(args.backup_file), force=getattr(args, "force", False))
+    ok = bm.restore(
+        Path(args.backup_file),
+        force=getattr(args, "force", False),
+        drop=getattr(args, "drop", False),
+    )
     if not ok:
         sys.exit(1)
     return
@@ -1073,6 +1077,13 @@ Examples:
     p_restore.set_defaults(func=cmd_restore)
     p_restore.add_argument("backup_file", help="Backup file to restore")
     p_restore.add_argument("--force", action="store_true", help="Skip confirmation prompt")
+    p_restore.add_argument(
+        "--drop",
+        action="store_true",
+        help="Drop each restored collection before restoring (full replacement). "
+        "By default existing collections are kept. Stop the services that write to "
+        "MongoDB first (e.g. './visp.py stop session-manager').",
+    )
 
     # users
     p_users = subparsers.add_parser("users", help="Manage users in MongoDB")

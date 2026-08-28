@@ -386,10 +386,56 @@ def test_restore_mongorestore_failure_returns_false(tmp_path, capsys):
 
     backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
 
-    res = bm.restore(backup, force=True)
+    res = bm.restore(backup, force=True, drop=True)
 
     assert res is False
     assert "Restore failed" in capsys.readouterr().out
+
+
+# ── D4: restore --drop is opt-in (default keeps existing collections) ─────────
+
+
+class _MongorestoreCapture(FakeRunner):
+    """Records the argv of the mongorestore invocation."""
+
+    def __init__(self, tmpdir):
+        super().__init__(tmpdir)
+        self.mongorestore_argv = None
+
+    def run(self, cmd, capture=False, check=True, **kwargs):
+        if "mongorestore" in cmd:
+            self.mongorestore_argv = list(cmd)
+        return super().run(cmd, capture=capture, check=check, **kwargs)
+
+
+def test_restore_default_does_not_drop(tmp_path):
+    """Without --drop, mongorestore is invoked without the --drop flag."""
+    runner = _MongorestoreCapture(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
+
+    res = bm.restore(backup, force=True)
+
+    assert res is True
+    assert runner.mongorestore_argv is not None
+    assert "--drop" not in runner.mongorestore_argv
+
+
+def test_restore_drop_flag_passes_drop(tmp_path):
+    """With --drop, mongorestore is invoked with the --drop flag."""
+    runner = _MongorestoreCapture(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
+
+    res = bm.restore(backup, force=True, drop=True)
+
+    assert res is True
+    assert runner.mongorestore_argv is not None
+    assert "--drop" in runner.mongorestore_argv
 
 
 def test_backup_copy_failure_returns_none(tmp_path, capsys):

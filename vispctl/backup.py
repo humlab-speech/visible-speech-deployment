@@ -297,16 +297,30 @@ class BackupManager:
         print(color("✗ Backup file not found after copy", Colors.RED))
         return None
 
-    def restore(self, backup_file: Path, force: bool = False) -> bool:
-        """Restore MongoDB from backup file. If force is False, prompt the user."""
+    def restore(self, backup_file: Path, force: bool = False, drop: bool = False) -> bool:
+        """Restore MongoDB from backup file. If force is False, prompt the user.
+
+        With drop=False (default) existing collections are kept unless the backup
+        contains the same collection (which is then overwritten); with drop=True
+        every restored collection is dropped first (a full replacement).
+        """
         b = Path(backup_file)
         if not b.exists():
             print(color(f"✗ Backup file not found: {b}", Colors.RED))
             return False
 
         if not force:
+            drop_note = (
+                "existing collections will be DROPPED and replaced"
+                if drop
+                else "existing collections are kept (use --drop to replace them)"
+            )
+            print("This will restore the database from the backup.")
+            print(f"  - {drop_note}")
+            print("  - Stop the services that write to MongoDB first (e.g. './visp.py stop session-manager')")
+            print("  - No automatic backup of the current database is taken.")
             try:
-                resp = input("This will restore the database and overwrite data. Continue? (yes/no): ")
+                resp = input("Continue? (yes/no): ")
             except EOFError:
                 print("No confirmation received (non-interactive). Re-run with --force.")
                 return False
@@ -369,21 +383,21 @@ class BackupManager:
                 print(color("✗ Could not write mongorestore config file", Colors.RED))
                 return False
 
+            restore_cmd = [
+                "podman",
+                "exec",
+                "mongo",
+                "mongorestore",
+                f"--config={_MONGO_CONFIG_PATH}",
+                "--username=root",
+                "--authenticationDatabase=admin",
+            ]
+            if drop:
+                restore_cmd.append("--drop")
+            restore_cmd.append(backup_dir)
+
             try:
-                res = self.runner.run(
-                    [
-                        "podman",
-                        "exec",
-                        "mongo",
-                        "mongorestore",
-                        f"--config={_MONGO_CONFIG_PATH}",
-                        "--username=root",
-                        "--authenticationDatabase=admin",
-                        "--drop",
-                        backup_dir,
-                    ],
-                    check=False,
-                )
+                res = self.runner.run(restore_cmd, check=False)
             finally:
                 self._remove_mongo_config(_MONGO_CONFIG_PATH)
         finally:
