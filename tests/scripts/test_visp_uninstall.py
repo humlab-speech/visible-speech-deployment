@@ -5,8 +5,9 @@ import sys
 import types
 from pathlib import Path
 
-import vispctl.secrets as secrets_mod
 import pytest
+
+import vispctl.secrets as secrets_mod
 from vispctl.service import Service
 
 
