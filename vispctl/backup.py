@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gzip
 import json
 import os
 import tarfile
@@ -50,6 +49,8 @@ class BackupManager:
         The file holds only the password; all other options stay on the CLI. This
         avoids exposing the password via the process command line (visible in `ps`).
         """
+        # Wipe any leftover from a crashed run before writing fresh credentials.
+        self._remove_mongo_config(container_path)
         payload = f"password: {json.dumps(mongo_password)}\n"
         host_path = None
         try:
@@ -115,7 +116,7 @@ class BackupManager:
                         return False
                     if m.name.startswith("/") or ".." in m.name.split("/"):
                         return False
-        except (tarfile.TarError, OSError, EOFError, gzip.BadGzipFile):
+        except (tarfile.TarError, OSError, EOFError):
             return None
         return True
 
@@ -304,7 +305,11 @@ class BackupManager:
             return False
 
         if not force:
-            resp = input("This will restore the database and overwrite data. " "Continue? (yes/no): ")
+            try:
+                resp = input("This will restore the database and overwrite data. Continue? (yes/no): ")
+            except EOFError:
+                print("No confirmation received (non-interactive). Re-run with --force.")
+                return False
             if resp.strip().lower() not in ("yes", "y"):
                 print("Restore cancelled.")
                 return False

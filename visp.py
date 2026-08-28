@@ -77,8 +77,8 @@ from vispctl.config import get_config, init_config
 from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
-from vispctl.npm import NPM_SERVICES, run_npm
 from vispctl.network import cmd_network as _cmd_network
+from vispctl.npm import NPM_SERVICES, run_npm
 from vispctl.permissions import cmd_fix_permissions as _cmd_fix_permissions
 from vispctl.quadlets import (
     cmd_apply as _cmd_apply,
@@ -93,6 +93,7 @@ from vispctl.runner import Colors, Runner, color
 from vispctl.service import (
     DEFAULT_SERVICES,
     Service,
+    container_service_names,
     get_disabled_optional_services,
     get_runtime_services,
     resolve_services,
@@ -270,6 +271,16 @@ def cmd_uninstall(args):
     cfg = get_config()
     services = resolve_services(args.service, cfg.project_dir, include_disabled=True)
 
+    if args.service == "all" and not getattr(args, "force", False):
+        try:
+            resp = input("Uninstall ALL services (stop, remove units and secrets)? (yes/no): ")
+        except EOFError:
+            print("No confirmation received (non-interactive). Re-run with --force.")
+            sys.exit(1)
+        if resp.strip().lower() not in ("yes", "y"):
+            print("Uninstall cancelled.")
+            return
+
     if not args.keep_running:
         print(color("Stopping services...", Colors.YELLOW))
         sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
@@ -402,7 +413,7 @@ def _warn_if_unknown_container(name: str) -> None:
     Unknown names are still attempted — session containers and other host
     containers are legitimate exec targets.
     """
-    known = {s.name for s in get_runtime_services(include_disabled=True) if s.type == "container"}
+    known = container_service_names()
     if name not in known:
         print(
             color(f"Warning: '{name}' is not a known VISP container service — continuing anyway", Colors.YELLOW),
@@ -454,8 +465,10 @@ def cmd_cleanup_containers(args):
             print(color("Cleanup cancelled by user.", Colors.YELLOW))
         else:
             print(color(f"Cleanup finished with status={status}: {message}", Colors.RED))
+            sys.exit(1)
     except (OSError, RuntimeError, ValueError) as e:
         print(color(f"Error during cleanup-containers: {e}", Colors.RED))
+        sys.exit(1)
 
 
 def cmd_session_doctor(args):
@@ -527,9 +540,6 @@ def cmd_network(args):
 
 def cmd_images(args):
     """List VISP container images and their status."""
-    if hasattr(args, "subcommand") and args.subcommand == "base":
-        return cmd_images_base(args)
-
     cfg = get_config()
     im = ImageManager(cfg.runner, cfg.build_configs, cfg.network_services)
     im.display_visp_images()
@@ -668,9 +678,10 @@ def cmd_backup(args):
     bm = BackupManager(cfg.runner)
 
     if getattr(args, "backup_command", None) == "list":
-        backups = bm.list_backups()
+        directory = getattr(args, "directory", None)
+        backups = bm.list_backups(Path(directory) if directory else None)
         if not backups:
-            print("No backup files found in the current directory.")
+            print(f"No backup files found in {directory or 'the current directory'}.")
             return
         for p in backups:
             print(f"  {p}  ({p.stat().st_size / (1024 * 1024):.1f} MB)")
@@ -722,7 +733,7 @@ def main():
 Examples:
   ./visp.py status              # Show all service status
   ./visp.py logs -f             # Follow all logs
-  ./visp.py logs session-manager -n 200  # Last 200 lines from session-manager
+  ./visp.py logs session-manager -n 200 --no-follow  # Last 200 lines from session-manager
   ./visp.py up all              # Enable and start all services
   ./visp.py down all            # Stop and disable all services
   ./visp.py restart all         # Restart entire cluster
@@ -805,6 +816,7 @@ Examples:
     p_uninstall.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_uninstall.add_argument("--keep-running", action="store_true", help="Don't stop services first")
     p_uninstall.add_argument("--remove-networks", action="store_true", help="Also remove Podman networks")
+    p_uninstall.add_argument("--force", action="store_true", help="Skip confirmation for 'uninstall all'")
 
     # reload
     subparsers.add_parser("reload", help="Reload systemd daemon").set_defaults(func=cmd_reload)
@@ -1051,7 +1063,10 @@ Examples:
         help="Do a dry-run (show actions without making changes)",
     )
     p_backup_sub = p_backup.add_subparsers(dest="backup_command")
-    p_backup_sub.add_parser("list", help="List existing backup files in the current directory")
+    p_backup_list = p_backup_sub.add_parser("list", help="List existing backup files")
+    p_backup_list.add_argument(
+        "directory", nargs="?", default=None, help="Directory to scan (default: current directory)"
+    )
 
     # restore
     p_restore = subparsers.add_parser("restore", help="Restore MongoDB database from backup")
@@ -1108,7 +1123,7 @@ Examples:
         "--problems",
         action="store_true",
         dest="problems_only",
-        help="Only show projects with issues",
+        help="Only show projects with issues or warnings",
     )
     p_doctor.add_argument(
         "--json",
@@ -1167,6 +1182,7 @@ Examples:
         sys.exit(141)
     except KeyboardInterrupt:
         print()
+        sys.exit(130)
 
 
 if __name__ == "__main__":

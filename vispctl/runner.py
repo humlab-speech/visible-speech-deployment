@@ -48,7 +48,11 @@ class Runner:
         return subprocess.run(cmd, check=check, **kwargs)
 
     def run_quiet(self, cmd: List[str]) -> Tuple[int, str, str]:
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+        except OSError as e:
+            # e.g. podman/systemctl binary missing — surface as a clean non-zero rc
+            return 127, "", str(e)
         return res.returncode, res.stdout.strip(), res.stderr.strip()
 
     # convenience wrappers

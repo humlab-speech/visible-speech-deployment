@@ -744,73 +744,57 @@ class DeployManager:
         if repos_behind:
             summary_lines.append(f"⬇️  Repositories behind remote: {', '.join(repos_behind)}")
 
-        if not_built:
-            names = [r["Repository"] for r in not_built]
-            summary_lines.append(f"❌ Components not built: {', '.join(names)}")
-
-        if needs_rebuild:
-            names = [r["Repository"] for r in needs_rebuild]
-            summary_lines.append(f"⚠  Components need rebuild (source changed): {', '.join(names)}")
-
-        if dirty_builds:
-            names = [r["Repository"] for r in dirty_builds]
-            summary_lines.append(f"⚠  Dirty builds (rebuild from clean state recommended): {', '.join(names)}")
-
-        if unknown_builds:
-            names = [r["Repository"] for r in unknown_builds]
-            summary_lines.append(f"⚠  Build status unknown (image has no git label): {', '.join(names)}")
-
-        if not_built_images:
-            names = [d["Image"] for d in not_built_images]
-            summary_lines.append(f"❌ Container images not built: {', '.join(names)}")
-
-        if stale_images:
-            names = [d["Image"] for d in stale_images]
-            summary_lines.append(f"⚠  Container images need rebuild: {', '.join(names)}")
-
-        if no_label_images:
-            names = [d["Image"] for d in no_label_images]
-            summary_lines.append(f"⚠  Container images missing git labels: {', '.join(names)}")
-
-        if no_timestamp_images:
-            names = [d["Image"] for d in no_timestamp_images]
-            summary_lines.append(f"⚠  Container images missing build timestamps: {', '.join(names)}")
-
-        if node_build_warnings:
-            summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
-            for w in node_build_warnings:
-                summary_lines.append(w)
-
-        # ── Recommended actions (copy-pasteable) ──────────────────────
         # Map external repo names → visp.py build target names where they differ
         _repo_to_build: dict[str, str] = {
             "artic": "artic",
             "WhisperVault": "whisperx",
         }
 
+        def _build_targets(rows: list[dict]) -> list[str]:
+            return [_repo_to_build.get(r["Repository"], r["Repository"]) for r in rows]
+
+        # (summary line, build targets, restart targets or None)
+        work: list[tuple[str, list[str], list[str] | None]] = []
+        for rows, label, restart in (
+            (not_built, "❌ Components not built", None),
+            (needs_rebuild, "⚠  Components need rebuild (source changed)", True),
+            (dirty_builds, "⚠  Dirty builds (rebuild from clean state recommended)", True),
+            (unknown_builds, "⚠  Build status unknown (image has no git label)", True),
+        ):
+            if rows:
+                targets = _build_targets(rows)
+                work.append(
+                    (f"{label}: {', '.join(r['Repository'] for r in rows)}", targets, targets if restart else None)
+                )
+        for rows, label, restart in (
+            (not_built_images, "❌ Container images not built", None),
+            (stale_images, "⚠  Container images need rebuild", True),
+            (no_label_images, "⚠  Container images missing git labels", True),
+            (no_timestamp_images, "⚠  Container images missing build timestamps", True),
+        ):
+            if rows:
+                targets = [d["Image"] for d in rows]
+                work.append((f"{label}: {', '.join(targets)}", targets, targets if restart else None))
+
+        for line, _, _ in work:
+            summary_lines.append(line)
+
+        if node_build_warnings:
+            summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
+            summary_lines.extend(node_build_warnings)
+
+        # ── Recommended actions (copy-pasteable) ──────────────────────
         actions: list[str] = []
 
         if repos_behind:
             actions.append("./visp.py deploy update")
 
-        # Collect everything that needs building into one command
         to_build: list[str] = []
-        if not_built:
-            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in not_built)
-        if needs_rebuild:
-            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
-        if dirty_builds:
-            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in dirty_builds)
-        if unknown_builds:
-            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in unknown_builds)
-        if not_built_images:
-            to_build.extend(d["Image"] for d in not_built_images)
-        if stale_images:
-            to_build.extend(d["Image"] for d in stale_images)
-        if no_label_images:
-            to_build.extend(d["Image"] for d in no_label_images)
-        if no_timestamp_images:
-            to_build.extend(d["Image"] for d in no_timestamp_images)
+        restart_candidates: list[str] = []
+        for _, build_targets, restart_targets in work:
+            to_build.extend(build_targets)
+            if restart_targets:
+                restart_candidates.extend(restart_targets)
         # Node build warnings already recommend per-service builds
         if node_build_warnings:
             for nb_name, nb_cfg in NODE_BUILD_CONFIGS.items():
@@ -820,47 +804,17 @@ class DeployManager:
                 if not verify_path.exists() and nb_name not in to_build:
                     to_build.append(nb_name)
 
-        # De-duplicate while preserving order
-        seen: set[str] = set()
-        unique_builds: list[str] = []
-        for name in to_build:
-            if name not in seen:
-                seen.add(name)
-                unique_builds.append(name)
-
-        if unique_builds:
-            actions.append(f"./visp.py build {' '.join(unique_builds)}")
+        to_build = list(dict.fromkeys(to_build))
+        if to_build:
+            actions.append(f"./visp.py build {' '.join(to_build)}")
 
         # If any images were rebuilt, suggest restart
-        restart_candidates: list[str] = []
-        if needs_rebuild:
-            restart_candidates.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
-        if dirty_builds:
-            restart_candidates.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in dirty_builds)
-        if stale_images:
-            restart_candidates.extend(d["Image"] for d in stale_images)
-        if no_label_images:
-            restart_candidates.extend(d["Image"] for d in no_label_images)
-        if no_timestamp_images:
-            restart_candidates.extend(d["Image"] for d in no_timestamp_images)
+        restart_candidates = list(dict.fromkeys(restart_candidates))
         if restart_candidates:
-            seen_r: set[str] = set()
-            unique_restarts = [n for n in restart_candidates if n not in seen_r and not seen_r.add(n)]  # type: ignore[func-returns-value]
-            actions.append(f"./visp.py restart {' '.join(unique_restarts)}")
+            actions.append(f"./visp.py restart {' '.join(restart_candidates)}")
 
         all_clean = (
-            not repos_with_changes
-            and not repos_ahead
-            and not repos_behind
-            and not node_build_warnings
-            and not needs_rebuild
-            and not not_built
-            and not dirty_builds
-            and not unknown_builds
-            and not stale_images
-            and not not_built_images
-            and not no_label_images
-            and not no_timestamp_images
+            not repos_with_changes and not repos_ahead and not repos_behind and not node_build_warnings and not work
         )
 
         if all_clean:

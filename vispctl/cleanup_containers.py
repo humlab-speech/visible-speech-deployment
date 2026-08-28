@@ -23,6 +23,7 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
     for prefix in prefix_filters:
         result = runner.run(base_cmd + ["--filter", f"name={prefix}"], capture=True, check=False)
         output = result.stdout.strip()
+        seen_ids = {c[0] for c in containers}
         for line in output.splitlines():
             if not line.strip():
                 continue
@@ -32,7 +33,8 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
             cid, name = parts
             if "session-manager" in name:
                 continue
-            if cid not in [c[0] for c in containers]:
+            if cid not in seen_ids:
+                seen_ids.add(cid)
                 containers.append((cid, name))
 
     if not containers:

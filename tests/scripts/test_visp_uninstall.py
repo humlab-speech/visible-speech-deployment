@@ -6,6 +6,7 @@ import types
 from pathlib import Path
 
 import vispctl.secrets as secrets_mod
+import pytest
 from vispctl.service import Service
 
 
@@ -88,9 +89,27 @@ def test_cmd_uninstall_all_removes_every_secret(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(secrets_mod.SecretManager, "list_secrets", lambda self: ["visp_a", "visp_b"])
     monkeypatch.setattr(secrets_mod.SecretManager, "remove_secrets", lambda self, names: removed.extend(names))
 
-    args = types.SimpleNamespace(service="all", keep_running=True, remove_networks=False)
+    args = types.SimpleNamespace(service="all", keep_running=True, remove_networks=False, force=True)
     vp.cmd_uninstall(args)
 
     assert sorted(removed) == ["visp_a", "visp_b"]
     out = capsys.readouterr().out
     assert "Kept" not in out
+
+
+def test_cmd_uninstall_all_requires_confirmation(tmp_path, monkeypatch, capsys):
+    """'uninstall all' without --force must abort non-interactively (EOF)."""
+    vp = load_visp_module()
+    systemd_dir = _setup(tmp_path, monkeypatch, vp)
+
+    def _eof(*a):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", _eof)
+    args = types.SimpleNamespace(service="all", keep_running=True, remove_networks=False, force=False)
+
+    with pytest.raises(SystemExit) as exc:
+        vp.cmd_uninstall(args)
+    assert exc.value.code == 1
+    assert (systemd_dir / "mongo.container").exists()  # nothing removed
+    assert "non-interactive" in capsys.readouterr().out

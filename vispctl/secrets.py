@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict, List
+from urllib.parse import quote
 
 from .config import get_config
 from .env import load_all_env as _load_all_env
@@ -26,7 +27,8 @@ class SecretManager:
         secrets: Dict[str, str] = {}
         if "MONGO_ROOT_PASSWORD" in env_vars:
             secrets["visp_mongo_root_password"] = env_vars["MONGO_ROOT_PASSWORD"]
-            secrets["visp_mongo_uri"] = f"mongodb://root:{env_vars['MONGO_ROOT_PASSWORD']}@mongo:27017"
+            # Percent-encode: a raw '@', ':' or '/' in the password would be parsed as URI structure.
+            secrets["visp_mongo_uri"] = f"mongodb://root:{quote(env_vars['MONGO_ROOT_PASSWORD'], safe='')}@mongo:27017"
         if "MONGO_EXPRESS_PASSWORD" in env_vars:
             secrets["visp_mongo_express_password"] = env_vars["MONGO_EXPRESS_PASSWORD"]
         if "VISP_API_ACCESS_TOKEN" in env_vars:

@@ -21,7 +21,6 @@ application source code for most services — those live in sibling repositories
 visible-speech-deployment/
 ├── visp.py            # PRIMARY management script — build, install, start, stop, …
 ├── vispctl/                  # Python package imported by visp.py
-│   ├── commands/             # Sub-commands (backup, restore, fix-permissions, …)
 │   ├── deploy.py             # deploy update / status / lock / unlock
 │   ├── git_repo.py           # Git operations wrapper (clone, pull, submodule_update)
 │   ├── versions.py           # DEFAULT_VERSIONS_CONFIG — known external components

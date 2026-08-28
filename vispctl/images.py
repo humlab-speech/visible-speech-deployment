@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Tuple
 
 from .config import get_config
 from .runner import Colors, Runner, color
-from .service import Service
+from .service import Service, container_service_names
 
 
 def _classify_tag(tag: str) -> str:
@@ -111,9 +111,7 @@ class ImageManager:
         Returns:
             Dict mapping container_name -> network_ids
         """
-        from .service import DEFAULT_SERVICES
-
-        visp_containers = {svc.name for svc in DEFAULT_SERVICES if svc.type == "container"}
+        visp_containers = container_service_names()
         rc, stdout, _ = self.runner.run_quiet(["podman", "ps", "--format", "{{.Names}}"])
         if rc != 0 or not stdout:
             return {}

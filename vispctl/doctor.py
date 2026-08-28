@@ -799,6 +799,9 @@ def run_doctor(
     mongo_ids = {p["id"] for p in projects}
     disk_orphans = _find_disk_orphans(mongo_ids)
 
+    if problems_only:
+        reports = [r for r in reports if r["issues"] or r["warnings"]]
+
     if json_output:
         output = {
             "projects": reports,
@@ -814,13 +817,14 @@ def run_doctor(
             },
         }
         print(json.dumps(output, indent=2))
-        return output["summary"]["total_issues"]
+        # ponytail: assumes one applied fix resolves one issue; re-run doctor to verify
+        applied = sum(1 for r in reports for fx in r.get("fixes", []) if fx["status"] == "applied")
+        total = output["summary"]["total_issues"]
+        return max(0, total - applied) if apply else total
 
-    if problems_only:
-        reports = [r for r in reports if r["issues"] or r["warnings"]]
-        if not reports and not disk_orphans:
-            print(f"\n{_PASS} {_C.GREEN}{_C.BOLD}All projects are healthy!{_C.NC}")
-            return 0
+    if not reports and not disk_orphans:
+        print(f"\n{_PASS} {_C.GREEN}{_C.BOLD}All projects are healthy!{_C.NC}")
+        return 0
 
     # Render tree
     _render_tree(reports, show_files=show_files, show_healthy=show_healthy)
@@ -868,4 +872,7 @@ def run_doctor(
             print(f"{_C.DIM}Apply specific:  --fix --apply --only {all_ids}{_C.NC}")
         print()
 
+    # ponytail: assumes one applied fix resolves one issue; re-run doctor to verify
+    if apply:
+        total_issues = max(0, total_issues - total_applied)
     return total_issues

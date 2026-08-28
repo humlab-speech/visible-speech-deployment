@@ -692,9 +692,7 @@ def cmd_build(
     else:
         unknown = [s for s in raw_services if s not in all_buildable]
         if unknown:
-            print(color(f"Error: Unknown service(s): {', '.join(unknown)}", Colors.RED))
-            print(f"Buildable services: {', '.join(all_buildable)}")
-            return
+            raise BuildError(f"unknown service(s): {', '.join(unknown)}. Buildable: {', '.join(all_buildable)}")
         requested = list(raw_services)
 
     ordered, auto_added = resolve_build_order(requested, build_configs, node_configs)

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Callable
 
 from vispctl.runner import Colors, color
 from vispctl.service import Service
+from vispctl.service_manager import remove_autostart_dropin
 
 if TYPE_CHECKING:
     from vispctl.runner import Runner
@@ -583,8 +584,6 @@ def cleanup_dev_only_services(services: list[Service], mode: str, systemd_dir: P
     """
     if mode != "prod":
         return
-
-    from vispctl.service_manager import remove_autostart_dropin
 
     for svc in services:
         if not svc.dev_only:

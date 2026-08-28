@@ -37,9 +37,6 @@ class ServiceManager:
     def _svc_name(self, svc: Service) -> str:
         return f"{svc.name}.service"
 
-    def _autostart_dropin(self, svc: Service) -> Path:
-        return autostart_dropin(self.systemd_dir, svc)
-
     def _reload_systemd(self) -> None:
         print("Reloading systemd daemon...")
         res = self.runner.systemctl("daemon-reload")
@@ -150,7 +147,7 @@ class ServiceManager:
                 print(color(f"  Failed: {source} is not installed", Colors.RED))
                 continue
 
-            dropin = self._autostart_dropin(svc)
+            dropin = autostart_dropin(self.systemd_dir, svc)
             content = "# Created by visp.py down. Remove this file or run visp.py up to restore autostart.\n"
             content += "[Install]\nWantedBy=\nRequiredBy=\nUpheldBy=\nAlias=\n"
             if dropin.exists() and dropin.read_text() == content:

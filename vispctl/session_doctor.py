@@ -581,7 +581,10 @@ def _cleanup_orphans(
 
     if not yes:
         total = len(containers_to_remove) + len(dirs_to_remove)
-        answer = input(f"\nProceed with cleanup of {total} item(s)? (y/N): ").strip().lower()
+        try:
+            answer = input(f"\nProceed with cleanup of {total} item(s)? (y/N): ").strip().lower()
+        except EOFError:
+            return {"removed_containers": 0, "removed_dirs": 0, "status": "cancelled"}
         if answer not in ("y", "yes"):
             return {"removed_containers": 0, "removed_dirs": 0, "status": "cancelled"}
 

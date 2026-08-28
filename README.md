@@ -145,9 +145,9 @@ See `./visp.py --help` for the full command reference.
 3. Grant user privileges:
    ```bash
     ./visp.py users list
-    ./visp.py users grant <username> createProjects
+    ./visp.py users set-system-role <username> sys_admin
    ```
-   See [AGENTS.md](AGENTS.md) → *User management* for details.
+   See [AGENTS.md](AGENTS.md) → *Permissions: two parallel role systems* for details.
 
 ## Local Dev Host Nginx
 
