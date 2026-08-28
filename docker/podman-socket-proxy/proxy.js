@@ -43,6 +43,11 @@
  *      or "none"
  *   9. no_new_privileges must be true and userns.nsmode must be "keep-id"
  *      (container root must never map onto the host user)
+ *   10. No port publishing, device mapping, security_opt entries, volume
+ *       maps, or host-propagating mount options
+ *   11. Mount sources are rewritten to their resolved realpath before
+ *       forwarding, so podman mounts exactly the path that was validated
+ *       (closes a check-then-mount symlink swap)
  *
  * Usage:
  *   PODMAN_SOCKET=/run/user/1000/podman/podman.sock \
@@ -239,11 +244,12 @@ function isKnownExecId(execId) {
 let ROOT_REAL = null;
 
 /**
- * Resolve a mount source to its real (symlink-dereferenced) host path.
+ * Resolve a mount source to its real (symlink-dereferenced) path.
  * Returns { ok: true, real } or { ok: false, reason }.
  *
- * The proxy runs on the host, so host paths resolve here even when the
- * source is not mounted into session-manager — a symlink planted under a
+ * The quadlets mount the deployment root into the proxy container at its
+ * host path, so realpath() here sees the real host tree even for sources
+ * that are not mounted into session-manager — a symlink planted under a
  * writable subtree (e.g. mounts/repositories/) pointing at mounts/mongo/
  * or .env* is caught because the REAL target is what gets checked.
  */
@@ -404,6 +410,34 @@ function checkCreateBody(body) {
     // 5. Force read-only outside the rw-allowed subtrees
     forceReadOnlyMounts(spec);
 
+    // 5b. Rewrite every bind-mount source to the validated realpath before
+    //     forwarding. Podman re-resolves sources at mount time; forwarding
+    //     the original string would leave a window where a symlink swapped
+    //     under a writable subtree between our check and the mount bypasses
+    //     the policy. (Also makes relative sources impossible — they would
+    //     otherwise resolve against podman's CWD, not ours.)
+    const isBind = (m) => (m.type || m.Type || "bind").toLowerCase() === "bind";
+    for (const m of mounts) {
+        if (!isBind(m)) continue;
+        const src = m.source || m.Source || "";
+        if (!src) continue;
+        const r = resolveMountSource(src);
+        if (!r.ok) return { rejection: r.reason }; // raced away between 4 and 5b
+        if (m.source !== undefined) m.source = r.real;
+        else m.Source = r.real;
+    }
+    if (spec.HostConfig && Array.isArray(spec.HostConfig.Binds)) {
+        spec.HostConfig.Binds = spec.HostConfig.Binds.map((bind) => {
+            const parts = bind.split(":");
+            const src = parts[0];
+            if (!src) return bind;
+            const r = resolveMountSource(src);
+            if (!r.ok) return bind; // rejected by the check in step 4
+            parts[0] = r.real;
+            return parts.join(":");
+        });
+    }
+
     // 6. cap_add allowlist
     const capAdd =
         spec.cap_add ||                             // libpod SpecGenerator
@@ -420,7 +454,7 @@ function checkCreateBody(body) {
     //    ("host", "container:<id>", "ns:/path", "slirp4netns", "pasta",
     //    a missing netns) is rejected.
     if (!spec.netns || (spec.netns.nsmode !== "none" && spec.netns.nsmode !== "bridge")) {
-        return { rejection: 'netns.nsmode must be "none" or "bridge"' };
+        return { rejection: 'netns is missing or netns.nsmode is not "none"/"bridge"' };
     }
 
     // 8. Other namespaces: no sharing with the host or with other
@@ -453,6 +487,42 @@ function checkCreateBody(body) {
     }
     if (!spec.userns || spec.userns.nsmode !== "keep-id") {
         return { rejection: 'userns.nsmode must be "keep-id"' };
+    }
+
+    // 11. No other host-escape knobs. None of these are sent by
+    //     session-manager; rejecting them keeps the boundary closed if a
+    //     future (or compromised) caller tries.
+    const portBindings =
+        spec.publish_ports ||
+        spec.port_bindings ||
+        (spec.HostConfig && spec.HostConfig.PortBindings);
+    if (portBindings && ((Array.isArray(portBindings) && portBindings.length) || Object.keys(portBindings).length)) {
+        return { rejection: "Port publishing is not allowed" };
+    }
+    const devices = spec.devices || (spec.HostConfig && spec.HostConfig.Devices);
+    if (devices && devices.length) {
+        return { rejection: "Device mapping is not allowed" };
+    }
+    const secOpt = spec.security_opt || (spec.HostConfig && spec.HostConfig.SecurityOpt);
+    if (secOpt && secOpt.length) {
+        return { rejection: "security_opt entries are not allowed (seccomp/apparmor profiles are fixed by the runtime)" };
+    }
+    const volMap = spec.volumes || (spec.HostConfig && spec.HostConfig.Volumes);
+    if (volMap && Object.keys(volMap).length) {
+        return { rejection: "Volume maps are not allowed" };
+    }
+    for (const m of mounts) {
+        const opts = Array.isArray(m.options)
+            ? m.options
+            : typeof m.Mode === "string" && m.Mode
+              ? m.Mode.split(",")
+              : [];
+        for (const o of opts) {
+            const base = o.split("=")[0];
+            if (["shared", "rshared", "slave", "rslave"].includes(base)) {
+                return { rejection: `Mount propagation "${base}" is not allowed` };
+            }
+        }
     }
 
     return { rejection: null, spec }; // all checks passed
@@ -657,13 +727,13 @@ const server = http.createServer(async (req, res) => {
 // Fail closed: without a resolvable ABS_ROOT_PATH, mount-source validation
 // would be silently disabled. Refuse to start instead.
 if (!ABS_ROOT_PATH) {
-    log("error", "ABS_ROOT_PATH is not set — refusing to start (mount validation would be disabled)");
+    log("error", "ABS_ROOT_PATH is not set — refusing to start (mount validation would be disabled). Set it via Environment=ABS_ROOT_PATH= in podman-socket-proxy.container");
     process.exit(1);
 }
 try {
     ROOT_REAL = fs.realpathSync(path.resolve(ABS_ROOT_PATH));
 } catch (e) {
-    log("error", `ABS_ROOT_PATH "${ABS_ROOT_PATH}" cannot be resolved (${e.message}) — refusing to start`);
+    log("error", `ABS_ROOT_PATH "${ABS_ROOT_PATH}" cannot be resolved (${e.message}) — refusing to start. Set it via Environment=ABS_ROOT_PATH= in podman-socket-proxy.container`);
     process.exit(1);
 }
 
