@@ -300,25 +300,27 @@ class BackupManager:
     def restore(self, backup_file: Path, force: bool = False, drop: bool = False) -> bool:
         """Restore MongoDB from backup file. If force is False, prompt the user.
 
-        With drop=False (default) existing collections are kept unless the backup
-        contains the same collection (which is then overwritten); with drop=True
-        every restored collection is dropped first (a full replacement).
+        With drop=False (default) collections present in the backup are MERGED
+        with the current data (documents with the same _id are replaced, all
+        other documents and collections are kept); with drop=True every
+        restored collection is dropped first (a clean replacement).
         """
         b = Path(backup_file)
         if not b.exists():
             print(color(f"✗ Backup file not found: {b}", Colors.RED))
             return False
 
+        drop_note = (
+            "existing collections will be DROPPED and replaced"
+            if drop
+            else "collections present in the backup will be MERGED with current data "
+            "(use --drop for a clean replacement)"
+        )
+        print("This will restore the database from the backup.")
+        print(f"  - {drop_note}")
+        print("  - Stop the services that write to MongoDB first (e.g. './visp.py stop session-manager')")
+        print("  - No automatic backup of the current database is taken.")
         if not force:
-            drop_note = (
-                "existing collections will be DROPPED and replaced"
-                if drop
-                else "existing collections are kept (use --drop to replace them)"
-            )
-            print("This will restore the database from the backup.")
-            print(f"  - {drop_note}")
-            print("  - Stop the services that write to MongoDB first (e.g. './visp.py stop session-manager')")
-            print("  - No automatic backup of the current database is taken.")
             try:
                 resp = input("Continue? (yes/no): ")
             except EOFError:

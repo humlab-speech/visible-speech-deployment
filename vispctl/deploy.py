@@ -1139,7 +1139,9 @@ class DeployManager:
                 branch = repo.ensure_on_branch()
                 if branch is None:
                     print(f"⚠  {repo_name} is on a detached HEAD and no default branch could be determined; skipping")
-                    print("   Check out a branch manually, then re-run 'deploy update'.")
+                    print(
+                        f"   Check out a branch manually (cd external/{repo_name} && git checkout main), then re-run 'deploy update'."
+                    )
                     skipped_count += 1
                     continue
                 if was_detached:
