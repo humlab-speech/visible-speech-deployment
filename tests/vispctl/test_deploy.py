@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 from vispctl.deploy import DeployManager
+from vispctl.git_repo import GitRepository
 
 
 def _git(args, cwd):
@@ -105,6 +106,86 @@ def test_rollback_missing_locked_version_skips(tmp_path):
 
     assert ok is False
     assert _head(repo_dir) == sha2  # repo untouched
+
+
+# ── update recovers a detached HEAD left behind by rollback ───────────────────
+
+
+def _make_local_component(external: Path, name: str) -> tuple[str, str]:
+    """Create a local bare origin + working clone (branch 'main', 2 commits).
+
+    Returns (sha1, sha2). All git traffic stays on the local filesystem.
+    """
+    origins = external.parent / "origins"
+    origins.mkdir(exist_ok=True)
+    seed = origins / f"{name}-seed"
+    _git(["init", "-q", "-b", "main", str(seed)], origins)
+    _git(["config", "user.email", "test@example.com"], seed)
+    _git(["config", "user.name", "Test"], seed)
+    (seed / "file.txt").write_text("v1\n")
+    _git(["add", "."], seed)
+    _git(["commit", "-q", "-m", "first"], seed)
+    sha1 = _git(["rev-parse", "HEAD"], seed).stdout.strip()
+    (seed / "file.txt").write_text("v2\n")
+    _git(["add", "."], seed)
+    _git(["commit", "-q", "-m", "second"], seed)
+    sha2 = _git(["rev-parse", "HEAD"], seed).stdout.strip()
+
+    bare = origins / f"{name}.git"
+    _git(["init", "-q", "--bare", "-b", "main", str(bare)], origins)
+    _git(["push", "-q", str(bare), "main"], seed)
+
+    work = external / name
+    _git(["clone", "-q", str(bare), str(work)], external)
+    _git(["config", "user.email", "test@example.com"], work)
+    _git(["config", "user.name", "Test"], work)
+    return sha1, sha2
+
+
+def test_update_recovers_detached_head_after_rollback(tmp_path, capsys):
+    """After rollback (detached HEAD) + unlock, `update` recovers onto the branch and pulls."""
+    project = tmp_path / "proj"
+    external = project / "external"
+    external.mkdir(parents=True)
+
+    names = [
+        "webclient",
+        "container-agent",
+        "wsrng-server",
+        "session-manager",
+        "emu-webapp-server",
+        "artic",
+        "WhisperVault",
+    ]
+    shas = {}
+    for name in names:
+        shas[name] = _make_local_component(external, name)
+
+    components = {name: {"url": str(project / "origins" / f"{name}.git"), "version": "latest"} for name in names}
+    # webclient is locked to its first commit so rollback has a target.
+    components["webclient"]["locked_version"] = shas["webclient"][0]
+    (project / "versions.json").write_text(json.dumps({"components": components}, indent=2))
+
+    dm = DeployManager(str(project))
+    repo_dir = external / "webclient"
+
+    # Roll back webclient to its first commit -> detached HEAD.
+    assert dm.rollback_components(["webclient"]) is True
+    web_repo = GitRepository(str(repo_dir))
+    assert web_repo.is_detached() is True
+    assert _head(repo_dir) == shas["webclient"][0]
+
+    # Operator unlocks the component to resume tracking latest.
+    dm.config.unlock("webclient")
+
+    ok = dm.update_components()
+
+    assert ok is True
+    out = capsys.readouterr().out
+    assert "recovered from detached HEAD" in out
+    assert web_repo.is_detached() is False  # back on a branch
+    assert web_repo.get_current_branch() == "main"
+    assert _head(repo_dir) == shas["webclient"][1]  # pulled up to the branch tip
 
 
 # ── _build_status_summary ─────────────────────────────────────────────────────

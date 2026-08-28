@@ -1001,6 +1001,8 @@ class DeployManager:
             repo.checkout(locked_version)
             if comp_data.get("submodules", False):
                 repo.submodule_update()
+            print(f"   {component} now at {locked_version[:8]} (detached HEAD)")
+            print(f"   To resume tracking the branch: 'deploy unlock {component}' then 'deploy update'")
             return True
         except subprocess.CalledProcessError as e:
             print(f"❌ {component}: checkout failed: {e}")
@@ -1131,8 +1133,20 @@ class DeployManager:
                         skipped_count += 1
                         continue
 
+                # Recover from a detached HEAD (e.g. left behind by `deploy rollback`)
+                # so that `git pull` has a branch to track.
+                was_detached = repo.is_detached()
+                branch = repo.ensure_on_branch()
+                if branch is None:
+                    print(f"⚠  {repo_name} is on a detached HEAD and no default branch could be determined; skipping")
+                    print("   Check out a branch manually, then re-run 'deploy update'.")
+                    skipped_count += 1
+                    continue
+                if was_detached:
+                    print(f"   (recovered from detached HEAD onto '{branch}')")
+
                 # Pull latest
-                print("Pulling latest changes...")
+                print(f"Pulling latest changes on '{branch}'...")
                 repo.pull()
 
                 # Update submodules if needed
