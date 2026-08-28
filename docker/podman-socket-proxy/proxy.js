@@ -10,7 +10,9 @@
  *   - GET  /images/json                (image.list — suspended-session import)
  *   - POST /containers/create          (inspected — see policy below)
  *   - POST /libpod/containers/create   (inspected — see policy below)
- *   - POST /containers/{id}/commit     (exportToImage)
+ *   - POST /containers/{id}/commit     (exportToImage — modern form)
+ *   - POST /commit                     (exportToImage — legacy form used by
+ *                                      node-docker-api: /commit?container=<id>)
  *   - POST /containers/{id}/exec       (runCommand — exec create; response is tracked)
  *   - POST /exec/{id}/start            (exec start — only for exec IDs created here)
  *   - GET  /containers/{id}/logs       (log streaming)
@@ -34,8 +36,13 @@
  *   5. Mounts are forced read-only unless their source is under
  *      mounts/repositories/ (project data) or mounts/sessions/ (UDS socket dirs)
  *   6. cap_add may only contain caps from CAP_ALLOWLIST
- *   7. netns.nsmode must be "none" or "bridge" (no host networking)
- *   8. No host_pid / host_ipc / host_uts
+ *   7. netns must be present with nsmode "none" or "bridge"; pid/ipc/uts
+ *      namespaces, if present, must be "private" (no host or container
+ *      namespace sharing in any form)
+ *   8. Docker-compat PidMode/IpcMode/UTSMode/NetworkMode: only "", "private"
+ *      or "none"
+ *   9. no_new_privileges must be true and userns.nsmode must be "keep-id"
+ *      (container root must never map onto the host user)
  *
  * Usage:
  *   PODMAN_SOCKET=/run/user/1000/podman/podman.sock \
@@ -91,6 +98,8 @@ const FORBIDDEN_SUBTREES = ["certs", "mounts/mongo"];
 // Each entry: method, path pattern (anchored), and an inspect kind:
 //   "create"     — buffer + validate the create body (checkCreateBody)
 //   "container"  — the {id} segment must resolve to a session container name
+//   "commit"     — the container= query param must resolve to a session
+//                  container name (legacy /commit endpoint)
 //   "exec-create"— like "container", plus the exec ID from the response is
 //                  tracked so /exec/{id}/start can be scoped
 //   "exec-start" — the {id} segment must be a tracked exec ID
@@ -104,6 +113,7 @@ const ENDPOINT_ALLOWLIST = [
     { method: "POST", pattern: /^\/(?:v[\d.]+\/)?containers\/create(\?.*)?$/,           inspect: "create" },
     { method: "POST", pattern: /^\/(?:v[\d.]+\/)?libpod\/containers\/create(\?.*)?$/,   inspect: "create" },
     { method: "POST", pattern: /^\/(?:v[\d.]+\/)?containers\/([^/?]+)\/commit(\?.*)?$/, inspect: "container" },
+    { method: "POST", pattern: /^\/(?:v[\d.]+\/)?commit(\?.*)?$/,                 inspect: "commit" },
     { method: "POST", pattern: /^\/(?:v[\d.]+\/)?containers\/([^/?]+)\/exec(\?.*)?$/,   inspect: "exec-create" },
     { method: "POST", pattern: /^\/(?:v[\d.]+\/)?exec\/([^/?]+)\/start(\?.*)?$/,        inspect: "exec-start" },
     { method: "GET",  pattern: /^\/(?:v[\d.]+\/)?containers\/([^/?]+)\/logs(\?.*)?$/,   inspect: "container" },
@@ -223,18 +233,46 @@ function isKnownExecId(execId) {
 
 // ── Create-body policy ────────────────────────────────────────────────────────
 
+// Realpath of ABS_ROOT_PATH, computed at startup (see Startup section).
+// All mount-source checks compare against this, so a symlinked deployment
+// root cannot defeat the relative-path arithmetic.
+let ROOT_REAL = null;
+
+/**
+ * Resolve a mount source to its real (symlink-dereferenced) host path.
+ * Returns { ok: true, real } or { ok: false, reason }.
+ *
+ * The proxy runs on the host, so host paths resolve here even when the
+ * source is not mounted into session-manager — a symlink planted under a
+ * writable subtree (e.g. mounts/repositories/) pointing at mounts/mongo/
+ * or .env* is caught because the REAL target is what gets checked.
+ */
+function resolveMountSource(src) {
+    let real;
+    try {
+        real = fs.realpathSync(path.resolve(src));
+    } catch (e) {
+        if (e.code === "ENOENT") {
+            return { ok: false, reason: `Mount source "${src}" does not exist` };
+        }
+        return { ok: false, reason: `Mount source "${src}" could not be resolved: ${e.message}` };
+    }
+    return { ok: true, real };
+}
+
 /**
  * Return a human-readable reason why the mount source is forbidden, or null
- * if it is acceptable (i.e. under ABS_ROOT_PATH, not the root itself, and not
- * inside a sensitive subtree).
+ * if it is acceptable (i.e. its real path is under ABS_ROOT_PATH, not the
+ * root itself, and not inside a sensitive subtree).
  */
 function mountSourceViolation(src) {
-    const root = path.resolve(ABS_ROOT_PATH);
-    const resolved = path.resolve(src);
-    if (resolved === root) {
+    const r = resolveMountSource(src);
+    if (!r.ok) return r.reason;
+    const resolved = r.real;
+    if (resolved === ROOT_REAL) {
         return `Mount source "${src}" is the deployment root itself`;
     }
-    const rel = path.relative(root, resolved);
+    const rel = path.relative(ROOT_REAL, resolved);
     if (rel === "" || rel.startsWith("..")) {
         return `Mount source "${src}" is outside ABS_ROOT_PATH ("${ABS_ROOT_PATH}")`;
     }
@@ -251,8 +289,9 @@ function mountSourceViolation(src) {
 }
 
 function isRwAllowedSource(src) {
-    const root = path.resolve(ABS_ROOT_PATH);
-    const rel = path.relative(root, path.resolve(src));
+    const r = resolveMountSource(src);
+    if (!r.ok) return false;
+    const rel = path.relative(ROOT_REAL, r.real);
     if (rel === "" || rel.startsWith("..")) return false;
     return RW_ALLOWED_SUBTREES.some(
         (subtree) => rel === subtree || rel.startsWith(subtree + path.sep),
@@ -341,29 +380,29 @@ function checkCreateBody(body) {
         (spec.HostConfig && spec.HostConfig.Privileged); // Docker-compat
     if (privileged) return { rejection: "Privileged containers are not allowed" };
 
-    // 4. Mount sources: under root, not the root itself, not sensitive
-    if (ABS_ROOT_PATH) {
-        const mounts = spec.mounts ||               // libpod SpecGenerator
-            (spec.HostConfig && spec.HostConfig.Mounts) || [];
-        // Also check Docker-compat Binds (host:container strings)
-        const binds = (spec.HostConfig && spec.HostConfig.Binds) || [];
+    // 4. Mount sources: under root, not the root itself, not sensitive.
+    //    (ROOT_REAL is guaranteed non-null — the proxy refuses to start
+    //    without a resolvable ABS_ROOT_PATH.)
+    const mounts = spec.mounts ||               // libpod SpecGenerator
+        (spec.HostConfig && spec.HostConfig.Mounts) || [];
+    // Also check Docker-compat Binds (host:container strings)
+    const binds = (spec.HostConfig && spec.HostConfig.Binds) || [];
 
-        for (const m of mounts) {
-            const src = m.source || m.Source || "";
-            if (!src) continue;
-            const violation = mountSourceViolation(src);
-            if (violation) return { rejection: violation };
-        }
-        for (const bind of binds) {
-            const src = bind.split(":")[0];
-            if (!src) continue;
-            const violation = mountSourceViolation(src);
-            if (violation) return { rejection: violation };
-        }
-
-        // 5. Force read-only outside the rw-allowed subtrees
-        forceReadOnlyMounts(spec);
+    for (const m of mounts) {
+        const src = m.source || m.Source || "";
+        if (!src) continue;
+        const violation = mountSourceViolation(src);
+        if (violation) return { rejection: violation };
     }
+    for (const bind of binds) {
+        const src = bind.split(":")[0];
+        if (!src) continue;
+        const violation = mountSourceViolation(src);
+        if (violation) return { rejection: violation };
+    }
+
+    // 5. Force read-only outside the rw-allowed subtrees
+    forceReadOnlyMounts(spec);
 
     // 6. cap_add allowlist
     const capAdd =
@@ -376,20 +415,44 @@ function checkCreateBody(body) {
         }
     }
 
-    // 7. Network mode: only "none" or named bridge network (no "host")
-    const netns = spec.netns;           // libpod: { nsmode: "none"|"bridge" }
-    const networkMode = spec.HostConfig && spec.HostConfig.NetworkMode;
-    if (netns && netns.nsmode === "host") return { rejection: 'netns "host" is not allowed' };
-    if (networkMode === "host") return { rejection: 'NetworkMode "host" is not allowed' };
+    // 7. Network namespace: strict allowlist. Session.class.js sends exactly
+    //    { nsmode: "none" } or { nsmode: "bridge" } — everything else
+    //    ("host", "container:<id>", "ns:/path", "slirp4netns", "pasta",
+    //    a missing netns) is rejected.
+    if (!spec.netns || (spec.netns.nsmode !== "none" && spec.netns.nsmode !== "bridge")) {
+        return { rejection: 'netns.nsmode must be "none" or "bridge"' };
+    }
 
-    // 8. No namespace sharing with host
-    if (spec.pid_ns   && spec.pid_ns.nsmode   === "host") return { rejection: "host PID namespace sharing not allowed" };
-    if (spec.ipc_ns   && spec.ipc_ns.nsmode   === "host") return { rejection: "host IPC namespace sharing not allowed" };
-    if (spec.uts_ns   && spec.uts_ns.nsmode   === "host") return { rejection: "host UTS namespace sharing not allowed" };
+    // 8. Other namespaces: no sharing with the host or with other
+    //    containers. If present, nsmode must be "private".
+    for (const [key, label] of [["pid_ns", "PID"], ["ipc_ns", "IPC"], ["uts_ns", "UTS"]]) {
+        if (spec[key] && spec[key].nsmode !== "private") {
+            return { rejection: `${label} namespace sharing not allowed (nsmode must be "private")` };
+        }
+    }
+
+    // 9. Docker-compat namespace modes: only "", "private" or "none".
     if (spec.HostConfig) {
-        if (spec.HostConfig.PidMode === "host")       return { rejection: "host PID mode not allowed" };
-        if (spec.HostConfig.IpcMode === "host")       return { rejection: "host IPC mode not allowed" };
-        if (spec.HostConfig.UTSMode === "host")       return { rejection: "host UTS mode not allowed" };
+        for (const [key, label] of [
+            ["NetworkMode", "NetworkMode"],
+            ["PidMode", "PID mode"],
+            ["IpcMode", "IPC mode"],
+            ["UTSMode", "UTS mode"],
+        ]) {
+            const v = spec.HostConfig[key];
+            if (v !== undefined && v !== "" && v !== "private" && v !== "none") {
+                return { rejection: `${label} "${v}" is not allowed (only "", "private" or "none")` };
+            }
+        }
+    }
+
+    // 10. Rootless hardening: no_new_privileges and a keep-id user namespace
+    //     are required, so container root can never map onto the host user.
+    if (spec.no_new_privileges !== true) {
+        return { rejection: "no_new_privileges must be true" };
+    }
+    if (!spec.userns || spec.userns.nsmode !== "keep-id") {
+        return { rejection: 'userns.nsmode must be "keep-id"' };
     }
 
     return { rejection: null, spec }; // all checks passed
@@ -476,6 +539,24 @@ function forwardAndTrackExecId(clientReq, clientRes) {
     clientReq.pipe(proxyReq);
 }
 
+/**
+ * Resolve a container ID/name to a session container, denying the response
+ * with a 403 if it cannot be resolved or is not a session container.
+ * Returns the container name, or null (response already denied).
+ */
+async function assertSessionContainer(id, res) {
+    const name = await resolveContainerName(id);
+    if (!name) {
+        deny(res, `Container "${id}" could not be resolved to a known container`);
+        return null;
+    }
+    if (!name.startsWith(SESSION_CONTAINER_PREFIX)) {
+        deny(res, `Container "${name}" is not a session container (name must start with "${SESSION_CONTAINER_PREFIX}")`);
+        return null;
+    }
+    return name;
+}
+
 function deny(clientRes, reason, statusCode = 403) {
     log("warn", `DENIED: ${reason}`);
     const body = JSON.stringify({ message: `Blocked by VISP socket proxy: ${reason}` });
@@ -522,15 +603,8 @@ const server = http.createServer(async (req, res) => {
 
             case "container":
             case "exec-create": {
-                const name = await resolveContainerName(match.id);
-                if (!name) {
-                    deny(res, `Container "${match.id}" could not be resolved to a known container`);
-                    return;
-                }
-                if (!name.startsWith(SESSION_CONTAINER_PREFIX)) {
-                    deny(res, `Container "${name}" is not a session container (name must start with "${SESSION_CONTAINER_PREFIX}")`);
-                    return;
-                }
+                const name = await assertSessionContainer(match.id, res);
+                if (!name) return;
                 log("debug", `Container-targeted request allowed`, { url: req.url, container: name });
                 if (match.inspect === "exec-create") {
                     forwardAndTrackExecId(req, res);
@@ -540,9 +614,23 @@ const server = http.createServer(async (req, res) => {
                 return;
             }
 
+            case "commit": {
+                // Legacy commit form (node-docker-api): POST /commit?container=<id>
+                const containerId = new URL(req.url, "http://localhost").searchParams.get("container");
+                if (!containerId) {
+                    deny(res, "Missing required query parameter: container");
+                    return;
+                }
+                const name = await assertSessionContainer(containerId, res);
+                if (!name) return;
+                log("debug", `Commit request allowed`, { url: req.url, container: name });
+                forwardRequest(req, res);
+                return;
+            }
+
             case "exec-start": {
                 if (!isKnownExecId(match.id)) {
-                    deny(res, `Exec ID "${match.id}" was not created through this proxy`);
+                    deny(res, `Exec ID "${match.id}" was not created through this proxy (or the proxy restarted since the exec was created)`);
                     return;
                 }
                 log("debug", `Exec start allowed`, { url: req.url });
@@ -565,6 +653,19 @@ const server = http.createServer(async (req, res) => {
 });
 
 // ── Startup ───────────────────────────────────────────────────────────────────
+
+// Fail closed: without a resolvable ABS_ROOT_PATH, mount-source validation
+// would be silently disabled. Refuse to start instead.
+if (!ABS_ROOT_PATH) {
+    log("error", "ABS_ROOT_PATH is not set — refusing to start (mount validation would be disabled)");
+    process.exit(1);
+}
+try {
+    ROOT_REAL = fs.realpathSync(path.resolve(ABS_ROOT_PATH));
+} catch (e) {
+    log("error", `ABS_ROOT_PATH "${ABS_ROOT_PATH}" cannot be resolved (${e.message}) — refusing to start`);
+    process.exit(1);
+}
 
 // Clean up stale socket file
 if (fs.existsSync(PROXY_SOCKET)) {

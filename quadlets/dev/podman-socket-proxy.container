@@ -18,6 +18,10 @@ Environment=LOG_LEVEL=debug
 Volume=/run/user/@@UID@@/podman/podman.sock:/run/podman/podman.sock:ro,z
 # Shared socket directory — session-manager will connect to proxy.sock here
 Volume=@@PROJECT_DIR@@/mounts/podman-proxy:/run/podman-proxy:Z
+# Deployment root, read-only, at the SAME path as on the host: the proxy
+# realpath()s mount sources to catch symlink bypasses, which requires the
+# host tree to be resolvable from inside the container.
+Volume=@@PROJECT_DIR@@:@@PROJECT_DIR@@:ro,z
 
 # Security hardening — proxy needs no capabilities at all
 DropCapability=ALL
