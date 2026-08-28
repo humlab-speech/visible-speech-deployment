@@ -278,8 +278,20 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - Deployed as `localhost/visp-podman-socket-proxy:latest` via `podman-socket-proxy.container` quadlet
   - session-manager now mounts `mounts/podman-proxy/podman.sock` instead of the real socket
   - Enforces on every `POST .../containers/create`: image allowlist (`localhost/visp-*`), mount path allowlist (under `ABS_ROOT_PATH`), `Privileged=false`, capability allowlist, no host netns/pid/ipc
-  - All other calls (list, inspect, exec, start, stop) pass through transparently
+  - Hardened 2026-08-28: full endpoint allowlist (container-targeted calls scoped to
+    `visp-session-*` names, exec-ID tracking), mount sources realpath-validated and
+    forced read-only outside project/session dirs, namespace allowlist,
+    `no_new_privileges` + keep-id userns required on create
   - Build: `./visp.py build podman-socket-proxy`
+
+- [x] **Security: podman-socket-proxy hardening** (2026-08-28)
+  - Endpoint allowlist + session-container scoping, mount/namespace/userns create
+    policy, check-then-mount TOCTOU closed — see git log (`f0bbc41`, `96a2068`,
+    `d96d2b9`)
+- [x] **Security: session-manager auth hardening** (2026-08-28)
+  - Per-session ownership checks, payload phpSessionId/userSession overwrites removed,
+    route-to-ca env hardcoded, WS maxPayload 1 MiB — 7 local commits in
+    external/session-manager, upstream PR pending
 
 ### Build & Images
 
@@ -292,9 +304,8 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 ### CLI / Operations UX
 
 - [ ] **Merge `status` and `deploy status` into one coherent picture**
-  - ⛔ Now tracked as **D1** in the "CLI Fixes — visp.py evaluation (2026-08-17/18)"
-    section above (which extends this with the visual-language split and the
-    container-list scoping sub-decision). Do not start until D1 is decided.
+  - **CLOSED via D1 (decided 2026-08-18: no merge)** — kept for traceability.
+    D1 in the "CLI Fixes" section above is the record.
   - `status` covers runtime health (services running, quadlet drift)
   - `deploy status` covers source freshness (image built from current commit,
     repos ahead/behind remote)
