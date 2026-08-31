@@ -471,15 +471,15 @@ whenever images, quadlets, or service names change.
 
 # Quadlet lifecycle  (always in this order for a clean reset)
 ./visp.py uninstall              # remove copied quadlet files + podman secrets
-./visp.py install [--mode dev|prod]  # render templates → copy files to systemd dir + create secrets
-./visp.py reload                 # systemctl --user daemon-reload
-./visp.py start all
+./visp.py install [--mode dev|prod]  # render + copy quadlets and secrets, then
+                                     # converge: daemon-reload + restart affected services
+./visp.py start all              # start what isn't running
 
 # ⚠ Editing a quadlet file in quadlets/dev/ or quadlets/prod/ does NOT automatically
-# update the running system — the file must be re-copied via install, then reload must
-# be run, then the affected service(s) restarted:
-#   ./visp.py install --force → ./visp.py reload → ./visp.py restart <service>
-# Rebuilding an image only requires: build → restart <service>  (no install/reload needed)
+# update the running system — re-copy and converge with:
+#   ./visp.py install --force    (ends with daemon-reload + restart of affected services)
+# or just: ./visp.py apply
+# Rebuilding an image only requires: build → apply (or restart <service>)
 
 # Day-to-day
 ./visp.py status                 # service status + image list

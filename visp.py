@@ -42,7 +42,7 @@ Build examples:
 Backup/Restore examples:
   ./visp.py backup                        # Backup to current directory
   ./visp.py backup -o /backups/db.tar.gz  # Backup to specific path
-  ./visp.py restore backup.tar.gz         # Restore with confirmation
+  ./visp.py restore backup.tar.gz         # Restore with confirmation (writers must be stopped)
   ./visp.py restore backup.tar.gz --force # Restore without confirmation
 
 Dev hot-reload examples (session-manager source is bind-mounted in dev mode):
@@ -807,7 +807,11 @@ Examples:
     p_restart.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # install
-    p_install = subparsers.add_parser("install", aliases=["i"], help="Install quadlet units into the systemd directory")
+    p_install = subparsers.add_parser(
+        "install",
+        aliases=["i"],
+        help="Install quadlet units + secrets, then converge (daemon-reload + restart affected services)",
+    )
     p_install.set_defaults(func=cmd_install)
     p_install.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_install.add_argument("-f", "--force", action="store_true", help="Overwrite already-installed units")

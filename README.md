@@ -45,8 +45,7 @@ nano .env  # Optional: adjust BASE_DOMAIN, ADMIN_EMAIL, optional services, etc.
 ./visp.py build                  # Build all images (or selectively, see below)
 
 # 6. Start
-./visp.py reload                 # Reload systemd daemon
-./visp.py start all
+./visp.py start all              # install (step 4) already reloaded systemd + converged
 
 # 7. Verify
 ./visp.py status
@@ -63,7 +62,7 @@ nano .env  # Optional: adjust BASE_DOMAIN, ADMIN_EMAIL, optional services, etc.
 | session-manager | nodemon restarts on `src/` edits | `node src/index.js`, rebuild to change |
 | `LOG_LEVEL` | `debug` | `info` |
 
-Switch modes with `./visp.py install --mode <dev|prod> --force && ./visp.py reload`.
+Switch modes with `./visp.py install --mode <dev|prod> --force` (ends with daemon-reload + restart of affected services).
 
 In dev mode, editing `external/session-manager/src/` restarts the service in ~2s with no
 rebuild. Add dependencies with `./visp.py npm session-manager -- install <pkg>` (which runs
@@ -75,7 +74,7 @@ running Jupyter sessions must be restarted — see AGENTS.md for the full caveat
 
 ```bash
 # Lifecycle
-./visp.py install [--mode dev|prod]  # Install quadlet units + create secrets
+./visp.py install [--mode dev|prod]  # Install quadlet units + secrets, then converge (reload + restart affected)
 ./visp.py uninstall                  # Remove quadlet units + secrets
 ./visp.py reload                     # systemctl --user daemon-reload
 ./visp.py start all / stop all / restart all

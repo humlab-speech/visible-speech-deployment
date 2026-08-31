@@ -900,8 +900,9 @@ def run_install(
         cleanup_dev_only_services(all_services, mode, systemd_dir)
 
     # --- Phase 12: save mode, print next steps ---
-    from .quadlets import set_current_mode
+    from .quadlets import get_current_mode, set_current_mode
 
+    old_mode = get_current_mode()
     set_current_mode(mode)
 
     print()
@@ -957,4 +958,24 @@ def run_install(
     from .quadlets import cmd_apply
 
     print()
-    cmd_apply(SimpleNamespace(service="all"), project_dir=project_dir, systemd_dir=systemd_dir, runner=runner)
+    cmd_apply(SimpleNamespace(service=service_arg), project_dir=project_dir, systemd_dir=systemd_dir, runner=runner)
+
+    if force or mode != old_mode:
+        # --force (or a mode switch) rewrites installed files to exactly match
+        # the templates, so the drift check above sees nothing — but systemd
+        # still holds the old unit definitions. Reload and restart the scope
+        # that was just (re)installed, matching the old documented
+        # 'install --force -> reload -> restart' flow.
+        from .service_manager import ServiceManager
+
+        sm = ServiceManager(runner, services)
+        sm._reload_systemd()
+        container_names = [
+            s.name for s in services if s.file.endswith(".container") and (systemd_dir / s.file).exists()
+        ]
+        if container_names:
+            print(color(f"Restarting {len(container_names)} service(s)...", Colors.CYAN))
+            sm.stop(container_names)
+            sm.start(container_names)
+        else:
+            print(color("No container services to restart.", Colors.GREEN))

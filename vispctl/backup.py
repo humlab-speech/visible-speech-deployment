@@ -199,7 +199,7 @@ class BackupManager:
                 f"--config={_MONGO_CONFIG_PATH} "
                 f"--username=root --authenticationDatabase=admin --out={backup_dir}"
             )
-            print(f"  Would run: podman exec mongo tar -czf " f"{archive_in_container} -C /tmp {backup_name}")
+            print(f"  Would run: podman exec mongo tar -czf {archive_in_container} -C /tmp {backup_name}")
             print(f"  Would run: podman cp mongo:{archive_in_container} {output_path}")
             return output_path
 
@@ -297,9 +297,15 @@ class BackupManager:
         print(color("✗ Backup file not found after copy", Colors.RED))
         return None
 
-    def _unit_is_active(self, unit: str) -> bool:
-        rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", f"{unit}.service"])
-        return out.strip() == "active"
+    # Services that write to the databases covered by a full mongodump/
+    # mongorestore (no --db filter): session-manager + apache + emu-webapp-server
+    # share the 'visp' DB, wsrng-server writes 'wsrng', mongo-express (dev) is a
+    # full admin UI. mongo-express is dev-only — absent on prod, so the check
+    # is a no-op there.
+    _MONGO_WRITERS = ("session-manager", "apache", "emu-webapp-server", "wsrng-server", "mongo-express")
+
+    def _running_writers(self) -> list[str]:
+        return [svc for svc in self._MONGO_WRITERS if self.runner.unit_is_active(svc)]
 
     def restore(
         self,
@@ -328,14 +334,11 @@ class BackupManager:
 
         # Hard guard: restoring while writers run interleaves live writes with
         # the backup (merge) or loses them outright (--drop window).
-        running_writers = [
-            svc for svc in ("session-manager", "apache") if self._unit_is_active(svc)
-        ]
+        running_writers = self._running_writers()
         if running_writers and not allow_running_writers:
             print(
                 color(
-                    "✗ Refusing to restore while writer services are running: "
-                    + ", ".join(running_writers),
+                    "✗ Refusing to restore while writer services are running: " + ", ".join(running_writers),
                     Colors.RED,
                 )
             )
@@ -387,10 +390,27 @@ class BackupManager:
             print(color("✗ Backup archive contains unsafe path or link members", Colors.RED))
             return False
 
+        # TOCTOU: writers may have started since the initial check (crash +
+        # Restart=always, second terminal) — re-check right before touching data.
+        if not allow_running_writers:
+            late_writers = self._running_writers()
+            if late_writers:
+                print(
+                    color(
+                        "✗ Writer service(s) started since the initial check: "
+                        + ", ".join(late_writers)
+                        + " — aborting",
+                        Colors.RED,
+                    )
+                )
+                print("  Stop them and re-run, or pass --allow-running-writers to override")
+                return False
+
         # Copy file into container
         res = self.runner.run(["podman", "cp", str(b), "mongo:/tmp/restore.tar.gz"], check=False)
         if res.returncode != 0:
             print(color("✗ Failed to copy backup into container", Colors.RED))
+            print("  (the mongo container must be running — './visp.py start mongo')")
             return False
 
         try:

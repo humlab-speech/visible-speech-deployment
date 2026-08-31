@@ -59,6 +59,11 @@ class Runner:
     def systemctl(self, *args, check: bool = False) -> subprocess.CompletedProcess:
         return self.run(["systemctl", "--user", *args], capture=True, check=check)
 
+    def unit_is_active(self, unit: str) -> bool:
+        """True if the user unit is active or activating."""
+        _, out, _ = self.run_quiet(["systemctl", "--user", "is-active", f"{unit}.service"])
+        return out.strip() in ("active", "activating")
+
     def journalctl(self, *args) -> subprocess.CompletedProcess:
         self._flush_stdio()
         return subprocess.run(["journalctl", "--user", *args])

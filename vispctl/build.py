@@ -38,7 +38,7 @@ def validate_build_config(build_config: str | None) -> str | None:
         return None
     if build_config not in VALID_BUILD_CONFIGS:
         raise BuildError(
-            f"Invalid build config: {build_config!r}. " f"Allowed values: {', '.join(sorted(VALID_BUILD_CONFIGS))}"
+            f"Invalid build config: {build_config!r}. Allowed values: {', '.join(sorted(VALID_BUILD_CONFIGS))}"
         )
     return build_config
 
@@ -749,7 +749,7 @@ def cmd_build(
         for svc in stale:
             print(
                 color(
-                    f"  ⚠ {svc.name} is running the old image — './visp.py apply {svc.name}' to go live",
+                    f"  ⚠ {svc.name} is running an older image than :latest — './visp.py apply {svc.name}' to go live",
                     Colors.YELLOW,
                 )
             )

@@ -33,6 +33,10 @@ class FakeRunner:
             return 0, "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000", ""
         return 0, "", ""
 
+    def unit_is_active(self, unit):
+        _, out, _ = self.run_quiet(["systemctl", "--user", "is-active", f"{unit}.service"])
+        return out.strip() in ("active", "activating")
+
     def run(self, cmd, capture=False, check=True, **kwargs):
         self.calls.append(("run", cmd))
         # Simulate success for all commands
@@ -81,6 +85,10 @@ class FailingRunner:
         if "find" in cmd:
             return 0, "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000", ""
         return 0, "", ""
+
+    def unit_is_active(self, unit):
+        _, out, _ = self.run_quiet(["systemctl", "--user", "is-active", f"{unit}.service"])
+        return out.strip() in ("active", "activating")
 
 
 def test_list_backups(tmp_path):

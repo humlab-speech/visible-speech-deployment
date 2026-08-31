@@ -78,9 +78,8 @@ class ServiceManager:
                 self._note_skip_network(svc)
                 continue
             print(f"Starting {self._svc_name(svc)}...")
-            rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", self._svc_name(svc)])
-            if out.strip() == "active":
-                print(color("  Already running (start is a no-op)", Colors.YELLOW))
+            if self.runner.unit_is_active(svc.name):
+                print(color("  Already running (start is a no-op)", Colors.DIM))
                 if self._is_image_stale(svc):
                     print(
                         color(
@@ -158,16 +157,18 @@ class ServiceManager:
                 stopped.append(svc)
 
         # Restart=always + Requires= chains can pull a stopped unit back up via
-        # a restarting dependent — verify it actually stayed down.
+        # a restarting dependent — verify it actually stayed down. A pull-up is
+        # usually still 'activating' at check time, so match both states.
         if stopped:
-            time.sleep(2)
+            time.sleep(3)
             for svc in stopped:
-                rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", self._svc_name(svc)])
-                if out.strip() == "active":
+                if self.runner.unit_is_active(svc.name):
                     print(
                         color(
-                            f"  ⚠ {svc.name} came back up (dependency/restart) — "
-                            f"'./visp.py down {svc.name}' to keep it off",
+                            f"  ⚠ {svc.name} came back up — a dependent service or Restart= pulled it "
+                            "back. Check 'systemctl --user status "
+                            f"{svc.name}' for the cause; to keep it off, stop the dependent "
+                            f"or use './visp.py down {svc.name}' (also disables autostart)",
                             Colors.YELLOW,
                         )
                     )

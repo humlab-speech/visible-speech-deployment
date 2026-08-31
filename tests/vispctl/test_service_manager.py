@@ -15,6 +15,10 @@ class FakeRunner:
             return 0, "", ""
         return 0, "active", ""
 
+    def unit_is_active(self, unit):
+        _, out, _ = self.run_quiet(["systemctl", "--user", "is-active", f"{unit}.service"])
+        return out.strip() in ("active", "activating")
+
     def systemctl(self, *args, **kwargs):
         self.systemctl_calls.append(args)
 
