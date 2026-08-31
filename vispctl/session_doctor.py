@@ -108,8 +108,26 @@ def _collect_session_containers() -> dict[str, dict]:
     return containers
 
 
+def _is_session_proxy(name: str, labels: dict) -> bool:
+    """Return True only for genuine VISP session proxy sidecars.
+
+    A session sidecar is named ``visp-session-*-proxy`` or ``hsapp-session-*-proxy``,
+    or carries a ``visp.proxyFor`` label. Anything else that merely ends in
+    ``-proxy`` (e.g. the core ``podman-socket-proxy`` service, or unrelated host
+    containers like ``kiwix-proxy``) is NOT a session sidecar and must never be
+    flagged as an orphan or put in a cleanup plan.
+    """
+    if name.endswith("-proxy") and (name.startswith("visp-session-") or name.startswith("hsapp-session-")):
+        return True
+    return bool(labels.get("visp.proxyFor"))
+
+
 def _collect_proxy_containers() -> dict[str, dict]:
-    """Discover proxy sidecar containers (*-proxy).
+    """Discover VISP session proxy sidecars.
+
+    Only genuine session sidecars (``visp-session-*-proxy`` / ``hsapp-session-*-proxy``
+    or carrying a ``visp.proxyFor`` label) are included. Other ``*-proxy`` containers
+    (e.g. the core ``podman-socket-proxy`` service) are ignored.
 
     Returns {proxy_name: {id, state, labels, claims_session, ...}}.
     """
@@ -117,9 +135,9 @@ def _collect_proxy_containers() -> dict[str, dict]:
     for c in _podman_ps_json(filters=["name=-proxy"]):
         names = c.get("Names", [])
         name = names[0] if names else c.get("Name", "")
-        if not name.endswith("-proxy"):
-            continue
         labels = c.get("Labels") or {}
+        if not _is_session_proxy(name, labels):
+            continue
         proxies[name] = {
             "id": c.get("Id", "")[:12],
             "state": c.get("State", "unknown"),
@@ -563,7 +581,10 @@ def _cleanup_orphans(
 
     if not yes:
         total = len(containers_to_remove) + len(dirs_to_remove)
-        answer = input(f"\nProceed with cleanup of {total} item(s)? (y/N): ").strip().lower()
+        try:
+            answer = input(f"\nProceed with cleanup of {total} item(s)? (y/N): ").strip().lower()
+        except EOFError:
+            return {"removed_containers": 0, "removed_dirs": 0, "status": "cancelled"}
         if answer not in ("y", "yes"):
             return {"removed_containers": 0, "removed_dirs": 0, "status": "cancelled"}
 

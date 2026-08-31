@@ -84,9 +84,7 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 ./visp.py build session-manager
 ./visp.py build webclient
 
-# Build session images (if using RStudio/Jupyter features)
-./visp.py build operations-session
-./visp.py build rstudio-session
+# Build session images (if using Jupyter features)
 ./visp.py build jupyter-session
 
 # Install quadlets (netavark auto-configured)

@@ -52,6 +52,11 @@ OPTIONAL_SERVICE_ENV_FLAGS: dict[str, str] = {
 # ---------------------------------------------------------------------------
 
 
+def container_service_names() -> set[str]:
+    """Names of all container-type VISP services (dev and prod)."""
+    return {svc.name for svc in DEFAULT_SERVICES if svc.type == "container"}
+
+
 def get_disabled_optional_services(project_dir: Path | None = None) -> dict[str, str]:
     """Return {service_name: env_var} for optional services that are disabled in .env."""
     from pathlib import Path

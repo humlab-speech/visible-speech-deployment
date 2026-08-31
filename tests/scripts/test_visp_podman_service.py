@@ -147,7 +147,10 @@ def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
     start_targets = called["start"][0]
     assert isinstance(start_targets, list)
     assert "session-manager" in start_targets
-    assert "visp-net" not in start_targets
+    # Networks are passed through to ServiceManager, which skips them with a note
+    # (their units come up via Requires= from the containers).
+    assert "visp-net" in stop_targets
+    assert "visp-net" in start_targets
 
 
 def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
@@ -181,6 +184,63 @@ def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
     start_targets = called["start"][0]
     assert "session-manager" in start_targets
     assert "whisperx" not in start_targets
+
+
+def _fake_exec_env(monkeypatch, vp, returncode):
+    """Monkeypatch get_config/get_runtime_services for cmd_exec/cmd_shell tests."""
+    from vispctl.service import Service
+
+    calls = {}
+
+    class FakeRunner:
+        def run(self, cmd, **kwargs):
+            calls["cmd"] = cmd
+            calls["kwargs"] = kwargs
+
+            class R:
+                pass
+
+            r = R()
+            r.returncode = returncode
+            return r
+
+    cfg = types.SimpleNamespace(runner=FakeRunner())
+    monkeypatch.setattr(vp, "get_config", lambda: cfg)
+    monkeypatch.setattr(vp, "get_runtime_services", lambda **kw: [Service("mongo", "container", "mongo.container")])
+    return calls
+
+
+def test_cmd_exec_propagates_exit_code(monkeypatch):
+    vp = load_visp_module()
+    _fake_exec_env(monkeypatch, vp, returncode=125)
+
+    with pytest.raises(SystemExit) as exc:
+        vp.cmd_exec(types.SimpleNamespace(container="mongo", exec_command=["echo", "hi"]))
+    assert exc.value.code == 125
+
+
+def test_cmd_shell_propagates_exit_code(monkeypatch):
+    vp = load_visp_module()
+    _fake_exec_env(monkeypatch, vp, returncode=1)
+
+    with pytest.raises(SystemExit) as exc:
+        vp.cmd_shell(types.SimpleNamespace(container="mongo", shell="/bin/bash"))
+    assert exc.value.code == 1
+
+
+def test_cmd_exec_warns_on_unknown_container(monkeypatch, capsys):
+    vp = load_visp_module()
+    _fake_exec_env(monkeypatch, vp, returncode=0)
+
+    vp.cmd_exec(types.SimpleNamespace(container="nosuch", exec_command=["echo", "hi"]))
+    err = capsys.readouterr().err
+    assert "Warning" in err
+    assert "nosuch" in err
+
+    vp.cmd_exec(types.SimpleNamespace(container="mongo", exec_command=["echo", "hi"]))
+    captured = capsys.readouterr()
+    assert "Warning" not in captured.out
+    assert "Warning" not in captured.err
 
 
 def test_resolve_services_reports_disabled_optional_service(monkeypatch):

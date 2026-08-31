@@ -10,15 +10,24 @@ Commands:
   up          Enable and start service(s)
   down        Stop and disable service(s)
   restart     Restart service(s) or entire cluster
-  install     Link quadlet files to systemd directory
-  uninstall   Remove quadlet links from systemd directory
+  install     Install quadlet units into the systemd directory
+  uninstall   Remove quadlet units from the systemd directory
   reload      Reload systemd daemon (after quadlet changes)
   apply       Apply quadlet changes in one step (install --force + reload + restart)
   mode        Show or set deployment mode (dev/prod)
   build       Build container images (supports --no-cache, --pull)
+  images      List VISP container images and build status
   exec        Execute command in container
   shell       Open shell in container
   npm         Run npm inside a service image (dev source-mounted services)
+  debug       Shorthand for 'logs --debug'
+  network     Show network info and DNS status
+  deploy      Manage deployments: version control, git repos, status
+  users       Manage users in MongoDB
+  doctor      Project health overview: tree view + emuDB consistency checks
+  session-doctor  Diagnose session containers, proxy sidecars, and socket dirs
+  fix-permissions  Fix ownership and permissions for mount paths using podman unshare
+  cleanup-containers  Stop and remove session containers (legacy and current naming)
   backup      Backup MongoDB database to tar.gz
   restore     Restore MongoDB database from backup
 
@@ -49,6 +58,7 @@ Mode examples:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -67,14 +77,15 @@ from vispctl.config import get_config, init_config
 from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
-from vispctl.npm import NPM_SERVICES, run_npm
 from vispctl.network import cmd_network as _cmd_network
+from vispctl.npm import NPM_SERVICES, run_npm
 from vispctl.permissions import cmd_fix_permissions as _cmd_fix_permissions
 from vispctl.quadlets import (
     cmd_apply as _cmd_apply,
 )
 from vispctl.quadlets import (
     get_current_mode,
+    get_quadlets_dir,
     render_quadlet_template,
     set_current_mode,
 )
@@ -82,11 +93,12 @@ from vispctl.runner import Colors, Runner, color
 from vispctl.service import (
     DEFAULT_SERVICES,
     Service,
+    container_service_names,
     get_disabled_optional_services,
     get_runtime_services,
     resolve_services,
 )
-from vispctl.service_manager import ServiceManager
+from vispctl.service_manager import ServiceManager, remove_autostart_dropin
 from vispctl.status import show_container_list, show_network_list, show_quadlet_table
 
 SERVICES = DEFAULT_SERVICES
@@ -100,29 +112,23 @@ def _container_services(services: list[Service]) -> list[Service]:
     return [s for s in services if s.type == "container"]
 
 
-def _resolve_service_names(
-    args: argparse.Namespace,
-    cfg: object,
-    filter_containers: bool = False,
-    include_disabled: bool = False,
-) -> list[str]:
+def _resolve_service_names(args: argparse.Namespace, cfg: object, include_disabled: bool = False) -> list[str]:
     """Resolve args.services to a list of service names.
 
     When args.services is empty or ['all'], resolves all services.
     Otherwise, resolves each named service individually.
+
+    Network services are included — ServiceManager skips them with a note
+    (their units come up via Requires= from the containers).
     """
     services = args.services
     if not services or services == ["all"]:
         resolved = resolve_services("all", cfg.project_dir, include_disabled=include_disabled)
-        if filter_containers:
-            resolved = _container_services(resolved)
         return [svc.name for svc in resolved]
     else:
         names: list[str] = []
         for s in services:
             resolved = resolve_services(s, cfg.project_dir, include_disabled=include_disabled)
-            if filter_containers:
-                resolved = _container_services(resolved)
             names.extend(svc.name for svc in resolved)
         return names
 
@@ -133,8 +139,6 @@ def _resolve_service_names(
 def cmd_status(args):  # noqa: ARG001
     """Show status of all services and containers."""
     cfg = get_config()
-    print(color("=== VISP Service Status ===", Colors.CYAN))
-    print()
 
     runtime_services = get_runtime_services()
 
@@ -183,7 +187,7 @@ def cmd_start(args):
     """Start service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    names = _resolve_service_names(args, cfg, filter_containers=True)
+    names = _resolve_service_names(args, cfg)
     sm.start(names)
 
 
@@ -199,7 +203,7 @@ def cmd_up(args):
     """Enable and start service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    names = _resolve_service_names(args, cfg, filter_containers=True)
+    names = _resolve_service_names(args, cfg)
     sm.enable(names)
     sm.start(names)
 
@@ -208,7 +212,7 @@ def cmd_down(args):
     """Stop and disable service(s)."""
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
-    names = _resolve_service_names(args, cfg, filter_containers=True, include_disabled=True)
+    names = _resolve_service_names(args, cfg, include_disabled=True)
     sm.stop(names)
     sm.disable(names)
 
@@ -221,11 +225,11 @@ def cmd_restart(args):
         print(color("=== Restarting entire VISP cluster ===", Colors.CYAN))
         print()
         print(color("Stopping services...", Colors.YELLOW))
-        names = _resolve_service_names(args, cfg, filter_containers=True, include_disabled=True)
+        names = _resolve_service_names(args, cfg, include_disabled=True)
         sm.stop(names)
         print()
         print(color("Starting services...", Colors.GREEN))
-        start_names = _resolve_service_names(args, cfg, filter_containers=True)
+        start_names = _resolve_service_names(args, cfg)
         sm.start(start_names)
     else:
         names = _resolve_service_names(args, cfg)
@@ -242,7 +246,7 @@ def cmd_restart(args):
 
 
 def cmd_install(args):
-    """Link quadlet files to systemd directory."""
+    """Install quadlet units into the systemd directory."""
     from vispctl.install import run_install
 
     cfg = get_config()
@@ -263,9 +267,19 @@ def cmd_install(args):
 
 
 def cmd_uninstall(args):
-    """Remove quadlet links from systemd directory."""
+    """Remove quadlet units from the systemd directory."""
     cfg = get_config()
     services = resolve_services(args.service, cfg.project_dir, include_disabled=True)
+
+    if args.service == "all" and not getattr(args, "force", False):
+        try:
+            resp = input("Uninstall ALL services (stop, remove units and secrets)? (yes/no): ")
+        except EOFError:
+            print("No confirmation received (non-interactive). Re-run with --force.")
+            sys.exit(1)
+        if resp.strip().lower() not in ("yes", "y"):
+            print("Uninstall cancelled.")
+            return
 
     if not args.keep_running:
         print(color("Stopping services...", Colors.YELLOW))
@@ -274,7 +288,7 @@ def cmd_uninstall(args):
         sm.stop(names)
 
     print()
-    print(color("Removing links...", Colors.CYAN))
+    print(color("Removing units...", Colors.CYAN))
 
     for svc in services:
         target = cfg.systemd_dir / svc.file
@@ -285,17 +299,37 @@ def cmd_uninstall(args):
         else:
             print(color(f"  ○ {svc.file}: not installed", Colors.YELLOW))
 
+        # Remove any autostart drop-in so a previously 'down'ed service is not
+        # left disabled after uninstall → install.
+        if remove_autostart_dropin(cfg.systemd_dir, svc):
+            print(color(f"  ✓ {svc.file}.d/90-visp-autostart.conf: removed", Colors.GREEN))
+
     print()
 
     print(color("Removing Podman secrets...", Colors.CYAN))
-    from vispctl.secrets import SecretManager
+    from vispctl.secrets import (
+        SecretManager,
+        parse_quadlet_secret_map,
+        secrets_to_remove_for_uninstall,
+    )
 
     sm = SecretManager(cfg.runner)
-    visp_secrets = sm.list_secrets()
-    if visp_secrets:
-        sm.remove_secrets(visp_secrets)
-    else:
+    existing = sm.list_secrets()
+    if not existing:
         print("  No VISP secrets found")
+    else:
+        secret_map = parse_quadlet_secret_map(get_quadlets_dir(get_current_mode()))
+        uninstalled = {svc.name for svc in services}
+        to_remove = secrets_to_remove_for_uninstall(
+            uninstalled, secret_map, existing, remove_all=(args.service == "all")
+        )
+        if to_remove:
+            sm.remove_secrets(to_remove)
+        else:
+            print("  (no secrets removed — every referenced secret is shared with other services)")
+        kept = [s for s in existing if s not in to_remove]
+        if kept:
+            print(color(f"  Kept {len(kept)} secret(s) still used by other services", Colors.DIM))
 
     if getattr(args, "remove_networks", False):
         print()
@@ -338,6 +372,10 @@ def cmd_apply(args):
     )
 
 
+def _mode_color(mode: str) -> str:
+    return Colors.GREEN if mode == "prod" else Colors.CYAN
+
+
 def cmd_mode(args):
     """Show or set deployment mode."""
     new_mode = getattr(args, "new_mode", None)
@@ -346,7 +384,7 @@ def cmd_mode(args):
         # Set mode
         old_mode = get_current_mode()
         set_current_mode(new_mode)
-        print(f"Mode changed from {color(old_mode, Colors.YELLOW)} to {color(new_mode, Colors.GREEN)}")
+        print(f"Mode changed from {color(old_mode, _mode_color(old_mode))} to {color(new_mode, _mode_color(new_mode))}")
         print()
         print(color("To apply the new mode:", Colors.CYAN))
         print(f"  1. ./visp.py install --mode {new_mode} --force")
@@ -357,7 +395,7 @@ def cmd_mode(args):
         current = get_current_mode()
         print(color("=== Deployment Mode ===", Colors.CYAN))
         print()
-        print(f"  Current mode: {color(current, Colors.GREEN if current == 'prod' else Colors.YELLOW)}")
+        print(f"  Current mode: {color(current, _mode_color(current))}")
         print()
         print(color("Mode differences:", Colors.CYAN))
         print("  dev      - Source code mounts, container-agent mounted")
@@ -369,16 +407,36 @@ def cmd_mode(args):
 # === Container Commands ===
 
 
+def _warn_if_unknown_container(name: str) -> None:
+    """Warn (not fail) when the target is not a known VISP container service.
+
+    Unknown names are still attempted — session containers and other host
+    containers are legitimate exec targets.
+    """
+    known = container_service_names()
+    if name not in known:
+        print(
+            color(f"Warning: '{name}' is not a known VISP container service — continuing anyway", Colors.YELLOW),
+            file=sys.stderr,
+        )
+
+
 def cmd_exec(args):
     """Execute command in container."""
     cfg = get_config()
-    cfg.runner.run(["podman", "exec", "-it", args.container, *args.exec_command], check=False)
+    _warn_if_unknown_container(args.container)
+    result = cfg.runner.run(["podman", "exec", "-it", args.container, *args.exec_command], check=False)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
 
 
 def cmd_shell(args):
     """Open shell in container."""
     cfg = get_config()
-    cfg.runner.run(["podman", "exec", "-it", args.container, args.shell or "/bin/bash"], check=False)
+    _warn_if_unknown_container(args.container)
+    result = cfg.runner.run(["podman", "exec", "-it", args.container, args.shell or "/bin/bash"], check=False)
+    if result.returncode != 0:
+        sys.exit(result.returncode)
 
 
 def cmd_npm(args):
@@ -407,8 +465,10 @@ def cmd_cleanup_containers(args):
             print(color("Cleanup cancelled by user.", Colors.YELLOW))
         else:
             print(color(f"Cleanup finished with status={status}: {message}", Colors.RED))
+            sys.exit(1)
     except (OSError, RuntimeError, ValueError) as e:
         print(color(f"Error during cleanup-containers: {e}", Colors.RED))
+        sys.exit(1)
 
 
 def cmd_session_doctor(args):
@@ -480,9 +540,6 @@ def cmd_network(args):
 
 def cmd_images(args):
     """List VISP container images and their status."""
-    if hasattr(args, "subcommand") and args.subcommand == "base":
-        return cmd_images_base(args)
-
     cfg = get_config()
     im = ImageManager(cfg.runner, cfg.build_configs, cfg.network_services)
     im.display_visp_images()
@@ -589,10 +646,9 @@ def cmd_users(args):
 
 def cmd_doctor(args):
     """Tree-view project health overview with full consistency checks."""
-    from vispctl.doctor import run_doctor
+    from vispctl.doctor import parse_only_ids, run_doctor
 
-    only_raw = getattr(args, "only", None)
-    only_ids = set(only_raw.split(",")) if only_raw else None
+    only_ids = parse_only_ids(getattr(args, "only", None))
 
     issues = run_doctor(
         project_id=getattr(args, "project_id", None),
@@ -620,6 +676,17 @@ def cmd_backup(args):
 
     cfg = get_config()
     bm = BackupManager(cfg.runner)
+
+    if getattr(args, "backup_command", None) == "list":
+        directory = getattr(args, "directory", None)
+        backups = bm.list_backups(Path(directory) if directory else None)
+        if not backups:
+            print(f"No backup files found in {directory or 'the current directory'}.")
+            return
+        for p in backups:
+            print(f"  {p}  ({p.stat().st_size / (1024 * 1024):.1f} MB)")
+        return
+
     out = bm.backup(output=getattr(args, "output", None), dry_run=getattr(args, "dry_run", False))
     if out is None:
         sys.exit(1)
@@ -632,7 +699,11 @@ def cmd_restore(args):
 
     cfg = get_config()
     bm = BackupManager(cfg.runner)
-    ok = bm.restore(Path(args.backup_file), force=getattr(args, "force", False))
+    ok = bm.restore(
+        Path(args.backup_file),
+        force=getattr(args, "force", False),
+        drop=getattr(args, "drop", False),
+    )
     if not ok:
         sys.exit(1)
     return
@@ -664,22 +735,22 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  visp-ctl status              # Show all service status
-  visp-ctl logs -f             # Follow all logs
-  visp-ctl logs session-manager -n 200  # Last 200 lines from session-manager
-  visp-ctl up all              # Enable and start all services
-  visp-ctl down all            # Stop and disable all services
-  visp-ctl restart all         # Restart entire cluster
-  visp-ctl restart mongo       # Restart just mongo
-  visp-ctl install all         # Link all quadlets
-  visp-ctl reload              # Reload systemd after quadlet changes
-  visp-ctl debug mongo         # Debug mongo startup issues
-  visp-ctl shell session-manager  # Open bash in session-manager
-  visp-ctl exec mongo mongosh  # Run mongosh in mongo container
-  visp-ctl deploy status       # Check git repo versions and drift
-  visp-ctl deploy lock webclient  # Lock webclient to current version
-  visp-ctl deploy unlock --all # Unlock all components to track latest
-  visp-ctl deploy update       # Update repos to configured versions
+  ./visp.py status              # Show all service status
+  ./visp.py logs -f             # Follow all logs
+  ./visp.py logs session-manager -n 200 --no-follow  # Last 200 lines from session-manager
+  ./visp.py up all              # Enable and start all services
+  ./visp.py down all            # Stop and disable all services
+  ./visp.py restart all         # Restart entire cluster
+  ./visp.py restart mongo       # Restart just mongo
+  ./visp.py install all         # Install all quadlet units
+  ./visp.py reload              # Reload systemd after quadlet changes
+  ./visp.py debug mongo         # Debug mongo startup issues
+  ./visp.py shell session-manager  # Open bash in session-manager
+  ./visp.py exec mongo mongosh  # Run mongosh in mongo container
+  ./visp.py deploy status       # Check git repo versions and drift
+  ./visp.py deploy lock webclient  # Lock webclient to current version
+  ./visp.py deploy unlock --all # Unlock all components to track latest
+  ./visp.py deploy update       # Update repos to configured versions
 """,
     )
 
@@ -735,18 +806,21 @@ Examples:
     p_restart.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
 
     # install
-    p_install = subparsers.add_parser("install", aliases=["i"], help="Link quadlet files to systemd")
+    p_install = subparsers.add_parser("install", aliases=["i"], help="Install quadlet units into the systemd directory")
     p_install.set_defaults(func=cmd_install)
     p_install.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
-    p_install.add_argument("-f", "--force", action="store_true", help="Overwrite existing links")
+    p_install.add_argument("-f", "--force", action="store_true", help="Overwrite already-installed units")
     p_install.add_argument("-m", "--mode", choices=["dev", "prod"], help="Deployment mode (dev or prod)")
 
     # uninstall
-    p_uninstall = subparsers.add_parser("uninstall", aliases=["u"], help="Remove quadlet links")
+    p_uninstall = subparsers.add_parser(
+        "uninstall", aliases=["u"], help="Remove quadlet units from the systemd directory"
+    )
     p_uninstall.set_defaults(func=cmd_uninstall)
     p_uninstall.add_argument("service", default="all", nargs="?", help="Service name or 'all'")
     p_uninstall.add_argument("--keep-running", action="store_true", help="Don't stop services first")
     p_uninstall.add_argument("--remove-networks", action="store_true", help="Also remove Podman networks")
+    p_uninstall.add_argument("--force", action="store_true", help="Skip confirmation for 'uninstall all'")
 
     # reload
     subparsers.add_parser("reload", help="Reload systemd daemon").set_defaults(func=cmd_reload)
@@ -992,12 +1066,24 @@ Examples:
         action="store_true",
         help="Do a dry-run (show actions without making changes)",
     )
+    p_backup_sub = p_backup.add_subparsers(dest="backup_command")
+    p_backup_list = p_backup_sub.add_parser("list", help="List existing backup files")
+    p_backup_list.add_argument(
+        "directory", nargs="?", default=None, help="Directory to scan (default: current directory)"
+    )
 
     # restore
     p_restore = subparsers.add_parser("restore", help="Restore MongoDB database from backup")
     p_restore.set_defaults(func=cmd_restore)
     p_restore.add_argument("backup_file", help="Backup file to restore")
     p_restore.add_argument("--force", action="store_true", help="Skip confirmation prompt")
+    p_restore.add_argument(
+        "--drop",
+        action="store_true",
+        help="Drop each restored collection before restoring (full replacement). "
+        "By default existing collections are kept. Stop the services that write to "
+        "MongoDB first (e.g. './visp.py stop session-manager').",
+    )
 
     # users
     p_users = subparsers.add_parser("users", help="Manage users in MongoDB")
@@ -1048,7 +1134,7 @@ Examples:
         "--problems",
         action="store_true",
         dest="problems_only",
-        help="Only show projects with issues",
+        help="Only show projects with issues or warnings",
     )
     p_doctor.add_argument(
         "--json",
@@ -1098,8 +1184,16 @@ Examples:
     except VispError as e:
         print(color(f"Error: {e}", Colors.RED))
         sys.exit(1)
+    except BrokenPipeError:
+        # A downstream consumer (e.g. 'head') closed the pipe. Redirect stdout
+        # to devnull so the interpreter-shutdown flush doesn't raise again.
+        # Exit 141 (128+SIGPIPE) — the shell convention for "reader went away".
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        sys.exit(141)
     except KeyboardInterrupt:
         print()
+        sys.exit(130)
 
 
 if __name__ == "__main__":

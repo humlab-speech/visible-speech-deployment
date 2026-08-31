@@ -29,7 +29,8 @@ def test_cmd_status_outputs_service_header(tmp_path, monkeypatch, capsys):
             pass
 
         def status(self):
-            pass
+            # Mirrors ServiceManager.status(), which owns the single header.
+            print("=== VISP Service Status ===")
 
     runner = vp.Runner()
     runner._run = lambda *a, **kw: None
@@ -46,7 +47,7 @@ def test_cmd_status_outputs_service_header(tmp_path, monkeypatch, capsys):
 
     out = capsys.readouterr().out
     assert "VISP Service Status" in out
-    assert "Quadlet Links" in out
+    assert "Quadlet Units" in out
 
 
 def test_cmd_status_shows_disabled_optional_service(tmp_path, monkeypatch, capsys):

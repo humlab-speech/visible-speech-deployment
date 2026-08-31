@@ -1,5 +1,6 @@
 """Deployment management for VISP - version control, repository updates, status checking."""
 
+import re
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -657,6 +658,15 @@ class DeployManager:
         print("REPOSITORY STATUS CHECK")
         print("=" * 100)
 
+        if not Path(self.config.filepath).exists():
+            print()
+            print(
+                "⚠  versions.json not found — no versions are locked; "
+                "all components show as UNLOCKED (tracking latest)."
+            )
+            print("   Run './visp.py deploy lock --all' to record the current versions.")
+            print()
+
         if deployment_repo_status:
             print("\n🔧 DEPLOYMENT REPOSITORY (visible-speech-deployment)")
             print("-" * 100)
@@ -682,15 +692,47 @@ class DeployManager:
         print("=" * 100)
 
         # Summary
+        summary_lines, all_clean = self._build_status_summary(
+            status_results,
+            image_status_rows,
+            repos_with_changes,
+            repos_ahead,
+            repos_behind,
+            node_build_warnings,
+        )
+
+        for line in summary_lines:
+            print(line)
+        print("=" * 100)
+
+        return all_clean
+
+    def _build_status_summary(
+        self,
+        status_results: list[dict],
+        image_status_rows: list[dict],
+        repos_with_changes: list[str],
+        repos_ahead: list[str],
+        repos_behind: list[str],
+        node_build_warnings: list[str],
+    ) -> tuple[list[str], bool]:
+        """Build the situation-overview / recommended-actions summary lines.
+
+        Returns ``(summary_lines, all_clean)``.
+        """
         summary_lines = []
 
         # Check build status
         needs_rebuild = [r for r in status_results if r.get("Build Status", "").startswith("⚠ STALE")]
         not_built = [r for r in status_results if r.get("Build Status", "").startswith("❌ NOT BUILT")]
+        dirty_builds = [r for r in status_results if "⚠ DIRTY BUILD" in r.get("Build Status", "")]
+        unknown_builds = [r for r in status_results if r.get("Build Status", "").startswith("⚠ UNKNOWN")]
 
         # Add container image warnings to summary
         stale_images = [d for d in image_status_rows if d["Status"].startswith("⚠ STALE")]
         not_built_images = [d for d in image_status_rows if d["Status"].startswith("❌ NOT BUILT")]
+        no_label_images = [d for d in image_status_rows if d["Status"].startswith("⚠ NO LABEL")]
+        no_timestamp_images = [d for d in image_status_rows if d["Status"].startswith("⚠ NO TIMESTAMP")]
 
         # ── Situation overview ────────────────────────────────────────
         if repos_with_changes:
@@ -702,49 +744,57 @@ class DeployManager:
         if repos_behind:
             summary_lines.append(f"⬇️  Repositories behind remote: {', '.join(repos_behind)}")
 
-        if not_built:
-            names = [r["Repository"] for r in not_built]
-            summary_lines.append(f"❌ Components not built: {', '.join(names)}")
-
-        if needs_rebuild:
-            names = [r["Repository"] for r in needs_rebuild]
-            summary_lines.append(f"⚠  Components need rebuild (source changed): {', '.join(names)}")
-
-        if not_built_images:
-            names = [d["Image"] for d in not_built_images]
-            summary_lines.append(f"❌ Container images not built: {', '.join(names)}")
-
-        if stale_images:
-            names = [d["Image"] for d in stale_images]
-            summary_lines.append(f"⚠  Container images need rebuild: {', '.join(names)}")
-
-        if node_build_warnings:
-            summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
-            for w in node_build_warnings:
-                summary_lines.append(w)
-
-        # ── Recommended actions (copy-pasteable) ──────────────────────
         # Map external repo names → visp.py build target names where they differ
         _repo_to_build: dict[str, str] = {
             "artic": "artic",
             "WhisperVault": "whisperx",
         }
 
+        def _build_targets(rows: list[dict]) -> list[str]:
+            return [_repo_to_build.get(r["Repository"], r["Repository"]) for r in rows]
+
+        # (summary line, build targets, restart targets or None)
+        work: list[tuple[str, list[str], list[str] | None]] = []
+        for rows, label, restart in (
+            (not_built, "❌ Components not built", None),
+            (needs_rebuild, "⚠  Components need rebuild (source changed)", True),
+            (dirty_builds, "⚠  Dirty builds (rebuild from clean state recommended)", True),
+            (unknown_builds, "⚠  Build status unknown (image has no git label)", True),
+        ):
+            if rows:
+                targets = _build_targets(rows)
+                work.append(
+                    (f"{label}: {', '.join(r['Repository'] for r in rows)}", targets, targets if restart else None)
+                )
+        for rows, label, restart in (
+            (not_built_images, "❌ Container images not built", None),
+            (stale_images, "⚠  Container images need rebuild", True),
+            (no_label_images, "⚠  Container images missing git labels", True),
+            (no_timestamp_images, "⚠  Container images missing build timestamps", True),
+        ):
+            if rows:
+                targets = [d["Image"] for d in rows]
+                work.append((f"{label}: {', '.join(targets)}", targets, targets if restart else None))
+
+        for line, _, _ in work:
+            summary_lines.append(line)
+
+        if node_build_warnings:
+            summary_lines.append("❌ Node.js build outputs missing (bind-mounts will fail):")
+            summary_lines.extend(node_build_warnings)
+
+        # ── Recommended actions (copy-pasteable) ──────────────────────
         actions: list[str] = []
 
         if repos_behind:
             actions.append("./visp.py deploy update")
 
-        # Collect everything that needs building into one command
         to_build: list[str] = []
-        if not_built:
-            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in not_built)
-        if needs_rebuild:
-            to_build.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
-        if not_built_images:
-            to_build.extend(d["Image"] for d in not_built_images)
-        if stale_images:
-            to_build.extend(d["Image"] for d in stale_images)
+        restart_candidates: list[str] = []
+        for _, build_targets, restart_targets in work:
+            to_build.extend(build_targets)
+            if restart_targets:
+                restart_candidates.extend(restart_targets)
         # Node build warnings already recommend per-service builds
         if node_build_warnings:
             for nb_name, nb_cfg in NODE_BUILD_CONFIGS.items():
@@ -754,37 +804,17 @@ class DeployManager:
                 if not verify_path.exists() and nb_name not in to_build:
                     to_build.append(nb_name)
 
-        # De-duplicate while preserving order
-        seen: set[str] = set()
-        unique_builds: list[str] = []
-        for name in to_build:
-            if name not in seen:
-                seen.add(name)
-                unique_builds.append(name)
-
-        if unique_builds:
-            actions.append(f"./visp.py build {' '.join(unique_builds)}")
+        to_build = list(dict.fromkeys(to_build))
+        if to_build:
+            actions.append(f"./visp.py build {' '.join(to_build)}")
 
         # If any images were rebuilt, suggest restart
-        restart_candidates: list[str] = []
-        if needs_rebuild:
-            restart_candidates.extend(_repo_to_build.get(r["Repository"], r["Repository"]) for r in needs_rebuild)
-        if stale_images:
-            restart_candidates.extend(d["Image"] for d in stale_images)
+        restart_candidates = list(dict.fromkeys(restart_candidates))
         if restart_candidates:
-            seen_r: set[str] = set()
-            unique_restarts = [n for n in restart_candidates if n not in seen_r and not seen_r.add(n)]  # type: ignore[func-returns-value]
-            actions.append(f"./visp.py restart {' '.join(unique_restarts)}")
+            actions.append(f"./visp.py restart {' '.join(restart_candidates)}")
 
         all_clean = (
-            not repos_with_changes
-            and not repos_ahead
-            and not repos_behind
-            and not node_build_warnings
-            and not needs_rebuild
-            and not not_built
-            and not stale_images
-            and not not_built_images
+            not repos_with_changes and not repos_ahead and not repos_behind and not node_build_warnings and not work
         )
 
         if all_clean:
@@ -795,11 +825,7 @@ class DeployManager:
             for i, cmd in enumerate(actions, 1):
                 summary_lines.append(f"  {i}. {cmd}")
 
-        for line in summary_lines:
-            print(line)
-        print("=" * 100)
-
-        return all_clean
+        return summary_lines, all_clean
 
     def lock_components(self, components: list[str], lock_all: bool = False) -> bool:
         """
@@ -933,6 +959,55 @@ class DeployManager:
             print("\n⚠  No components were unlocked")
             return False
 
+    def _checkout_locked_version(self, component: str, locked_version: str) -> bool:
+        """Check out *locked_version* in the component's git repository.
+
+        Fetches first if the commit is not available locally, and updates
+        submodules if the component declares them. Refuses to run when the
+        working tree is dirty (to avoid clobbering local changes). Returns True
+        on success (or when already at the locked version), False on failure.
+        """
+        if not re.fullmatch(r"[0-9a-fA-F]{7,40}", locked_version):
+            print(f"⚠  {component}: locked version {locked_version!r} is not a git SHA, skipping checkout")
+            return False
+
+        comp_data = self.config.get_component(component) or {}
+        repo_path = self.external_dir / component
+        repo = GitRepository(str(repo_path), comp_data.get("url"))
+
+        if not repo.is_git_repo():
+            print(f"⚠  {component}: not a git repository at {repo_path}, skipping checkout")
+            return False
+
+        current = repo.get_current_commit()
+        if current == locked_version:
+            print(f"   {component} already at {locked_version[:8]}")
+            return True
+
+        if repo.is_dirty():
+            print(f"⚠  {component}: has uncommitted changes, skipping checkout")
+            return False
+
+        # Fetch if the commit is not available locally.
+        if repo.get_commit_info(locked_version) is None:
+            print(f"   Fetching {locked_version[:8]} from remote...")
+            try:
+                repo.fetch(quiet=True)
+            except subprocess.CalledProcessError as e:
+                print(f"❌ {component}: fetch failed: {e}")
+                return False
+
+        try:
+            repo.checkout(locked_version)
+            if comp_data.get("submodules", False):
+                repo.submodule_update()
+            print(f"   {component} now at {locked_version[:8]} (detached HEAD)")
+            print(f"   To resume tracking the branch: 'deploy unlock {component}' then 'deploy update'")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"❌ {component}: checkout failed: {e}")
+            return False
+
     def rollback_components(self, components: list[str], rollback_all: bool = False) -> bool:
         """
         Rollback components to their locked versions.
@@ -965,14 +1040,17 @@ class DeployManager:
                 print(f"⚠  {component}: No locked version available for rollback")
                 continue
 
-            # Rollback using ComponentConfig method
-            success = self.config.rollback(component)
+            # Check out the locked version in the git repository first. Only update
+            # versions.json if the checkout succeeds, so a failed checkout never
+            # leaves versions.json pointing at a version the repo isn't actually at.
+            if not self._checkout_locked_version(component, locked_version):
+                print(f"✗ {component}: checkout failed, versions.json left unchanged")
+                continue
 
-            if success:
-                print(f"✓ {component}: Rolled back to {locked_version[:8]}")
-                rollback_count += 1
-            else:
-                print(f"✗ {component}: Failed to rollback")
+            # Update versions.json (version := locked_version)
+            self.config.rollback(component)
+            print(f"✓ {component}: Rolled back to {locked_version[:8]}")
+            rollback_count += 1
 
         # Save updated config
         if rollback_count > 0:
@@ -980,7 +1058,7 @@ class DeployManager:
                 self.config.save()
                 print(f"\n✅ Successfully rolled back {rollback_count} component(s)")
                 print("   Changes saved to versions.json")
-                print("   Run 'visp.py deploy update' to checkout rolled back versions")
+                print("   Repositories checked out to the locked versions")
                 return True
             except Exception as e:
                 print(f"\n❌ Failed to save versions.json: {e}")
@@ -1055,8 +1133,22 @@ class DeployManager:
                         skipped_count += 1
                         continue
 
+                # Recover from a detached HEAD (e.g. left behind by `deploy rollback`)
+                # so that `git pull` has a branch to track.
+                was_detached = repo.is_detached()
+                branch = repo.ensure_on_branch()
+                if branch is None:
+                    print(f"⚠  {repo_name} is on a detached HEAD and no default branch could be determined; skipping")
+                    print(
+                        f"   Check out a branch manually (cd external/{repo_name} && git checkout main), then re-run 'deploy update'."
+                    )
+                    skipped_count += 1
+                    continue
+                if was_detached:
+                    print(f"   (recovered from detached HEAD onto '{branch}')")
+
                 # Pull latest
-                print("Pulling latest changes...")
+                print(f"Pulling latest changes on '{branch}'...")
                 repo.pull()
 
                 # Update submodules if needed

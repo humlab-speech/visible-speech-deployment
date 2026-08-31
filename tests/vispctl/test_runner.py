@@ -25,6 +25,49 @@ def test_run_quiet(monkeypatch):
     assert err == ""
 
 
+def test_run_flushes_stdio_before_uncaptured_subprocess(monkeypatch):
+    import vispctl.runner as mod
+
+    order = []
+
+    class FakeStdio:
+        def flush(self):
+            order.append("flush")
+
+    def fake_run(cmd, **kwargs):
+        order.append("subprocess")
+        return FakeRes()
+
+    monkeypatch.setattr(mod, "subprocess", types.SimpleNamespace(run=fake_run))
+    monkeypatch.setattr(mod.sys, "stdout", FakeStdio())
+    monkeypatch.setattr(mod.sys, "stderr", FakeStdio())
+
+    Runner().run(["echo", "hi"])
+    # Python output (stdout+stderr) must be flushed before the child writes to the same pipe.
+    assert order == ["flush", "flush", "subprocess"]
+
+
+def test_run_captured_does_not_flush(monkeypatch):
+    import vispctl.runner as mod
+
+    order = []
+
+    class FakeStdio:
+        def flush(self):
+            order.append("flush")
+
+    def fake_run(cmd, **kwargs):
+        order.append("subprocess")
+        return FakeRes()
+
+    monkeypatch.setattr(mod, "subprocess", types.SimpleNamespace(run=fake_run))
+    monkeypatch.setattr(mod.sys, "stdout", FakeStdio())
+    monkeypatch.setattr(mod.sys, "stderr", FakeStdio())
+
+    Runner().run(["echo", "hi"], capture=True)
+    assert order == ["subprocess"]
+
+
 def test_systemctl(monkeypatch):
     # Replace Runner.run at the class level so systemctl uses our stub
     def fake_run(self, cmd, capture=False, check=True):

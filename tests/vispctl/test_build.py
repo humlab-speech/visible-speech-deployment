@@ -65,6 +65,56 @@ def test_build_node_project_invokes_podman_run(tmp_path):
     assert "node:fake" in runner.last_cmd
 
 
+def test_build_node_project_warns_on_ignored_config(tmp_path, capsys):
+    # Projects whose build_cmd has no {config} placeholder ignore --config —
+    # that must be visible, not silent.
+    source = tmp_path / "src"
+    output = tmp_path / "out"
+    source.mkdir()
+    (source / "package.json").write_text("{}")
+
+    config = {
+        "source": str(source.resolve()),
+        "output": str(output.resolve()),
+        "description": "test",
+        "build_cmd": "npm run build",
+        "verify_file": "main.js",
+        "container_image": "node:fake",
+    }
+
+    runner = FakeRunner()
+    bm = BuildManager(runner, build_configs={}, node_configs={})
+
+    success = bm.build_node_project("container-agent", config, build_config="visp.dev")
+    assert success is True
+    out = capsys.readouterr().out
+    assert "--config visp.dev ignored" in out
+    assert "container-agent" in out
+
+
+def test_build_node_project_no_warning_without_config(tmp_path, capsys):
+    source = tmp_path / "src"
+    output = tmp_path / "out"
+    source.mkdir()
+    (source / "package.json").write_text("{}")
+
+    config = {
+        "source": str(source.resolve()),
+        "output": str(output.resolve()),
+        "description": "test",
+        "build_cmd": "npm run build",
+        "verify_file": "main.js",
+        "container_image": "node:fake",
+    }
+
+    runner = FakeRunner()
+    bm = BuildManager(runner, build_configs={}, node_configs={})
+
+    success = bm.build_node_project("container-agent", config)
+    assert success is True
+    assert "ignored" not in capsys.readouterr().out
+
+
 def test_build_node_project_runs_pre_build(tmp_path):
     """When a config has pre_build_cmd, it should run a separate container first."""
     source = tmp_path / "src"
@@ -267,3 +317,39 @@ def test_build_node_project_rejects_malicious_config(tmp_path):
 
     with pytest.raises(BuildError, match="Invalid build config"):
         bm.build_node_project("webclient", config, build_config="visp.dev; cat /etc/shadow")
+
+
+def test_build_list_image_uses_localhost_prefix(capsys):
+    """--list must show the full localhost/ image tag (the convention quadlets use)."""
+    from vispctl.build import cmd_build_list
+
+    args = object()
+    cmd_build_list(
+        args,
+        build_configs={"apache": {"image": "visp-apache", "context": "./docker/apache"}},
+        node_configs={},
+    )
+
+    out = capsys.readouterr().out
+    assert "localhost/visp-apache:latest" in out
+    assert "Image: visp-apache:latest" not in out
+
+
+def test_build_list_available_configs_match_whitelist(capsys):
+    """--list 'Available configs' must list every whitelisted config, incl. the default."""
+    from vispctl.build import cmd_build_list
+
+    args = object()
+    cmd_build_list(
+        args,
+        build_configs={},
+        node_configs={
+            "webclient": {"source": "./s", "output": "./o", "description": "d", "default_config": "visp.dev"}
+        },
+    )
+
+    out = capsys.readouterr().out
+    line = next(ln for ln in out.splitlines() if "Available configs" in ln)
+    listed = {c.strip() for c in line.split(":", 1)[1].split(",")}
+    assert listed == VALID_BUILD_CONFIGS
+    assert "visp.dev" in line

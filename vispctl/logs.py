@@ -141,7 +141,13 @@ def show_debug_info(
     service_unit = f"{service}.service"
 
     print(color("Service Status:", Colors.YELLOW))
-    runner.systemctl("status", service_unit)
+    result = runner.systemctl("status", "--no-pager", service_unit)
+    if result.stdout and result.stdout.strip():
+        print(result.stdout.rstrip())
+    if result.stderr and result.stderr.strip():
+        print(result.stderr.rstrip())
+    if not (result.stdout or "").strip() and not (result.stderr or "").strip():
+        print(color(f"  (no status output for {service_unit})", Colors.DIM))
     print()
 
     print(color("Container Info:", Colors.YELLOW))

@@ -108,6 +108,50 @@ class GitRepository:
         except subprocess.CalledProcessError:
             return None
 
+    def is_detached(self) -> bool:
+        """Check if HEAD is detached (not on a branch)."""
+        return self.get_current_branch() == "HEAD"
+
+    def get_default_branch(self, remote: str = "origin") -> Optional[str]:
+        """Get the remote's default branch name (from the ``<remote>/HEAD`` ref).
+
+        Returns e.g. ``main`` for ``origin/HEAD -> origin/main``, or None if the
+        remote's HEAD is unknown locally.
+        """
+        try:
+            result = self.run_git(["rev-parse", "--abbrev-ref", f"{remote}/HEAD"])
+            ref = result.stdout.strip()
+        except subprocess.CalledProcessError:
+            return None
+        prefix = f"{remote}/"
+        if ref.startswith(prefix):
+            return ref[len(prefix) :] or None
+        return ref or None
+
+    def ensure_on_branch(self, remote: str = "origin") -> Optional[str]:
+        """Ensure the repo is on a branch, recovering from a detached HEAD.
+
+        If HEAD is already on a branch, returns that branch name. If HEAD is
+        detached (e.g. left behind by ``deploy rollback``), checks out the
+        remote's default branch (falling back to ``main``/``master``) and
+        returns it. Returns None if a branch could not be determined.
+        """
+        current = self.get_current_branch()
+        if current and current != "HEAD":
+            return current
+
+        default_branch = self.get_default_branch(remote)
+        if default_branch is None:
+            for candidate in ("main", "master"):
+                if self.has_remote_branch(candidate, remote):
+                    default_branch = candidate
+                    break
+        if default_branch is None:
+            return None
+
+        self.checkout(default_branch)
+        return default_branch
+
     def get_commit_info(self, ref: str = "HEAD") -> Optional[dict]:
         """
         Get detailed information about a commit.

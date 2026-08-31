@@ -98,7 +98,7 @@ class BuildManager:
                 target = cfg.get("target")
 
                 print(color(f"Building {svc_name}...", Colors.BLUE))
-                print(f"  Image: {cfg['image']}:latest")
+                print(f"  Image: localhost/{cfg['image']}:latest")
                 print(f"  Context: {cfg['context']}")
                 if description:
                     print(f"  Description: {description}")
@@ -157,7 +157,7 @@ class BuildManager:
             version = comp_data.get("version", "latest")
             is_locked = comp_config.is_locked(svc_name)
 
-            repo_path = Path.cwd() / "external" / svc_name
+            repo_path = get_config().project_dir / "external" / svc_name
             if not repo_path.exists():
                 warnings.append(f"  ⚠  {svc_name}: Repository not found at {repo_path}")
                 continue
@@ -260,9 +260,6 @@ class BuildManager:
             cmd.extend(["--build-arg", f"{key}={value}"])
 
         # Add git commit label if we're building from a git repo
-        import subprocess
-        from pathlib import Path
-
         context_path = Path(context).resolve()
         # Use source_repo for git.commit label when the build context is not the source
         # (e.g. apache embeds webclient, operations-session embeds container-agent)
@@ -351,6 +348,13 @@ class BuildManager:
             validate_build_config(cfg)
             build_cmd = build_cmd_template.format(config=cfg)
         else:
+            if build_config:
+                print(
+                    color(
+                        f"  ⚠ --config {build_config} ignored: {name} does not use build configs (webclient only)",
+                        Colors.YELLOW,
+                    )
+                )
             build_cmd = build_cmd_template
 
         container_image = config.get("container_image", "node:20-alpine")
@@ -688,9 +692,7 @@ def cmd_build(
     else:
         unknown = [s for s in raw_services if s not in all_buildable]
         if unknown:
-            print(color(f"Error: Unknown service(s): {', '.join(unknown)}", Colors.RED))
-            print(f"Buildable services: {', '.join(all_buildable)}")
-            return
+            raise BuildError(f"unknown service(s): {', '.join(unknown)}. Buildable: {', '.join(all_buildable)}")
         requested = list(raw_services)
 
     ordered, auto_added = resolve_build_order(requested, build_configs, node_configs)
@@ -765,7 +767,7 @@ def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa
     print()
     for name, config in (build_configs or {}).items():
         print(f"  {color(name, Colors.BLUE)}")
-        print(f"    Image: {config['image']}:latest")
+        print(f"    Image: localhost/{config['image']}:latest")
         print(f"    Context: {config['context']}")
         if config.get("description"):
             print(f"    Description: {config['description']}")
@@ -786,5 +788,5 @@ def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa
         print(f"    Description: {config['description']}")
         if config.get("default_config"):
             print(f"    Default config: {config['default_config']}")
-            print("    Available configs: visp, visp-demo, visp-pdf-server, datalab, visp-local")
+            print(f"    Available configs: {', '.join(sorted(VALID_BUILD_CONFIGS))}")
         print()

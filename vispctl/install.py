@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Callable
 
 from vispctl.runner import Colors, color
 from vispctl.service import Service
+from vispctl.service_manager import remove_autostart_dropin
 
 if TYPE_CHECKING:
     from vispctl.runner import Runner
@@ -573,6 +574,27 @@ def cleanup_disabled_optional_services(
             print(color(f"  ○ {svc.file}: removed ({env_var}=false)", Colors.YELLOW))
 
 
+def cleanup_dev_only_services(services: list[Service], mode: str, systemd_dir: Path) -> None:
+    """
+    Remove dev-only quadlet files when installing in prod mode.
+
+    Dev-only services (e.g. mongo-express, local-idp) have no quadlet in
+    quadlets/prod/, so a dev → prod mode switch would leave previously
+    installed units (and autostart drop-ins) behind unless removed here.
+    """
+    if mode != "prod":
+        return
+
+    for svc in services:
+        if not svc.dev_only:
+            continue
+        target = systemd_dir / svc.file
+        if target.exists() or target.is_symlink():
+            target.unlink()
+            print(color(f"  ○ {svc.file}: removed (dev-only, mode=prod)", Colors.YELLOW))
+        remove_autostart_dropin(systemd_dir, svc)
+
+
 def _ensure_webclient_dist(project_dir: Path, runner: Runner) -> None:
     """
     Build the webclient dist directory if runtime-critical files are missing.
@@ -875,6 +897,7 @@ def run_install(
     # --- Phase 11: cleanup stale disabled-service quadlets ---
     if service_arg == "all":
         cleanup_disabled_optional_services(all_services, disabled_optional, systemd_dir)
+        cleanup_dev_only_services(all_services, mode, systemd_dir)
 
     # --- Phase 12: save mode, print next steps ---
     from .quadlets import set_current_mode

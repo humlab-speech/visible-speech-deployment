@@ -138,6 +138,42 @@ def test_show_debug_info_container_not_found_message(tmp_path: Path, capsys) -> 
     assert "not found" in out
 
 
+def test_show_debug_info_prints_systemctl_status(tmp_path: Path, capsys) -> None:
+    """show_debug_info prints the captured systemctl status output (not empty)."""
+    sys_dir = tmp_path / "systemd"
+    sys_dir.mkdir()
+
+    runner = MagicMock(spec=Runner)
+    runner.run_quiet.return_value = (0, "", "")  # container found
+    runner.systemctl.return_value = types.SimpleNamespace(
+        stdout="● mongo.service - MongoDB Database\n     Active: active (running)\n   Main PID: 1234 (conmon)\n",
+        stderr="",
+    )
+
+    show_debug_info("mongo", runner, [_svc("mongo")], sys_dir)
+    out = capsys.readouterr().out
+
+    assert "Service Status:" in out
+    assert "Active: active (running)" in out
+    assert "Main PID: 1234" in out
+
+
+def test_show_debug_info_status_placeholder_when_empty(tmp_path: Path, capsys) -> None:
+    """When systemctl produces no output, a placeholder is shown (not a blank section)."""
+    sys_dir = tmp_path / "systemd"
+    sys_dir.mkdir()
+
+    runner = MagicMock(spec=Runner)
+    runner.run_quiet.return_value = (1, "", "")
+    runner.systemctl.return_value = types.SimpleNamespace(stdout="", stderr="")
+
+    show_debug_info("mongo", runner, [_svc("mongo")], sys_dir)
+    out = capsys.readouterr().out
+
+    assert "Service Status:" in out
+    assert "no status output" in out
+
+
 # ── view_logs ──────────────────────────────────────────────────────────────────
 
 

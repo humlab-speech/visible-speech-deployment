@@ -4,8 +4,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from vispctl.session_doctor import (
+    _collect_proxy_containers,
     _collect_socket_dirs,
     _diagnose,
+    _is_session_proxy,
     run_session_doctor,
 )
 
@@ -245,6 +247,65 @@ def test_socket_dir_collection(tmp_path):
     assert dirs["visp-session-stale-user-Cd34"]["has_ui_sock"] is False
     assert dirs["visp-session-stale-user-Cd34"]["has_proxy_sock"] is False
     assert dirs["visp-session-stale-user-Cd34"]["has_api_sock"] is False
+
+
+# ── Proxy sidecar discovery tests ─────────────────────────────────────────────
+
+
+def test_is_session_proxy_matching_names():
+    """visp-session-*/hsapp-session-* names ending in -proxy are session sidecars."""
+    assert _is_session_proxy("visp-session-abc-proxy", {}) is True
+    assert _is_session_proxy("hsapp-session-abc-proxy", {}) is True
+
+
+def test_is_session_proxy_excludes_non_session_proxies():
+    """Other *-proxy containers (podman-socket-proxy, kiwix-proxy) are NOT sidecars."""
+    assert _is_session_proxy("podman-socket-proxy", {}) is False
+    assert _is_session_proxy("kiwix-proxy", {}) is False
+    assert _is_session_proxy("some-random-proxy", {}) is False
+
+
+def test_is_session_proxy_label_fallback():
+    """A container carrying visp.proxyFor is a session sidecar regardless of name."""
+    assert _is_session_proxy("weird-name", {"visp.proxyFor": "visp-session-abc"}) is True
+    assert _is_session_proxy("weird-name", {}) is False
+
+
+def _fake_ps(names_labels):
+    """Build a fake `podman ps --format json` list from (name, labels) pairs."""
+    out = []
+    for name, labels in names_labels:
+        out.append(
+            {
+                "Names": [name],
+                "Name": name,
+                "Id": (name[0] * 12),
+                "State": "running",
+                "Labels": labels,
+                "Created": "2026-04-15T10:00:00Z",
+                "Image": "localhost/visp-session-proxy:latest",
+            }
+        )
+    return out
+
+
+def test_collect_proxy_containers_excludes_non_session_proxies():
+    """_collect_proxy_containers must exclude podman-socket-proxy and kiwix-proxy."""
+    fake_ps = _fake_ps(
+        [
+            ("visp-session-abc-proxy", {"visp.proxyFor": "visp-session-abc"}),
+            ("hsapp-session-xyz-proxy", {"visp.proxyFor": "hsapp-session-xyz"}),
+            ("podman-socket-proxy", {}),
+            ("kiwix-proxy", {}),
+        ]
+    )
+    with patch("vispctl.session_doctor._podman_ps_json", return_value=fake_ps):
+        proxies = _collect_proxy_containers()
+
+    assert "visp-session-abc-proxy" in proxies
+    assert "hsapp-session-xyz-proxy" in proxies
+    assert "podman-socket-proxy" not in proxies
+    assert "kiwix-proxy" not in proxies
 
 
 def test_json_output(capsys):

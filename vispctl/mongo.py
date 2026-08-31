@@ -1,6 +1,7 @@
 """Shared MongoDB helpers for VISP management tools."""
 
 import json
+import re
 import subprocess
 
 from .config import get_config
@@ -54,25 +55,33 @@ def find_mongo_container() -> str:
 
 
 def mongosh_json(js_command: str, database: str = DATABASE) -> list | dict | None:
-    """Execute a MongoDB command via mongosh and return parsed JSON result."""
+    """Execute a MongoDB command via mongosh and return parsed JSON result.
+
+    The password is passed via stdin (``-p`` without a value) instead of the
+    command line, so it is not visible in ``ps``. The "Enter password:" prompt
+    goes to stderr, keeping stdout clean JSON.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9_]+", database):
+        raise MongoError(f"Invalid database name: {database!r}")
     password = get_mongo_password()
     container = find_mongo_container()
     result = subprocess.run(
         [
             "podman",
             "exec",
+            "-i",
             container,
             "mongosh",
             "-u",
             "root",
             "-p",
-            password,
             "--authenticationDatabase",
             "admin",
             database,
             "--eval",
             f"JSON.stringify({js_command})",
         ],
+        input=f"{password}\n",
         capture_output=True,
         text=True,
     )

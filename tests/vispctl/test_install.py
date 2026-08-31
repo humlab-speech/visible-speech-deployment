@@ -13,6 +13,7 @@ from vispctl.install import (
     _map_namespace_id,
     _parse_id_map,
     _resolve_image_uid,
+    cleanup_dev_only_services,
     cleanup_disabled_optional_services,
     fix_mongo_mount_ownership,
     fix_writable_permissions,
@@ -573,3 +574,51 @@ def test_cleanup_no_op_if_not_installed(tmp_path):
     disabled = {"whisperx": "WHISPERX_ENABLED"}
 
     cleanup_disabled_optional_services(services, disabled, systemd_dir)  # no error
+
+
+def test_cleanup_dev_only_removes_units_in_prod(tmp_path):
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+    (systemd_dir / "mongo-express.container").write_text("")
+    (systemd_dir / "local-idp.container").write_text("")
+    (systemd_dir / "mongo.container").write_text("")
+
+    services = [
+        Service("mongo-express", "container", "mongo-express.container", dev_only=True),
+        Service("local-idp", "container", "local-idp.container", dev_only=True),
+        Service("mongo", "container", "mongo.container"),
+    ]
+
+    cleanup_dev_only_services(services, "prod", systemd_dir)
+
+    assert not (systemd_dir / "mongo-express.container").exists()
+    assert not (systemd_dir / "local-idp.container").exists()
+    assert (systemd_dir / "mongo.container").exists()
+
+
+def test_cleanup_dev_only_noop_in_dev(tmp_path):
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+    (systemd_dir / "local-idp.container").write_text("")
+
+    services = [Service("local-idp", "container", "local-idp.container", dev_only=True)]
+
+    cleanup_dev_only_services(services, "dev", systemd_dir)
+
+    assert (systemd_dir / "local-idp.container").exists()
+
+
+def test_cleanup_dev_only_removes_dropin(tmp_path):
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+    (systemd_dir / "local-idp.container").write_text("")
+    dropin_dir = systemd_dir / "local-idp.container.d"
+    dropin_dir.mkdir()
+    (dropin_dir / "90-visp-autostart.conf").write_text("[Install]\nWantedBy=\n")
+
+    services = [Service("local-idp", "container", "local-idp.container", dev_only=True)]
+
+    cleanup_dev_only_services(services, "prod", systemd_dir)
+
+    assert not (systemd_dir / "local-idp.container").exists()
+    assert not dropin_dir.exists()

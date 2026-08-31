@@ -2,12 +2,30 @@
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
 from .config import get_config
 from .runner import Colors, Runner, color
-from .service import Service
+from .service import Service, container_service_names
+
+
+def _classify_tag(tag: str) -> str:
+    """Classify an image tag as 'digest', 'pinned', or 'unpinned'.
+
+    Pinned means the reference cannot move: a digest, a dotted version
+    (2.4.67, 3.23), or a date-like run of 4+ digits (trixie-20260406).
+    Bare major tags (alpine:3, node:24) and word tags (bookworm, stable)
+    can still move, so they count as unpinned.
+    """
+    if tag.startswith("@"):
+        return "digest"
+    if tag == "latest" or not any(c.isdigit() for c in tag):
+        return "unpinned"
+    if "." in tag or re.search(r"\d{4,}", tag):
+        return "pinned"
+    return "unpinned"
 
 
 class ImageManager:
@@ -84,26 +102,34 @@ class ImageManager:
         return networks
 
     def get_container_networks(self) -> Dict[str, str]:
-        """Get network connections for running containers.
+        """Get network connections for running VISP containers.
+
+        Intersects the running containers with the known VISP container service
+        names (quadlet containers are named ``<name>`` — no ``systemd-`` prefix)
+        and records the network IDs each is connected to.
 
         Returns:
             Dict mapping container_name -> network_ids
         """
-        container_networks = {}
+        visp_containers = container_service_names()
         rc, stdout, _ = self.runner.run_quiet(["podman", "ps", "--format", "{{.Names}}"])
-        if rc == 0 and stdout:
-            for container in stdout.split("\n"):
-                if container.startswith("systemd-"):
-                    rc, nets, _ = self.runner.run_quiet(
-                        [
-                            "podman",
-                            "inspect",
-                            container,
-                            "--format",
-                            "{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}",
-                        ]
-                    )
-                    container_networks[container] = nets.strip() if nets else "none"
+        if rc != 0 or not stdout:
+            return {}
+        running = {line.strip() for line in stdout.splitlines() if line.strip()}
+
+        container_networks = {}
+        for name in sorted(visp_containers & running):
+            rc, nets, _ = self.runner.run_quiet(
+                [
+                    "podman",
+                    "inspect",
+                    name,
+                    "--format",
+                    "{{range .NetworkSettings.Networks}}{{.NetworkID}} {{end}}",
+                ]
+            )
+            if rc == 0:
+                container_networks[name] = nets.strip() if nets.strip() else "none"
         return container_networks
 
     def get_stale_containers(self, services: List[Service]) -> List[Service]:
@@ -119,7 +145,9 @@ class ImageManager:
         for svc in services:
             if svc.type != "container":
                 continue
-            container_name = f"systemd-{svc.name}"
+            # Quadlet containers are named after the unit (no "systemd-" prefix;
+            # only networks get that prefix).
+            container_name = svc.name
 
             # Get the image ID the running container was launched with
             rc, running_id, _ = self.runner.run_quiet(["podman", "inspect", container_name, "--format", "{{.ImageID}}"])
@@ -137,11 +165,13 @@ class ImageManager:
 
         return stale
 
-    def scan_base_images(self) -> Dict[str, List[str]]:
+    def scan_base_images(self) -> Dict[str, List[Tuple[str, str | None]]]:
         """Scan all Dockerfiles and extract base images.
 
         Returns:
-            Dict mapping "image:tag" -> [list of Dockerfile paths]
+            Dict mapping "image:tag" -> [list of (Dockerfile path, stage name) pairs].
+            The stage name is the ``AS <name>`` label of the FROM line, or None for
+            unnamed stages.
         """
         base_dir = get_config().project_dir
         dockerfiles = []
@@ -175,6 +205,7 @@ class ImageManager:
                             parts = line.split()
                             if len(parts) >= 2:
                                 image = parts[1]
+                                stage = parts[3] if len(parts) >= 4 and parts[2].upper() == "AS" else None
 
                                 # Skip internal stage references
                                 if image in [
@@ -204,7 +235,7 @@ class ImageManager:
                                 # Normalize registry prefixes
                                 name = name.replace("docker.io/library/", "").replace("docker.io/", "")
 
-                                base_images[f"{name}:{tag}"].append(str(relative_path))
+                                base_images[f"{name}:{tag}"].append((str(relative_path), stage))
             except Exception as e:
                 print(color(f"Warning: Failed to parse {relative_path}: {e}", Colors.YELLOW))
 
@@ -245,6 +276,9 @@ class ImageManager:
 
     def display_network_info(self) -> None:
         """Display network backend and VISP networks."""
+        print(color("=== VISP Networks ===", Colors.CYAN))
+        print()
+
         backend, is_netavark = self.get_network_backend()
         if is_netavark:
             print(color(f"  Backend: {backend} (recommended)", Colors.GREEN))
@@ -257,7 +291,6 @@ class ImageManager:
             )
         print()
 
-        print(color("=== VISP Networks ===", Colors.CYAN))
         networks = self.get_networks()
         for net_name, exists in networks.items():
             if exists:
@@ -304,30 +337,24 @@ class ImageManager:
                 name, tag = image, "latest"
 
             # Color code based on tag type
-            if tag == "latest" or not any(char.isdigit() for char in tag):
-                tag_colored = color(tag, Colors.RED)  # Unpinned
+            if _classify_tag(tag) == "unpinned":
+                tag_colored = color(tag, Colors.RED)
                 status = "⚠ "
-            elif "@sha256" in tag:
-                tag_colored = color(tag, Colors.GREEN)  # Digest
-                status = "✓ "
             else:
-                tag_colored = color(tag, Colors.GREEN)  # Versioned
+                tag_colored = color(tag, Colors.GREEN)
                 status = "✓ "
 
             print(f"{status} {color(name, Colors.BLUE)}:{tag_colored}")
 
             # Show which files use this image
-            for f in files:
-                print(f"     └─ {f}")
+            for f, stage in files:
+                stage_label = f" ({stage})" if stage else ""
+                print(f"     └─ {f}{stage_label}")
             print()
 
         # Summary
         total = len(base_images)
-        unpinned = sum(
-            1
-            for img in base_images.keys()
-            if img.endswith(":latest") or not any(char.isdigit() for char in img.split(":")[-1])
-        )
+        unpinned = sum(1 for img in base_images if _classify_tag(img.rsplit(":", 1)[-1]) == "unpinned")
 
         print(color("=== Summary ===", Colors.CYAN))
         print(f"Total base images: {total}")
