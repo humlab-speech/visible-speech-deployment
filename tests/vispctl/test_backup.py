@@ -296,7 +296,8 @@ def _restore_tarball(tmp_path, tarball_path):
     runner = FakeRunner(tmp_path)
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
-    return bm.restore(tarball_path, force=True), runner
+    # no_snapshot: these tests assert on the restore call sequence itself
+    return bm.restore(tarball_path, force=True, no_snapshot=True), runner
 
 
 def test_restore_rejects_traversal_members(tmp_path, capsys):
@@ -320,6 +321,35 @@ def test_restore_rejects_symlink_members(tmp_path, capsys):
     res, _ = _restore_tarball(tmp_path, tb)
     assert res is False
     assert "unsafe" in capsys.readouterr().out
+
+
+def test_restore_refuses_while_writers_running(tmp_path, capsys):
+    tb = _make_tarball(tmp_path / "b.tar.gz", [("data/users/bson", b"x")])
+
+    class WritersRunningRunner(FakeRunner):
+        def run_quiet(self, cmd):
+            self.calls.append(("run_quiet", cmd))
+            if "is-active" in cmd:
+                unit = cmd[-1].replace(".service", "")
+                return 0, "active" if unit == "session-manager" else "inactive", ""
+            return super().run_quiet(cmd)
+
+    runner = WritersRunningRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+    res = bm.restore(tb, force=True, no_snapshot=True)
+    out = capsys.readouterr().out
+    assert res is False
+    assert "Refusing to restore" in out
+    assert "session-manager" in out
+    # refused before touching the database
+    assert not any(c[0] == "run" and c[1][:2] == ["podman", "cp"] for c in runner.calls)
+    assert not any("mongorestore" in str(c) for c in runner.calls)
+
+    # the override flag lets it proceed past the guard
+    capsys.readouterr()
+    res = bm.restore(tb, force=True, no_snapshot=True, allow_running_writers=True)
+    assert "Refusing to restore" not in capsys.readouterr().out
 
 
 def test_restore_rejects_fifo_members(tmp_path, capsys):

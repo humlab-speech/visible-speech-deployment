@@ -297,17 +297,50 @@ class BackupManager:
         print(color("✗ Backup file not found after copy", Colors.RED))
         return None
 
-    def restore(self, backup_file: Path, force: bool = False, drop: bool = False) -> bool:
+    def _unit_is_active(self, unit: str) -> bool:
+        rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", f"{unit}.service"])
+        return out.strip() == "active"
+
+    def restore(
+        self,
+        backup_file: Path,
+        force: bool = False,
+        drop: bool = False,
+        allow_running_writers: bool = False,
+        no_snapshot: bool = False,
+    ) -> bool:
         """Restore MongoDB from backup file. If force is False, prompt the user.
 
         With drop=False (default) collections present in the backup are MERGED
         with the current data (documents with the same _id are replaced, all
         other documents and collections are kept); with drop=True every
         restored collection is dropped first (a clean replacement).
+
+        Refuses to run while writer services are active (unless
+        allow_running_writers), and takes a pre-restore snapshot of the
+        current database first (unless no_snapshot) so a botched restore can
+        itself be rolled back.
         """
         b = Path(backup_file)
         if not b.exists():
             print(color(f"✗ Backup file not found: {b}", Colors.RED))
+            return False
+
+        # Hard guard: restoring while writers run interleaves live writes with
+        # the backup (merge) or loses them outright (--drop window).
+        running_writers = [
+            svc for svc in ("session-manager", "apache") if self._unit_is_active(svc)
+        ]
+        if running_writers and not allow_running_writers:
+            print(
+                color(
+                    "✗ Refusing to restore while writer services are running: "
+                    + ", ".join(running_writers),
+                    Colors.RED,
+                )
+            )
+            print(f"  Stop them first: ./visp.py stop {' '.join(running_writers)}")
+            print("  (pass --allow-running-writers to override at your own risk)")
             return False
 
         drop_note = (
@@ -318,8 +351,10 @@ class BackupManager:
         )
         print("This will restore the database from the backup.")
         print(f"  - {drop_note}")
-        print("  - Stop the services that write to MongoDB first (e.g. './visp.py stop session-manager')")
-        print("  - No automatic backup of the current database is taken.")
+        if no_snapshot:
+            print("  - ⚠ No snapshot of the current database will be taken (--no-snapshot)")
+        else:
+            print("  - A snapshot of the current database is taken first (skip with --no-snapshot)")
         if not force:
             try:
                 resp = input("Continue? (yes/no): ")
@@ -329,6 +364,19 @@ class BackupManager:
             if resp.strip().lower() not in ("yes", "y"):
                 print("Restore cancelled.")
                 return False
+
+        if not no_snapshot:
+            print("Taking pre-restore snapshot of current database...")
+            snapshot = self.backup()
+            if snapshot is None:
+                print(
+                    color(
+                        "✗ Pre-restore snapshot failed — aborting (re-run with --no-snapshot to skip)",
+                        Colors.RED,
+                    )
+                )
+                return False
+            print(color(f"  ✓ Snapshot: {snapshot}", Colors.GREEN))
 
         # Reject unsafe members before copying into the container.
         safe = self._validate_archive_members(b)

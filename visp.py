@@ -702,6 +702,8 @@ def cmd_restore(args):
         Path(args.backup_file),
         force=getattr(args, "force", False),
         drop=getattr(args, "drop", False),
+        allow_running_writers=getattr(args, "allow_running_writers", False),
+        no_snapshot=getattr(args, "no_snapshot", False),
     )
     if not ok:
         sys.exit(1)
@@ -1080,8 +1082,18 @@ Examples:
         "--drop",
         action="store_true",
         help="Drop each restored collection before restoring (full replacement). "
-        "By default existing collections are kept. Stop the services that write to "
-        "MongoDB first (e.g. './visp.py stop session-manager').",
+        "By default existing collections are kept. Restore is refused while "
+        "writer services are running — stop them first or use --allow-running-writers.",
+    )
+    p_restore.add_argument(
+        "--allow-running-writers",
+        action="store_true",
+        help="Restore even if writer services (session-manager, apache) are running — not recommended",
+    )
+    p_restore.add_argument(
+        "--no-snapshot",
+        action="store_true",
+        help="Skip the automatic pre-restore snapshot of the current database",
     )
 
     # users
