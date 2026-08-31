@@ -87,11 +87,10 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 # Build session images (if using Jupyter features)
 ./visp.py build jupyter-session
 
-# Install quadlets (netavark auto-configured)
+# Install quadlets (netavark auto-configured; ends with daemon-reload + restart of affected)
 ./visp.py install --mode prod
 
 # Start services
-./visp.py reload
 ./visp.py start all
 ```
 
@@ -101,10 +100,10 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 # Wait for MongoDB to start
 sleep 10
 
-# Stop MongoDB temporarily
-./visp.py stop mongo
+# Stop the services that write to MongoDB (mongo itself must stay running)
+./visp.py stop session-manager apache emu-webapp-server wsrng-server
 
-# Restore database
+# Restore database (a snapshot of the current DB is taken automatically first)
 ./visp.py restore ~/backups/visp_mongodb_YYYYMMDD.tar.gz --force
 
 # Restore repositories
@@ -172,8 +171,8 @@ After restore, your system should look like:
 
 ### Database restore fails
 ```bash
-# Check MongoDB is stopped
-./visp.py stop mongo
+# MongoDB must be RUNNING; the writer services must be stopped
+./visp.py stop session-manager apache emu-webapp-server wsrng-server
 # Try restore again
 ./visp.py restore backup.tar.gz --force
 ```

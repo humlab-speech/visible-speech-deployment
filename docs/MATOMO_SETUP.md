@@ -16,8 +16,7 @@ Matomo must be running:
 If not:
 
 ```bash
-./visp.py install --mode dev   # or prod
-./visp.py reload
+./visp.py install --mode dev   # or prod (ends with daemon-reload + restart of affected services)
 ./visp.py start all
 ```
 
