@@ -38,7 +38,12 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
             called.setdefault("prepared", []).append(svc_name)
             return True
 
-    runner = type("FakeRunner", (), {})()
+    class _FakeRunner:
+        def run_quiet(self, cmd, **kwargs):
+            # No containers running in this test — stale-image check finds nothing
+            return 1, "", ""
+
+    runner = _FakeRunner()
     monkeypatch.setattr(build_mod, "BuildManager", FakeBM)
     monkeypatch.setattr(build_mod, "Runner", lambda: runner)
 

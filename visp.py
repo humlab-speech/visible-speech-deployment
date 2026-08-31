@@ -387,9 +387,8 @@ def cmd_mode(args):
         print(f"Mode changed from {color(old_mode, _mode_color(old_mode))} to {color(new_mode, _mode_color(new_mode))}")
         print()
         print(color("To apply the new mode:", Colors.CYAN))
-        print(f"  1. ./visp.py install --mode {new_mode} --force")
-        print("  2. ./visp.py reload")
-        print("  3. ./visp.py restart all")
+        print(f"  ./visp.py install --mode {new_mode} --force")
+        print("  (install now finishes with daemon-reload + restart of affected services)")
     else:
         # Show current mode
         current = get_current_mode()

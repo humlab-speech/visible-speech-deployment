@@ -740,6 +740,19 @@ def cmd_build(
     print(color("=== Build Summary ===", Colors.CYAN))
     if results["success"]:
         print(color(f"  Successful: {', '.join(results['success'])}", Colors.GREEN))
+        # Nudge: containers still running are now on the old image
+        from .images import ImageManager
+        from .service import DEFAULT_SERVICES
+
+        built_svcs = [s for s in DEFAULT_SERVICES if s.name in results["success"]]
+        stale = ImageManager(runner).get_stale_containers(built_svcs)
+        for svc in stale:
+            print(
+                color(
+                    f"  ⚠ {svc.name} is running the old image — './visp.py apply {svc.name}' to go live",
+                    Colors.YELLOW,
+                )
+            )
     if results["skipped"]:
         print(
             color(

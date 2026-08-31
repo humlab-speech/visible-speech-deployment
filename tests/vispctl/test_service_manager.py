@@ -7,7 +7,9 @@ class FakeRunner:
         self.systemctl_calls = []
 
     def run_quiet(self, cmd):
-        # Simulate 'systemctl is-active' returning active
+        # Simulate units that are not running, so start/stop take the real path
+        if cmd and "is-active" in cmd:
+            return 0, "inactive", ""
         if cmd and cmd[0] == "podman":
             # podman network exists -> returncode 0 to indicate existence
             return 0, "", ""

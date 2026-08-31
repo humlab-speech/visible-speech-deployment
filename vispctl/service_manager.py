@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Iterable, List
 
@@ -61,6 +62,15 @@ class ServiceManager:
         # up via Requires= from the containers — no lifecycle action is needed.
         print(color(f"  ○ {svc.name}: network — skipped (comes up via Requires= from containers)", Colors.DIM))
 
+    def _is_image_stale(self, svc: Service) -> bool:
+        """True if the running container was started from an older image than :latest."""
+        if svc.type != "container":
+            return False
+        from .images import ImageManager
+
+        im = ImageManager(self.runner)
+        return any(s.name == svc.name for s in im.get_stale_containers([svc]))
+
     def start(self, names: Iterable[str] | str = "all") -> None:
         targets = self._resolve_targets(names)
         for svc in targets:
@@ -68,6 +78,17 @@ class ServiceManager:
                 self._note_skip_network(svc)
                 continue
             print(f"Starting {self._svc_name(svc)}...")
+            rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", self._svc_name(svc)])
+            if out.strip() == "active":
+                print(color("  Already running (start is a no-op)", Colors.YELLOW))
+                if self._is_image_stale(svc):
+                    print(
+                        color(
+                            f"  ⚠ running an older image than :latest — './visp.py apply {svc.name}' to go live",
+                            Colors.YELLOW,
+                        )
+                    )
+                continue
             res = self.runner.systemctl("start", self._svc_name(svc))
             if res.returncode != 0:
                 print(color(f"  Failed: {res.stderr}", Colors.RED))
@@ -123,6 +144,7 @@ class ServiceManager:
     def stop(self, names: Iterable[str] | str = "all") -> None:
         targets = self._resolve_targets(names, reverse=True)
 
+        stopped: list[Service] = []
         for svc in targets:
             if svc.type == "network":
                 self._note_skip_network(svc)
@@ -133,6 +155,22 @@ class ServiceManager:
                 print(color(f"  Failed: {res.stderr}", Colors.RED))
             else:
                 print(color("  Stopped", Colors.GREEN))
+                stopped.append(svc)
+
+        # Restart=always + Requires= chains can pull a stopped unit back up via
+        # a restarting dependent — verify it actually stayed down.
+        if stopped:
+            time.sleep(2)
+            for svc in stopped:
+                rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", self._svc_name(svc)])
+                if out.strip() == "active":
+                    print(
+                        color(
+                            f"  ⚠ {svc.name} came back up (dependency/restart) — "
+                            f"'./visp.py down {svc.name}' to keep it off",
+                            Colors.YELLOW,
+                        )
+                    )
 
     def disable(self, names: Iterable[str] | str = "all") -> None:
         targets = self._resolve_targets(names, reverse=True)

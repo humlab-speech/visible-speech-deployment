@@ -906,7 +906,6 @@ def run_install(
 
     print()
     print(f"Mode set to: {color(mode, Colors.MAGENTA)}")
-    print("Run './visp.py reload' to apply changes.")
 
     # --- Phase 13: check for missing external repos ---
     from .versions import DEFAULT_VERSIONS_CONFIG
@@ -949,3 +948,13 @@ def run_install(
     # --- Phase 15: build container-agent dist for dev mode ---
     if mode == "dev":
         _ensure_container_agent_dist(project_dir, runner)
+
+    # --- Phase 16: converge — daemon-reload + restart affected services ---
+    # Ends install with the same primitive 'visp.py apply' uses, so a manual
+    # 'reload' + 'restart' dance is never needed after an install.
+    from types import SimpleNamespace
+
+    from .quadlets import cmd_apply
+
+    print()
+    cmd_apply(SimpleNamespace(service="all"), project_dir=project_dir, systemd_dir=systemd_dir, runner=runner)
