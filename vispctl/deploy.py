@@ -7,6 +7,7 @@ from typing import Optional
 
 from .build import BUILD_CONFIGS, NODE_BUILD_CONFIGS
 from .git_repo import GitRepository
+from .runner import Colors, color
 from .versions import ComponentConfig
 
 # Try to import tabulate for nice table formatting
@@ -407,6 +408,24 @@ class DeployManager:
 
         return image_status_rows
 
+    def _check_quadlets(self) -> tuple[list[dict], list[str]]:
+        """Compare installed quadlets against rendered source templates.
+
+        Returns ``(rows, names)`` where rows are table rows for drifted or
+        missing quadlets and names are the affected service names.
+        """
+        from .config import get_config
+        from .quadlets import get_current_mode, get_quadlet_drift, get_quadlets_dir, render_quadlet_template
+        from .service import get_runtime_services
+
+        systemd_dir = get_config().systemd_dir
+        quadlets_dir = get_quadlets_dir(get_current_mode())
+        services = get_runtime_services(self.basedir)
+        drifted, not_installed = get_quadlet_drift(services, quadlets_dir, systemd_dir, render_quadlet_template)
+        rows = [{"Quadlet": s.name, "Status": "⚠ OUT OF DATE"} for s in drifted]
+        rows += [{"Quadlet": s.name, "Status": "❌ NOT INSTALLED"} for s in not_installed]
+        return rows, [s.name for s in drifted + not_installed]
+
     def _check_third_party_images(self) -> list[dict]:
         """Scan quadlet files for third-party images and check if they are pulled.
 
@@ -689,6 +708,21 @@ class DeployManager:
             print("-" * 100)
             print(tabulate(third_party_rows, headers="keys", tablefmt="grid"))
 
+        quadlet_rows, quadlet_names = self._check_quadlets()
+        if quadlet_rows:
+            from .quadlets import get_current_mode
+
+            print("\n🧩 QUADLETS (installed vs rendered source)")
+            print("-" * 100)
+            print(tabulate(quadlet_rows, headers="keys", tablefmt="grid"))
+            print(
+                color(
+                    f"⚠  QUADLET DRIFT ({', '.join(quadlet_names)}): installed quadlets differ from "
+                    f"quadlets/{get_current_mode()}/ — run './visp.py apply'",
+                    Colors.RED,
+                )
+            )
+
         print("=" * 100)
 
         # Summary
@@ -699,6 +733,7 @@ class DeployManager:
             repos_ahead,
             repos_behind,
             node_build_warnings,
+            quadlet_names,
         )
 
         for line in summary_lines:
@@ -715,6 +750,7 @@ class DeployManager:
         repos_ahead: list[str],
         repos_behind: list[str],
         node_build_warnings: list[str],
+        quadlet_names: list[str] | None = None,
     ) -> tuple[list[str], bool]:
         """Build the situation-overview / recommended-actions summary lines.
 
@@ -755,6 +791,14 @@ class DeployManager:
 
         # (summary line, build targets, restart targets or None)
         work: list[tuple[str, list[str], list[str] | None]] = []
+        if quadlet_names:
+            work.append(
+                (
+                    f"⚠  Quadlets out of date or missing (installed files differ from source): {', '.join(quadlet_names)}",
+                    [],
+                    None,
+                )
+            )
         for rows, label, restart in (
             (not_built, "❌ Components not built", None),
             (needs_rebuild, "⚠  Components need rebuild (source changed)", True),
@@ -807,6 +851,9 @@ class DeployManager:
         to_build = list(dict.fromkeys(to_build))
         if to_build:
             actions.append(f"./visp.py build {' '.join(to_build)}")
+
+        if quadlet_names:
+            actions.append("./visp.py apply")
 
         # If any images were rebuilt, suggest restart
         restart_candidates = list(dict.fromkeys(restart_candidates))

@@ -78,9 +78,12 @@ def cmd_show(args) -> None:
     print(f"  {'System Role:':<20} {role_str}")
     print()
 
-    memberships = mongosh_json(
-        f"db.projects.find({{'members.username': '{js_escape(username)}'}}, {{id: 1, name: 1, members: 1}}).toArray()"
-    ) or []
+    memberships = (
+        mongosh_json(
+            f"db.projects.find({{'members.username': '{js_escape(username)}'}}, {{id: 1, name: 1, members: 1}}).toArray()"
+        )
+        or []
+    )
     print(_color("  Project roles:", Colors.YELLOW))
     if memberships:
         for project in memberships:

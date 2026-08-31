@@ -431,9 +431,7 @@ def main() -> int:
         print(color("Running in DRY RUN mode — pass --apply to write changes.", C.YELLOW))
         print()
 
-    summary = mongosh_json(
-        build_migration_js(args.apply, args.delete_orphan_invite_codes)
-    )
+    summary = mongosh_json(build_migration_js(args.apply, args.delete_orphan_invite_codes))
 
     if not isinstance(summary, dict):
         print(color("Migration failed: unexpected response from mongosh", C.RED), file=sys.stderr)
