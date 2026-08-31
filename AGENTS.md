@@ -631,7 +631,7 @@ Third-party images that are pulled from registries (e.g. `docker.io/library/trae
 | Source mounts          | `external/` mounted into containers      | code baked into images              |
 | Quadlet source         | `quadlets/dev/`                          | `quadlets/prod/`                    |
 
-Switch modes with `./visp.py install --mode <dev|prod> --force && ./visp.py reload`.
+Switch modes with `./visp.py install --mode <dev|prod> --force` (ends with daemon-reload + restart of affected services).
 
 ---
 
