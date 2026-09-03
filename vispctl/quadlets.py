@@ -82,6 +82,69 @@ def get_quadlet_drift(
     return drifted, not_installed
 
 
+def remove_stale_quadlets(
+    systemd_dir: Path,
+    project_dir: Path,
+    runner,
+    *,
+    stop: bool = True,
+) -> list[str]:
+    """Remove installed quadlet files that no longer exist in the service registry.
+
+    Handles renamed or removed services (e.g. OCTRA → TRATT): the registry only
+    knows the current service list, so units rendered by an older version of the
+    repo would otherwise linger in the systemd directory and auto-start on boot.
+
+    Only quadlets that reference this project's directory are considered VISP
+    units — user-owned quadlets in the shared ~/.config/containers/systemd/
+    directory are never touched. Network quadlets are removed when referenced
+    by a removed container quadlet.
+
+    Returns the list of removed file names.
+    """
+    from .service import DEFAULT_SERVICES
+
+    if not systemd_dir.is_dir():
+        return []
+
+    known_files = {svc.file for svc in DEFAULT_SERVICES}
+    project_path = str(project_dir)
+    removed: list[str] = []
+
+    def _stop(unit: str) -> None:
+        if stop:
+            runner.systemctl("stop", unit)
+
+    for container_file in sorted(systemd_dir.glob("*.container")):
+        if container_file.name in known_files:
+            continue
+        try:
+            content = container_file.read_text()
+        except OSError:
+            continue
+        if project_path not in content:
+            continue  # not a rendered VISP quadlet — leave user units alone
+
+        _stop(f"{container_file.stem}.service")
+        container_file.unlink()
+        removed.append(container_file.name)
+        print(color(f"  ✓ {container_file.name}: removed (stale — not in service registry)", Colors.GREEN))
+
+        for line in content.splitlines():
+            line = line.strip()
+            if not line.startswith("Network="):
+                continue
+            net_file = systemd_dir / line.split("=", 1)[1].strip()
+            if net_file.name in known_files or not net_file.is_file():
+                continue
+            _stop(f"{net_file.stem}-network.service")
+            net_file.unlink()
+            removed.append(net_file.name)
+            print(color(f"  ✓ {net_file.name}: removed (stale network of {container_file.name})", Colors.GREEN))
+
+    return removed
+
+
 def setup_service_env_files(project_dir: Path) -> None:
     """Create service-specific .env files from templates if they don't exist.
 

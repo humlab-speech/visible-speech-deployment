@@ -304,6 +304,15 @@ def cmd_uninstall(args):
         if remove_autostart_dropin(cfg.systemd_dir, svc):
             print(color(f"  ✓ {svc.file}.d/90-visp-autostart.conf: removed", Colors.GREEN))
 
+    if args.service == "all":
+        # Remove units rendered by an older version of the repo (e.g. after a
+        # service rename) that are no longer in the service registry.
+        from vispctl.quadlets import remove_stale_quadlets
+
+        stale = remove_stale_quadlets(cfg.systemd_dir, cfg.project_dir, cfg.runner, stop=not args.keep_running)
+        if stale:
+            print(color(f"  {len(stale)} stale unit(s) removed", Colors.YELLOW))
+
     print()
 
     print(color("Removing Podman secrets...", Colors.CYAN))
