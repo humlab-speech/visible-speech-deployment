@@ -22,7 +22,7 @@ class Service:
 DEFAULT_SERVICES: list[Service] = [
     # Networks first
     Service("visp-net", "network", "visp-net.network"),
-    Service("octra-net", "network", "octra-net.network"),
+    Service("tratt-net", "network", "tratt-net.network"),
     # Then containers in dependency order
     Service("mongo", "container", "mongo.container"),
     Service("mongo-express", "container", "mongo-express.container", dev_only=True),
@@ -35,7 +35,7 @@ DEFAULT_SERVICES: list[Service] = [
     Service("session-manager", "container", "session-manager.container"),
     Service("artic", "container", "artic.container"),
     Service("emu-webapp-server", "container", "emu-webapp-server.container"),
-    Service("octra", "container", "octra.container"),
+    Service("tratt", "container", "tratt.container"),
     Service("apache", "container", "apache.container"),
 ]
 

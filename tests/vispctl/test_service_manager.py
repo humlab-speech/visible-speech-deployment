@@ -107,11 +107,11 @@ def test_stop_all_skips_networks(capsys):
     # Containers are stopped, networks are skipped with a note.
     assert "Stopping mongo.service" in out
     assert "visp-net.service" not in out
-    assert "octra-net.service" not in out
+    assert "tratt-net.service" not in out
     assert out.count("skipped") == 2
     stopped = [arg for call in fr.systemctl_calls if call[0] == "stop" for arg in call]
     assert "visp-net.service" not in stopped
-    assert "octra-net.service" not in stopped
+    assert "tratt-net.service" not in stopped
     assert "mongo.service" in stopped
 
 

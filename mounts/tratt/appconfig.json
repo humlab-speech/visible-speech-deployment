@@ -1,20 +1,18 @@
 {
   "version": "2.0.0",
-  "api": {
-    "url": "",
-    "appToken": ""
-  },
-  "audio_server": {
-    "url": ""
-  },
-  "octra": {
+  "tratt": {
     "database": {
-      "name": "octra"
+      "name": "tratt"
     },
     "login": {
       "enabled": false
     },
     "supportEmail": "support@humlab.umu.se",
+    "manual": {
+      "url": "https://humlab-speech.github.io/TRATT/manual/",
+      "pageExtension": ".html",
+      "locales": ["en", "sv"]
+    },
     "showdetails": false,
     "responsive": {
       "enabled": true,

@@ -1,8 +1,11 @@
 """Tests for vispctl/install.py."""
 
+import shutil
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
@@ -21,6 +24,7 @@ from vispctl.install import (
     install_quadlets,
     normalize_repository_ownership,
     scaffold_directories,
+    sync_octra_redirect_vhost,
     verify_repository_write_access,
 )
 from vispctl.service import Service
@@ -622,3 +626,48 @@ def test_cleanup_dev_only_removes_dropin(tmp_path):
 
     assert not (systemd_dir / "local-idp.container").exists()
     assert not dropin_dir.exists()
+
+
+# ---------------------------------------------------------------------------
+# sync_octra_redirect_vhost
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def redirect_tree(tmp_path):
+    """Minimal apache dir with both redirect templates."""
+    apache = tmp_path / "mounts" / "apache" / "apache"
+    for d in ("vhosts-http", "vhosts-https"):
+        (apache / d).mkdir(parents=True)
+    repo = Path(__file__).resolve().parents[2]
+    for name in ("octra-redirect.vhost.template", "octra-redirect-https.vhost.template"):
+        shutil.copy(repo / "mounts" / "apache" / "apache" / name, apache / name)
+    return tmp_path, apache
+
+
+def test_redirect_vhost_rendered_when_subdomain_differs(redirect_tree):
+    project_dir, apache = redirect_tree
+    sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp.local", "TRATT_SUBDOMAIN": "tratt"})
+    http = (apache / "vhosts-http" / "octra-redirect.vhost.conf").read_text()
+    https = (apache / "vhosts-https" / "octra-redirect.vhost.conf").read_text()
+    assert "http://tratt.${BASE_DOMAIN}$1 [R=301,L]" in http
+    assert "https://tratt.${BASE_DOMAIN}$1 [R=301,L]" in https
+    assert "ServerName octra.${BASE_DOMAIN}" in http
+
+
+def test_redirect_vhost_removed_when_subdomain_is_octra(redirect_tree):
+    project_dir, apache = redirect_tree
+    # Render first, then switch profile — the file must go away (it would
+    # shadow the live vhost and loop otherwise).
+    sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp.local", "TRATT_SUBDOMAIN": "tratt"})
+    assert (apache / "vhosts-http" / "octra-redirect.vhost.conf").exists()
+    sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp-demo.se", "TRATT_SUBDOMAIN": "octra"})
+    assert not (apache / "vhosts-http" / "octra-redirect.vhost.conf").exists()
+    assert not (apache / "vhosts-https" / "octra-redirect.vhost.conf").exists()
+
+
+def test_redirect_vhost_defaults_to_tratt(redirect_tree):
+    project_dir, apache = redirect_tree
+    sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp.local"})
+    http = (apache / "vhosts-http" / "octra-redirect.vhost.conf").read_text()
+    assert "http://tratt.${BASE_DOMAIN}$1 [R=301,L]" in http

@@ -296,7 +296,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 ### Build & Images
 
 - [x] **Audit Dockerfiles for version consistency**
-  - `docker/octra/Dockerfile`: pinned to commit hash ✅
+  - `docker/tratt/Dockerfile`: pinned to commit hash ✅
   - `docker/whisper/Dockerfile`: pinned to commit hash, marked NOT USED ✅
   - `docker/session-manager/build-context/Dockerfile`: marked NOT USED ✅
   - External repo Dockerfiles (floating `git clone`) tracked as upstream PRs needed

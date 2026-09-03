@@ -109,3 +109,4 @@ johan-todo.md
 
 # PHP session store (runtime state)
 mounts/apache/php-sessions/*
+mounts/apache/apache/vhosts-*/octra-redirect.vhost.conf

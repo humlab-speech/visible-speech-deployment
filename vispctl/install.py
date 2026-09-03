@@ -503,6 +503,34 @@ def generate_tracker_config(project_dir: Path, env_vars: dict[str, str]) -> None
         print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
 
 
+def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> None:
+    """
+    OCTRA was renamed to TRATT. While the deployment serves TRATT under a new
+    subdomain (TRATT_SUBDOMAIN != octra), render a 301 redirect vhost for the
+    old octra.* name into both vhost directories (old links and the not-yet
+    renamed webclient keep working). When TRATT_SUBDOMAIN == octra (DNS kept
+    the old name) the redirect vhost would shadow the live vhost and loop —
+    remove it instead.
+    """
+    subdomain = (env_vars.get("TRATT_SUBDOMAIN") or "tratt").strip() or "tratt"
+    base_domain = (env_vars.get("BASE_DOMAIN") or "").strip()
+    apache_dir = project_dir / "mounts" / "apache" / "apache"
+    templates = {
+        "vhosts-http": apache_dir / "octra-redirect.vhost.template",
+        "vhosts-https": apache_dir / "octra-redirect-https.vhost.template",
+    }
+
+    for vdir, template in templates.items():
+        target = apache_dir / vdir / "octra-redirect.vhost.conf"
+        if subdomain != "octra" and base_domain and template.exists():
+            content = template.read_text().replace("{{TRATT_SUBDOMAIN}}", subdomain)
+            target.write_text(content)
+            print(color(f"  ✓ octra.* → {subdomain}.* redirect vhost ({vdir})", Colors.GREEN))
+        elif target.exists():
+            target.unlink()
+            print(color(f"  ✓ Removed octra.* redirect vhost ({vdir}) — TRATT_SUBDOMAIN=octra", Colors.DIM))
+
+
 def install_quadlets(
     quadlets_dir: Path,
     systemd_dir: Path,
@@ -849,8 +877,9 @@ def run_install(
     verify_repository_write_access(project_dir)
     print()
 
-    # --- Phase 7: tracker config (vc.js) ---
+    # --- Phase 7: tracker config (vc.js) + OCTRA→TRATT redirect vhost ---
     generate_tracker_config(project_dir, env_vars)
+    sync_octra_redirect_vhost(project_dir, env_vars)
     print()
 
     # --- Phase 8: dev certs + local IdP files (dev only) ---

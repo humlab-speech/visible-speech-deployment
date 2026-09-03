@@ -1,0 +1,32 @@
+# Transitional redirect: OCTRA was renamed to TRATT.
+# Rendered by ./visp.py install into vhosts-https/ while TRATT_SUBDOMAIN != octra,
+# so old links and the (not yet renamed) webclient keep working.
+# Do not edit the rendered file — edit this template.
+<VirtualHost *:80>
+  ServerName octra.${BASE_DOMAIN}
+
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteRule (.*) https://octra.${BASE_DOMAIN}/$1 [R,L]
+
+</VirtualHost>
+
+<VirtualHost *:443>
+
+  ServerName octra.${BASE_DOMAIN}
+
+  SSLProtocol All -SSLv2 -SSLv3
+  SSLCompression Off
+  SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+AESGCM EECDH EDH+AESGCM EDH+aRSA HIGH !MEDIUM !LOW !aNULL !eNULL !LOW"
+  SSLEngine On
+
+  SSLCertificateFile /etc/certs/${BASE_DOMAIN}/cert.crt
+  SSLCertificateKeyFile /etc/certs/${BASE_DOMAIN}/cert.key
+
+  RewriteEngine On
+  RewriteRule (.*) https://{{TRATT_SUBDOMAIN}}.${BASE_DOMAIN}$1 [R=301,L]
+
+  ErrorLog ${APACHE_LOG_DIR}/octra-redirect-error.log
+  CustomLog ${APACHE_LOG_DIR}/octra-redirect-access.log combined
+
+</VirtualHost>
