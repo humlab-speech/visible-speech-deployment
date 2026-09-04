@@ -103,8 +103,10 @@ Click **Next »**.
 ## Step 6b — Register All Subdomains (REQUIRED for cross-subdomain tracking)
 
 > ⚠️ **This step is required.** Without it, Matomo silently drops tracking hits from
-> any subdomain not listed as an allowed URL for the site. Visits from `octra.*` and
+> any subdomain not listed as an allowed URL for the site. Visits from `tratt.*` and
 > `artic.*` will not appear in the dashboard even though the tracker script runs fine.
+> (The TRATT subdomain prefix comes from `TRATT_SUBDOMAIN` in `.env` — `tratt` by
+> default, `octra` on machines that kept the old DNS name.)
 
 After completing the wizard, go to:
 **Administration → Measurables (Sites) → Manage** → click the site → scroll down to
@@ -115,7 +117,7 @@ Add **all** subdomains that load `vc.js`:
 | Subdomain URL                         | Has tracker? |
 |---------------------------------------|--------------|
 | `https://BASE_DOMAIN`                 | ✅ (main site, already set as `main_url`) |
-| `https://octra.BASE_DOMAIN`           | ✅ (`vc.js` injected via `octra.vhost.conf`) |
+| `https://${TRATT_SUBDOMAIN}.BASE_DOMAIN` | ✅ (`vc.js` injected via `tratt.vhost.conf`) |
 | `https://artic.BASE_DOMAIN`       | ✅ (`vc.js` injected via `artic.vhost.conf`) |
 | `https://recorder.BASE_DOMAIN`        | ✅ (`vc.js` injected via `recorder.vhost.conf`) |
 

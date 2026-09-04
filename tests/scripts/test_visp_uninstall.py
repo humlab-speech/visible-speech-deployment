@@ -167,6 +167,30 @@ def test_cmd_uninstall_all_removes_stale_units(tmp_path, monkeypatch, capsys):
     assert "stale" in out
 
 
+def test_cmd_uninstall_all_removes_stale_units_from_old_repo_path(tmp_path, monkeypatch, capsys):
+    """Units rendered from an older checkout location are still VISP units.
+
+    Regression test for the emu-webapp incident: the quadlet embedded the old
+    repo path, so the path check alone missed it and the unit respawned its
+    container after manual removal. The localhost/visp-* image convention is
+    the path-independent marker.
+    """
+    vp = load_visp_module()
+    systemd_dir, _ = _setup(tmp_path, monkeypatch, vp)
+    (systemd_dir / "emu-webapp.container").write_text(
+        "[Container]\n"
+        "ContainerName=emu-webapp\n"
+        "Image=localhost/visp-emu-webapp:latest\n"
+        "Volume=/old/repo/location/mounts/emu-webapp/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z\n"
+    )
+
+    args = types.SimpleNamespace(service="all", keep_running=True, remove_networks=False, force=True)
+    vp.cmd_uninstall(args)
+
+    assert not (systemd_dir / "emu-webapp.container").exists()
+    assert "stale" in capsys.readouterr().out
+
+
 def test_cmd_uninstall_all_keeps_user_quadlets(tmp_path, monkeypatch, capsys):
     """User-owned quadlets in the shared systemd dir are never touched."""
     vp = load_visp_module()

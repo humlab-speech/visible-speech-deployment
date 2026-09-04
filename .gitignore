@@ -91,6 +91,7 @@ mounts/vscode/
 
 *.WAV
 *.wav
+!docker/tratt/demo_file.wav
 
 # WhisperX model cache and outputs (host mounts)
 mounts/whisperx/models/*

@@ -13,8 +13,8 @@ RUN apt-get update && \
 RUN git clone --branch humlab-3.0.1 --depth 1 https://github.com/humlab-speech/TRATT.git . && \
     git checkout 59f9c1f7777ab68e92e10e88ef20cb005ee8b3a4
 
-# Install dependencies
-RUN npm install
+# Install dependencies (ci = exact lockfile, reproducible build)
+RUN npm ci
 
 # Build the release: production build that strips the bundled appconfig.json,
 # so the deployment's mounted config (mounts/tratt/appconfig.json) is the

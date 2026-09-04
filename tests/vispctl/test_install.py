@@ -650,8 +650,9 @@ def test_redirect_vhost_rendered_when_subdomain_differs(redirect_tree):
     sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp.local", "TRATT_SUBDOMAIN": "tratt"})
     http = (apache / "vhosts-http" / "octra-redirect.vhost.conf").read_text()
     https = (apache / "vhosts-https" / "octra-redirect.vhost.conf").read_text()
-    assert "http://tratt.${BASE_DOMAIN}$1 [R=301,L]" in http
-    assert "https://tratt.${BASE_DOMAIN}$1 [R=301,L]" in https
+    # Static copy — Apache resolves ${TRATT_SUBDOMAIN} from the EnvironmentFile.
+    assert "http://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]" in http
+    assert "https://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]" in https
     assert "ServerName octra.${BASE_DOMAIN}" in http
 
 
@@ -670,4 +671,4 @@ def test_redirect_vhost_defaults_to_tratt(redirect_tree):
     project_dir, apache = redirect_tree
     sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp.local"})
     http = (apache / "vhosts-http" / "octra-redirect.vhost.conf").read_text()
-    assert "http://tratt.${BASE_DOMAIN}$1 [R=301,L]" in http
+    assert "http://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]" in http

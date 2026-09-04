@@ -1,12 +1,13 @@
 # Transitional redirect: OCTRA was renamed to TRATT.
-# Rendered by ./visp.py install into vhosts/ while TRATT_SUBDOMAIN != octra,
-# so old links and the (not yet renamed) webclient keep working.
-# Do not edit the rendered file — edit this template.
+# Copied verbatim by ./visp.py install into vhosts-http/ while
+# TRATT_SUBDOMAIN != octra, so old links and the (not yet renamed) webclient
+# keep working. All ${VARS} are resolved by Apache from the .env EnvironmentFile.
+# Do not edit the copied file — edit this template.
 <VirtualHost *:80>
   ServerName octra.${BASE_DOMAIN}
 
   RewriteEngine On
-  RewriteRule (.*) http://{{TRATT_SUBDOMAIN}}.${BASE_DOMAIN}$1 [R=301,L]
+  RewriteRule (.*) http://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]
 
   ErrorLog ${APACHE_LOG_DIR}/octra-redirect-error.log
   CustomLog ${APACHE_LOG_DIR}/octra-redirect-access.log combined

@@ -95,21 +95,29 @@ def remove_stale_quadlets(
     knows the current service list, so units rendered by an older version of the
     repo would otherwise linger in the systemd directory and auto-start on boot.
 
-    Only quadlets that reference this project's directory are considered VISP
-    units — user-owned quadlets in the shared ~/.config/containers/systemd/
-    directory are never touched. Network quadlets are removed when referenced
-    by a removed container quadlet.
+    A unit is treated as VISP-owned if it embeds this project's path OR uses the
+    localhost/visp-* image convention — the path alone misses units rendered from
+    an older checkout location (they would respawn their containers after manual
+    removal). User-owned quadlets in the shared ~/.config/containers/systemd/
+    directory match neither marker and are never touched. Network quadlets are
+    removed when referenced by a removed container quadlet (the only case where
+    VISP-ownership is provable — bare .network files carry no marker).
 
     Returns the list of removed file names.
     """
+    import shutil
+
     from .service import DEFAULT_SERVICES
 
     if not systemd_dir.is_dir():
         return []
 
     known_files = {svc.file for svc in DEFAULT_SERVICES}
-    project_path = str(project_dir)
+    project_path = str(project_dir) + "/"
     removed: list[str] = []
+
+    def _is_visp_unit(content: str) -> bool:
+        return project_path in content or "localhost/visp-" in content
 
     def _stop(unit: str) -> None:
         if stop:
@@ -122,13 +130,19 @@ def remove_stale_quadlets(
             content = container_file.read_text()
         except OSError:
             continue
-        if project_path not in content:
-            continue  # not a rendered VISP quadlet — leave user units alone
+        if not _is_visp_unit(content):
+            continue  # not a VISP quadlet — leave user units alone
 
         _stop(f"{container_file.stem}.service")
         container_file.unlink()
         removed.append(container_file.name)
         print(color(f"  ✓ {container_file.name}: removed (stale — not in service registry)", Colors.GREEN))
+
+        dropin_dir = systemd_dir / f"{container_file.stem}.container.d"
+        if dropin_dir.is_dir():
+            shutil.rmtree(dropin_dir)
+            removed.append(f"{container_file.stem}.container.d/")
+            print(color(f"  ✓ {container_file.stem}.container.d/: removed (stale autostart drop-in)", Colors.GREEN))
 
         for line in content.splitlines():
             line = line.strip()

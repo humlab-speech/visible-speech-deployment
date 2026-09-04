@@ -506,11 +506,12 @@ def generate_tracker_config(project_dir: Path, env_vars: dict[str, str]) -> None
 def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> None:
     """
     OCTRA was renamed to TRATT. While the deployment serves TRATT under a new
-    subdomain (TRATT_SUBDOMAIN != octra), render a 301 redirect vhost for the
+    subdomain (TRATT_SUBDOMAIN != octra), copy the static redirect vhost for the
     old octra.* name into both vhost directories (old links and the not-yet
     renamed webclient keep working). When TRATT_SUBDOMAIN == octra (DNS kept
     the old name) the redirect vhost would shadow the live vhost and loop —
-    remove it instead.
+    remove it instead. The vhost itself uses ${TRATT_SUBDOMAIN}, resolved by
+    Apache from the .env EnvironmentFile like every other vhost.
     """
     subdomain = (env_vars.get("TRATT_SUBDOMAIN") or "tratt").strip() or "tratt"
     base_domain = (env_vars.get("BASE_DOMAIN") or "").strip()
@@ -523,8 +524,7 @@ def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> No
     for vdir, template in templates.items():
         target = apache_dir / vdir / "octra-redirect.vhost.conf"
         if subdomain != "octra" and base_domain and template.exists():
-            content = template.read_text().replace("{{TRATT_SUBDOMAIN}}", subdomain)
-            target.write_text(content)
+            target.write_text(template.read_text())
             print(color(f"  ✓ octra.* → {subdomain}.* redirect vhost ({vdir})", Colors.GREEN))
         elif target.exists():
             target.unlink()
@@ -923,10 +923,13 @@ def run_install(
         print(color(f"No quadlet files found in {quadlets_dir}", Colors.RED))
         return
 
-    # --- Phase 11: cleanup stale disabled-service quadlets ---
+    # --- Phase 11: cleanup stale quadlets (disabled, dev-only, renamed) ---
     if service_arg == "all":
+        from .quadlets import remove_stale_quadlets
+
         cleanup_disabled_optional_services(all_services, disabled_optional, systemd_dir)
         cleanup_dev_only_services(all_services, mode, systemd_dir)
+        remove_stale_quadlets(systemd_dir, project_dir, runner, stop=False)
 
     # --- Phase 12: save mode, print next steps ---
     from .quadlets import get_current_mode, set_current_mode
