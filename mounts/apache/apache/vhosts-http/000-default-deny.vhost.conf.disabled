@@ -1,0 +1,56 @@
+# =============================================================================
+# Default (catch-all) vhost - Host allowlist enforcement  [PRODUCTION / port 80]
+# =============================================================================
+# Apache uses the FIRST vhost defined for a given address:port as the fallback
+# for any request whose Host header matches no other vhost. Today that slot is
+# held by vhost.conf, which means an unrecognised hostname is served the
+# production application. This file exists to take that slot and reject those
+# requests instead.
+#
+# Production terminates TLS upstream (UmU load balancer), so Apache only
+# listens on :80 here. See the vhosts-https twin for the dev configuration.
+#
+# ---------------------------------------------------------------------------
+# SHIPPED DISABLED. To activate:
+#     mv 000-default-deny.vhost.conf.disabled 000-default-deny.vhost.conf
+#     ./visp.py restart apache
+#
+# apache2.conf already includes this filename ahead of vhost.conf and uses
+# IncludeOptional, which does not error when the file is absent - so the
+# rename is the only step. To roll back, rename it back and restart.
+# ---------------------------------------------------------------------------
+#
+# BEFORE ACTIVATING, read logs/apache2/unexpected-host.log. It records every
+# request reaching the catch-all under a hostname we do not expect. Anything
+# legitimate in there needs a ServerAlias on vhost.conf first, or activating
+# this file will break it.
+#
+# Known internal callers that MUST keep working (already aliased on vhost.conf):
+#   - Host: apache        session-manager authenticates WebSocket upgrades by
+#                         calling http://apache/api/api.php?f=session
+#                         (external/session-manager/src/ApiServer.class.js,
+#                         authenticateWebSocketUser). If this breaks, nobody
+#                         can open an RStudio/Jupyter/VSCode session.
+#   - Host: edge-router   legacy alias from the previous nginx architecture.
+#                         No code in this repo references it, but the host-level
+#                         proxy might - the log will confirm before we remove it.
+#
+# Health checks are the other thing to watch for: a checker that connects by IP
+# sends no Host header at all, lands here, and would start seeing 403s.
+#
+# NOTE: no ACME exception is configured. TLS is handled by UmU IT upstream, so
+# no /.well-known/acme-challenge traffic should reach this host. If that ever
+# changes, this vhost needs an exception for that path.
+# =============================================================================
+
+<VirtualHost *:80>
+  ServerName invalid.localhost
+
+  # Everything reaching this vhost arrived under an unrecognised hostname.
+  <Location "/">
+    Require all denied
+  </Location>
+
+  ErrorLog ${APACHE_LOG_DIR}/rejected-host-error.log
+  CustomLog ${APACHE_LOG_DIR}/rejected-host-access.log host_combined
+</VirtualHost>
