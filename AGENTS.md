@@ -80,12 +80,12 @@ no Apache rebuild needed for changes). Overview:
 | `BASE_DOMAIN` | `vhost.conf` | (serves directly) | Main webclient (Angular SPA) + PHP API at `/api/v1/` |
 | `app.BASE_DOMAIN` | `app.vhost.conf` | `session-manager:80` | Session iframe — webclient loads Jupyter sessions here (`?token=...`) |
 | `artic.BASE_DOMAIN` | `artic.vhost.conf` | `artic/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
-| `octra.BASE_DOMAIN` | `octra.vhost.conf` | `octra/` | Octra transcription tool |
+| `tratt.BASE_DOMAIN` | `tratt.vhost.conf` | `tratt/` | TRATT transcription tool (formerly OCTRA; subdomain prefix from `TRATT_SUBDOMAIN` in `.env`) |
 | `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
 | `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
 | `mongo.BASE_DOMAIN` | `mongo.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
 
-Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `octra.*`, `recorder.*`.
+Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `recorder.*`.
 `app.*` intentionally has no tracker (serves only iframe content, never a standalone page).
 `matomo.*` and `me.*` are infrastructure — no tracker needed.
 
@@ -109,7 +109,7 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `octra.*`, `
   Data stored in `mounts/matomo-db/mysql/`.
 - **emu-webapp-server** — EMU backend
 - **artic** — EMU web interface
-- **octra** — Transcription tool
+- **tratt** — Transcription tool (TRATT, continued development of OCTRA)
 - **wsrng-server** — Web Speech Recorder server
 - **whisperx** (optional) — Speech-to-text transcription service
 
@@ -118,7 +118,7 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `octra.*`, `
   - Single source of truth: `external/webclient/api/api.php` (~1700 lines)
   - Accessed at `/api/v1/...` routes through Apache `Alias /api /var/www/html/api` + RewriteRule
   - Also handles `?f=session` session validation (called by session-manager)
-  - Includes file download handler (`getFileDownload`, `getOctraTask`) for Octra
+  - Includes file download handler (`getFileDownload`, `getOctraTask`) for TRATT (handler names still say "Octra" — internal, pre-rename)
   - Uses MongoDB-based `userHasProjectAuthorization()` for project access checks
   - Communicates with session-manager via HTTP to manage sessions
   - Application logs written to `/var/log/api/webapi.log` and `/var/log/api/webapi.debug.log`
@@ -607,7 +607,7 @@ localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isol
 localhost/visp-podman-socket-proxy:latest  # Body-inspecting socket proxy between session-manager and Podman
 localhost/visp-artic:latest
 localhost/visp-emu-webapp-server:latest
-localhost/visp-octra:latest
+localhost/visp-tratt:latest
 localhost/visp-wsrng-server:latest
 localhost/visp-whisperx:latest          # WhisperVault main container
 ```
@@ -705,7 +705,7 @@ docs(agents): add AGENTS.md with project conventions
 
 ```
 systemd-visp-net      — main internal network (apache, session-manager, mongo, wsrng-server, matomo, matomo-db, …)
-systemd-octra-net     — octra isolation network
+systemd-tratt-net     — tratt isolation network
 ```
 
 WhisperVault does **not** use a Podman network — it runs with `Network=none` and
@@ -744,7 +744,7 @@ Windows Browser → netsh portproxy (80/443) → WSL:8081/8443 → Apache (Podma
    ```
 3. Add entries to `C:\Windows\System32\drivers\etc\hosts` on Windows:
    ```
-   127.0.0.1  visp.local app.visp.local artic.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
+   127.0.0.1  visp.local app.visp.local artic.visp.local tratt.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
    ```
 
 Apache listens on `HTTP_PORT` (default `8081`) for HTTP and `8443` for HTTPS. The
@@ -897,7 +897,7 @@ podman exec apache apachectl graceful    # apply
 Vhost files use `${BASE_DOMAIN}` which Apache resolves from the environment
 (passed via `EnvironmentFile=` in the quadlet). Example:
 ```apache
-ServerName octra.${BASE_DOMAIN}
+ServerName ${TRATT_SUBDOMAIN}.${BASE_DOMAIN}
 ```
 
 ---
@@ -924,8 +924,8 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
 | `docker/apache/Dockerfile` | `debian:trixie-20260406` | date-pinned | Trixie = Debian 13 (testing). Update date when new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `docker/octra/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
-| `docker/octra/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
+| `docker/tratt/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `docker/tratt/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
 | `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | fully pinned ✅ | Dev image only — not deployed |

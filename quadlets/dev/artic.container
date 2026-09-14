@@ -21,7 +21,7 @@ ReadOnly=true
 PodmanArgs=--memory=128m --cpus=0.25 --pids-limit=50 --tmpfs /tmp --tmpfs /var/cache/nginx --tmpfs /run
 
 [Service]
-Restart=unless-stopped
+Restart=always
 TimeoutStartSec=300
 
 [Install]

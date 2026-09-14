@@ -296,7 +296,7 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 ### Build & Images
 
 - [x] **Audit Dockerfiles for version consistency**
-  - `docker/octra/Dockerfile`: pinned to commit hash ✅
+  - `docker/tratt/Dockerfile`: pinned to commit hash ✅
   - `docker/whisper/Dockerfile`: pinned to commit hash, marked NOT USED ✅
   - `docker/session-manager/build-context/Dockerfile`: marked NOT USED ✅
   - External repo Dockerfiles (floating `git clone`) tracked as upstream PRs needed
@@ -337,6 +337,23 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - Could integrate with `visp.py deploy status`
 
 ## Low Priority
+
+- [ ] **Remove the TRATT_SUBDOMAIN transition machinery once all deployments use the `tratt` subdomain**
+  - Trigger: every machine has flipped its DNS to `tratt.*` AND the upstream webclient
+    no longer hardcodes `octra.${hostname}` (infobox.component.ts)
+  - New installations then never create an octra subdomain at all — `tratt` is simply
+    the subdomain, and all of the following goes away:
+    - `TRATT_SUBDOMAIN` in `.env`/`.env-example` and the `${TRATT_SUBDOMAIN}` refs in
+      `tratt.vhost.conf` (both dirs) → hardcode `tratt`
+    - `octra-redirect*.vhost.template` + `sync_octra_redirect_vhost()` in install.py
+      (phase 7) + its tests + the `.gitignore` line for the rendered file
+    - the "Transitional redirect" comments and the TRATT_SUBDOMAIN notes in
+      AGENTS.md/README/MATOMO_SETUP.md
+  - Related, separate upstream cleanups for the same end state: TRATT's
+    `legacy-config.ts` octra→tratt appconfig shim (marked for removal upstream),
+    and the internal `octraTaskId`/`OctraVirtualTask`/api.php names (needs a Mongo
+    migration + lockstep webclient/session-manager changes — see the phase-2 note
+    in `dev-notes/2026-08-28-octra-to-tratt-plan.md`)
 
 - [ ] **Add `repair-session` command** to re-run emuDB import for a single session
   - Currently broken bundles require delete + re-upload + re-create

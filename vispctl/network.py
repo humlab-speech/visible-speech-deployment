@@ -24,7 +24,7 @@ class NetworkManager:
     def ensure_networks_exist(self) -> bool:
         required_networks = [
             {"name": "systemd-visp-net", "internal": False},
-            {"name": "systemd-octra-net", "internal": True},
+            {"name": "systemd-tratt-net", "internal": True},
         ]
 
         rc, stdout, _ = self.runner.run_quiet(["podman", "network", "ls", "--format", "{{.Name}}"])

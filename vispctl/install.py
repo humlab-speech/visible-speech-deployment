@@ -503,6 +503,59 @@ def generate_tracker_config(project_dir: Path, env_vars: dict[str, str]) -> None
         print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
 
 
+def backfill_env_keys(project_dir: Path, env_vars: dict[str, str], defaults: dict[str, str]) -> None:
+    """
+    Append any of ``defaults`` missing from an *existing* .env to the file
+    (and to ``env_vars`` in-memory), without touching anything else in it.
+
+    Phase 1 only writes .env when the file doesn't exist yet (see
+    ``setup_env_file``), so a key added to .env-example after someone's
+    first install — e.g. TRATT_SUBDOMAIN — never reaches their .env on its
+    own. Apache resolves vhost ServerNames from that file directly at
+    container start, so a missing key isn't a no-op default: it renders as
+    an empty/invalid ServerName and the vhost silently stops matching.
+    """
+    missing = {k: v for k, v in defaults.items() if k not in env_vars}
+    if not missing:
+        return
+
+    env_file = project_dir / ".env"
+    with env_file.open("a") as f:
+        for key, value in missing.items():
+            f.write(f"{key}={value}\n")
+            env_vars[key] = value
+    keys = ", ".join(missing)
+    print(color(f"  ✓ Backfilled new .env key(s): {keys}", Colors.YELLOW))
+
+
+def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> None:
+    """
+    OCTRA was renamed to TRATT. While the deployment serves TRATT under a new
+    subdomain (TRATT_SUBDOMAIN != octra), copy the static redirect vhost for the
+    old octra.* name into both vhost directories (old links and the not-yet
+    renamed webclient keep working). When TRATT_SUBDOMAIN == octra (DNS kept
+    the old name) the redirect vhost would shadow the live vhost and loop —
+    remove it instead. The vhost itself uses ${TRATT_SUBDOMAIN}, resolved by
+    Apache from the .env EnvironmentFile like every other vhost.
+    """
+    subdomain = (env_vars.get("TRATT_SUBDOMAIN") or "tratt").strip() or "tratt"
+    base_domain = (env_vars.get("BASE_DOMAIN") or "").strip()
+    apache_dir = project_dir / "mounts" / "apache" / "apache"
+    templates = {
+        "vhosts-http": apache_dir / "octra-redirect.vhost.template",
+        "vhosts-https": apache_dir / "octra-redirect-https.vhost.template",
+    }
+
+    for vdir, template in templates.items():
+        target = apache_dir / vdir / "octra-redirect.vhost.conf"
+        if subdomain != "octra" and base_domain and template.exists():
+            target.write_text(template.read_text())
+            print(color(f"  ✓ octra.* → {subdomain}.* redirect vhost ({vdir})", Colors.GREEN))
+        elif target.exists():
+            target.unlink()
+            print(color(f"  ✓ Removed octra.* redirect vhost ({vdir}) — TRATT_SUBDOMAIN=octra", Colors.DIM))
+
+
 def install_quadlets(
     quadlets_dir: Path,
     systemd_dir: Path,
@@ -807,6 +860,7 @@ def run_install(
 
     sm = SecretManager(runner)
     env_vars = sm.load_all()
+    backfill_env_keys(project_dir, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
 
     print(color("Creating Podman secrets...", Colors.CYAN))
     sm.create_secrets(sm.get_derived(env_vars))
@@ -849,8 +903,9 @@ def run_install(
     verify_repository_write_access(project_dir)
     print()
 
-    # --- Phase 7: tracker config (vc.js) ---
+    # --- Phase 7: tracker config (vc.js) + OCTRA→TRATT redirect vhost ---
     generate_tracker_config(project_dir, env_vars)
+    sync_octra_redirect_vhost(project_dir, env_vars)
     print()
 
     # --- Phase 8: dev certs + local IdP files (dev only) ---
@@ -894,10 +949,13 @@ def run_install(
         print(color(f"No quadlet files found in {quadlets_dir}", Colors.RED))
         return
 
-    # --- Phase 11: cleanup stale disabled-service quadlets ---
+    # --- Phase 11: cleanup stale quadlets (disabled, dev-only, renamed) ---
     if service_arg == "all":
+        from .quadlets import remove_stale_quadlets
+
         cleanup_disabled_optional_services(all_services, disabled_optional, systemd_dir)
         cleanup_dev_only_services(all_services, mode, systemd_dir)
+        remove_stale_quadlets(systemd_dir, project_dir, runner, stop=False)
 
     # --- Phase 12: save mode, print next steps ---
     from .quadlets import get_current_mode, set_current_mode

@@ -117,7 +117,7 @@ See `./visp.py --help` for the full command reference.
 | **MongoDB** | Database |
 | **artic** | Web-based speech annotation tool |
 | **emu-webapp-server** | artic backend (Node.js) |
-| **OCTRA** | Transcription annotation tool |
+| **TRATT** | Transcription annotation tool (formerly OCTRA) |
 | **wsrng-server** | Web Speech Recorder server |
 | **WhisperX** | Speech-to-text transcription via Unix Domain Socket (optional) |
 | **Matomo** | Usage analytics (optional) |
@@ -126,7 +126,7 @@ See `./visp.py --help` for the full command reference.
 
 1. Add to `/etc/hosts` (local dev only):
    ```
-   127.0.0.1 visp.local app.visp.local artic.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
+   127.0.0.1 visp.local app.visp.local artic.visp.local tratt.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
    ```
 
 2. Sign in through the dev IdP (dev mode):
@@ -154,7 +154,7 @@ In dev mode, the Apache container publishes HTTP on `8081` and HTTPS on `8443`. 
 
 1. Add local domains to `/etc/hosts`:
    ```text
-   127.0.0.1 visp.local app.visp.local artic.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
+   127.0.0.1 visp.local app.visp.local artic.visp.local tratt.visp.local octra.visp.local recorder.visp.local matomo.visp.local mongo.visp.local idp.visp.local
    ```
 
 2. Create `/etc/nginx/sites-available/visp.local`:
@@ -211,7 +211,7 @@ In production, a host nginx forwards to Apache, usually on port `8081`. Apache h
 **Required subdomains** (replace `yourdomain.com`):
 - `yourdomain.com` — main app (**WebSocket required**)
 - `artic.yourdomain.com` — EMU annotation
-- `octra.yourdomain.com` — OCTRA transcription
+- `tratt.yourdomain.com` — TRATT transcription (subdomain prefix configurable via `TRATT_SUBDOMAIN` in `.env`; set `octra` where DNS keeps the old name)
 - `recorder.yourdomain.com` — audio recorder
 - `matomo.yourdomain.com` — analytics (optional)
 

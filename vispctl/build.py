@@ -600,10 +600,10 @@ BUILD_CONFIGS: dict[str, dict] = {
         "dockerfile": "docker/Dockerfile",
         "image": "visp-emu-webapp-server",
     },
-    "octra": {
-        "context": "./docker/octra",
+    "tratt": {
+        "context": "./docker/tratt",
         "dockerfile": "Dockerfile",
-        "image": "visp-octra",
+        "image": "visp-tratt",
     },
     "wsrng-server": {
         "context": "./external/wsrng-server",

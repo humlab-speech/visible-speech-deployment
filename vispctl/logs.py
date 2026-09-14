@@ -23,7 +23,7 @@ CONTAINER_LOG_FILES: dict[str, list[tuple[str, str]]] = {
         ("api-debug", "/var/log/api/webapi.debug.log"),
         ("php-errors", "/var/log/api/php_error.log"),
         ("apache-error", "/var/log/apache2/visp.local-error.log"),
-        ("octra-error", "/var/log/apache2/octra-error.log"),
+        ("tratt-error", "/var/log/apache2/tratt-error.log"),
         ("artic-error", "/var/log/apache2/artic-error.log"),
         ("shibboleth", "/var/log/shibboleth/shibd.log"),
         ("shibboleth-warn", "/var/log/shibboleth/shibd_warn.log"),

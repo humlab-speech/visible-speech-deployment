@@ -13,7 +13,7 @@ Dockerfiles/Containerfiles define **how to build** container images. They are pa
 - `emu-webapp-server/` - EMU backend server
 - `session-manager/` - Session management + RStudio/Jupyter templates
 - `wsrng-server/` - WebSocket recording server
-- `octra/` - OCTRA annotation tool
+- `tratt/` - TRATT annotation tool (formerly OCTRA)
 - `whisper/` - Whisper transcription service
 - `labjs/` - Lab.js experimental software
 - `hs-wsr-client/` - Speech recognition client

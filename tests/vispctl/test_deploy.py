@@ -208,7 +208,7 @@ def test_summary_includes_dirty_build_and_image_warnings(tmp_path):
         _repo_row("artic", "✅ UP TO DATE"),
     ]
     image_rows = [
-        _image_row("octra", "⚠ NO LABEL"),
+        _image_row("tratt", "⚠ NO LABEL"),
         _image_row("matomo", "⚠ NO TIMESTAMP"),
         _image_row("whisperx", "✅ UP TO DATE"),
     ]
@@ -218,14 +218,14 @@ def test_summary_includes_dirty_build_and_image_warnings(tmp_path):
 
     assert "Dirty builds (rebuild from clean state recommended): session-manager" in out
     assert "Build status unknown (image has no git label): wsrng-server" in out
-    assert "Container images missing git labels: octra" in out
+    assert "Container images missing git labels: tratt" in out
     assert "Container images missing build timestamps: matomo" in out
     assert not all_clean
 
     # Recommended actions include builds for every problem component.
     assert any("build" in line and "session-manager" in line for line in lines)
     assert any("build" in line and "wsrng-server" in line for line in lines)
-    assert any("build" in line and "octra" in line for line in lines)
+    assert any("build" in line and "tratt" in line for line in lines)
     assert any("build" in line and "matomo" in line for line in lines)
 
 
@@ -233,7 +233,7 @@ def test_summary_all_clean(tmp_path):
     dm = DeployManager(basedir=str(tmp_path))
 
     status_results = [_repo_row("artic", "✅ UP TO DATE")]
-    image_rows = [_image_row("octra", "✅ UP TO DATE")]
+    image_rows = [_image_row("tratt", "✅ UP TO DATE")]
 
     lines, all_clean = dm._build_status_summary(status_results, image_rows, [], [], [], [])
 
