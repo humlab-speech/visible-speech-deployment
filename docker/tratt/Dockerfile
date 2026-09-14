@@ -13,8 +13,15 @@ RUN apt-get update && \
 RUN git clone --branch humlab-3.0.1 --depth 1 https://github.com/humlab-speech/TRATT.git . && \
     git checkout 59f9c1f7777ab68e92e10e88ef20cb005ee8b3a4
 
-# Install dependencies (ci = exact lockfile, reproducible build)
-RUN npm ci
+# Install dependencies (ci = exact lockfile, reproducible build).
+# --legacy-peer-deps: upstream's package-lock.json carries non-optional peer
+# deps on react/react-dom/react-refresh (from @module-federation/data-prefetch
+# and @rspack/plugin-react-refresh) without lockfile entries for them, so plain
+# `npm ci` aborts with "Missing: react@... from lock file". TRATT is Angular;
+# those React peers are build-tooling artefacts and are not needed. The flag
+# keeps the install exact-from-lockfile, it only stops npm auto-resolving the
+# unlisted peers against the live registry.
+RUN npm ci --legacy-peer-deps
 
 # Build the release: production build that strips the bundled appconfig.json,
 # so the deployment's mounted config (mounts/tratt/appconfig.json) is the
