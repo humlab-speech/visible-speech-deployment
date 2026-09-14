@@ -39,7 +39,7 @@ NoNewPrivileges=true
 PodmanArgs=--memory=256m --cpus=0.5 --pids-limit=100
 
 [Service]
-Restart=unless-stopped
+Restart=always
 TimeoutStartSec=300
 
 [Install]

@@ -22,7 +22,7 @@ ReadOnly=true
 PodmanArgs=--memory=256m --cpus=0.25 --pids-limit=150 --tmpfs /tmp --tmpfs /run --tmpfs /usr/local/apache2/logs
 
 [Service]
-Restart=unless-stopped
+Restart=always
 TimeoutStartSec=300
 
 [Install]
