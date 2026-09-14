@@ -16,6 +16,7 @@ from vispctl.install import (
     _map_namespace_id,
     _parse_id_map,
     _resolve_image_uid,
+    backfill_env_keys,
     cleanup_dev_only_services,
     cleanup_disabled_optional_services,
     fix_mongo_mount_ownership,
@@ -626,6 +627,46 @@ def test_cleanup_dev_only_removes_dropin(tmp_path):
 
     assert not (systemd_dir / "local-idp.container").exists()
     assert not dropin_dir.exists()
+
+
+# ---------------------------------------------------------------------------
+# backfill_env_keys
+# ---------------------------------------------------------------------------
+
+
+def test_backfill_appends_missing_key(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("BASE_DOMAIN=visp.local\n")
+    env_vars = {"BASE_DOMAIN": "visp.local"}
+
+    backfill_env_keys(tmp_path, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
+
+    assert env_vars["TRATT_SUBDOMAIN"] == "tratt"
+    content = env_file.read_text()
+    assert "BASE_DOMAIN=visp.local\n" in content
+    assert "TRATT_SUBDOMAIN=tratt\n" in content
+
+
+def test_backfill_leaves_existing_value_untouched(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("TRATT_SUBDOMAIN=octra\n")
+    env_vars = {"TRATT_SUBDOMAIN": "octra"}
+
+    backfill_env_keys(tmp_path, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
+
+    assert env_vars["TRATT_SUBDOMAIN"] == "octra"
+    assert env_file.read_text().count("TRATT_SUBDOMAIN=") == 1
+
+
+def test_backfill_noop_when_nothing_missing(tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("TRATT_SUBDOMAIN=tratt\n")
+    before = env_file.read_text()
+    env_vars = {"TRATT_SUBDOMAIN": "tratt"}
+
+    backfill_env_keys(tmp_path, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
+
+    assert env_file.read_text() == before
 
 
 # ---------------------------------------------------------------------------

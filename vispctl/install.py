@@ -503,6 +503,31 @@ def generate_tracker_config(project_dir: Path, env_vars: dict[str, str]) -> None
         print(color("  ⚠ Created placeholder vc.js (BASE_DOMAIN not set)", Colors.YELLOW))
 
 
+def backfill_env_keys(project_dir: Path, env_vars: dict[str, str], defaults: dict[str, str]) -> None:
+    """
+    Append any of ``defaults`` missing from an *existing* .env to the file
+    (and to ``env_vars`` in-memory), without touching anything else in it.
+
+    Phase 1 only writes .env when the file doesn't exist yet (see
+    ``setup_env_file``), so a key added to .env-example after someone's
+    first install — e.g. TRATT_SUBDOMAIN — never reaches their .env on its
+    own. Apache resolves vhost ServerNames from that file directly at
+    container start, so a missing key isn't a no-op default: it renders as
+    an empty/invalid ServerName and the vhost silently stops matching.
+    """
+    missing = {k: v for k, v in defaults.items() if k not in env_vars}
+    if not missing:
+        return
+
+    env_file = project_dir / ".env"
+    with env_file.open("a") as f:
+        for key, value in missing.items():
+            f.write(f"{key}={value}\n")
+            env_vars[key] = value
+    keys = ", ".join(missing)
+    print(color(f"  ✓ Backfilled new .env key(s): {keys}", Colors.YELLOW))
+
+
 def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> None:
     """
     OCTRA was renamed to TRATT. While the deployment serves TRATT under a new
@@ -835,6 +860,7 @@ def run_install(
 
     sm = SecretManager(runner)
     env_vars = sm.load_all()
+    backfill_env_keys(project_dir, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
 
     print(color("Creating Podman secrets...", Colors.CYAN))
     sm.create_secrets(sm.get_derived(env_vars))
