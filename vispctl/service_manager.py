@@ -203,6 +203,7 @@ class ServiceManager:
 
     def status(self) -> None:
         print(color("=== VISP Service Status ===", Colors.CYAN))
+        failed = []
         for svc in self.services:
             if svc.type == "network":
                 # For networks, check Podman network existence
@@ -212,8 +213,19 @@ class ServiceManager:
                 stat_col = color(status, Colors.GREEN if status == "active" else Colors.YELLOW)
                 print(f"  {sym} {svc.name}: {stat_col}")
             else:
-                rc, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", f"{svc.name}.service"])
-                status = out if rc == 0 else "inactive"
-                sym = color("●", Colors.GREEN) if status == "active" else color("○", Colors.YELLOW)
-                stat_col = color(status, Colors.GREEN if status == "active" else Colors.YELLOW)
+                # is-active exits non-zero for both "inactive" and "failed", so
+                # take the state from its output rather than the exit code.
+                _, out, _ = self.runner.run_quiet(["systemctl", "--user", "is-active", f"{svc.name}.service"])
+                status = out or "inactive"
+                if status == "active":
+                    sym, stat_col = color("●", Colors.GREEN), color(status, Colors.GREEN)
+                elif status == "failed":
+                    failed.append(svc.name)
+                    sym, stat_col = color("✗", Colors.RED), color(status, Colors.RED)
+                else:
+                    sym, stat_col = color("○", Colors.YELLOW), color(status, Colors.YELLOW)
                 print(f"  {sym} {svc.name}: {stat_col}")
+        if failed:
+            print()
+            print(color(f"  ✗ {len(failed)} service(s) failed: {', '.join(failed)}", Colors.RED))
+            print(color("    See why with './visp.py debug <service>', then './visp.py start <service>'.", Colors.RED))

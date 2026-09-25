@@ -50,6 +50,26 @@ def test_status_header_single_and_no_poc_label(capsys):
     assert "(PoC)" not in out
 
 
+def test_status_distinguishes_failed_from_inactive(capsys):
+    # systemctl is-active exits 3 for both, so status must read the output.
+    class FailedRunner(FakeRunner):
+        def run_quiet(self, cmd):
+            if "is-active" in cmd:
+                if cmd[-1] == "wsrng-server.service":
+                    return 3, "failed", ""
+                return 3, "inactive", ""
+            return super().run_quiet(cmd)
+
+    m = ServiceManager(FailedRunner(), DEFAULT_SERVICES)
+    m.status()
+    out = capsys.readouterr().out
+    wsrng_line = next(line for line in out.splitlines() if "wsrng-server:" in line)
+    assert "failed" in wsrng_line
+    mongo_line = next(line for line in out.splitlines() if " mongo:" in line)
+    assert "inactive" in mongo_line
+    assert "1 service(s) failed: wsrng-server" in out
+
+
 def test_network_status_shows_active(capsys):
     # Ensure network services are shown as active when podman network exists
     services = DEFAULT_SERVICES

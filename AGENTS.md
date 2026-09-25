@@ -586,6 +586,48 @@ Browser (Angular) → Apache (PHP api.php) → Host filesystem → Session-manag
   when `emudb-sessions/` is missing. The pipeline continues and creates a project skeleton
   with no audio. This is the most common symptom of upload failures.
 
+### Online recording import pipeline (wsrng-server → EMU-DB)
+
+Recordings made with the web recorder (`/spr/session/<id>`, the `speechrecorderng` npm
+package embedded in the webclient) reach the project like this:
+
+```
+Browser recorder ──POST take──▶ wsrng-server ──writes──▶ Data/speech_recorder_uploads/emudb-sessions/<sessionId>/<itemcode>.wav
+                                     │ hint: POST /api/importaudiofiles (retried, best effort)
+                                     ▼
+                              session-manager SprImportService ──▶ operations container ──▶ Data/VISP_emuDB/<name>_ses/<item>_bndl/
+```
+
+- **The upload directory is the source of truth.** `SprImportService`
+  (`external/session-manager/src/SprImportService.class.js`) scans every 30s and compares
+  each recorded session's uploads with the fingerprint it last imported
+  (`projects.sessions[].sprImport`). A session is imported once its uploads have been
+  unchanged for 10s and it is sealed (completed), or after 30 min idle if it never was.
+  wsrng-server's hint only makes that check happen sooner, so a lost hint or a restart of
+  either service delays an import but never loses it.
+- **Imports are incremental.** Only takes whose bundle is missing or holds different audio
+  (byte comparison) are re-imported; other bundles, and their annotations, are untouched.
+  `import_mediaFiles` refuses to overwrite a bundle, so session-manager deletes the
+  outdated bundle directories itself before importing.
+- **Status is visible**: `sprImport.status` is `pending` / `importing` / `imported` /
+  `failed`, shown per session in the project dialog. Failures retry after 1, 5 and 30 min,
+  then notify project members and wait for new recordings.
+- Deleting a file from a recorded session also deletes its uploaded take, or the next
+  import would restore it.
+- Sessions imported before import tracking existed are adopted as-is on first scan and
+  never re-imported automatically (deleted bundles might otherwise come back).
+
+Verify the whole chain with the smoke test (dev mode; creates, records and deletes a
+session in the given project, with Chromium's fake microphone):
+
+```bash
+./visp.py smoketest                 # default project "Test 3"
+./visp.py smoketest --project "Test 4" --keep
+```
+
+It runs in `mcr.microsoft.com/playwright` with host networking; the playwright npm
+version in `tests/e2e/package.json` must match the image tag in `vispctl/smoketest.py`.
+
 When adding a new service or renaming an existing one, update **all** of the following:
 
 1. `vispctl/versions.py` — add an entry to `DEFAULT_VERSIONS_CONFIG` if it is an external repo
