@@ -864,6 +864,17 @@ single `projectId` plus `eppn`. It is idempotent and dry-run by default.
 ./visp.py restart session-manager
 ```
 
+### Moving a legacy Docker Compose install to quadlets
+
+`scripts/migrate-from-compose.py` (run as root, one phase at a time, `--dry-run`
+available) moves a pre-2026-04 Docker Compose install onto rootless Podman on the same
+host: it creates a dedicated service user (home on the data volume — images need
+~60 G), writes `.env`/`.env.secrets` from the old `.env` (the old database passwords
+must survive), copies data with rsync, dumps the old Mongo and Matomo databases,
+installs, restores, runs `migrate-permissions` and `migrate-meta-json`, and repoints
+the host TLS proxy at Apache `:8081`. The old tree is only read, so it stays a
+rollback. Phase order and rollback steps are in the script's docstring.
+
 ---
 
 ## Apache Vhost Configuration
