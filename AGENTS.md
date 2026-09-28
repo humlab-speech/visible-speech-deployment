@@ -616,6 +616,17 @@ Browser recorder ──POST take──▶ wsrng-server ──writes──▶ Dat
   import would restore it.
 - Sessions imported before import tracking existed are adopted as-is on first scan and
   never re-imported automatically (deleted bundles might otherwise come back).
+- **A session can take uploads and online recordings at once.** `uploadEnabled` /
+  `recordEnabled` say which sources it uses (older sessions have only `dataSource`,
+  which is never changed after creation), and each entry in `sessions[].files` has an
+  `origin` (`upload` / `recording`). Each source replaces only its own entries: the
+  import owns `recording`, a dialog save only adds this save's uploads, taken from the
+  upload directory rather than the form. The rules live in
+  `external/session-manager/src/sessionFiles.js` (mirrored in the webclient's
+  `models/SessionSources.ts`). Bundle names must be unique across both sources, so an
+  upload named after one of the script's prompts, or after a file already in the
+  session, is refused before anything is written. A source can't be switched off
+  while the session holds files from it.
 
 Verify the whole chain with the smoke test (dev mode; creates, records and deletes a
 session in the given project, with Chromium's fake microphone):
