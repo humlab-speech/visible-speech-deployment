@@ -1,4 +1,4 @@
-// End-to-end smoke test of the online recording pipeline:
+// End-to-end test of the online recording pipeline:
 //
 //   log in → create an online-recording session → record every prompt in the
 //   web recorder → confirm the recordings are imported into the project.
@@ -13,7 +13,7 @@
 // It also uploads a file to a new session and checks that it is listed under
 // the name it was stored as, and that its bundle holds the uploaded audio.
 //
-// Runs in the Playwright container via `./visp.py smoketest` (dev mode only:
+// Runs in the Playwright container via `./visp.py test recording` (dev mode only:
 // it logs in through the local IdP). Chromium's fake microphone supplies the
 // audio. Configuration comes from the environment; see readConfig().
 
@@ -39,17 +39,17 @@ const cfg = readConfig();
 let step = "starting";
 
 function log(msg) {
-    console.log(`[smoke] ${msg}`);
+    console.log(`[recording] ${msg}`);
 }
 
 function pass(msg) {
-    console.log(`[smoke] ✓ ${msg}`);
+    console.log(`[recording] ✓ ${msg}`);
 }
 
-class SmokeFailure extends Error {}
+class TestFailure extends Error {}
 
 function fail(msg) {
-    throw new SmokeFailure(msg);
+    throw new TestFailure(msg);
 }
 
 // ---------------------------------------------------------------- dashboard
@@ -339,7 +339,7 @@ async function recordSession(page, link) {
 // --------------------------------------------------------------- filesystem
 
 // Compare every upload with its EMU-DB bundle, byte for byte. Needs the
-// repositories directory mounted (visp.py smoketest does this read-only).
+// repositories directory mounted (./visp.py test recording does this read-only).
 async function verifyBundlesOnDisk(page, link, sessionName, itemCodes) {
     step = "verify EMU-DB";
     if (!cfg.repositoriesDir) {
@@ -599,8 +599,8 @@ async function main() {
     } catch (err) {
         const shot = path.join(cfg.artifactsDir, "failure.png");
         await page.screenshot({ path: shot, fullPage: true }).catch(() => {});
-        console.error(`[smoke] ✗ FAILED during "${step}": ${err.message}`);
-        console.error(`[smoke]   screenshot: ${shot}`);
+        console.error(`[recording] ✗ FAILED during "${step}": ${err.message}`);
+        console.error(`[recording]   screenshot: ${shot}`);
         process.exitCode = 1;
     } finally {
         if (created && !cfg.keep) {

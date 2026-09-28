@@ -628,16 +628,15 @@ Browser recorder ──POST take──▶ wsrng-server ──writes──▶ Dat
   session, is refused before anything is written. A source can't be switched off
   while the session holds files from it.
 
-Verify the whole chain with the smoke test (dev mode; creates, records and deletes a
-session in the given project, with Chromium's fake microphone):
+Verify the whole chain with the recording test (dev mode; creates, records, uploads to
+and deletes sessions in the given project, with Chromium's fake microphone):
 
 ```bash
-./visp.py smoketest                 # default project "Test 3"
-./visp.py smoketest --project "Test 4" --keep
+./visp.py test recording                 # default project "Test 3"
+./visp.py test recording --project "Test 4" --keep
 ```
 
-It runs in `mcr.microsoft.com/playwright` with host networking; the playwright npm
-version in `tests/e2e/package.json` must match the image tag in `vispctl/smoketest.py`.
+See "System tests" below for how tests are structured.
 
 When adding a new service or renaming an existing one, update **all** of the following:
 
@@ -728,6 +727,24 @@ Hooks (see `.pre-commit-config.yaml`):
 Rule set: `E`, `W`, `F` (flake8-equivalent) plus `I` (isort).
 
 Always run `pre-commit run --all-files` before declaring a task complete.
+
+### System tests (`./visp.py test`)
+
+Unlike `tests/` (unit tests of `vispctl`, run by pre-commit), system tests exercise a
+**running** installation, one workflow each:
+
+```bash
+./visp.py test                   # list available tests
+./visp.py test recording         # online recording + uploads → EMU-DB (dev mode)
+```
+
+They live in `vispctl/testing/`, one module per test, and `visp.py` only calls
+`add_test_parser()`. To add one, create `vispctl/testing/<name>.py` defining `NAME`,
+`HELP`, `add_arguments(parser)` and `run(args) -> int`, and list it in `TESTS` in
+`vispctl/testing/__init__.py`. Browser tests are Node scripts in `tests/e2e/`, run by the
+shared runner in `vispctl/testing/e2e.py`: `mcr.microsoft.com/playwright` with host
+networking, logging in through the local IdP (so dev mode only). The playwright npm
+version in `tests/e2e/package.json` must match `PLAYWRIGHT_IMAGE` in `e2e.py`.
 
 ---
 

@@ -74,7 +74,6 @@ from vispctl.build import (
 )
 from vispctl.cleanup_containers import cleanup_containers
 from vispctl.config import get_config, init_config
-from vispctl.env import load_env_file
 from vispctl.exceptions import VispError
 from vispctl.images import ImageManager
 from vispctl.logs import CONTAINER_LOG_FILES, view_logs
@@ -100,8 +99,8 @@ from vispctl.service import (
     resolve_services,
 )
 from vispctl.service_manager import ServiceManager, remove_autostart_dropin
-from vispctl.smoketest import SMOKE_TESTS, run_smoketest
 from vispctl.status import show_container_list, show_network_list, show_quadlet_table
+from vispctl.testing import add_test_parser
 
 SERVICES = DEFAULT_SERVICES
 NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
@@ -457,27 +456,6 @@ def cmd_npm(args):
     if npm_args and npm_args[0] == "--":
         npm_args = npm_args[1:]
     rc = run_npm(cfg.runner, cfg.project_dir, args.service, npm_args)
-    if rc != 0:
-        sys.exit(rc)
-
-
-def cmd_smoketest(args):
-    """Run an end-to-end smoke test in the Playwright container."""
-    cfg = get_config()
-    env_vars = load_env_file(cfg.project_dir / ".env")
-    base_domain = (env_vars.get("BASE_DOMAIN") or "").strip()
-    if not base_domain:
-        print(color("BASE_DOMAIN is not set in .env", Colors.RED))
-        sys.exit(1)
-    rc = run_smoketest(
-        cfg.runner,
-        cfg.project_dir,
-        get_current_mode(),
-        base_domain,
-        test=args.test,
-        project=args.project,
-        keep=args.keep,
-    )
     if rc != 0:
         sys.exit(rc)
 
@@ -913,15 +891,8 @@ Examples:
         help="Arguments passed to npm (prefix with -- , e.g. -- install foo)",
     )
 
-    # smoketest
-    p_smoke = subparsers.add_parser(
-        "smoketest",
-        help="Run an end-to-end smoke test in a headless browser (dev mode)",
-    )
-    p_smoke.set_defaults(func=cmd_smoketest)
-    p_smoke.add_argument("test", nargs="?", default="recording", choices=sorted(SMOKE_TESTS))
-    p_smoke.add_argument("--project", default="Test 3", help="Project to create the test session in")
-    p_smoke.add_argument("--keep", action="store_true", help="Keep the recording session the test creates")
+    # test (automated tests, one subcommand each; see vispctl/testing/)
+    add_test_parser(subparsers)
 
     # cleanup-containers
     p_cleanup = subparsers.add_parser(
