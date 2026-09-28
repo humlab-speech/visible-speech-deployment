@@ -586,6 +586,58 @@ Browser (Angular) → Apache (PHP api.php) → Host filesystem → Session-manag
   when `emudb-sessions/` is missing. The pipeline continues and creates a project skeleton
   with no audio. This is the most common symptom of upload failures.
 
+### Online recording import pipeline (wsrng-server → EMU-DB)
+
+Recordings made with the web recorder (`/spr/session/<id>`, the `speechrecorderng` npm
+package embedded in the webclient) reach the project like this:
+
+```
+Browser recorder ──POST take──▶ wsrng-server ──writes──▶ Data/speech_recorder_uploads/emudb-sessions/<sessionId>/<itemcode>.wav
+                                     │ hint: POST /api/importaudiofiles (retried, best effort)
+                                     ▼
+                              session-manager SprImportService ──▶ operations container ──▶ Data/VISP_emuDB/<name>_ses/<item>_bndl/
+```
+
+- **The upload directory is the source of truth.** `SprImportService`
+  (`external/session-manager/src/SprImportService.class.js`) scans every 30s and compares
+  each recorded session's uploads with the fingerprint it last imported
+  (`projects.sessions[].sprImport`). A session is imported once its uploads have been
+  unchanged for 10s and it is sealed (completed), or after 30 min idle if it never was.
+  wsrng-server's hint only makes that check happen sooner, so a lost hint or a restart of
+  either service delays an import but never loses it.
+- **Imports are incremental.** Only takes whose bundle is missing or holds different audio
+  (byte comparison) are re-imported; other bundles, and their annotations, are untouched.
+  `import_mediaFiles` refuses to overwrite a bundle, so session-manager deletes the
+  outdated bundle directories itself before importing.
+- **Status is visible**: `sprImport.status` is `pending` / `importing` / `imported` /
+  `failed`, shown per session in the project dialog. Failures retry after 1, 5 and 30 min,
+  then notify project members and wait for new recordings.
+- Deleting a file from a recorded session also deletes its uploaded take, or the next
+  import would restore it.
+- Sessions imported before import tracking existed are adopted as-is on first scan and
+  never re-imported automatically (deleted bundles might otherwise come back).
+- **A session can take uploads and online recordings at once.** `uploadEnabled` /
+  `recordEnabled` say which sources it uses (older sessions have only `dataSource`,
+  which is never changed after creation), and each entry in `sessions[].files` has an
+  `origin` (`upload` / `recording`). Each source replaces only its own entries: the
+  import owns `recording`, a dialog save only adds this save's uploads, taken from the
+  upload directory rather than the form. The rules live in
+  `external/session-manager/src/sessionFiles.js` (mirrored in the webclient's
+  `models/SessionSources.ts`). Bundle names must be unique across both sources, so an
+  upload named after one of the script's prompts, or after a file already in the
+  session, is refused before anything is written. A source can't be switched off
+  while the session holds files from it.
+
+Verify the whole chain with the recording test (dev mode; creates, records, uploads to
+and deletes sessions in the given project, with Chromium's fake microphone):
+
+```bash
+./visp.py test recording                 # default project "Test 3"
+./visp.py test recording --project "Test 4" --keep
+```
+
+See "System tests" below for how tests are structured.
+
 When adding a new service or renaming an existing one, update **all** of the following:
 
 1. `vispctl/versions.py` — add an entry to `DEFAULT_VERSIONS_CONFIG` if it is an external repo
@@ -675,6 +727,24 @@ Hooks (see `.pre-commit-config.yaml`):
 Rule set: `E`, `W`, `F` (flake8-equivalent) plus `I` (isort).
 
 Always run `pre-commit run --all-files` before declaring a task complete.
+
+### System tests (`./visp.py test`)
+
+Unlike `tests/` (unit tests of `vispctl`, run by pre-commit), system tests exercise a
+**running** installation, one workflow each:
+
+```bash
+./visp.py test                   # list available tests
+./visp.py test recording         # online recording + uploads → EMU-DB (dev mode)
+```
+
+They live in `vispctl/testing/`, one module per test, and `visp.py` only calls
+`add_test_parser()`. To add one, create `vispctl/testing/<name>.py` defining `NAME`,
+`HELP`, `add_arguments(parser)` and `run(args) -> int`, and list it in `TESTS` in
+`vispctl/testing/__init__.py`. Browser tests are Node scripts in `tests/e2e/`, run by the
+shared runner in `vispctl/testing/e2e.py`: `mcr.microsoft.com/playwright` with host
+networking, logging in through the local IdP (so dev mode only). The playwright npm
+version in `tests/e2e/package.json` must match `PLAYWRIGHT_IMAGE` in `e2e.py`.
 
 ---
 

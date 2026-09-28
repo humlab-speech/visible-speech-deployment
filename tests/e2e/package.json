@@ -1,0 +1,9 @@
+{
+  "name": "visp-e2e",
+  "private": true,
+  "description": "Browser tests of a running VISP installation, run with ./visp.py test <name>",
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

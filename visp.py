@@ -100,6 +100,7 @@ from vispctl.service import (
 )
 from vispctl.service_manager import ServiceManager, remove_autostart_dropin
 from vispctl.status import show_container_list, show_network_list, show_quadlet_table
+from vispctl.testing import add_test_parser
 
 SERVICES = DEFAULT_SERVICES
 NETWORK_SERVICES = [s for s in SERVICES if s.type == "network"]
@@ -889,6 +890,9 @@ Examples:
         nargs=argparse.REMAINDER,
         help="Arguments passed to npm (prefix with -- , e.g. -- install foo)",
     )
+
+    # test (automated tests, one subcommand each; see vispctl/testing/)
+    add_test_parser(subparsers)
 
     # cleanup-containers
     p_cleanup = subparsers.add_parser(
