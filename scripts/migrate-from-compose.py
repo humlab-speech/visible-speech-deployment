@@ -15,7 +15,8 @@ the phases it depends on.
   Build the new instance (the old one keeps serving users throughout):
     preflight   read-only checks of the host, the old install and the target volume
     host        packages, service user (home on the data volume), subuid/subgid,
-                lingering, user podman socket, rootless smoke test
+                lingering, Podman scratch space off /var/tmp, user podman socket,
+                rootless smoke test
     checkout    clone this repository for the service user, then 'deploy update'
     config      fresh .env and .env.secrets
     sync-files  rsync repositories, certs, Matomo config, unimported audio and
@@ -131,6 +132,30 @@ class MigrationError(Exception):
 
 
 # ── pure helpers (unit-tested) ────────────────────────────────────────────────
+
+
+def podman_tmp_files(tmp_dir: str) -> dict[str, str]:
+    """User config files that move Podman's scratch space off /var/tmp.
+
+    Pulls stage layers in image_copy_tmp_dir and builds use TMPDIR; both default to
+    /var/tmp, often a small system volume. environment.d reaches the systemd user
+    manager (so systemd-run and the quadlets), .profile reaches login shells.
+    """
+    return {
+        ".config/containers/containers.conf": f'[engine]\nimage_copy_tmp_dir = "{tmp_dir}"\n',
+        ".config/environment.d/10-tmpdir.conf": f"TMPDIR={tmp_dir}\n",
+    }
+
+
+PROFILE_TMPDIR_MARK = "# visp-migrate: Podman scratch space"
+
+
+def profile_with_tmpdir(profile: str, tmp_dir: str) -> str:
+    """Append a TMPDIR export to a shell profile, once."""
+    if PROFILE_TMPDIR_MARK in profile:
+        return profile
+    sep = "" if not profile or profile.endswith("\n") else "\n"
+    return f"{profile}{sep}{PROFILE_TMPDIR_MARK}\nexport TMPDIR={tmp_dir}\n"
 
 
 def parse_subid_file(text: str) -> list[tuple[str, int, int]]:
@@ -403,6 +428,7 @@ class Ctx:
         self.home = Path(args.home).resolve()
         self.new = self.home / "visible-speech-deployment"
         self.dumps = self.home / "migration-dumps"
+        self.tmp = self.home / "tmp"
         self.state_path = STATE_DIR / "state.json"
 
     # paths / identity --------------------------------------------------------
@@ -778,6 +804,7 @@ def phase_host(ctx: Ctx) -> None:
         )
     if not DRY_RUN:
         ctx.home.chmod(0o750)
+    _podman_tmp(ctx)
 
     # useradd usually assigns ranges itself; add one only where it did not.
     for path, flag in (("/etc/subuid", "--add-subuids"), ("/etc/subgid", "--add-subgids")):
@@ -793,15 +820,39 @@ def phase_host(ctx: Ctx) -> None:
         uid = ctx.pw.pw_uid
         ctx.run(["systemctl", "start", f"user@{uid}.service"])
         ctx.wait_for("the service user's systemd", ["test", "-S", f"/run/user/{uid}/bus"])
+    # environment.d is read when the user manager starts; set it too for one already running.
+    ctx.run(["systemctl", "--user", "set-environment", f"TMPDIR={ctx.tmp}"], as_user=True)
     # Keep the API service running, not only socket-activated (see AGENTS.md).
     ctx.run(["systemctl", "--user", "enable", "--now", "podman.socket", "podman.service"], as_user=True)
+    ctx.run(["systemctl", "--user", "restart", "podman.service"], as_user=True)
 
     _, backend = ctx.probe(["podman", "info", "--format", "{{.Host.NetworkBackend}}"], as_user=True)
     if not DRY_RUN and backend != "netavark":
         raise MigrationError(f"Podman network backend is {backend!r}; netavark is required")
+    _, copy_tmp = ctx.probe(["podman", "info", "--format", "{{.Store.ImageCopyTmpDir}}"], as_user=True)
+    _, tmpdir = ctx.probe(["printenv", "TMPDIR"], as_user=True)
+    if not DRY_RUN and (copy_tmp.strip() != str(ctx.tmp) or tmpdir.strip() != str(ctx.tmp)):
+        raise MigrationError(f"Podman scratch space is not {ctx.tmp} (image copy: {copy_tmp!r}, TMPDIR: {tmpdir!r})")
+    ok(f"Podman scratch space: {ctx.tmp}")
     ctx.run(["podman", "run", "--rm", "docker.io/library/alpine:3.23", "true"], as_user=True)
     ok("rootless Podman works for the service user")
     ctx.mark("host")
+
+
+def _podman_tmp(ctx: Ctx) -> None:
+    say(f"  Podman scratch space → {ctx.tmp} (instead of /var/tmp)")
+    if DRY_RUN:
+        return
+    ctx.tmp.mkdir(mode=0o700, exist_ok=True)
+    shutil.chown(ctx.tmp, ctx.user, ctx.user)
+    for rel, text in podman_tmp_files(str(ctx.tmp)).items():
+        path = ctx.home / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    profile = ctx.home / ".profile"
+    profile.write_text(profile_with_tmpdir(profile.read_text() if profile.exists() else "", str(ctx.tmp)))
+    for rel in (".config", ".profile"):
+        ctx.chown_user(ctx.home / rel)
 
 
 def phase_checkout(ctx: Ctx) -> None:

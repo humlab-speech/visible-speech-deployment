@@ -157,3 +157,16 @@ def test_log_masks_secrets(mig, tmp_path):
     log.add_secret("s3cr3t-value")
     log.add_secret("short")  # too short to mask safely
     assert log.mask("pw=s3cr3t-value user=short") == "pw=******** user=short"
+
+
+def test_podman_tmp_files_point_pulls_and_builds_at_the_dir(mig):
+    files = mig.podman_tmp_files("/data/visp/tmp")
+    assert files[".config/containers/containers.conf"] == '[engine]\nimage_copy_tmp_dir = "/data/visp/tmp"\n'
+    assert files[".config/environment.d/10-tmpdir.conf"] == "TMPDIR=/data/visp/tmp\n"
+
+
+def test_profile_tmpdir_is_appended_once(mig):
+    once = mig.profile_with_tmpdir("umask 022", "/data/visp/tmp")
+    assert once.startswith("umask 022\n")
+    assert once.endswith("export TMPDIR=/data/visp/tmp\n")
+    assert mig.profile_with_tmpdir(once, "/data/visp/tmp") == once
