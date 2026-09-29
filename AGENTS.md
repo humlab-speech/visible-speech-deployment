@@ -934,6 +934,36 @@ single `projectId` plus `eppn`. It is idempotent and dry-run by default.
 ./visp.py restart session-manager
 ```
 
+### Moving a legacy Docker Compose install to quadlets
+
+`scripts/migrate-from-compose.py` deploys a new rootless-Podman instance **next to** a
+running pre-2026-04 Docker Compose install on the same host, then cuts over to it. Run as
+root, one phase at a time (`--dry-run` shows the commands; logs, with secrets masked, go
+to `/var/log/visp-migrate/`; `status` shows progress):
+
+`preflight → host → checkout → config → sync-files → install → build → databases → start
+→ verify → preview → cutover` (and `rollback`).
+
+- The old install is only read (files) and stopped/started/exec'd (containers). It stays a
+  working rollback until its directory is deleted.
+- The new instance gets a **fresh** `.env` and freshly generated secrets; only
+  `BASE_DOMAIN`, `ADMIN_EMAIL`, `PROJECT_NAME`, `ACCESS_LIST_ENABLED` and
+  `EMUDB_INTEGRATION_ENABLED` are carried over. So only the Mongo *application*
+  databases are dumped (never `admin`, which would bring the old root password back),
+  and Matomo's `config.ini.php` is re-pointed at the new database credentials.
+- Commands for the service user run through
+  `systemd-run --machine=<user>@.host --user --pipe --wait` — the same user session as
+  `machinectl shell`, but with exit codes and stdin passed through. Plain `sudo -u` /
+  `runuser` lacks the user's systemd session, which rootless Podman and
+  `systemctl --user` need.
+- `preview` adds a loopback-only TLS listener (`127.0.0.1:8443`) for the new instance to
+  the host proxy; reach it through an SSH tunnel plus a hosts-file entry, so SWAMID
+  logins work under the real domain while everyone else still gets the old system.
+
+In prod, `mongo` and `emu-webapp-server` are **not** published on the host: every
+consumer reaches them over `visp-net` (`mongo:27017`, `emu-webapp-server:17890`), and
+`visp.py` uses `podman exec`. Only Apache's `8081` is published.
+
 ---
 
 ## Apache Vhost Configuration

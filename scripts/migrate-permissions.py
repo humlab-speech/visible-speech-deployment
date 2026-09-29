@@ -24,9 +24,12 @@ Conversion rules
     The old ``createProjects``/``createInviteCodes`` privileges do not survive:
     project creation is now sysadmin-only, and issuing invite codes is a
     project-level right granted by the ProjectAdmin role.
-  * Within each project the first member — which ``createProject`` always wrote as
-    the project's creator — becomes ProjectAdmin; everyone else becomes
-    Researcher. No project is left without an admin.
+  * Project members that carry a pre-role-system role are mapped like invite
+    codes (``admin`` -> ProjectAdmin; ``member``/``transcriber``/``analyzer`` ->
+    Researcher). In a project whose members carry no role at all, the first
+    member — which ``createProject`` always wrote as the project's creator —
+    becomes ProjectAdmin and everyone else Researcher. No project is left
+    without an admin.
   * Invite codes keep their first assigned project. Codes with no project cannot
     be redeemed into a project under the new model and are reported (use
     --delete-orphan-invite-codes to remove them).
@@ -95,7 +98,7 @@ PROJECT_ROLES = [
     },
 ]
 
-# Historic invite-code role names, including the pre-role-system labels.
+# Historic invite-code and project-member role names, including the pre-role-system labels.
 INVITE_ROLE_MAP = {
     PROJECT_ROLE_PROJECT_ADMIN: PROJECT_ROLE_PROJECT_ADMIN,
     PROJECT_ROLE_RESEARCHER: PROJECT_ROLE_RESEARCHER,
@@ -140,7 +143,7 @@ def build_migration_js(apply_changes: bool, delete_orphan_codes: bool) -> str:
         systemRoles: {{ seeded: 0, removed: 0 }},
         projectRoles: {{ seeded: 0, removed: 0 }},
         users: {{ total: 0, toSysAdmin: 0, toUser: 0, alreadyCorrect: 0, legacyFieldsCleared: 0 }},
-        projects: {{ total: 0, changed: 0, membersAssigned: 0, adminsPromoted: 0 }},
+        projects: {{ total: 0, changed: 0, membersAssigned: 0, legacyRolesMapped: 0, adminsPromoted: 0 }},
         inviteCodes: {{ total: 0, changed: 0, projectIdMigrated: 0, roleRemapped: 0,
                         eppnInitialised: 0, orphaned: 0, orphansDeleted: 0 }},
         warnings: [],
@@ -226,12 +229,22 @@ def build_migration_js(apply_changes: bool, delete_orphan_codes: bool) -> str:
         if (members.length === 0) {{ return; }}
 
         const validRole = function (role) {{ return role === PROJECT_ADMIN || role === RESEARCHER; }};
-        const anyRoleAssigned = members.some(function (m) {{ return m && validRole(m.role); }});
+        const legacyRole = function (role) {{
+            return typeof role === "string" && Object.prototype.hasOwnProperty.call(INVITE_ROLE_MAP, role);
+        }};
+        const anyRoleAssigned = members.some(function (m) {{
+            return m && (validRole(m.role) || legacyRole(m.role));
+        }});
 
         let changed = false;
         const newMembers = members.map(function (member, index) {{
             if (!member) {{ return member; }}
             if (validRole(member.role)) {{ return member; }}
+            if (legacyRole(member.role)) {{
+                changed = true;
+                summary.projects.legacyRolesMapped++;
+                return Object.assign({{}}, member, {{ role: INVITE_ROLE_MAP[member.role] }});
+            }}
 
             // A project that has never been migrated: members[0] is the creator
             // (createProject wrote them as the sole initial member), so they get
@@ -382,6 +395,7 @@ def print_report(summary: dict, apply_changes: bool) -> None:
     print(f"  total:              {projects.get('total', 0)}")
     print(f"  changed:            {projects.get('changed', 0)}")
     print(f"  members given role: {projects.get('membersAssigned', 0)}")
+    print(f"  legacy roles mapped: {projects.get('legacyRolesMapped', 0)}  (admin/member/transcriber/…)")
     print(f"  admins promoted:    {projects.get('adminsPromoted', 0)}  (projects that had none)")
     print()
 
