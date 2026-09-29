@@ -900,7 +900,7 @@ def phase_config(ctx: Ctx) -> None:
     env, carried = plan_env(old, load_env_file(ctx.new / ".env-example"), overrides)
     for key in carried:
         say(f"  from the old .env: {key}={env[key]}")
-    for key in ("ABS_ROOT_PATH", "HTTP_PORT", "TRATT_SUBDOMAIN", "LOCAL_IDP_ENABLED", "WHISPERX_ENABLED"):
+    for key in overrides:
         say(f"  set:               {key}={env[key]}")
     if not env.get("PROXY_BLOCKED_CIDRS"):
         warn("PROXY_BLOCKED_CIDRS is empty: Jupyter sessions can reach internal networks (--proxy-blocked-cidrs)")
