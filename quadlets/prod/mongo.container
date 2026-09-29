@@ -6,7 +6,7 @@ After=network-online.target visp-net.service
 ContainerName=mongo
 Image=docker.io/library/mongo:6.0.27
 Network=visp-net.network
-PublishPort=127.0.0.1:27017:27017
+# Not published on the host: session-manager, emu-webapp-server and wsrng-server reach it as mongo:27017; visp.py uses 'podman exec mongo' on visp-net.
 Environment=MONGO_INITDB_ROOT_USERNAME=root
 Secret=visp_mongo_root_password,type=env,target=MONGO_INITDB_ROOT_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/mongo/data:/data/db:Z

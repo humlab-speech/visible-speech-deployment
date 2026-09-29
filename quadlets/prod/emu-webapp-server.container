@@ -8,7 +8,7 @@ ContainerName=emu-webapp-server
 Image=localhost/visp-emu-webapp-server:latest
 Exec=npm start
 Network=visp-net.network
-PublishPort=127.0.0.1:17890:17890
+# Not published on the host: Apache reaches it as emu-webapp-server:17890 on visp-net.
 EnvironmentFile=@@PROJECT_DIR@@/mounts/emu-webapp-server/.env
 Environment=LOG_LEVEL=INFO
 Secret=visp_mongo_uri,type=env,target=MONGO_URI
