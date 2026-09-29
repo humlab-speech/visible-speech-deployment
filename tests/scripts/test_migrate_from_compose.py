@@ -18,20 +18,17 @@ def mig():
 
 OLD_ENV = {
     "BASE_DOMAIN": "visp.example.org",
+    "ADMIN_EMAIL": "admin@example.org",
     "ABS_ROOT_PATH": "/srv/old-visp",
     "HTTP_PORT": "80",
     "GITLAB_HOME": "/srv/gitlab",
-    "MONGO_ROOT_PASSWORD": "mongo-pw",
-    "MATOMO_DB_USER": "matomo",
-    "MATOMO_DB_PASSWORD": "matomo-pw",
-    "MATOMO_DB_ROOT_PASSWORD": "matomo-root-pw",
-    "TEST_USER_LOGIN_KEY": "",
+    "MONGO_ROOT_PASSWORD": "old-mongo-pw",
 }
 EXAMPLE = {
     "BASE_DOMAIN": "visp.local",
+    "ADMIN_EMAIL": "",
     "ABS_ROOT_PATH": "/your/path",
     "HTTP_PORT": "8081",
-    "ADMIN_EMAIL": "",
     "MONGO_ROOT_PASSWORD": "",
 }
 
@@ -42,39 +39,40 @@ class TestSubids:
         assert mig.parse_subid_file(text) == [("alice", 100000, 65536), ("bob", 165536, 65536)]
 
     def test_next_start_follows_highest_range(self, mig):
-        entries = [("alice", 165536, 65536), ("bob", 100000, 65536)]
-        assert mig.next_subid_start(entries) == 231072
+        assert mig.next_subid_start([("alice", 165536, 65536), ("bob", 100000, 65536)]) == 231072
 
     def test_next_start_empty_uses_minimum(self, mig):
         assert mig.next_subid_start([]) == 100000
 
 
 class TestPlanEnv:
-    def test_overrides_old_values_and_defaults(self, mig):
-        env, _, _, _ = mig.plan_env(OLD_ENV, EXAMPLE, {"ABS_ROOT_PATH": "/data/visp/new", "HTTP_PORT": "8081"})
+    def test_carries_only_whitelisted_keys(self, mig):
+        env, carried = mig.plan_env(OLD_ENV, EXAMPLE, {"ABS_ROOT_PATH": "/data/visp/new"})
         assert env == {
-            "BASE_DOMAIN": "visp.example.org",  # carried from old
-            "ABS_ROOT_PATH": "/data/visp/new",  # override beats old
-            "HTTP_PORT": "8081",
-            "ADMIN_EMAIL": "",  # example default
+            "BASE_DOMAIN": "visp.example.org",  # carried
+            "ADMIN_EMAIL": "admin@example.org",  # carried
+            "ABS_ROOT_PATH": "/data/visp/new",  # override
+            "HTTP_PORT": "8081",  # example default, not the old 80
         }
+        assert carried == ["BASE_DOMAIN", "ADMIN_EMAIL"]
 
-    def test_secrets_carried_and_missing_generated(self, mig):
-        _, secrets, _, generated = mig.plan_env(OLD_ENV, EXAMPLE, {})
-        assert secrets["MONGO_ROOT_PASSWORD"] == "mongo-pw"
-        assert secrets["MATOMO_DB_USER"] == "matomo"
-        assert "TEST_USER_LOGIN_KEY" in generated  # empty in old .env
-        assert len(secrets["TEST_USER_LOGIN_KEY"]) == 32
-        assert set(secrets) == set(mig.SECRET_KEYS)
+    def test_never_takes_secrets_from_the_old_env(self, mig):
+        env, _ = mig.plan_env(OLD_ENV, EXAMPLE, {})
+        assert "MONGO_ROOT_PASSWORD" not in env
+        assert "old-mongo-pw" not in env.values()
 
-    def test_reports_dropped_keys(self, mig):
-        _, _, dropped, _ = mig.plan_env(OLD_ENV, EXAMPLE, {})
-        assert dropped == ["GITLAB_HOME"]
 
-    def test_missing_database_password_is_fatal(self, mig):
-        old = dict(OLD_ENV, MONGO_ROOT_PASSWORD="")
-        with pytest.raises(mig.MigrationError, match="MONGO_ROOT_PASSWORD"):
-            mig.plan_env(old, EXAMPLE, {})
+class TestPlanSecrets:
+    def test_generates_all_when_none_exist(self, mig):
+        values, generated = mig.plan_secrets({})
+        assert set(values) == set(mig.SECRET_KEYS) == set(generated)
+        assert values["MATOMO_DB_USER"] == "matomo"
+        assert len(values["MONGO_ROOT_PASSWORD"]) == 32
+
+    def test_keeps_existing_secrets(self, mig):
+        values, generated = mig.plan_secrets({"MONGO_ROOT_PASSWORD": "keep-me-please"})
+        assert values["MONGO_ROOT_PASSWORD"] == "keep-me-please"
+        assert "MONGO_ROOT_PASSWORD" not in generated
 
 
 def test_render_env_keeps_comments_and_drops_secret_lines(mig):
@@ -83,21 +81,79 @@ def test_render_env_keeps_comments_and_drops_secret_lines(mig):
     assert out == "# Domain\nBASE_DOMAIN=visp.example.org\n\n#Mongo\nHTTP_PORT=8081\n"
 
 
-def test_patch_matomo_dbname_only_touches_database_section(mig):
-    config = '[database]\nhost = "matomo-db"\ndbname = "old_db"\n\n[database_tests]\ndbname = "tests"\n'
-    out = mig.patch_matomo_dbname(config, "matomo_db")
-    assert 'dbname = "matomo_db"' in out
-    assert 'dbname = "tests"' in out
-    assert 'dbname = "old_db"' not in out
+class TestPatchIni:
+    CONFIG = (
+        "; <?php exit; ?> DO NOT REMOVE THIS LINE\n"
+        "[database]\n"
+        'host = "matomo-db"\n'
+        'username = "old_user"\n'
+        'password = "old_pw"\n'
+        'dbname = "old_db"\n'
+        'tables_prefix = "matomo_"\n'
+        "\n"
+        "[General]\n"
+        'salt = "keep-this-salt"\n'
+    )
+
+    def test_replaces_keys_in_section_only(self, mig):
+        out = mig.patch_ini_section(
+            self.CONFIG, "[database]", {"username": "matomo", "password": "new_pw", "dbname": "matomo_db"}
+        )
+        assert 'username = "matomo"' in out
+        assert 'password = "new_pw"' in out
+        assert 'dbname = "matomo_db"' in out
+        assert "old_pw" not in out and "old_user" not in out
+        assert 'tables_prefix = "matomo_"' in out
+        assert 'salt = "keep-this-salt"' in out
+
+    def test_adds_missing_keys_before_next_section(self, mig):
+        out = mig.patch_ini_section('[database]\nhost = "x"\n[General]\na = 1\n', "[database]", {"port": "3306"})
+        assert out == '[database]\nhost = "x"\nport = "3306"\n[General]\na = 1\n'
+
+    def test_adds_missing_keys_when_section_is_last(self, mig):
+        out = mig.patch_ini_section('[General]\na = 1\n[database]\nhost = "x"', "[database]", {"port": "3306"})
+        assert out.endswith('[database]\nhost = "x"\nport = "3306"\n')
 
 
-def test_proxy_conf_targets_upstream_with_websocket_headers(mig):
-    conf = mig.render_proxy_conf("/etc/tls/cert.pem", "/etc/tls/key.pem", 8081)
-    assert "proxy_pass http://127.0.0.1:8081;" in conf
-    assert "proxy_set_header Upgrade $http_upgrade;" in conf
-    assert "ssl_certificate_key /etc/tls/key.pem;" in conf
-    assert "client_max_body_size 10G;" in conf
+class TestProxyConf:
+    OLD = "server {\n    listen 443 ssl;\n    location / { proxy_pass http://127.0.0.1:80; }\n}\n"
+
+    def test_cutover_config_targets_new_apache(self, mig):
+        conf = mig.render_proxy_conf("/etc/tls/cert.pem", "/etc/tls/key.pem", 8081)
+        assert "listen 443 ssl;" in conf
+        assert "proxy_pass http://127.0.0.1:8081;" in conf
+        assert "proxy_set_header Upgrade $http_upgrade;" in conf
+        assert "map $http_upgrade $connection_upgrade" in conf
+
+    def test_preview_keeps_the_old_server_verbatim(self, mig):
+        conf = mig.add_preview_block(self.OLD, "/c", "/k", 8081)
+        assert conf.startswith(self.OLD)
+        assert "listen 127.0.0.1:8443 ssl;" in conf
+        assert conf.count("proxy_pass http://127.0.0.1:8081;") == 1
+
+    def test_preview_is_idempotent_and_removable(self, mig):
+        once = mig.add_preview_block(self.OLD, "/c", "/k", 8081)
+        assert mig.add_preview_block(once, "/c", "/k", 8081) == once
+        assert mig.strip_preview_block(once) == self.OLD
+
+
+def test_compare_counts_reports_mismatches(mig):
+    old = {"visp": {"users": 19, "projects": 17}, "wsrng": {"sessions": 56}}
+    new = {"visp": {"users": 19, "projects": 16}}
+    assert mig.compare_counts(old, new) == ["visp.projects: old 17, new 16", "wsrng.sessions: old 56, new None"]
+    assert mig.compare_counts(old, old) == []
+
+
+def test_app_databases_excludes_system_ones(mig):
+    assert mig.app_databases(["local", "wsrng", "admin", "visp", "config"]) == ["visp", "wsrng"]
 
 
 def test_mongo_config_yaml_escapes_password(mig):
     assert mig.mongo_config_yaml('p"a:ss#') == 'password: "p\\"a:ss#"\n'
+
+
+def test_log_masks_secrets(mig, tmp_path):
+    log = mig.Log()
+    log.add_secret("s3cr3t-value")
+    log.add_secret("short")  # too short to mask safely
+    assert log.mask("pw=s3cr3t-value user=short") == "pw=******** user=short"
