@@ -388,6 +388,24 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   - Current: external build via `visp.py build webclient`, mount `dist/`
   - Alternative: restore `ng build --watch` for hot-reload (had permission issues)
 
+- [ ] **Replaced recordings accumulate and nothing prunes them (needs a visp.py command)**
+  - When an SPR import replaces an EMU-DB bundle, session-manager moves the old bundle
+    to `<project>/Data/replaced-recordings/<session>_ses/<utc>-<bundle>_bndl` instead of
+    deleting it (session-manager `retireBundle`). The folder is deliberately visible —
+    Jupyter's contents manager refuses hidden paths — so researchers can restore their
+    own replaced takes
+  - Nothing deletes it. A bundle holds audio **and** annotations, so one long re-taken
+    recording can add hundreds of MB per project, and saves `git add(".")` it into the
+    project repo (git dedups the blobs, so `.git` grows little; the working tree doubles)
+  - We chose to notice rather than delete: no sweep, no cron, until we see real growth
+  - **Suggested home:** a `visp.py` diagnostic next to the session doctor — e.g. extend
+    `./visp.py sd` (or `visp.py doctor`) with per-project `replaced-recordings` size and
+    age, plus an opt-in `--prune <days>`. Do not add a timer unit: pruning belongs to a
+    human looking at numbers, not to a nightly job
+  - Related: a `git add(".")` that fills the volume mid-import leaves a stale
+    `index.lock` (`addFilesToGit` already retries once); the diagnostic could report
+    that state too
+
 ## Notes
 
 - **Sass deprecation warnings**: font-awesome `@import` and `lighten()` — cosmetic,
