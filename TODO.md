@@ -20,6 +20,7 @@
     plus ~5 000-entry cap (recordings are WAV — poor compression, so a ratio+absolute pair
     is defensible).
   - Not implemented until decided.
+- [ ] **Rename legacy `hsApp` / `visp.hsApp` naming** (REVIEW-FIX-PLAN D4): needs a coordinated rename window across webclient, session-manager and the PHP API (wire-visible field), so not done piecemeal.
 
 ## CLI Fixes — visp.py evaluation (2026-08-17/18)
 
