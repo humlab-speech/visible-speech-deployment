@@ -868,13 +868,21 @@ they belong to.
 
 ### Project level — `projects.members[].role`, defined in `project_roles`
 
-| Role | `createInviteCodes` | `manageProjectMembers` | `editProjectFiles` |
-|---|---|---|---|
-| `project_admin` | ✅ | ✅ | ✅ |
-| `researcher` | ❌ | ✅ | ✅ |
+| Role | `createInviteCodes` | `manageProjectMembers` | `editProjectFiles` | delete bundles\* |
+|---|---|---|---|---|
+| `project_admin` | ✅ | ✅ | ✅ | ✅ |
+| `researcher` | ❌ | ✅ | ✅ | ❌ |
 
-The only thing a Researcher cannot do inside their project is issue invite codes.
-A SysAdmin implicitly holds every project permission in every project, without being
+\* `deleteBundles` is **not** a seeded role flag: it is derived server-side from
+`canDeleteProject` (ProjectAdmin or SysAdmin) and added to
+`project.userProjectPermissions` by `fetchProjects`, so the UI hides the trash button on
+the same rule the backend enforces. Decided 2026-10-05: a bundle holds stored audio a
+colleague may be working with, so removing one is gated like deleting the project,
+while adding one stays a normal Researcher action. Upgrade path if the admin round-trip
+hurts: per-bundle ownership (the owner is already recorded), not a wider role.
+
+The only things a Researcher cannot do inside their project are issue invite codes and
+delete a stored bundle. A SysAdmin implicitly holds every project permission in every project, without being
 a member. The creator of a project becomes its ProjectAdmin.
 
 Backend entry points: `getSystemPermissions(user)` for system-level checks,
