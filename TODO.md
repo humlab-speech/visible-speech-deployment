@@ -11,6 +11,16 @@
 > UDS network isolation (`--network=none`), operations sessions network-isolated,
 > session doctor `api.sock` tracking, octra upgraded to humlab-2.2.2.
 
+## awaiting owner decision
+
+- [ ] **Zip-bomb cap for webclient `api/api.php` `zipEntriesAreSafe()`** (REVIEW-FIX-PLAN A5)
+  - Entry names are validated but neither `numFiles` nor total uncompressed size is bounded.
+  - Needs two numbers from the owner: (a) max total uncompressed size, (b) max entry count.
+  - Proposal to react to: refuse when uncompressed total > 20× archive size AND > 100 MB,
+    plus ~5 000-entry cap (recordings are WAV — poor compression, so a ratio+absolute pair
+    is defensible).
+  - Not implemented until decided.
+
 ## CLI Fixes — visp.py evaluation (2026-08-17/18)
 
 Full evaluation of `visp.py`: every command group was hands-on tested on a live dev
