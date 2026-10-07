@@ -529,7 +529,10 @@ async function verifyScriptChangeRefused(page, sessionName) {
             if ((await script.inputValue()) !== stored) {
                 fail(`the recording script was changed to "${other}" despite the session holding takes`);
             }
-        } catch {
+        } catch (err) {
+            if (err instanceof TestFailure) {
+                throw err;
+            }
             // selectOption refuses to act on the disabled control — that is the refusal.
         }
     }
