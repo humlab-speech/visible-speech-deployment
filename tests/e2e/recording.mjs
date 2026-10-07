@@ -9,7 +9,9 @@
 //     so the session can be completed without re-recording them
 //
 // A session can take both uploads and online recordings: it then uploads a
-// file to the recorded session and checks that the recordings are untouched.
+// file to the recorded session and checks that the recordings are untouched,
+// after which recording can't be switched off and the recording script can't
+// be changed.
 // It also uploads a file to a new session and checks that it is listed under
 // the name it was stored as, and that its bundle holds the uploaded audio.
 //
@@ -498,6 +500,47 @@ async function verifyRecordingLocked(page, sessionName) {
     await dialog.waitFor({ state: "detached", timeout: 30000 });
 }
 
+// Once a session holds recorded takes its recording script is locked: the
+// dialog disables the control (session-manager refuses the change outright),
+// and the control only unlocks as an escape hatch when the stored script is
+// no longer offered — which is not the case for a session this test itself
+// created minutes earlier.
+async function verifyScriptChangeRefused(page, sessionName) {
+    step = "verify script change refused";
+    const { dialog } = await readSessionPanel(page, sessionName);
+    const script = sessionCard(page, dialog, sessionName).locator("select.sessionScriptControl").first();
+    await script.waitFor({ timeout: 15000 });
+    const { stored, options } = await script.evaluate((el) => ({
+        stored: el.value,
+        options: [...el.options].map((o) => o.value).filter((v) => v),
+    }));
+    if (!options.includes(stored)) {
+        fail(`the session's script "${stored}" is no longer offered; the lock does not apply and this test cannot check it`);
+    }
+    if (!(await script.isDisabled())) {
+        fail("a session with recorded takes must not allow changing its recording script");
+    }
+    // The refusal is the disabled control; attempting the change anyway must
+    // not take. With a single script offered there is nothing to switch to.
+    const other = options.find((o) => o !== stored);
+    if (other) {
+        try {
+            await script.selectOption(other, { timeout: 2000 });
+            if ((await script.inputValue()) !== stored) {
+                fail(`the recording script was changed to "${other}" despite the session holding takes`);
+            }
+        } catch (err) {
+            if (err instanceof TestFailure) {
+                throw err;
+            }
+            // selectOption refuses to act on the disabled control — that is the refusal.
+        }
+    }
+    pass("a session with recorded takes can't change its recording script");
+    await domClick(dialog.locator(".cancel-btn"));
+    await dialog.waitFor({ state: "detached", timeout: 30000 });
+}
+
 // Recording can be switched on for a session created for uploads; saving
 // must create the session the recording link opens.
 async function enableRecordingOnUploadSession(page, sessionName) {
@@ -588,6 +631,7 @@ async function main() {
         await verifyUploadSession(page, sessionName, wav);
         await verifyBundlesOnDisk(page, link, sessionName, itemCodes);
         await verifyRecordingLocked(page, sessionName);
+        await verifyScriptChangeRefused(page, sessionName);
 
         await createUploadSession(page, uploadSessionName, wav);
         uploadCreated = true;

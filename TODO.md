@@ -11,6 +11,32 @@
 > UDS network isolation (`--network=none`), operations sessions network-isolated,
 > session doctor `api.sock` tracking, octra upgraded to humlab-2.2.2.
 
+## awaiting owner decision
+
+- [ ] **Zip-bomb cap for webclient `api/api.php` `zipEntriesAreSafe()`** (REVIEW-FIX-PLAN A5)
+  - Entry names are validated but neither `numFiles` nor total uncompressed size is bounded.
+  - Needs two numbers from the owner: (a) max total uncompressed size, (b) max entry count.
+  - Proposal to react to: refuse when uncompressed total > 20× archive size AND > 100 MB,
+    plus ~5 000-entry cap (recordings are WAV — poor compression, so a ratio+absolute pair
+    is defensible).
+  - Not implemented until decided.
+- [ ] **Rename legacy `hsApp` / `visp.hsApp` naming** (REVIEW-FIX-PLAN D4): needs a coordinated rename window across webclient, session-manager and the PHP API (wire-visible field), so not done piecemeal.
+- [ ] **Broken GitLab-clone calls in session-manager** (found while doing REVIEW-FIX-PLAN D4): the routes
+  `/api/session/user` and `/api/session/new/user` (token-gated, registered unconditionally) still call
+  `session.cloneProjectFromGit()`, which no longer exists anywhere (GitLab integration was removed
+  upstream in emu-webapp-server/container-agent). A hit today throws a TypeError into the async IIFE →
+  unhandled rejection, no response. Decision: drop the call (clone integration is gone — likely right)
+  or delete the routes if nothing calls them; needs caller evidence from wherever these are invoked.
+- [x] **31 zombie Karma specs in webclient** — RESOLVED 2026-10-07: owner chose delete; all 38
+  CLI-scaffold specs (the 31 failing plus the handful still passing by luck) removed in webclient
+  commit `2069248`, keeping only the two specs with real assertions (`file-upload.service.spec.ts`,
+  `session-denial.spec.ts`). VM to confirm Karma now executes only these two specs, all green.
+- [ ] **SM `npm test` hangs inside the visp-session-manager dev-image container only** (VM pass 4): identical file
+  (sha256 `1ec82bce…`) + identical Node 24.20 are green on bare official images and inside the same container under
+  `env -i` — so a quadlet-injected env var triggers a require-time side effect under `ApiServer.class.js`
+  (observed: 2 dangling sockets + pending file-level wrapper promise). Backlog, not a PR blocker: bisect which env
+  var (suspects: HTTP/WS port vars, or a Models-level `new MongoClient` fed by env).
+
 ## CLI Fixes — visp.py evaluation (2026-08-17/18)
 
 Full evaluation of `visp.py`: every command group was hands-on tested on a live dev

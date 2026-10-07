@@ -242,8 +242,10 @@ that label no longer describes the running code — the bind mount does.
 ### Session Container Architecture
 
 VISP uses a **single unified session image** (`visp-jupyter-session`) for all dynamic
-workloads: interactive Jupyter sessions, short-lived EMU-DB operations, and VSCode sessions
-(which have their own image). The previous three-image architecture (operations-session →
+workloads: interactive Jupyter sessions and short-lived EMU-DB operations. VSCode sessions
+were dropped in an earlier refactor (no session class, image build target, or quadlet
+references them; only the unused `docker/session-manager/vscode-session/` template remains
+on disk). The previous three-image architecture (operations-session →
 rstudio-session → jupyter-session) was consolidated to simplify the build chain and reduce
 disk usage.
 
@@ -868,13 +870,21 @@ they belong to.
 
 ### Project level — `projects.members[].role`, defined in `project_roles`
 
-| Role | `createInviteCodes` | `manageProjectMembers` | `editProjectFiles` |
-|---|---|---|---|
-| `project_admin` | ✅ | ✅ | ✅ |
-| `researcher` | ❌ | ✅ | ✅ |
+| Role | `createInviteCodes` | `manageProjectMembers` | `editProjectFiles` | delete bundles\* |
+|---|---|---|---|---|
+| `project_admin` | ✅ | ✅ | ✅ | ✅ |
+| `researcher` | ❌ | ✅ | ✅ | ❌ |
 
-The only thing a Researcher cannot do inside their project is issue invite codes.
-A SysAdmin implicitly holds every project permission in every project, without being
+\* `deleteBundles` is **not** a seeded role flag: it is derived server-side from
+`canDeleteProject` (ProjectAdmin or SysAdmin) and added to
+`project.userProjectPermissions` by `fetchProjects`, so the UI hides the trash button on
+the same rule the backend enforces. Decided 2026-10-05: a bundle holds stored audio a
+colleague may be working with, so removing one is gated like deleting the project,
+while adding one stays a normal Researcher action. Upgrade path if the admin round-trip
+hurts: per-bundle ownership (the owner is already recorded), not a wider role.
+
+The only things a Researcher cannot do inside their project are issue invite codes and
+delete a stored bundle. A SysAdmin implicitly holds every project permission in every project, without being
 a member. The creator of a project becomes its ProjectAdmin.
 
 Backend entry points: `getSystemPermissions(user)` for system-level checks,
@@ -1037,7 +1047,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | fully pinned ✅ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | fully pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
-| `external/wsrng-server/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+| `external/wsrng-server/Dockerfile` | `node:24.16.0-alpine3.22` | fully pinned ✅ | Node 24 = Active LTS (moved off EOL Node 20). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 
 ### Update procedure
 
