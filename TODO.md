@@ -436,3 +436,6 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 - **Sass deprecation warnings**: font-awesome `@import` and `lighten()` — cosmetic,
   will become errors in Dart Sass 3.0 (future cleanup)
+
+## pre-existing security gaps (found during the 2026-10 review, not fixed by audit PRs)
+- [ ] SPR script ownership (session-manager): `fetchSprScripts` takes the username from the client; `saveSprScripts`/`deleteSprScript` accept any `scriptId` from any authenticated user — no ownership check. Needs a design pass on who may edit scripts.
