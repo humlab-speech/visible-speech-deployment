@@ -27,6 +27,16 @@
   upstream in emu-webapp-server/container-agent). A hit today throws a TypeError into the async IIFE →
   unhandled rejection, no response. Decision: drop the call (clone integration is gone — likely right)
   or delete the routes if nothing calls them; needs caller evidence from wherever these are invoked.
+- [ ] **31 zombie Karma specs in webclient** (surfaced by the Karma repair, VM pass 4): auto-discovery now runs
+  73 specs — 42 green (all substantive, incl. the new `storedName` + session-denial specs), 31 red, all
+  Angular-12-era `should be created` boilerplate that has not executed since ~2022 and fails on providers/Angular
+  imports that drifted since. Decide per PR scope: delete the 31 (matches "deletions beat additions" and the
+  plan's Tier C) or fix them. Either way the karma bar is met.
+- [ ] **SM `npm test` hangs inside the visp-session-manager dev-image container only** (VM pass 4): identical file
+  (sha256 `1ec82bce…`) + identical Node 24.20 are green on bare official images and inside the same container under
+  `env -i` — so a quadlet-injected env var triggers a require-time side effect under `ApiServer.class.js`
+  (observed: 2 dangling sockets + pending file-level wrapper promise). Backlog, not a PR blocker: bisect which env
+  var (suspects: HTTP/WS port vars, or a Models-level `new MongoClient` fed by env).
 
 ## CLI Fixes — visp.py evaluation (2026-08-17/18)
 
