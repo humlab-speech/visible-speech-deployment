@@ -446,7 +446,8 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   including a cross-site top-level POST, i.e. a SAML ACS on POST binding. Lax is the intended
   policy, but it is a behaviour change on two of three browsers. (Same note applies to the
   `Access-Control-Allow-Origin` decision below: the id is also in `window.visp.phpSessionId`.)
-- [ ] **No Origin check on the session-manager WebSocket** (next PR, design settled). The command socket (`ApiServer.class.js:637-655`, `noServer` + unconditional `handleUpgrade`) authenticates purely from the domain-scoped `PHPSESSID` cookie, so script on any same-site subdomain — `app.*` runs user notebook output — opens an authenticated, readable socket. Gate on the `:8020` `upgrade` event only: exact-match `request.headers.origin` against `https://BASE_DOMAIN` (plus `http://BASE_DOMAIN:HTTP_PORT` in dev), raw 403 on mismatch. `app.*` iframe and Jupyter kernel sockets arrive at `session-manager:80` (`app.vhost.conf:11`, `SessionProxyServer`), a different listener, so they cannot be affected. **Reject present-but-wrong, allow absent** — every browser sends `Origin`, and a non-browser client cannot carry a victim's cookie; log absent-Origin with eppn+IP for a month, then require it.
+- [ ] **One Origin policy, in one PR: the session-manager WebSocket gate + `requestOriginOk()` exact authority.** (next PR, design settled). The command socket (`ApiServer.class.js:637-655`, `noServer` + unconditional `handleUpgrade`) authenticates purely from the domain-scoped `PHPSESSID` cookie, so script on any same-site subdomain — `app.*` runs user notebook output — opens an authenticated, readable socket. Gate on the `:8020` `upgrade` event only: exact-match `request.headers.origin` against `https://BASE_DOMAIN` (plus `http://BASE_DOMAIN:HTTP_PORT` in dev), raw 403 on mismatch. `app.*` iframe and Jupyter kernel sockets arrive at `session-manager:80` (`app.vhost.conf:11`, `SessionProxyServer`), a different listener, so they cannot be affected. **Reject present-but-wrong, allow absent** — every browser sends `Origin`, and a non-browser client cannot carry a victim's cookie; log absent-Origin with eppn+IP for a month, then require it.
+  Do the PHP side in the **same** PR: `requestOriginOk()` (`sessionSecurity.php`) still ends in `str_ends_with($originHost, "." . $own)`, i.e. any subdomain of the base domain is accepted — which admits `app.*` notebook script to the PHP API for exactly the reason the WS gate exists. Same policy, same adversary, same allow-list: one edge-behaviour change per release, so a 403 from an unseen deployment has one place to look. Evidence it is safe to tighten here: `artic` has no `Alias /api`; `recorder.*`'s `/api/` is the Node server; only `tratt.vhost.conf:9` serves this `api.php`, same-origin; every logged POST carried the base referer. The refusal names the Origin in the log line, so a breakage is loud rather than silent.
 - [ ] **`SessionAccessCode` cookie is `sameSite: 'None'` on the parent domain** (webclient, set in `system.service.ts`/`appctrl`): every subdomain can read it, and it is a bearer credential for a running container. Same-site subdomains do not need `None`.
 - [x] **Access code appears in URLs** — partly done 2026-10-15: `app-access.log` now logs `%U`
   instead of `%r` in both mounted vhost trees (deployment `412d46f`), so a notebook open no
@@ -489,6 +490,13 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
   sweep as code. Accepted deliberately: the alternative is a per-hunk review of
   already-verified content. The follow-up that *was* queued — the identity of the accounts
   those commits carry — is done.
+- **`/api/v1/signout` stays a GET.** The planned GET→POST change is dropped as no longer needed: its
+  vector was a cross-site subrequest (`<img src="…/api/v1/signout">`) riding the session cookie, and
+  the explicit `SameSite=Lax` in webclient `b054af8` removes that in every browser (Firefox sends an
+  unspecified-SameSite cookie on cross-site subresources, Chrome already did not, Safari blocks
+  third-party cookies). What survives is a top-level navigation to the sign-out URL: it takes the
+  user's tab somewhere visible and the worst outcome is that they log out. Not worth an interface
+  change that can strand a bookmark or a monitoring probe.
 - **Bundle deletion is ProjectAdmin/SysAdmin only**, while bundle *creation* stays a normal
   Researcher action. A bundle holds stored audio a colleague may be working with, so removal
   is gated like project deletion. If the admin round-trip hurts, the upgrade path is
