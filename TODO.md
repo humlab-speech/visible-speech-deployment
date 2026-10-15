@@ -13,13 +13,14 @@
 
 ## awaiting owner decision
 
-- [ ] **Zip-bomb cap for webclient `api/api.php` `zipEntriesAreSafe()`** (REVIEW-FIX-PLAN A5)
-  - Entry names are validated but neither `numFiles` nor total uncompressed size is bounded.
-  - Needs two numbers from the owner: (a) max total uncompressed size, (b) max entry count.
-  - Proposal to react to: refuse when uncompressed total > 20× archive size AND > 100 MB,
-    plus ~5 000-entry cap (recordings are WAV — poor compression, so a ratio+absolute pair
-    is defensible).
-  - Not implemented until decided.
+- [x] **Zip-bomb cap for webclient `api/api.php` `zipEntriesAreSafe()`** (REVIEW-FIX-PLAN A5)
+  — RESOLVED 2026-10-15: owner took the proposed numbers. webclient `f1308dd`: 5 000 entries,
+  declared size refused when it passes both 20× the archive and 500 MB, absolute ceiling 2 GB
+  (`ZIP_MAX_UNCOMPRESSED_BYTES` in `.env` raises it), and extraction moved to one entry at a
+  time so the same rule applies to *measured* file sizes — the central directory is
+  attacker-supplied, so the declared check is the early refusal and the measured one the
+  ceiling. **Still to verify on a live stack** (no zip extension in the audit container):
+  one upload of a zipped folder, and one archive whose central directory understates itself.
 - [ ] **Rename legacy `hsApp` / `visp.hsApp` naming** (REVIEW-FIX-PLAN D4): needs a coordinated rename window across webclient, session-manager and the PHP API (wire-visible field), so not done piecemeal.
 - [ ] **Broken GitLab-clone calls in session-manager** (found while doing REVIEW-FIX-PLAN D4): the routes
   `/api/session/user` and `/api/session/new/user` (token-gated, registered unconditionally) still call
@@ -439,3 +440,28 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ## pre-existing security gaps (found during the 2026-10 review, not fixed by audit PRs)
 - [ ] SPR script ownership (session-manager): `fetchSprScripts` takes the username from the client; `saveSprScripts`/`deleteSprScript` accept any `scriptId` from any authenticated user — no ownership check. Needs a design pass on who may edit scripts.
+- [ ] **No Origin check on the session-manager WebSocket** (next PR, design settled). The command socket (`ApiServer.class.js:637-655`, `noServer` + unconditional `handleUpgrade`) authenticates purely from the domain-scoped `PHPSESSID` cookie, so script on any same-site subdomain — `app.*` runs user notebook output — opens an authenticated, readable socket. Gate on the `:8020` `upgrade` event only: exact-match `request.headers.origin` against `https://BASE_DOMAIN` (plus `http://BASE_DOMAIN:HTTP_PORT` in dev), raw 403 on mismatch. `app.*` iframe and Jupyter kernel sockets arrive at `session-manager:80` (`app.vhost.conf:11`, `SessionProxyServer`), a different listener, so they cannot be affected. **Reject present-but-wrong, allow absent** — every browser sends `Origin`, and a non-browser client cannot carry a victim's cookie; log absent-Origin with eppn+IP for a month, then require it.
+- [ ] **`SessionAccessCode` cookie is `sameSite: 'None'` on the parent domain** (webclient, set in `system.service.ts`/`appctrl`): every subdomain can read it, and it is a bearer credential for a running container. Same-site subdomains do not need `None`.
+- [ ] **Access code appears in URLs** — load-bearing, not an oversight: `JupyterSession.class.js:20` sets `JUPYTER_TOKEN = this.accessCode`, so the `?token=` on the `app.*` iframe is what clears Jupyter's own token login even though session-manager reads only the cookie (`getSessionAccessCodeFromRequest`, `SessionManager.class.js:344-346`). One string is both the VISP session credential and the notebook password; it lands in `app-access.log` on every session open. Options: leave it (status quo), disable Jupyter's token (removes a defence while `isRequestAuthorizedForSession` still fails open ×3 — do not), or have the proxy do the Jupyter token login once server-side so the query never reaches the browser or the log. The `/app?token=…` handoff inside the SPA is separate and *can* be stripped with `history.replaceState` after read (4 call sites: `/app` ×2, `/artic`, `/tratt`) — trade-off: refresh and bookmarks of that deep link stop working, owner call.
+- [ ] **Capability token instead of ambient cookie** for the WebSocket — deferred deliberately. `client.phpSessionId = msg.data?.phpSessId` (`ApiServer.class.js:1149`) is not a deletable one-liner: it feeds `phpSessionOwners`, which is what lets `isRequestAuthorizedForSession` deny a positive mismatch at all. That check is fail-open by design when identity is unknown (`SessionManager.class.js:399-406`, “no usability impact”); read that comment before changing it. Needs session-manager and webclient in lockstep with reconnect/re-mint logic.
+- [ ] **`routeToApp` still runs for untokened `:8080` requests** behind the 401 — the old hang-when-no-matching-session behaviour is unchanged by the token gate.
+- [ ] **container-agent `delete-sessions`** — dead command (no caller), partial-delete on failure, and three divergent copies of `pathSecurity` across the repos; its guard also misses `\` where session-manager's refuses it. Keep-or-delete is the owner's call.
+- [ ] **wsrng-server `GET /project/<name>`** auto-inserts a Mongo document on every *unauthenticated* request: `parseInt(name)` → NaN never matches, so the insert happens per request, unbounded (`src/main.js:~560`). Two-line fix; folded in or TODO'd.
+- [ ] **No LICENSE in any of the five service repos** — institutional decision, not engineering.
+
+## decided, documented (no further work queued)
+
+- **Whole-tree staging.** Test/auxiliary files reach these repos by the same `git add .`
+  sweep as code. Accepted deliberately: the alternative is a per-hunk review of
+  already-verified content. The follow-up that *was* queued — the identity of the accounts
+  those commits carry — is done.
+- **Bundle deletion is ProjectAdmin/SysAdmin only**, while bundle *creation* stays a normal
+  Researcher action. A bundle holds stored audio a colleague may be working with, so removal
+  is gated like project deletion. If the admin round-trip hurts, the upgrade path is
+  per-bundle ownership (the owner is already recorded), not a wider role.
+- **`deleteBundle` permission is derived, not seeded**: `userProjectPermissions.deleteBundles`
+  comes from `canDeleteProject` server-side, so the UI hides the trash button on the same rule
+  the backend enforces.
+- **`strip_tags()` in JS is a regex mirror, not a reimplementation** of PHP's state machine.
+  Ceiling accepted: the failure mode is a loud refusal to store a file, never a wrong file.
+  Add a real parser only if it ever mis-accepts something.
