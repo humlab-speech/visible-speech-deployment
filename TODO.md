@@ -440,11 +440,45 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ## pre-existing security gaps (found during the 2026-10 review, not fixed by audit PRs)
 - [ ] SPR script ownership (session-manager): `fetchSprScripts` takes the username from the client; `saveSprScripts`/`deleteSprScript` accept any `scriptId` from any authenticated user — no ownership check. Needs a design pass on who may edit scripts.
+- [ ] **Before deploying webclient `b054af8`: one SWAMID login in Firefox.** That commit states
+  `SameSite=Lax` on `PHPSESSID`, which had never been stated. Chrome fills in Lax for a missing
+  attribute; Firefox and Safari do not, so for them the cookie stops riding cross-site requests —
+  including a cross-site top-level POST, i.e. a SAML ACS on POST binding. Lax is the intended
+  policy, but it is a behaviour change on two of three browsers. (Same note applies to the
+  `Access-Control-Allow-Origin` decision below: the id is also in `window.visp.phpSessionId`.)
 - [ ] **No Origin check on the session-manager WebSocket** (next PR, design settled). The command socket (`ApiServer.class.js:637-655`, `noServer` + unconditional `handleUpgrade`) authenticates purely from the domain-scoped `PHPSESSID` cookie, so script on any same-site subdomain — `app.*` runs user notebook output — opens an authenticated, readable socket. Gate on the `:8020` `upgrade` event only: exact-match `request.headers.origin` against `https://BASE_DOMAIN` (plus `http://BASE_DOMAIN:HTTP_PORT` in dev), raw 403 on mismatch. `app.*` iframe and Jupyter kernel sockets arrive at `session-manager:80` (`app.vhost.conf:11`, `SessionProxyServer`), a different listener, so they cannot be affected. **Reject present-but-wrong, allow absent** — every browser sends `Origin`, and a non-browser client cannot carry a victim's cookie; log absent-Origin with eppn+IP for a month, then require it.
 - [ ] **`SessionAccessCode` cookie is `sameSite: 'None'` on the parent domain** (webclient, set in `system.service.ts`/`appctrl`): every subdomain can read it, and it is a bearer credential for a running container. Same-site subdomains do not need `None`.
-- [ ] **Access code appears in URLs** — load-bearing, not an oversight: `JupyterSession.class.js:20` sets `JUPYTER_TOKEN = this.accessCode`, so the `?token=` on the `app.*` iframe is what clears Jupyter's own token login even though session-manager reads only the cookie (`getSessionAccessCodeFromRequest`, `SessionManager.class.js:344-346`). One string is both the VISP session credential and the notebook password; it lands in `app-access.log` on every session open. Options: leave it (status quo), disable Jupyter's token (removes a defence while `isRequestAuthorizedForSession` still fails open ×3 — do not), or have the proxy do the Jupyter token login once server-side so the query never reaches the browser or the log. The `/app?token=…` handoff inside the SPA is separate and *can* be stripped with `history.replaceState` after read (4 call sites: `/app` ×2, `/artic`, `/tratt`) — trade-off: refresh and bookmarks of that deep link stop working, owner call.
+- [x] **Access code appears in URLs** — partly done 2026-10-15: `app-access.log` now logs `%U`
+  instead of `%r` in both mounted vhost trees (deployment `412d46f`), so a notebook open no
+  longer writes a live credential. Load-bearing, not an oversight: `JupyterSession.class.js:20`
+  sets `JUPYTER_TOKEN = this.accessCode`, so the `?token=` on the `app.*` iframe *is* Jupyter's
+  password even though session-manager reads only the cookie
+  (`getSessionAccessCodeFromRequest`, `SessionManager.class.js:344-346`). One string is both the
+  VISP session credential and the notebook password. Remaining, in one follow-up PR: have the
+  proxy add `Authorization: token <code>` on proxied HTTP **and** WS upgrades (`routeToApp`
+  already holds the session) and then drop `?token=` from the webclient — **verify Jupyter
+  skips XSRF for token-header requests**, and dev-test one notebook end to end (open, run a
+  cell, save). The `/app?token=…` handoff inside the SPA is separate and can be stripped with
+  `history.replaceState` after read (4 call sites: `/app` ×2, `/artic`, `/tratt`) — trade-off:
+  refresh and bookmarks of that deep link stop working, owner call. Matomo still sees
+  `/app?token=…` as a page view on `BASE_DOMAIN` (`app.*` has no tracker).
+- [ ] **Ownership check fails open three times** (`SessionManager.class.js:399-406`): unknown
+  PHPSESSID, no cookie, or owner never seen authenticate → allow. With the access code in the
+  URL this is the weakest link, because a leaked code with no cookie still reaches the
+  container. Fix in the same follow-up PR: on an unknown PHPSESSID, resolve it through PHP's
+  `?f=session` instead of allowing, and keep the fail-open only for the window the existing
+  comment describes. Read that comment first — it is a deliberate “no usability impact” choice.
+- [ ] **Why does the websocket auth fallback exist?** `d881905` (2026-06-09) lets a *client-supplied*
+  `phpSessId` in the message payload authenticate when the upgrade carries no cookie — which is a
+  bearer credential the page already exposes in `window.visp.phpSessionId`. Find out what
+  deployment could not send the cookie over the upgrade; if the answer is “none”, delete the
+  fallback.
+- [ ] **Set `SessionAccessCode` from the server with HttpOnly** instead of from JS (webclient
+  `system.service.ts`, `appctrl`): today it is `sameSite: 'None'` on the parent domain, so every
+  subdomain can read a bearer credential for a running container.
 - [ ] **Capability token instead of ambient cookie** for the WebSocket — deferred deliberately. `client.phpSessionId = msg.data?.phpSessId` (`ApiServer.class.js:1149`) is not a deletable one-liner: it feeds `phpSessionOwners`, which is what lets `isRequestAuthorizedForSession` deny a positive mismatch at all. That check is fail-open by design when identity is unknown (`SessionManager.class.js:399-406`, “no usability impact”); read that comment before changing it. Needs session-manager and webclient in lockstep with reconnect/re-mint logic.
 - [ ] **`routeToApp` still runs for untokened `:8080` requests** behind the 401 — the old hang-when-no-matching-session behaviour is unchanged by the token gate.
+- [ ] **`Access-Control-Allow-Origin: "*"` on the app vhost** (`vhost.conf`, both trees): comment added in this commit saying what it costs — the authenticated page shell stamps the session id into `window.visp.phpSessionId` on purpose (`src/index.php`), so HttpOnly shields it from other *origins* only, and `*` makes the shell readable broadly. Decide whether to drop the header outright.
 - [ ] **container-agent `delete-sessions`** — dead command (no caller), partial-delete on failure, and three divergent copies of `pathSecurity` across the repos; its guard also misses `\` where session-manager's refuses it. Keep-or-delete is the owner's call.
 - [ ] **wsrng-server `GET /project/<name>`** auto-inserts a Mongo document on every *unauthenticated* request: `parseInt(name)` → NaN never matches, so the insert happens per request, unbounded (`src/main.js:~560`). Two-line fix; folded in or TODO'd.
 - [ ] **No LICENSE in any of the five service repos** — institutional decision, not engineering.
