@@ -504,59 +504,103 @@ async function verifyRecordingLocked(page, sessionName) {
 // dialog disables the control (session-manager refuses the change outright),
 // and the control only unlocks as an escape hatch when the stored script is
 // no longer offered — which is not the case for a session this test itself
-// created minutes earlier.
+// created minutes earlier. Must be awaited while the import is still queued,
+// see the comment inside.
 async function verifyScriptChangeRefused(page, sessionName) {
     step = "verify script change refused";
-    // Poll rather than assert once: takes sit in the upload directory until
-    // SprImportService writes them into session.files, which can land after
-    // waitForImport's own last read. Every read below is a fresh page load, so a
-    // fresh fetchProjects. The panel text tells the two ways this can still be
-    // unlocked apart: "Importing new recordings…" means the import has not
-    // finished, "Imported" beside an editable control means the lock is broken.
+    // Runs while the import is still queued, NOT after waitForImport: once the
+    // takes are in session.files the older "session holds recordings" rule locks
+    // the control too, so a poll that only waits for `disabled` passes against an
+    // unfixed source. Only the busy window (sprImport pending/importing, panel
+    // says "Importing new recordings…") separates the two rules. Every read is a
+    // fresh page load, hence a fresh fetchProjects. Before the import is even
+    // queued neither label is shown and the control is legitimately editable -
+    // that state is only waited through, never asserted on.
     const deadline = Date.now() + cfg.importTimeoutMs;
-    let dialog, script, stored, options, text;
-    for (;;) {
-        ({ dialog, text } = await readSessionPanel(page, sessionName));
-        script = sessionCard(page, dialog, sessionName).locator("select.sessionScriptControl").first();
-        await script.waitFor({ timeout: 15000 });
-        ({ stored, options } = await script.evaluate((el) => ({
-            stored: el.value,
-            options: [...el.options].map((o) => o.value).filter((v) => v),
-        })));
-        if (!options.includes(stored)) {
-            fail(`the session's script "${stored}" is no longer offered; the lock does not apply and this test cannot check it`);
+    let dialog = null;
+    let sawBusyWindow = false;
+    let script,
+        text = "",
+        stored = null,
+        options = [];
+    try {
+        for (;;) {
+            if (Date.now() > deadline) {
+                fail(
+                    `never saw a locked script control through the import's busy window ` +
+                        `within ${cfg.importTimeoutMs / 1000}s (busy window observed: ${sawBusyWindow}).\n` +
+                        `Session panel said:\n${text}`,
+                );
+            }
+            ({ dialog, text } = await readSessionPanel(page, sessionName));
+            if (text === null) {
+                fail(`the session card for "${sessionName}" must match exactly one element in the dialog`);
+            }
+            script = sessionCard(page, dialog, sessionName).locator("select.sessionScriptControl").first();
+            await script.waitFor({ timeout: 15000 });
+            ({ stored, options } = await script.evaluate((el) => ({
+                stored: el.value,
+                options: [...el.options].map((o) => o.value).filter((v) => v),
+            })));
+            if (!options.includes(stored)) {
+                fail(`the session's script "${stored}" is no longer offered; the lock does not apply and this test cannot check it`);
+            }
+            const busy = text.includes("Importing new recordings");
+            const imported = text.includes("Imported");
+            const disabled = await script.isDisabled();
+            if (busy) {
+                sawBusyWindow = true;
+                if (!disabled) {
+                    fail(
+                        `a session whose recordings are queued for import must not allow changing ` +
+                            `its recording script ("${stored}" was editable while the panel said ` +
+                            `"Importing new recordings…").\nSession panel said:\n${text}`,
+                    );
+                }
+            }
+            if (imported) {
+                if (!disabled) {
+                    fail(
+                        `the panel reports the takes as "Imported" but "${stored}" is still editable.\n` +
+                            `Session panel said:\n${text}`,
+                    );
+                }
+                break;
+            }
+            await page.waitForTimeout(5000);
         }
-        if (await script.isDisabled()) {
-            break;
-        }
-        if (Date.now() > deadline) {
+        if (!sawBusyWindow) {
             fail(
-                `a session with recorded takes must not allow changing its recording script ` +
-                    `("${stored}" stayed editable for ${cfg.importTimeoutMs / 1000}s).\n` +
-                    `Session panel said:\n${text}`,
+                "the import finished before a busy window was ever observed, so nothing here can tell " +
+                    "which of the two locking rules fired — the check proved nothing",
             );
         }
-        await page.waitForTimeout(10000);
-    }
-    // The refusal is the disabled control; attempting the change anyway must
-    // not take. With a single script offered there is nothing to switch to.
-    const other = options.find((o) => o !== stored);
-    if (other) {
-        try {
-            await script.selectOption(other, { timeout: 2000 });
-            if ((await script.inputValue()) !== stored) {
-                fail(`the recording script was changed to "${other}" despite the session holding takes`);
+        // The refusal is the disabled control; attempting the change anyway must
+        // not take. With a single script offered there is nothing to switch to.
+        const other = options.find((o) => o !== stored);
+        if (other) {
+            try {
+                await script.selectOption(other, { timeout: 2000 });
+                if ((await script.inputValue()) !== stored) {
+                    fail(`the recording script was changed to "${other}" despite the session holding takes`);
+                }
+            } catch (err) {
+                if (err instanceof TestFailure) {
+                    throw err;
+                }
+                // selectOption refuses to act on the disabled control — that is the refusal.
             }
-        } catch (err) {
-            if (err instanceof TestFailure) {
-                throw err;
-            }
-            // selectOption refuses to act on the disabled control — that is the refusal.
+        }
+        pass("a session with recorded takes can't change its recording script (locked in the busy window and after)");
+    } finally {
+        // Every exit path — pass, fail() throw, or a Playwright timeout in the
+        // waits above — leaves the dialog closed, or the next step inherits an
+        // open modal over the dashboard.
+        if (dialog) {
+            await domClick(dialog.locator(".cancel-btn")).catch(() => {});
+            await dialog.waitFor({ state: "detached", timeout: 30000 }).catch(() => {});
         }
     }
-    pass("a session with recorded takes can't change its recording script");
-    await domClick(dialog.locator(".cancel-btn"));
-    await dialog.waitFor({ state: "detached", timeout: 30000 });
 }
 
 // Recording can be switched on for a session created for uploads; saving
@@ -641,6 +685,8 @@ async function main() {
         const link = await createRecordingSession(page, sessionName);
         created = true;
         const itemCodes = await recordSession(page, link);
+        // Before waitForImport: this is the busy window the lock has to hold in.
+        await verifyScriptChangeRefused(page, sessionName);
         await waitForImport(page, sessionName, itemCodes.map((c) => c + ".wav"));
         await verifyBundlesOnDisk(page, link, sessionName, itemCodes);
 
@@ -649,7 +695,6 @@ async function main() {
         await verifyUploadSession(page, sessionName, wav);
         await verifyBundlesOnDisk(page, link, sessionName, itemCodes);
         await verifyRecordingLocked(page, sessionName);
-        await verifyScriptChangeRefused(page, sessionName);
 
         await createUploadSession(page, uploadSessionName, wav);
         uploadCreated = true;
