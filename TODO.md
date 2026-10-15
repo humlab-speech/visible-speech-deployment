@@ -507,3 +507,30 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 - **`strip_tags()` in JS is a regex mirror, not a reimplementation** of PHP's state machine.
   Ceiling accepted: the failure mode is a loud refusal to store a file, never a wrong file.
   Add a real parser only if it ever mis-accepts something.
+
+## read-only checks to run against a live system (after merge, before treating the audit as closed)
+
+Nothing here blocks a merge. Every one of them converts a code-reading conclusion into a fact about
+this deployment, and each is expected to come back empty — the value is in it actually coming back
+empty. Read-only, ~5 minutes.
+
+- [ ] **`hs_api_access_token` exists in the deployment's secrets BEFORE deploying these branches.**
+  Not a check, an action: all eight `:8080` control routes now require it, on both the apache and
+  session-manager quadlets. Missing secret = session start/commit/delete return 401 with nothing
+  that says why. `./visp.py install` generates it; an older deployment may not have it.
+- [ ] `./visp.py users list` — does anyone hold a role other than `sys_admin`? If not, the Q1
+  save-gate fix (`7ac00ef`) changed nothing observable, and should be described that way.
+- [ ] `journalctl --user -u session-manager | grep -c "not authorized to create projects"` — a
+  non-zero count means the gate bug fired on a real person; put the number in the PR body.
+- [ ] `db.projects.distinct("sessions.name")`, looking for a leading `.` or a `..` segment — an
+  existing name that today's path guard refuses means a project that can no longer be operated, and
+  the guard needs grandfathering rather than a fix.
+- [ ] `db.sessions.countDocuments({ sessionId: null })` — decides whether the `undefined` →
+  BSON-null reasoning describes real rows or only a code path.
+- [ ] `db.bundle_lists.aggregate([{$group:{_id:{o:"$owner",p:"$projectId"},n:{$sum:1}}},{$match:{n:{$gt:1}}}])`
+  — duplicates mean the bundle-list race left rows behind, which needs a cleanup, not just the guard.
+- [ ] `env | grep -c TEST_USER_LOGIN_KEY` inside the **apache** container — non-zero in production
+  turns the loose `==` comparison on the dev login key from hygiene into a hole.
+- [ ] After `412d46f` deploys: `grep -c "token=" /var/log/apache2/app-access.log*` should stop
+  growing (historical count tells you how long access codes sat in logs), and the deleted PHP routes
+  should now return 404 rather than 500.
