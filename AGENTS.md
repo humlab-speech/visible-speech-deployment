@@ -775,8 +775,15 @@ docs(agents): add AGENTS.md with project conventions
 
 ```
 systemd-visp-net      — main internal network (apache, session-manager, mongo, wsrng-server, matomo, matomo-db, …)
-systemd-tratt-net     — tratt isolation network
+systemd-tratt-net     — tratt isolation network (apache + tratt only, Internal=true)
+systemd-artic-net     — artic isolation network (apache + artic only, Internal=true)
 ```
+
+TRATT and artic are static web servers that only Apache talks to, so each sits on its
+own internal network shared with Apache alone: a compromised frontend can't reach MongoDB,
+session-manager or the internet. Their backends are reached by the *browser* through
+Apache (TRATT → PHP API / webclient WebSocket, artic → emu-webapp-server), never by the
+containers. Give any new static-frontend container the same treatment.
 
 WhisperVault does **not** use a Podman network — it runs with `Network=none` and
 communicates via a Unix Domain Socket (see WhisperVault section above).

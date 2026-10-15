@@ -128,10 +128,12 @@ def test_stop_all_skips_networks(capsys):
     assert "Stopping mongo.service" in out
     assert "visp-net.service" not in out
     assert "tratt-net.service" not in out
-    assert out.count("skipped") == 2
+    assert "artic-net.service" not in out
+    assert out.count("skipped") == 3
     stopped = [arg for call in fr.systemctl_calls if call[0] == "stop" for arg in call]
     assert "visp-net.service" not in stopped
     assert "tratt-net.service" not in stopped
+    assert "artic-net.service" not in stopped
     assert "mongo.service" in stopped
 
 
