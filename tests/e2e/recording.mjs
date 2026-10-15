@@ -507,18 +507,36 @@ async function verifyRecordingLocked(page, sessionName) {
 // created minutes earlier.
 async function verifyScriptChangeRefused(page, sessionName) {
     step = "verify script change refused";
-    const { dialog } = await readSessionPanel(page, sessionName);
-    const script = sessionCard(page, dialog, sessionName).locator("select.sessionScriptControl").first();
-    await script.waitFor({ timeout: 15000 });
-    const { stored, options } = await script.evaluate((el) => ({
-        stored: el.value,
-        options: [...el.options].map((o) => o.value).filter((v) => v),
-    }));
-    if (!options.includes(stored)) {
-        fail(`the session's script "${stored}" is no longer offered; the lock does not apply and this test cannot check it`);
-    }
-    if (!(await script.isDisabled())) {
-        fail("a session with recorded takes must not allow changing its recording script");
+    // Poll rather than assert once: takes sit in the upload directory until
+    // SprImportService writes them into session.files, which can land after
+    // waitForImport's own last read. Every read below is a fresh page load, so a
+    // fresh fetchProjects. The panel text tells the two ways this can still be
+    // unlocked apart: "Importing new recordings…" means the import has not
+    // finished, "Imported" beside an editable control means the lock is broken.
+    const deadline = Date.now() + cfg.importTimeoutMs;
+    let dialog, script, stored, options, text;
+    for (;;) {
+        ({ dialog, text } = await readSessionPanel(page, sessionName));
+        script = sessionCard(page, dialog, sessionName).locator("select.sessionScriptControl").first();
+        await script.waitFor({ timeout: 15000 });
+        ({ stored, options } = await script.evaluate((el) => ({
+            stored: el.value,
+            options: [...el.options].map((o) => o.value).filter((v) => v),
+        })));
+        if (!options.includes(stored)) {
+            fail(`the session's script "${stored}" is no longer offered; the lock does not apply and this test cannot check it`);
+        }
+        if (await script.isDisabled()) {
+            break;
+        }
+        if (Date.now() > deadline) {
+            fail(
+                `a session with recorded takes must not allow changing its recording script ` +
+                    `("${stored}" stayed editable for ${cfg.importTimeoutMs / 1000}s).\n` +
+                    `Session panel said:\n${text}`,
+            );
+        }
+        await page.waitForTimeout(10000);
     }
     // The refusal is the disabled control; attempting the change anyway must
     // not take. With a single script offered there is nothing to switch to.
