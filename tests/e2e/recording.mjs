@@ -48,10 +48,6 @@ function pass(msg) {
     console.log(`[recording] ✓ ${msg}`);
 }
 
-function note(msg) {
-    console.log(`[recording] ! ${msg}`);
-}
-
 class TestFailure extends Error {}
 
 function fail(msg) {
@@ -523,6 +519,7 @@ async function verifyScriptChangeRefused(page, sessionName) {
     const deadline = Date.now() + cfg.importTimeoutMs;
     let dialog = null;
     let sawBusyWindow = false;
+    let reads = 0;
     let script,
         text = "",
         stored = null,
@@ -537,6 +534,16 @@ async function verifyScriptChangeRefused(page, sessionName) {
                 );
             }
             ({ dialog, text } = await readSessionPanel(page, sessionName));
+            reads++;
+            // "Import failed" is a state of its own in the panel (and the reason the
+            // retry happens later): waiting it out would burn the whole timeout and
+            // then report a lock problem that never existed.
+            if (text.includes("Import failed")) {
+                fail(
+                    `the import for "${sessionName}" failed, so neither lock rule can be judged.` +
+                        `\nSession panel said:\n${text}`,
+                );
+            }
             if (text === null) {
                 fail(`the session card for "${sessionName}" must match exactly one element in the dialog`);
             }
@@ -574,13 +581,16 @@ async function verifyScriptChangeRefused(page, sessionName) {
             await page.waitForTimeout(1000);
         }
         if (!sawBusyWindow) {
-            // A fast import on a fast machine can finish between two reads even
-            // at ~1s polls. Failing then blames the test for the machine's
-            // speed; the post-import rule was still proven on every read that
-            // said "Imported", so record the weaker evidence instead.
-            note(
-                "the import finished before a busy window was observed, so this run only proved " +
-                    "the post-import lock rule, not the busy-window one",
+            // Reaching "Imported" without ever having seen "Importing new recordings…"
+            // means this run proved nothing about the rule it exists to prove: only the
+            // busy window separates "queued for import" from "already holds recordings",
+            // and the older rule would have locked the control regardless. Not a matter
+            // of machine speed - the panel says busy from the moment session-manager
+            // queues the takes (a 10s settle plus a 30s scan) until the import writes
+            // them, which is many reads at a one second poll.
+            fail(
+                `the import's busy window was never observed across ${reads} panel reads, so the ` +
+                    `"recordings queued for import" lock rule went untested.\nSession panel said:\n${text}`,
             );
         }
         // The refusal is the disabled control; attempting the change anyway must
