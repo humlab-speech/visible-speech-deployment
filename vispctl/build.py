@@ -662,7 +662,7 @@ NODE_BUILD_CONFIGS: dict[str, dict] = {
         "build_cmd": "npx ng build --configuration={config}",
         "default_config": "visp.dev",
         "verify_file": "index.php",
-        # Angular 20 requires Node ^20.19 || ^22.12 || >=24
+        # Angular 18 requires Node ^18.19.1 || ^20.11.1 || >=22.0.0
         "container_image": "node:22.22.2",
     },
 }

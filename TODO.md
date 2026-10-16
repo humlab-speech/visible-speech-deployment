@@ -11,6 +11,33 @@
 > UDS network isolation (`--network=none`), operations sessions network-isolated,
 > session doctor `api.sock` tracking, octra upgraded to humlab-2.2.2.
 
+## awaiting owner decision
+
+- [x] **Zip-bomb cap for webclient `api/api.php` `zipEntriesAreSafe()`** (REVIEW-FIX-PLAN A5)
+  — RESOLVED 2026-10-15: owner took the proposed numbers. webclient `f1308dd`: 5 000 entries,
+  declared size refused when it passes both 20× the archive and 500 MB, absolute ceiling 2 GB
+  (`ZIP_MAX_UNCOMPRESSED_BYTES` in `.env` raises it), and extraction moved to one entry at a
+  time so the same rule applies to *measured* file sizes — the central directory is
+  attacker-supplied, so the declared check is the early refusal and the measured one the
+  ceiling. **Still to verify on a live stack** (no zip extension in the audit container):
+  one upload of a zipped folder, and one archive whose central directory understates itself.
+- [ ] **Rename legacy `hsApp` / `visp.hsApp` naming** (REVIEW-FIX-PLAN D4): needs a coordinated rename window across webclient, session-manager and the PHP API (wire-visible field), so not done piecemeal.
+- [ ] **Broken GitLab-clone calls in session-manager** (found while doing REVIEW-FIX-PLAN D4): the routes
+  `/api/session/user` and `/api/session/new/user` (token-gated, registered unconditionally) still call
+  `session.cloneProjectFromGit()`, which no longer exists anywhere (GitLab integration was removed
+  upstream in emu-webapp-server/container-agent). A hit today throws a TypeError into the async IIFE →
+  unhandled rejection, no response. Decision: drop the call (clone integration is gone — likely right)
+  or delete the routes if nothing calls them; needs caller evidence from wherever these are invoked.
+- [x] **31 zombie Karma specs in webclient** — RESOLVED 2026-10-07: owner chose delete; all 38
+  CLI-scaffold specs (the 31 failing plus the handful still passing by luck) removed in webclient
+  commit `2069248`, keeping only the two specs with real assertions (`file-upload.service.spec.ts`,
+  `session-denial.spec.ts`). Confirmed by the VM round: Karma reports 33/33 at the review head.
+- [ ] **SM `npm test` hangs inside the visp-session-manager dev-image container only** (VM pass 4): identical file
+  (sha256 `1ec82bce…`) + identical Node 24.20 are green on bare official images and inside the same container under
+  `env -i` — so a quadlet-injected env var triggers a require-time side effect under `ApiServer.class.js`
+  (observed: 2 dangling sockets + pending file-level wrapper promise). Backlog, not a PR blocker: bisect which env
+  var (suspects: HTTP/WS port vars, or a Models-level `new MongoClient` fed by env).
+
 ## CLI Fixes — visp.py evaluation (2026-08-17/18)
 
 Full evaluation of `visp.py`: every command group was hands-on tested on a live dev
@@ -266,6 +293,14 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 ## Medium Priority
 
+- [ ] **`Session.commit()` calls a container-agent command that has never existed** (pre-existing,
+  surfaced by container-agent#7's review): it runs `container-agent/main.js save`, but there is no
+  `case "save"` anywhere in container-agent's history — every caller silently no-ops: the WS `save`
+  command, step 2 of `updateBundleLists`, step 5 of `addSessions`, and `commitRunningSessions` on
+  shutdown. Today the reply parses as `"error"`; after container-agent#7 it answers
+  `"Unknown command: save"`, which makes the gap loud. Decide whether `save` should be implemented
+  (git-committing the project tree) or the call sites deleted.
+
 ### Security
 
 - [ ] **Review 777 permissions on container-writable bind mounts**
@@ -410,3 +445,100 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 
 - **Sass deprecation warnings**: font-awesome `@import` and `lighten()` — cosmetic,
   will become errors in Dart Sass 3.0 (future cleanup)
+
+## pre-existing security gaps (found during the 2026-10 review, not fixed by audit PRs)
+- [ ] SPR script ownership (session-manager): `fetchSprScripts` takes the username from the client; `saveSprScripts`/`deleteSprScript` accept any `scriptId` from any authenticated user — no ownership check. Needs a design pass on who may edit scripts.
+- [ ] **Before deploying webclient `b054af8`: one SWAMID login in Firefox.** That commit states
+  `SameSite=Lax` on `PHPSESSID`, which had never been stated. Chrome fills in Lax for a missing
+  attribute; Firefox and Safari do not, so for them the cookie stops riding cross-site requests —
+  including a cross-site top-level POST, i.e. a SAML ACS on POST binding. Lax is the intended
+  policy, but it is a behaviour change on two of three browsers. (Same note applies to the
+  `Access-Control-Allow-Origin` decision below: the id is also in `window.visp.phpSessionId`.)
+- [ ] **One Origin policy, in one PR: the session-manager WebSocket gate + `requestOriginOk()` exact authority.** (next PR, design settled). The command socket (`ApiServer.class.js:637-655`, `noServer` + unconditional `handleUpgrade`) authenticates purely from the domain-scoped `PHPSESSID` cookie, so script on any same-site subdomain — `app.*` runs user notebook output — opens an authenticated, readable socket. Gate on the `:8020` `upgrade` event only: exact-match `request.headers.origin` against `https://BASE_DOMAIN` (plus `http://BASE_DOMAIN:HTTP_PORT` in dev), raw 403 on mismatch. `app.*` iframe and Jupyter kernel sockets arrive at `session-manager:80` (`app.vhost.conf:11`, `SessionProxyServer`), a different listener, so they cannot be affected. **Reject present-but-wrong, allow absent** — every browser sends `Origin`, and a non-browser client cannot carry a victim's cookie; log absent-Origin with eppn+IP for a month, then require it.
+  Do the PHP side in the **same** PR: `requestOriginOk()` (`sessionSecurity.php`) still ends in `str_ends_with($originHost, "." . $own)`, i.e. any subdomain of the base domain is accepted — which admits `app.*` notebook script to the PHP API for exactly the reason the WS gate exists. Same policy, same adversary, same allow-list: one edge-behaviour change per release, so a 403 from an unseen deployment has one place to look. Evidence it is safe to tighten here: `artic` has no `Alias /api`; `recorder.*`'s `/api/` is the Node server; only `tratt.vhost.conf:9` serves this `api.php`, same-origin; every logged POST carried the base referer. The refusal names the Origin in the log line, so a breakage is loud rather than silent.
+- [ ] **`SessionAccessCode` cookie is `sameSite: 'None'` on the parent domain** (webclient, set in `system.service.ts`/`appctrl`): every subdomain can read it, and it is a bearer credential for a running container. Same-site subdomains do not need `None`.
+- [x] **Access code appears in URLs** — partly done 2026-10-15: `app-access.log` now logs `%U`
+  instead of `%r` in both mounted vhost trees (deployment `412d46f`), so a notebook open no
+  longer writes a live credential. Load-bearing, not an oversight: `JupyterSession.class.js:20`
+  sets `JUPYTER_TOKEN = this.accessCode`, so the `?token=` on the `app.*` iframe *is* Jupyter's
+  password even though session-manager reads only the cookie
+  (`getSessionAccessCodeFromRequest`, `SessionManager.class.js:344-346`). One string is both the
+  VISP session credential and the notebook password. Remaining, in one follow-up PR: have the
+  proxy add `Authorization: token <code>` on proxied HTTP **and** WS upgrades (`routeToApp`
+  already holds the session) and then drop `?token=` from the webclient — **verify Jupyter
+  skips XSRF for token-header requests**, and dev-test one notebook end to end (open, run a
+  cell, save). The `/app?token=…` handoff inside the SPA is separate and can be stripped with
+  `history.replaceState` after read (4 call sites: `/app` ×2, `/artic`, `/tratt`) — trade-off:
+  refresh and bookmarks of that deep link stop working, owner call. Matomo still sees
+  `/app?token=…` as a page view on `BASE_DOMAIN` (`app.*` has no tracker).
+- [ ] **Ownership check fails open three times** (`SessionManager.class.js:399-406`): unknown
+  PHPSESSID, no cookie, or owner never seen authenticate → allow. With the access code in the
+  URL this is the weakest link, because a leaked code with no cookie still reaches the
+  container. Fix in the same follow-up PR: on an unknown PHPSESSID, resolve it through PHP's
+  `?f=session` instead of allowing, and keep the fail-open only for the window the existing
+  comment describes. Read that comment first — it is a deliberate “no usability impact” choice.
+- [ ] **Why does the websocket auth fallback exist?** `d881905` (2026-06-09) lets a *client-supplied*
+  `phpSessId` in the message payload authenticate when the upgrade carries no cookie — which is a
+  bearer credential the page already exposes in `window.visp.phpSessionId`. Find out what
+  deployment could not send the cookie over the upgrade; if the answer is “none”, delete the
+  fallback.
+- [ ] **Set `SessionAccessCode` from the server with HttpOnly** instead of from JS (webclient
+  `system.service.ts`, `appctrl`): today it is `sameSite: 'None'` on the parent domain, so every
+  subdomain can read a bearer credential for a running container.
+- [ ] **Capability token instead of ambient cookie** for the WebSocket — deferred deliberately. `client.phpSessionId = msg.data?.phpSessId` (`ApiServer.class.js:1149`) is not a deletable one-liner: it feeds `phpSessionOwners`, which is what lets `isRequestAuthorizedForSession` deny a positive mismatch at all. That check is fail-open by design when identity is unknown (`SessionManager.class.js:399-406`, “no usability impact”); read that comment before changing it. Needs session-manager and webclient in lockstep with reconnect/re-mint logic.
+- [ ] **`routeToApp` still runs for untokened `:8080` requests** behind the 401 — the old hang-when-no-matching-session behaviour is unchanged by the token gate.
+- [ ] **`Access-Control-Allow-Origin: "*"` on the app vhost** (`vhost.conf`, both trees): decide whether to drop it. It is *not* leaking the authenticated shell — a credentialed response cannot be served to `*`, and `Access-Control-Allow-Credentials` is set in no vhost here — so the only exposure is whatever answers without a session. The vhost comment now says so, to stop the next reader concluding the wildcard is why `window.visp.phpSessionId` is readable. It isn't: `src/index.php` has stamped it there since `b3a4dbb` (2026-08-27), predating the audit branch. Curing that is the capability-token item below, not a CORS edit.
+- [x] **container-agent `delete-sessions`** — RESOLVED 2026-10-15 (container-agent `76da9d2`): deleted rather than repaired. Dead command (its only call site was commented, in the SPR import path, disabled precisely because re-importing must not delete existing takes), threw mid-loop on a missing session directory so a bulk delete half-completed silently, allowed a backslash the `pathSecurity` mirrors refuse, and had no notion of a user while bundle deletion is now ProjectAdmin/SysAdmin-only. Its two `execInjection` guard cases went with it (13 → 11, green); the traversal vector is preserved in the commit diff if it ever comes back — write it against the current permission model, one session per call, per-session results. session-manager `c1f2d45` drops the commented call.
+- [ ] **wsrng-server `GET /project/<name>`** auto-inserts a Mongo document on every *unauthenticated* request: `parseInt(name)` → NaN never matches, so the insert happens per request, unbounded (`src/main.js:~560`). Two-line fix; folded in or TODO'd.
+- [ ] **No LICENSE in any of the five service repos** — institutional decision, not engineering.
+
+## decided, documented (no further work queued)
+
+- **Whole-tree staging.** Test/auxiliary files reach these repos by the same `git add .`
+  sweep as code. Accepted deliberately: the alternative is a per-hunk review of
+  already-verified content. The follow-up that *was* queued — the identity of the accounts
+  those commits carry — is done.
+- **`/api/v1/signout` stays a GET.** The planned GET→POST change is dropped as no longer needed: its
+  vector was a cross-site subrequest (`<img src="…/api/v1/signout">`) riding the session cookie, and
+  the explicit `SameSite=Lax` in webclient `b054af8` removes that in every browser (Firefox sends an
+  unspecified-SameSite cookie on cross-site subresources, Chrome already did not, Safari blocks
+  third-party cookies). What survives is a top-level navigation to the sign-out URL: it takes the
+  user's tab somewhere visible and the worst outcome is that they log out. Not worth an interface
+  change that can strand a bookmark or a monitoring probe.
+- **Bundle deletion is ProjectAdmin/SysAdmin only**, while bundle *creation* stays a normal
+  Researcher action. A bundle holds stored audio a colleague may be working with, so removal
+  is gated like project deletion. If the admin round-trip hurts, the upgrade path is
+  per-bundle ownership (the owner is already recorded), not a wider role.
+- **`deleteBundle` permission is derived, not seeded**: `userProjectPermissions.deleteBundles`
+  comes from `canDeleteProject` server-side, so the UI hides the trash button on the same rule
+  the backend enforces.
+- **`strip_tags()` in JS is a regex mirror, not a reimplementation** of PHP's state machine.
+  Ceiling accepted: the failure mode is a loud refusal to store a file, never a wrong file.
+  Add a real parser only if it ever mis-accepts something.
+
+## read-only checks to run against a live system (after merge, before treating the audit as closed)
+
+Nothing here blocks a merge. Every one of them converts a code-reading conclusion into a fact about
+this deployment, and each is expected to come back empty — the value is in it actually coming back
+empty. Read-only, ~5 minutes.
+
+- [ ] **`hs_api_access_token` exists in the deployment's secrets BEFORE deploying these branches.**
+  Not a check, an action: all eight `:8080` control routes now require it, on both the apache and
+  session-manager quadlets. Missing secret = session start/commit/delete return 401 with nothing
+  that says why. `./visp.py install` generates it; an older deployment may not have it.
+- [ ] `./visp.py users list` — does anyone hold a role other than `sys_admin`? If not, the Q1
+  save-gate fix (`7ac00ef`) changed nothing observable, and should be described that way.
+- [ ] `journalctl --user -u session-manager | grep -c "not authorized to create projects"` — a
+  non-zero count means the gate bug fired on a real person; put the number in the PR body.
+- [ ] `db.projects.distinct("sessions.name")`, looking for a leading `.` or a `..` segment — an
+  existing name that today's path guard refuses means a project that can no longer be operated, and
+  the guard needs grandfathering rather than a fix.
+- [ ] `db.sessions.countDocuments({ sessionId: null })` — decides whether the `undefined` →
+  BSON-null reasoning describes real rows or only a code path.
+- [ ] `db.bundle_lists.aggregate([{$group:{_id:{o:"$owner",p:"$projectId"},n:{$sum:1}}},{$match:{n:{$gt:1}}}])`
+  — duplicates mean the bundle-list race left rows behind, which needs a cleanup, not just the guard.
+- [ ] `env | grep -c TEST_USER_LOGIN_KEY` inside the **apache** container — non-zero in production
+  turns the loose `==` comparison on the dev login key from hygiene into a hole.
+- [ ] After `412d46f` deploys: `grep -c "token=" /var/log/apache2/app-access.log*` should stop
+  growing (historical count tells you how long access codes sat in logs), and the deleted PHP routes
+  should now return 404 rather than 500.
