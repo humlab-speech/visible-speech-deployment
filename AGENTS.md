@@ -609,8 +609,9 @@ Browser recorder ──POST take──▶ wsrng-server ──writes──▶ Dat
   either service delays an import but never loses it.
 - **Imports are incremental.** Only takes whose bundle is missing or holds different audio
   (byte comparison) are re-imported; other bundles, and their annotations, are untouched.
-  `import_mediaFiles` refuses to overwrite a bundle, so session-manager deletes the
-  outdated bundle directories itself before importing.
+  `import_mediaFiles` refuses to overwrite a bundle, so session-manager moves the
+  outdated bundle directories to `Data/replaced-recordings/<session>_ses/<utc>-<bundle>_bndl`
+  (after a "VISP system" commit, git-ignored via the project `.gitignore`) before importing.
 - **Status is visible**: `sprImport.status` is `pending` / `importing` / `imported` /
   `failed`, shown per session in the project dialog. Failures retry after 1, 5 and 30 min,
   then notify project members and wait for new recordings.
@@ -883,8 +884,10 @@ colleague may be working with, so removing one is gated like deleting the projec
 while adding one stays a normal Researcher action. Upgrade path if the admin round-trip
 hurts: per-bundle ownership (the owner is already recorded), not a wider role.
 
-The only things a Researcher cannot do inside their project are issue invite codes and
-delete a stored bundle. A SysAdmin implicitly holds every project permission in every project, without being
+The only things a Researcher cannot do inside their project are: issue invite codes; delete a
+stored bundle; delete a whole session (the save is refused like a bundle delete, and the
+button is hidden on the same `deleteBundles` flag); grant the `project_admin` role or add a
+member with it; run `cleanupOrphanedSessions`. A SysAdmin implicitly holds every project permission in every project, without being
 a member. The creator of a project becomes its ProjectAdmin.
 
 Backend entry points: `getSystemPermissions(user)` for system-level checks,

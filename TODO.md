@@ -31,7 +31,7 @@
 - [x] **31 zombie Karma specs in webclient** — RESOLVED 2026-10-07: owner chose delete; all 38
   CLI-scaffold specs (the 31 failing plus the handful still passing by luck) removed in webclient
   commit `2069248`, keeping only the two specs with real assertions (`file-upload.service.spec.ts`,
-  `session-denial.spec.ts`). VM to confirm Karma now executes only these two specs, all green.
+  `session-denial.spec.ts`). Confirmed by the VM round: Karma reports 33/33 at the review head.
 - [ ] **SM `npm test` hangs inside the visp-session-manager dev-image container only** (VM pass 4): identical file
   (sha256 `1ec82bce…`) + identical Node 24.20 are green on bare official images and inside the same container under
   `env -i` — so a quadlet-injected env var triggers a require-time side effect under `ApiServer.class.js`
@@ -292,6 +292,14 @@ defects, ordered for fixing. Branch: `fix/visp-cli-evaluation` (from master @ 13
 - [x] **Verify uploads work end-to-end in Podman** — confirmed working 2026-05-13
 
 ## Medium Priority
+
+- [ ] **`Session.commit()` calls a container-agent command that has never existed** (pre-existing,
+  surfaced by container-agent#7's review): it runs `container-agent/main.js save`, but there is no
+  `case "save"` anywhere in container-agent's history — every caller silently no-ops: the WS `save`
+  command, step 2 of `updateBundleLists`, step 5 of `addSessions`, and `commitRunningSessions` on
+  shutdown. Today the reply parses as `"error"`; after container-agent#7 it answers
+  `"Unknown command: save"`, which makes the gap loud. Decide whether `save` should be implemented
+  (git-committing the project tree) or the call sites deleted.
 
 ### Security
 
