@@ -1,6 +1,6 @@
 [Unit]
 Description=Apache Web Server with Webclient
-After=network-online.target visp-net.service tratt-net.service session-manager.service local-idp.service
+After=network-online.target visp-net-network.service tratt-net-network.service artic-net-network.service session-manager.service local-idp.service
 Wants=session-manager.service local-idp.service
 
 [Container]
@@ -8,6 +8,7 @@ ContainerName=apache
 Image=localhost/visp-apache:latest
 Network=visp-net.network
 Network=tratt-net.network
+Network=artic-net.network
 PublishPort=@@HTTP_PORT@@:80
 PublishPort=8443:443
 EnvironmentFile=@@PROJECT_DIR@@/.env

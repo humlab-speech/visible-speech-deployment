@@ -25,6 +25,7 @@ class NetworkManager:
         required_networks = [
             {"name": "systemd-visp-net", "internal": False},
             {"name": "systemd-tratt-net", "internal": True},
+            {"name": "systemd-artic-net", "internal": True},
         ]
 
         rc, stdout, _ = self.runner.run_quiet(["podman", "network", "ls", "--format", "{{.Name}}"])
