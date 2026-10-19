@@ -772,6 +772,20 @@ chore(deps): bump ruff to 0.9.0
 docs(agents): add AGENTS.md with project conventions
 ```
 
+### Text posted to GitHub
+
+Everything an agent writes to GitHub on the user's behalf — issue and PR comments,
+issue and PR descriptions, review comments, discussion posts — must end with a footer
+saying it is AI-generated. When editing an existing post, add the footer if it is missing:
+
+```markdown
+---
+<sub>🤖 This comment was AI-generated (<agent name>) on behalf of @<github-login>.</sub>
+```
+
+Adjust the wording to the kind of post ("This issue was…", "This PR description was…").
+Commit messages are exempt; they carry the `Co-Authored-By:` trailer instead.
+
 ---
 
 ## Network architecture
