@@ -1,6 +1,11 @@
 [Unit]
 Description=WhisperX Transcription Server (network-isolated)
 After=network-online.target
+# Give up after 5 failed starts in 15 min (e.g. models missing from
+# mounts/whisper/models/) instead of crash-looping, which burns several
+# cores re-importing torch on every attempt. './visp.py start' resets it.
+StartLimitIntervalSec=15min
+StartLimitBurst=5
 
 [Container]
 ContainerName=whisperx
@@ -26,6 +31,7 @@ PodmanArgs=--tmpfs /tmp
 
 [Service]
 Restart=always
+RestartSec=30s
 # Model loading can take 1-5 min; socket only appears once model is ready
 TimeoutStartSec=300
 
