@@ -535,6 +535,9 @@ async function verifyScriptChangeRefused(page, sessionName) {
             }
             ({ dialog, text } = await readSessionPanel(page, sessionName));
             reads++;
+            if (text === null) {
+                fail(`the session card for "${sessionName}" must match exactly one element in the dialog`);
+            }
             // "Import failed" is a state of its own in the panel (and the reason the
             // retry happens later): waiting it out would burn the whole timeout and
             // then report a lock problem that never existed.
@@ -543,9 +546,6 @@ async function verifyScriptChangeRefused(page, sessionName) {
                     `the import for "${sessionName}" failed, so neither lock rule can be judged.` +
                         `\nSession panel said:\n${text}`,
                 );
-            }
-            if (text === null) {
-                fail(`the session card for "${sessionName}" must match exactly one element in the dialog`);
             }
             script = sessionCard(page, dialog, sessionName).locator("select.sessionScriptControl").first();
             await script.waitFor({ timeout: 15000 });
