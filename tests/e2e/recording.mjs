@@ -39,13 +39,16 @@ function readConfig() {
 
 const cfg = readConfig();
 let step = "starting";
+const suiteStart = Date.now();
 
 function log(msg) {
-    console.log(`[recording] ${msg}`);
+    const t = ((Date.now() - suiteStart) / 1000).toFixed(0);
+    console.log(`[recording] (${t}s) ${msg}`);
 }
 
 function pass(msg) {
-    console.log(`[recording] ✓ ${msg}`);
+    const t = ((Date.now() - suiteStart) / 1000).toFixed(0);
+    console.log(`[recording] (${t}s) ✓ ${msg}`);
 }
 
 class TestFailure extends Error {}
@@ -158,7 +161,7 @@ async function readSessionPanel(page, sessionName) {
         return { dialog, text: null };
     }
     await domClick(card.locator(".session-card-header"));
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(400);
     return { dialog, text: await card.innerText() };
 }
 
@@ -174,7 +177,7 @@ async function waitForImport(page, sessionName, expectedFiles) {
             lastText = text || "";
         } catch (err) {
             lastText = `(dashboard unavailable: ${err.message})`;
-            await page.waitForTimeout(5000);
+            await page.waitForTimeout(1500);
             continue;
         }
         const filesListed = expectedFiles.every((f) => lastText.includes(f));
@@ -185,7 +188,7 @@ async function waitForImport(page, sessionName, expectedFiles) {
             pass(`import shown in the UI: ${expectedFiles.join(", ")}`);
             return;
         }
-        await page.waitForTimeout(5000);
+        await page.waitForTimeout(1500);
     }
     fail(`recordings were not imported within ${cfg.importTimeoutMs / 1000}s. Session panel:\n${lastText}`);
 }
@@ -303,7 +306,7 @@ async function goToPrompt(page, index, prompts) {
             return;
         }
         await clickTransport(page, "chevron_right");
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(300);
     }
     fail(`could not navigate to prompt ${index} ("${prompts[index].text}")`);
 }
@@ -316,8 +319,8 @@ async function recordSession(page, link) {
     const itemCodes = [];
     // Two takes of the first prompt; the second, longer one must win.
     await goToPrompt(page, 0, prompts);
-    await recordTake(page, 1500);
-    itemCodes.push(await recordTake(page, 3000));
+    await recordTake(page, 3000);
+    itemCodes.push(await recordTake(page, 6000));
     pass("recorded two takes of the first prompt");
 
     // A reload must remember that the first prompt is done.
@@ -331,7 +334,7 @@ async function recordSession(page, link) {
     step = "record";
     for (let i = 1; i < prompts.length; i++) {
         await goToPrompt(page, i, prompts);
-        itemCodes.push(await recordTake(page, 2000));
+        itemCodes.push(await recordTake(page, 4000));
     }
     await page.getByText(/Session complete|Session finished/).first().waitFor({ timeout: 30000 });
     pass("recording session completed");
