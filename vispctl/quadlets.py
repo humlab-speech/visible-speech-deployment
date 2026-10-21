@@ -107,12 +107,15 @@ def remove_stale_quadlets(
     """
     import shutil
 
+    from .placeholder import PLACEHOLDER_FILE
     from .service import DEFAULT_SERVICES
 
     if not systemd_dir.is_dir():
         return []
 
-    known_files = {svc.file for svc in DEFAULT_SERVICES}
+    # The offline placeholder is outside the registry on purpose; its
+    # lifecycle belongs to 'visp.py placeholder' and apache starts.
+    known_files = {svc.file for svc in DEFAULT_SERVICES} | {PLACEHOLDER_FILE}
     project_path = str(project_dir) + "/"
     removed: list[str] = []
 

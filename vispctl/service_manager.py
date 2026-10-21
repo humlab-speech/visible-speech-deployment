@@ -71,6 +71,14 @@ class ServiceManager:
         im = ImageManager(self.runner)
         return any(s.name == svc.name for s in im.get_stale_containers([svc]))
 
+    def _retire_placeholder(self) -> None:
+        # The offline page holds apache's port, and its WantedBy= would race
+        # apache at the next boot, so every path that starts apache removes it.
+        from .placeholder import remove_placeholder
+
+        if remove_placeholder(self.runner, self.systemd_dir):
+            print(color("  Removed the offline placeholder page (it holds apache's port)", Colors.YELLOW))
+
     def start(self, names: Iterable[str] | str = "all") -> None:
         targets = self._resolve_targets(names)
         for svc in targets:
@@ -78,6 +86,8 @@ class ServiceManager:
                 self._note_skip_network(svc)
                 continue
             print(f"Starting {self._svc_name(svc)}...")
+            if svc.name == "apache":
+                self._retire_placeholder()
             if self.runner.unit_is_active(svc.name):
                 print(color("  Already running (start is a no-op)", Colors.DIM))
                 if self._is_image_stale(svc):

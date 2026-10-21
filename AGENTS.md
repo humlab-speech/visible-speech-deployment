@@ -493,7 +493,21 @@ whenever images, quadlets, or service names change.
 # Version management
 ./visp.py deploy update          # pull latest external repos
 ./visp.py deploy status          # comprehensive check: repos, images, third-party
+
+# Emergency offline page (e.g. while waiting for a security patch)
+./visp.py down                   # stop everything + disable autostart
+./visp.py placeholder up         # static nginx page on apache's port(s), every path → 503
+./visp.py up                     # bring VISP back; removes the placeholder automatically
 ```
+
+The offline page (`mounts/placeholder/html/`, bind-mounted, edits are live) runs no PHP
+and mounts no data. Its quadlet (`quadlets/placeholder/<mode>.container`) is installed
+only while it is up and is **not** in `DEFAULT_SERVICES`, so `all` never includes it.
+`placeholder up` refuses unless apache was taken down with `down` (a plain `stop` leaves
+apache enabled, and both would race for the port at boot). `ServiceManager.start()`
+removes the placeholder before starting apache, so every start path (up/start/restart/
+install/apply) retires it. Keep its `PublishPort=` lines identical to apache's — a test
+enforces this.
 
 ---
 
