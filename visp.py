@@ -9,6 +9,7 @@ Commands:
   stop        Stop service(s)
   up          Enable and start service(s)
   down        Stop and disable service(s)
+  placeholder Serve a static "VISP is offline" page in apache's place (up/down/status)
   restart     Restart service(s) or entire cluster
   install     Install quadlet units into the systemd directory
   uninstall   Remove quadlet units from the systemd directory
@@ -49,6 +50,12 @@ Dev hot-reload examples (session-manager source is bind-mounted in dev mode):
   ./visp.py npm session-manager -- install foo   # Add a dependency (no image rebuild)
   ./visp.py npm session-manager -- ci            # Restore node_modules from the lockfile
   ./visp.py restart session-manager              # Required after dependency changes
+
+Offline page examples (no PHP — e.g. while waiting for a security patch):
+  ./visp.py down                          # Stop VISP and disable autostart
+  ./visp.py placeholder up                # Serve mounts/placeholder/html/ on apache's port
+  ./visp.py placeholder status
+  ./visp.py up                            # Bring VISP back (removes the placeholder)
 
 Mode examples:
   ./visp.py mode                          # Show current mode
@@ -153,6 +160,13 @@ def cmd_status(args):  # noqa: ARG001
         for service_name, env_var in disabled_optional_services.items():
             print(color(f"  ○ {service_name}: disabled via {env_var}=false in .env", Colors.YELLOW))
 
+    from vispctl.placeholder import is_installed, placeholder_status
+
+    if is_installed(cfg.systemd_dir):
+        print()
+        print(color("=== Offline Placeholder ===", Colors.CYAN))
+        placeholder_status(cfg.runner, cfg.systemd_dir)
+
     print()
     show_quadlet_table(runtime_services, get_current_mode(), cfg.runner, cfg.systemd_dir, render_quadlet_template)
 
@@ -216,6 +230,19 @@ def cmd_down(args):
     names = _resolve_service_names(args, cfg, include_disabled=True)
     sm.stop(names)
     sm.disable(names)
+
+
+def cmd_placeholder(args):
+    """Serve, remove or inspect the static offline page that stands in for apache."""
+    from vispctl.placeholder import placeholder_down, placeholder_status, placeholder_up
+
+    cfg = get_config()
+    if args.action == "up":
+        placeholder_up(cfg.runner, cfg.project_dir, cfg.systemd_dir, get_current_mode(), render_quadlet_template)
+    elif args.action == "down":
+        placeholder_down(cfg.runner, cfg.systemd_dir)
+    else:
+        placeholder_status(cfg.runner, cfg.systemd_dir)
 
 
 def cmd_restart(args):
@@ -810,6 +837,21 @@ Examples:
     p_down = subparsers.add_parser("down", help="Stop and disable service(s)")
     p_down.set_defaults(func=cmd_down)
     p_down.add_argument("services", default=["all"], nargs="*", help="Service name(s) or 'all'")
+
+    # placeholder
+    p_placeholder = subparsers.add_parser(
+        "placeholder",
+        help="Serve a static 'VISP is offline' page in apache's place (no PHP)",
+        description=(
+            "Serve mounts/placeholder/html/ from an nginx container on apache's port(s), every path → 503. "
+            "'up' requires VISP to be taken down first ('./visp.py down'); starting apache again "
+            "(up/start/restart/install) removes the placeholder automatically."
+        ),
+    )
+    p_placeholder.set_defaults(func=cmd_placeholder)
+    p_placeholder.add_argument(
+        "action", nargs="?", default="status", choices=["up", "down", "status"], help="Default: status"
+    )
 
     # restart
     p_restart = subparsers.add_parser("restart", aliases=["r"], help="Restart service(s)")

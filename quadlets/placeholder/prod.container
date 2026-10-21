@@ -1,0 +1,23 @@
+# VISP offline placeholder page — installed only by './visp.py placeholder up'.
+# Not in the service registry: 'install', 'up all' etc. never pick it up, and
+# starting apache (any visp.py path) removes it.
+
+[Unit]
+Description=VISP offline placeholder page (stands in for apache)
+Conflicts=apache.service
+
+[Container]
+Image=docker.io/library/nginx:1.30.0-alpine3.23
+ContainerName=visp-placeholder
+PublishPort=8081:80
+Volume=@@PROJECT_DIR@@/mounts/placeholder/html:/usr/share/nginx/html:ro,Z
+Volume=@@PROJECT_DIR@@/mounts/placeholder/nginx/http.conf:/etc/nginx/conf.d/default.conf:ro,Z
+ReadOnly=true
+Tmpfs=/var/cache/nginx
+NoNewPrivileges=true
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

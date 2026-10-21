@@ -1,0 +1,73 @@
+<!doctype html>
+<!--
+  VISP offline page, served by './visp.py placeholder up' while VISP is down.
+  Every path on every subdomain answers with this page and HTTP 503.
+  Edits here are live (the directory is bind-mounted); just reload the browser.
+  Assets must live under /_offline/ - any other path returns this page.
+-->
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>VISP är tillfälligt avstängt · VISP is temporarily offline</title>
+  <link rel="icon" href="/_offline/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="/_offline/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <picture>
+      <source srcset="/_offline/visp_slogan_sv_dark.svg" media="(prefers-color-scheme: dark)">
+      <img class="brand-logo" src="/_offline/visp_slogan_sv.svg" alt="VISP – Språkbankens talforskningsplattform">
+    </picture>
+  </header>
+
+  <main>
+    <article class="notice" lang="sv">
+      <p class="status"><span class="status-dot" aria-hidden="true"></span>Ur drift</p>
+      <h1>VISP är tillfälligt avstängt</h1>
+      <p class="lead">Vi har stängt av VISP medan vi installerar en brådskande säkerhetsuppdatering.</p>
+      <p>
+        Den 20 oktober 2026 varnade PHP-projektet för två allvarliga säkerhetsbrister i PHP
+        (<span class="nowrap">CVE-2026-109618</span> och <span class="nowrap">CVE-2026-109619</span>). PHP är en del av den programvara som VISP bygger
+        på, och bristerna kan låta en angripare köra egen kod på servern. Rättningarna släpps
+        den 21 oktober. Tills de är installerade och kontrollerade håller vi VISP avstängt,
+        som en försiktighetsåtgärd.
+      </p>
+      <ul class="facts">
+        <li><strong>Dina data finns kvar.</strong> Projekt, inspelningar och annoteringar ligger orörda på servern.</li>
+        <li><strong>Du behöver inte göra något.</strong> Logga in som vanligt när VISP är tillbaka.</li>
+      </ul>
+      <p>Vi öppnar igen så snart uppdateringen är på plats. Frågor? <a href="https://sprakbanken.se/kontakt">Kontakta oss</a>.</p>
+      <p class="updated">Uppdaterad 21 oktober 2026</p>
+    </article>
+
+    <article class="notice notice-secondary" lang="en">
+      <p class="status"><span class="status-dot" aria-hidden="true"></span>Offline</p>
+      <h2>VISP is temporarily offline</h2>
+      <p class="lead">We have taken VISP offline while we install an urgent security update.</p>
+      <p>
+        On 20 October 2026 the PHP project warned of two critical security flaws in PHP
+        (<span class="nowrap">CVE-2026-109618</span> and <span class="nowrap">CVE-2026-109619</span>). PHP is part of the software VISP is built on, and
+        the flaws could let an attacker run their own code on the server. Fixes are released on
+        21 October. Until they are installed and checked, we are keeping VISP offline as a
+        precaution.
+      </p>
+      <ul class="facts">
+        <li><strong>Your data is safe where it is.</strong> Projects, recordings and annotations are untouched on the server.</li>
+        <li><strong>You don't need to do anything.</strong> Sign in as usual once VISP is back.</li>
+      </ul>
+      <p>We will reopen as soon as the update is in place. Questions? <a href="https://sprakbanken.se/en/contact">Contact us</a>.</p>
+      <p class="updated">Updated 21 October 2026</p>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <a href="https://sprakbanken.se/"><img class="footer-sb-logo" src="/_offline/sprakbanken_logo.svg" alt="Språkbanken"></a>
+    <a href="https://www.umu.se/"><img class="footer-node-logo" src="/_offline/umu-logotyp-SE.svg" alt="Umeå universitet"></a>
+  </footer>
+</body>
+</html>

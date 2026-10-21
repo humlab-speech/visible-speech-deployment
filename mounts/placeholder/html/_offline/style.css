@@ -1,0 +1,267 @@
+/* Offline page styles. Tokens copied from the webclient's theme.scss
+   (Språkbanken graphic profile) so the page looks like VISP. */
+
+:root {
+  color-scheme: light;
+  --v-font-ui: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+  --v-font-prose: 'Noto Serif', Georgia, serif;
+  --v-noto-adjust: 0.46;
+
+  --v-accent: #f0581a;
+  --v-interactive-ink: #157278;
+  --v-interactive-hover: #17838a;
+  --v-warning-fill: #f6c200;
+  --v-warning-soft: #fdf3cc;
+  --v-on-warning: #1a1a1a;
+
+  --v-topbar: #ffffff;
+  --v-topbar-border: #e0e0e0;
+  --v-bg: #f3f3f3;
+  --v-surface: #ffffff;
+  --v-border: #e0e0e0;
+  --v-text: #1a1a1a;
+  --v-text-2: #3d3d3d;
+  --v-muted: #666666;
+  --v-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --v-interactive-ink: #45c0c7;
+    --v-interactive-hover: #26adb5;
+    --v-warning-soft: #483d16;
+    --v-on-warning: #f0f0f0;
+
+    --v-topbar: #1c1c1c;
+    --v-topbar-border: #2c2c2c;
+    --v-bg: #141414;
+    --v-surface: #1c1c1c;
+    --v-border: #2c2c2c;
+    --v-text: #f0f0f0;
+    --v-text-2: #c8c8c8;
+    --v-muted: #9a9a9a;
+    --v-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--v-bg);
+  color: var(--v-text);
+  font-family: var(--v-font-ui);
+}
+
+/* ── Topbar ─────────────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  min-height: 4.5rem;
+  padding: 0.6rem 2.6rem;
+  background: var(--v-topbar);
+  border-bottom: 1px solid var(--v-topbar-border);
+}
+
+.brand-logo {
+  display: block;
+  height: 3.1rem;
+  width: auto;
+  max-width: min(70vw, 16rem);
+}
+
+/* ── Notices ────────────────────────────────────────────── */
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 3rem 1rem 2rem;
+}
+
+.notice {
+  position: relative;
+  padding: 2rem 2.25rem 1.75rem;
+  background: var(--v-surface);
+  border: 1px solid var(--v-border);
+  border-radius: 8px;
+  box-shadow: var(--v-shadow);
+  overflow: hidden;
+}
+
+/* Orange band along the top edge: the profile's accent as a graphic element. */
+.notice::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--v-accent);
+}
+
+.notice-secondary {
+  margin-top: 1.5rem;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--v-warning-soft);
+  color: var(--v-on-warning);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--v-warning-fill);
+}
+
+h1,
+h2 {
+  margin: 0 0 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.6rem;
+}
+
+.notice p,
+.notice li {
+  font-family: var(--v-font-prose);
+  font-size-adjust: var(--v-noto-adjust);
+  line-height: 1.6;
+  color: var(--v-text-2);
+}
+
+.notice .lead {
+  margin-top: 0;
+  font-family: var(--v-font-ui);
+  font-size: 1.2rem;
+  font-size-adjust: none;
+  color: var(--v-text);
+}
+
+.notice .status {
+  font-family: var(--v-font-ui);
+  font-size-adjust: none;
+  color: var(--v-on-warning);
+}
+
+.facts {
+  margin: 1.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.facts li + li {
+  margin-top: 0.4rem;
+}
+
+.facts strong {
+  color: var(--v-text);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+a {
+  color: var(--v-interactive-ink);
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  color: var(--v-interactive-hover);
+}
+
+.notice .updated {
+  margin: 1.25rem 0 0;
+  font-family: var(--v-font-ui);
+  font-size: 0.9rem;
+  font-size-adjust: none;
+  color: var(--v-muted);
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: 2.25rem 1.5rem 2.5rem;
+}
+
+.footer-sb-logo {
+  display: block;
+  height: 1.6rem;
+  width: auto;
+}
+
+.footer-node-logo {
+  display: block;
+  height: 2.6rem;
+  width: auto;
+}
+
+/* Both logos have dark text on transparent. Invert for the dark theme;
+   the hue rotation keeps Språkbanken's orange roughly orange. */
+@media (prefers-color-scheme: dark) {
+  .footer-sb-logo {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .footer-node-logo {
+    filter: invert(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 0.6rem 1rem;
+  }
+
+  main {
+    padding-top: 1.5rem;
+  }
+
+  .notice {
+    padding: 1.5rem 1.25rem 1.25rem;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+  }
+}
