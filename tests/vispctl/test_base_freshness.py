@@ -1369,3 +1369,63 @@ def test_display_visp_images_prints_no_rebuild_arrow_for_a_heuristic_base(bf, mo
 
     assert "heuristic" in out and "→ ./visp.py build" not in out
     assert "1 of 1 images are NOT FRESH" in out  # the guess is still named, just not as a move
+
+
+# ── 10. A built image with no readable definition (F3) ────────────────────────
+
+
+WHISPERX = {"context": "./external/WhisperVault", "dockerfile": "container/Containerfile", "image": "visp-whisperx"}
+BUILT_WHISPERX = {"Id": "built-wx", "Names": ["localhost/visp-whisperx:latest"], "RepoDigests": []}
+
+
+def _missing_definition_items(bf, tmp_path):
+    """whisperx is built, but ``external/`` is gitignored: nothing names its bases."""
+    return bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WHISPERX]),
+        project_dir=tmp_path,
+        client=_NoClient(),
+        build_configs={"whisperx": WHISPERX},
+    )
+
+
+def test_a_built_service_without_its_build_definition_still_gets_a_row(bf, tmp_path):
+    """Silence here would shrink the report and the denominator (DESIGN 3.x: never read as safe)."""
+    (item,) = _missing_definition_items(bf, tmp_path)  # a live pass, and no fetch happened
+
+    assert item.service == "whisperx" and item.role == "runtime"
+    assert item.ref == "no build definition at ./external/WhisperVault/container/Containerfile"
+    assert (item.state, item.check_source) == ("never-checked", "none")
+    assert "Base:" in bf.format_base_line(item)
+
+
+def test_a_missing_build_definition_still_counts_in_the_denominator(bf, tmp_path):
+    moved = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+
+    text = "\n".join(
+        _plain(line) for line in bf.format_summary(_missing_definition_items(bf, tmp_path) + [moved], checked=False)
+    )
+
+    assert "1 of 2 images are NOT FRESH" in text
+
+
+def test_a_digest_pinned_dockerfile_is_not_reported_as_missing(bf, tmp_path):
+    """Stages exist and nothing can move: an empty answer is the honest one."""
+    _write(tmp_path, "docker/pinned/Dockerfile", f"FROM nginx:alpine@sha256:{'0' * 64}\n")
+
+    assert bf.stage_bases(tmp_path, _cfg("./docker/pinned", "Dockerfile")) == []
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([{"Id": "b", "Names": ["localhost/visp-svc:latest"], "RepoDigests": []}]),
+        project_dir=tmp_path,
+        client=_NoClient(),
+        build_configs={"svc": {"context": "./docker/pinned", "dockerfile": "Dockerfile", "image": "visp-svc"}},
+    )
+
+    assert items == []

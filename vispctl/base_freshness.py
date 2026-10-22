@@ -164,6 +164,17 @@ def _referenced_stages(stages: list[dict], target: int) -> set[int]:
     return found - inherited
 
 
+def _dockerfile_rel(cfg: dict) -> str:
+    """The Dockerfile path exactly as ``build.py`` composes its ``-f`` argument."""
+    dockerfile = cfg.get("dockerfile", "Dockerfile")
+    return dockerfile if dockerfile.startswith("./") else f"{cfg.get('context', '.')}/{dockerfile}"
+
+
+def _dockerfile_path(project_dir: Path, cfg: dict) -> Path:
+    """Where the build definition of *cfg* lives, or where it should."""
+    return (Path(project_dir) / _dockerfile_rel(cfg)).resolve()
+
+
 def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None]]:
     """Return ``[(ref, role, stage name)]`` of the registry bases of one build config.
 
@@ -173,12 +184,7 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
     ref at the head; build bases are the bases of the stages the target inherits
     artifacts from, directly or through a stage it inherits FROM.
     """
-    dockerfile = cfg.get("dockerfile", "Dockerfile")
-    if dockerfile.startswith("./"):
-        path = Path(project_dir) / dockerfile
-    else:
-        path = Path(project_dir) / cfg.get("context", ".") / dockerfile
-    path = path.resolve()
+    path = _dockerfile_path(project_dir, cfg)
     if not path.is_file():
         return []
 
@@ -328,7 +334,13 @@ def get_base_freshness(
         if key not in built:
             continue  # not built here — nothing to say about it
         ids[service] = built[key]["id"]
-        entries += [(service, ref, role, stage) for ref, role, stage in stage_bases(project_dir, cfg)]
+        bases = stage_bases(project_dir, cfg)
+        if not bases and not _dockerfile_path(project_dir, cfg).is_file():
+            # Built, but the definition that names its bases is gone (external/ is
+            # gitignored, a Containerfile moved). Say so in the report: a service
+            # that silently contributes no row also silently leaves the denominator.
+            bases = [(f"no build definition at {_dockerfile_rel(cfg)}", "runtime", None)]
+        entries += [(service, ref, role, stage) for ref, role, stage in bases]
 
     refs = [ref for ref in dict.fromkeys(ref for _, ref, _, _ in entries) if fetchable(ref)]
     remote: dict[str, str] = {}
