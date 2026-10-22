@@ -11,7 +11,7 @@ from typing import Any, Dict
 
 from .config import get_config
 from .exceptions import BuildError
-from .runner import Colors, Runner, color
+from .runner import Colors, Runner, color, printable
 
 NODE_BUILD_MARKER = ".build-marker"
 
@@ -350,7 +350,7 @@ class BuildManager:
 
         for ref, record in bases.items():
             digest = next(iter(record["digests"]), record["id"]).rpartition(":")[2][:12]
-            print(f"  Base: {ref} {digest or 'not in the local store'}")
+            print(f"  Base: {printable(ref)} {digest or 'not in the local store'}")
 
     def _add_git_labels(self, cmd: list[str], path: Path, label_prefix: str) -> None:
         """Add git commit and dirty labels for a path to the build command."""

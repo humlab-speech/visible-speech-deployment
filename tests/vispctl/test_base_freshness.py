@@ -1226,3 +1226,41 @@ def test_display_visp_images_offline_still_flags_a_cached_move(bf, monkeypatch, 
     assert "offline — cached MOVED as of 2026-10-20" in out
     # wsrng-server owns a quadlet, so the real wiring may name its apply target
     assert "→ ./visp.py build wsrng-server && ./visp.py apply wsrng-server" in out
+
+
+# ── 8. Terminal sanitization (F1) ──────────────────────────────────────────────
+
+
+def test_printable_marks_only_the_control_characters():
+    """The sanitizer runs on data, before our own colour codes are wrapped around it."""
+    from vispctl.runner import printable
+
+    assert printable("node:24.16.0-alpine3.22") == "node:24.16.0-alpine3.22"
+    assert printable("a\x1b]52;c;x\x07b\x00c") == "a·]52;c;x·b·c"
+
+
+def test_hostile_dockerfile_text_renders_without_control_bytes(bf, tmp_path):
+    """A stage name carrying OSC-52 (set clipboard) must print inert, never reach the terminal."""
+    hostile = "evil\x1b]52;c;aGVsbG8=\x07"
+    _write(tmp_path, "docker/x/Dockerfile", f"FROM docker.io/library/nginx:alpine AS {hostile}\n")
+
+    ((ref, _role, _stage),) = bf.stage_bases(tmp_path, _cfg("./docker/x", "Dockerfile"))
+    line = _plain(bf.format_base_line(_item(bf, ref=ref, check_source="none")))
+
+    assert "\x1b" not in line and "\x07" not in line  # zero control bytes past our own colour codes
+    assert "evil" in line and "·" in line  # the literal is still shown, marked
+
+
+def test_unparsable_from_line_is_reported_but_never_fetched(bf, tmp_path):
+    """FROM ${BASE} names no registry ref: show the literal, send nothing to a registry."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", "ARG BASE=docker.io/library/nginx:alpine\nFROM ${BASE}\n")
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG]),
+        project_dir=tmp_path,
+        client=_NoClient(),
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert [(i.service, i.state, i.check_source) for i in items] == [("wsrng-server", "never-checked", "none")]
+    assert items[0].ref == "${BASE}"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -25,6 +26,21 @@ class Colors:
 
 def color(text: str, c: str) -> str:
     return f"{c}{text}{Colors.NC}"
+
+
+# C0 (incl. ESC/NUL), DEL and C1: enough to drive a terminal (OSC-52 clipboard, BEL,
+# cursor moves) without being visible in the text that carries them.
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+
+
+def printable(text: str) -> str:
+    """Make text from outside this repo safe to print.
+
+    Dockerfile stage names, registry headers and lock-file values are attacker-
+    editable on a deployed host; every display edge that prints one runs it through
+    here first so a terminal control sequence can never reach the terminal.
+    """
+    return _CONTROL_CHARS.sub("·", str(text))
 
 
 class Runner:

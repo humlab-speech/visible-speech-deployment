@@ -24,7 +24,7 @@ from .build import BUILD_CONFIGS
 from .config import get_config
 from .images import _classify_tag
 from .registry import ImageRef, RegistryClient
-from .runner import Colors, color
+from .runner import Colors, color, printable
 
 FRESH = "fresh"
 MOVED = "moved"
@@ -34,6 +34,16 @@ OFFLINE = "offline"
 IMMOBILE = "immobile"
 
 LOCK_FILE = Path(".visp") / "base-lock.json"
+
+# What a FROM ref may contain. Anything else (control bytes, ``$`` variables,
+# quotes, spaces) is not a ref we can ask a registry about, only text to show.
+_REF_CHARS = re.compile(r"[\w.+/@:-]+")
+_STAGE_NAME = re.compile(r"[\w.-]+")
+
+
+def fetchable(ref: str) -> bool:
+    """True only for a plain ref the registry client may be handed; the rest is shown, never fetched."""
+    return bool(_REF_CHARS.fullmatch(ref))
 
 
 def load_lock(project_dir: Path) -> dict:
@@ -72,12 +82,17 @@ def _normalize_ref(ref: str) -> str:
 
 
 def _parse_stages(text: str) -> list[dict]:
-    """Parse FROM/COPY lines into ``{name, ref, copies}`` stages, in file order.
+    r"""Parse FROM/COPY lines into ``{name, ref, copies}`` stages, in file order.
 
     ``ref`` is None for a stage built FROM an earlier stage and for a FROM
     pinned by ``@sha256:``, which cannot move and needs no verdict. ``from_stage``
     keeps the earlier stage's name so the real registry base can be resolved
     through the chain (apache: production <- base <- debian).
+
+    A line we cannot read reliably — a ref outside ``[\w.+/@:-]`` (a ``$`` variable,
+    control bytes) or a stage name outside ``[\w.-]`` — becomes one literal entry:
+    it is reported verbatim (sanitized at display) and never fetched, because a
+    guessed ref would be printed as a verdict and sent to a registry.
     """
     stages: list[dict] = []
     defined: set[str] = set()
@@ -99,6 +114,8 @@ def _parse_stages(text: str) -> list[dict]:
                 ref, from_stage = None, ref
             else:
                 ref = _normalize_ref(ref)
+            if (ref and not _REF_CHARS.fullmatch(ref)) or (name and not _STAGE_NAME.fullmatch(name)):
+                ref, name, from_stage = " ".join(args), None, None
             stages.append({"name": name, "ref": ref, "from_stage": from_stage, "copies": []})
             if name:
                 defined.add(name)
@@ -313,7 +330,7 @@ def get_base_freshness(
         ids[service] = built[key]["id"]
         entries += [(service, ref, role, stage) for ref, role, stage in stage_bases(project_dir, cfg)]
 
-    refs = list(dict.fromkeys(ref for _, ref, _, _ in entries))
+    refs = [ref for ref in dict.fromkeys(ref for _, ref, _, _ in entries) if fetchable(ref)]
     remote: dict[str, str] = {}
     errors: dict[str, str] = {}
     if check_remote and refs:
@@ -382,7 +399,7 @@ def needs_rebuild(b: BaseFreshness) -> bool:
 
 def format_base_line(b: BaseFreshness) -> str:
     """The indented one-line verdict printed under a built image."""
-    head = f"  Base:  {b.ref}  {b.role}" + (f" ({b.stage_name})" if b.stage_name else "")
+    head = f"  Base:  {printable(b.ref)}  {b.role}" + (f" ({printable(b.stage_name)})" if b.stage_name else "")
     state = b.state
 
     if state in (FRESH, IMMOBILE):
@@ -452,13 +469,13 @@ def format_summary(items: list[BaseFreshness], *, checked: bool, applyable: set[
             lines.append("    then ./visp.py apply <service> per runtime service you run (apply takes one service)")
         lines.append("Bases and who they implicate:")
         for ref, pairs in fan_out(stale).items():
-            lines.append(f"    {ref} → " + ", ".join(f"{svc} ({role})" for svc, role in pairs))
+            lines.append(f"    {printable(ref)} → " + ", ".join(f"{svc} ({role})" for svc, role in pairs))
 
     # One outage line for the whole host set: a wall of never-checked is unreadable
     # when the real news is that the registry could not be reached at all.
     failed = [b for b in items if b.remote_error]
     if failed:
-        hosts = ", ".join(sorted({ImageRef.parse(b.ref).registry for b in failed}))
+        hosts = printable(", ".join(sorted({ImageRef.parse(b.ref).registry for b in failed})))
         lines.append(
             color(
                 f"Registry:  check failed — {hosts} "
@@ -469,7 +486,7 @@ def format_summary(items: list[BaseFreshness], *, checked: bool, applyable: set[
 
     dates = [b.checked_at for b in items if b.checked_at]
     if checked and dates:
-        lines.append(f"Registry last checked: {max(dates)[:19].replace('T', ' ')}")
+        lines.append(f"Registry last checked: {printable(max(dates)[:19].replace('T', ' '))}")
     elif not failed:
         # Cached verdicts are on screen above; say how old they are, not just that
         # the registry was not contacted.

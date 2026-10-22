@@ -14,7 +14,7 @@ from .config import get_config
 from .placeholder import placeholder_template
 from .quadlets import get_current_mode
 from .registry import ImageRef, RegistryClient, RegistryError, is_version_tag, newer_versions
-from .runner import Colors, Runner, color
+from .runner import Colors, Runner, color, printable
 from .service import Service, container_service_names
 
 
@@ -615,5 +615,5 @@ class ImageManager:
             return
         for ref, pairs in fan_out(checked_bases).items():
             who = ", ".join(f"{service} ({role})" for service, role in pairs)
-            print(f"  {ref} → {who}")
+            print(f"  {printable(ref)} → {who}")
         print()
