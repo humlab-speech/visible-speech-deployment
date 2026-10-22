@@ -98,6 +98,13 @@ def test_start_stop(capsys):
     assert "Stopped" in out
 
 
+def test_start_resets_failed_state_first():
+    # A unit that hit StartLimitBurst refuses 'start' until reset-failed.
+    fr = FakeRunner()
+    ServiceManager(fr, DEFAULT_SERVICES).start("mongo")
+    assert fr.systemctl_calls == [("reset-failed", "mongo.service"), ("start", "mongo.service")]
+
+
 def test_start_stop_skip_networks(capsys):
     # Network quadlets generate '<name>-network.service' units, not '<name>.service',
     # and are pulled up via Requires= — lifecycle commands must not call systemctl on them.

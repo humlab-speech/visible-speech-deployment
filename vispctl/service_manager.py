@@ -98,6 +98,9 @@ class ServiceManager:
                         )
                     )
                 continue
+            # A unit that hit its StartLimitBurst refuses 'start' until its
+            # failed state is cleared. Harmless for units that aren't failed.
+            self.runner.systemctl("reset-failed", self._svc_name(svc))
             res = self.runner.systemctl("start", self._svc_name(svc))
             if res.returncode != 0:
                 print(color(f"  Failed: {res.stderr}", Colors.RED))
