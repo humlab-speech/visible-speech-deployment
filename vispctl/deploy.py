@@ -432,26 +432,19 @@ class DeployManager:
         Returns:
             List of status row dicts for tabulate.
         """
-        from glob import glob as glob_fn
-
+        from .images import scan_third_party_images
         from .quadlets import get_current_mode
 
         third_party_rows: list[dict] = []
         try:
-            mode = get_current_mode()
-            quadlet_dir = self.basedir / "quadlets" / mode
-            for qfile in sorted(glob_fn(str(quadlet_dir / "*.container"))):
-                with open(qfile) as f:
-                    for line in f:
-                        if line.startswith("Image=") and "localhost/" not in line:
-                            image_ref = line.strip().split("=", 1)[1]
-                            svc_name = Path(qfile).stem
-                            if self.runner:
-                                exists = self._check_image_exists(image_ref)
-                                status = "✅ Pulled" if exists else "❌ Not pulled"
-                            else:
-                                status = "?"
-                            third_party_rows.append({"Service": svc_name, "Image": image_ref, "Status": status})
+            for image_ref, services in scan_third_party_images(self.basedir, get_current_mode()).items():
+                if self.runner:
+                    exists = self._check_image_exists(image_ref)
+                    status = "✅ Pulled" if exists else "❌ Not pulled"
+                else:
+                    status = "?"
+                for svc_name in services:
+                    third_party_rows.append({"Service": svc_name, "Image": image_ref, "Status": status})
         except Exception:  # noqa: BLE001
             pass
 
