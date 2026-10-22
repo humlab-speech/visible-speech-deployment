@@ -143,4 +143,3 @@ No file on the deployment host's checkout was modified; no visp.py or mutating p
 Across the whole verb surface (WT and MERGED), the answer to *"is my recently-rebuilt visp-session-manager actually security-current?"* is **nobody asks**. Every freshness check is either (a) tag-relative and local (`get_stale_containers`), (b) git-relative (`deploy status` labels), or (c) registry-relative but confined to third-party quadlet images (MERGED `images` digest check, `images update`). The FROM-base layer of built images is checked by no code: `scan_base_images` is display-only (`images.py:323` WT / `:529` MERGED), the `RegistryClient.tag_digest` machinery that *would* answer it exists one module away, and `--pull` is the only lever — taken on faith, unreported, unverified.
 
 VERDICT=PROCEDURE_MAPPED
-

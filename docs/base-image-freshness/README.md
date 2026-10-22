@@ -1,9 +1,9 @@
 # Base-image freshness for built images — findings & plan
 
-Status: **findings only, no code yet.** Working branch to continue from; the
-implementation Phases 1–2 below were scoped against merged master (the audit
-pins line numbers to `65345fe`; master has moved since — re-check line drift
-before patching).
+Status: **implemented on this branch** (`feat/base-image-freshness`, Phases 1–2
+below). The audit pins line numbers to `65345fe`; the branch was based on the
+then-current master `465102d`, where all cited locations still hold — re-check
+line drift before applying any of the quoted excerpts directly.
 
 ## The problem in one paragraph
 

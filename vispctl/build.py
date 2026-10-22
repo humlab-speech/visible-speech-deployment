@@ -745,7 +745,7 @@ def cmd_build(
 
     ordered, auto_added = resolve_build_order(requested, build_configs, node_configs)
 
-    # An air-gapped build must never reach for a registry; --pull still forces a pull.
+    # --offline wins over --pull: an air-gapped build must never reach for a registry.
     pull_policy = "never" if offline else "always" if pull else "newer"
 
     if auto_added:
