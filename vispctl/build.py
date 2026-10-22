@@ -786,7 +786,8 @@ def cmd_build(
     print(f"  Order: {' -> '.join(ordered)}")
     print()
 
-    print(f"  Base image pull policy: --pull={pull_policy} (newer = re-pull only when the tag moved upstream)")
+    note = " (newer = re-pull only when the tag moved upstream)" if pull_policy == "newer" else ""
+    print(f"  Base image pull policy: --pull={pull_policy}{note}")
     if no_cache:
         print(color("  Building with --no-cache (clean rebuild)", Colors.YELLOW))
     print()

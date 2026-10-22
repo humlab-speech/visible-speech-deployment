@@ -15,7 +15,7 @@ from .placeholder import placeholder_template
 from .quadlets import get_current_mode
 from .registry import ImageRef, RegistryClient, RegistryError, is_version_tag, newer_versions
 from .runner import Colors, Runner, color, printable
-from .service import Service, container_service_names
+from .service import Service, container_service_names, get_runtime_services
 
 
 def _classify_tag(tag: str) -> str:
@@ -382,7 +382,7 @@ class ImageManager:
 
     def display_visp_images(self, check_remote: bool = True) -> None:
         """Display VISP container images, the freshness of their bases, and their status."""
-        from .base_freshness import format_base_line, format_summary, is_moved
+        from .base_freshness import format_base_line, format_summary, is_moved, needs_rebuild
 
         print(color("=== VISP Container Images ===", Colors.CYAN))
         print()
@@ -390,15 +390,20 @@ class ImageManager:
         found_images, expected_images = self.get_visp_images()
         bases = self.get_base_freshness(check_remote)
         # ./visp.py apply takes one service and refuses names without a runtime quadlet,
-        # so a remediation may only name a service that is both built here and a quadlet
-        # service — the pulled third-party images (mongo, matomo) are never apply targets.
-        applyable = container_service_names() & {b.service for b in bases}
+        # so a remediation may only name a service the runtime actually runs: a quadlet
+        # service (mongo and matomo are pulled, never built), still running after .env
+        # has had its say. A service disabled here has no container to restart.
+        runtime = {svc.name for svc in get_runtime_services(get_config().project_dir)}
+        applyable = runtime & {b.service for b in bases}
+        stale_services = {b.service for b in bases if needs_rebuild(b)}
 
         # Print status for each expected image
         for image_name, build_name in sorted(expected_images.items()):
             if image_name in found_images:
                 info = found_images[image_name]
-                print(f"  {color('✓', Colors.GREEN)} {color(build_name, Colors.BLUE):25} {image_name}:{info['tag']}")
+                # A stale base is a reason to look, so the marker says so rather than smiling
+                marker = color("⚠", Colors.YELLOW) if build_name in stale_services else color("✓", Colors.GREEN)
+                print(f"  {marker} {color(build_name, Colors.BLUE):25} {image_name}:{info['tag']}")
                 print(f"      Size: {info['size']:12}  Created: {info['created']}")
                 for base in [b for b in bases if b.service == build_name]:
                     print(format_base_line(base))

@@ -189,3 +189,11 @@ def test_a_base_with_no_recorded_digest_is_not_printed_as_one(tmp_path, monkeypa
     assert f"Base: {BASE} baseid123456 (no registry digest)" in capsys.readouterr().out
     lock = json.loads((tmp_path / ".visp" / "base-lock.json").read_text())
     assert lock["images"][BUILT_ID]["bases"][BASE]["digests"] == []
+
+
+def test_only_the_newer_policy_needs_explaining(tmp_path, monkeypatch, capsys):
+    """The parenthetical explains a policy nobody chose; --pull already says the rest."""
+    _run_build(tmp_path, monkeypatch, _Runner(), pull=True)
+    out = capsys.readouterr().out
+
+    assert "--pull=always" in out and "newer = re-pull" not in out

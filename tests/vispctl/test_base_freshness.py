@@ -1182,7 +1182,7 @@ def test_format_summary_names_the_registry_that_failed(bf):
     assert "check failed" not in plain
 
 
-def _offline_display(bf, monkeypatch, tmp_path, capsys, cached_digest: str) -> str:
+def _offline_display(bf, monkeypatch, tmp_path, capsys, cached_digest: str, runtime=None) -> str:
     """Run the real ``--offline`` display for one built image whose only evidence is a cached check."""
     from vispctl import images as images_mod
 
@@ -1205,6 +1205,8 @@ def _offline_display(bf, monkeypatch, tmp_path, capsys, cached_digest: str) -> s
     monkeypatch.setattr(
         images_mod.ImageManager, "get_visp_images", lambda self: (found, {"visp-wsrng-server": "wsrng-server"})
     )
+    if runtime is not None:  # what the runtime (and .env) says is running, in place of the real service list
+        monkeypatch.setattr(images_mod, "get_runtime_services", lambda project_dir=None: runtime)
 
     images_mod.ImageManager(_PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE])).display_visp_images(check_remote=False)
     return _plain(capsys.readouterr().out)
@@ -1632,3 +1634,86 @@ def test_a_local_base_with_no_recorded_digest_says_so(bf):
     assert "base1a2b3c4d is present locally with no digest recorded (loaded, not pulled)" in loaded
     assert "not in the local store" not in loaded
     assert "not in the local store" in absent
+
+
+# ── 14. What the display may claim (F8) ────────────────────────────────────────
+
+
+def test_a_service_with_a_stale_base_is_not_marked_as_a_confirmed_green(bf, monkeypatch, tmp_path, capsys):
+    moved = _offline_display(bf, monkeypatch, tmp_path, capsys, DIG_MOVED)
+    unchanged = _offline_display(bf, monkeypatch, tmp_path, capsys, DIG_A)
+
+    assert "⚠ wsrng-server" in moved
+    assert "✓ wsrng-server" in unchanged
+
+
+def test_apply_is_only_named_for_a_service_the_runtime_actually_runs(bf, monkeypatch, tmp_path, capsys):
+    """An .env-disabled service has no container to restart, so do not tell anyone to apply it."""
+    out = _offline_display(bf, monkeypatch, tmp_path, capsys, DIG_MOVED, runtime=[])
+
+    assert "./visp.py apply" not in out
+    assert "wsrng-server has no quadlet to apply" in out
+
+
+def test_an_outage_says_whether_any_verdict_is_left(bf):
+    """'Falls back to the cached checks' is only true when a cached check exists."""
+    down = _item(bf, service="artic", ref="nginx:alpine", check_source="none", remote_error="cannot reach quay.io")
+    down_with_cache = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="cache",
+        remote_error="cannot reach quay.io",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+
+    bare = "\n".join(_plain(line) for line in bf.format_summary([down], checked=True))
+    cached = "\n".join(_plain(line) for line in bf.format_summary([down_with_cache], checked=True))
+
+    assert "no cached verdicts" in bare and "fall back to the cached checks" not in bare
+    assert "fall back to the cached checks" in cached and "no cached verdicts" not in cached
+
+
+def test_a_stage_is_named_only_when_it_adds_a_word(bf):
+    doubled = _item(
+        bf,
+        role="build",
+        stage_name="build",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_A,
+    )
+    named = _item(
+        bf, role="runtime", stage_name="production", check_source="live", recorded_digests=[DIG_A], remote_digest=DIG_A
+    )
+
+    assert "(build)" not in _plain(bf.format_base_line(doubled))
+    assert "(production)" in _plain(bf.format_base_line(named))
+
+
+def test_a_moved_line_names_the_record_it_compared(bf):
+    """'built on' read as a build date; the value beside it has always been a recorded digest."""
+    moved = _plain(
+        bf.format_base_line(
+            _item(bf, ref="nginx:alpine", check_source="live", recorded_digests=[DIG_A], remote_digest=DIG_MOVED)
+        )
+    )
+
+    assert f"recorded {DIG_A}" in moved and "built on" not in moved
+
+
+def test_the_remediation_block_says_what_apply_does(bf):
+    moved = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+
+    text = "\n".join(_plain(line) for line in bf.format_summary([moved], checked=True, applyable={"artic"}))
+
+    assert "apply restarts running containers only" in text

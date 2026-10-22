@@ -581,16 +581,18 @@ def _images(count: int) -> str:
 
 def format_base_line(b: BaseFreshness) -> str:
     """The indented one-line verdict printed under a built image."""
-    head = f"  Base:  {printable(b.ref)}  {b.role}" + (f" ({printable(b.stage_name)})" if b.stage_name else "")
+    # A stage called "build" under role "build" adds nothing but a doubled word
+    stage = b.stage_name if b.stage_name and b.stage_name.lower() != b.role else None
+    head = f"  Base:  {printable(b.ref)}  {b.role}" + (f" ({printable(stage)})" if stage else "")
     state = b.state
 
     if state in (FRESH, IMMOBILE):
         label = "✓ fresh" if state == FRESH else "✓ immobile (dated snapshot)"
         return color(f"{head}  {label}", Colors.GREEN)
     if state == MOVED:
-        built_on = min(b.recorded_digests, default="?")[:19]
+        recorded = min(b.recorded_digests, default="?")[:19]
         as_of = f" (as of {b.checked_at[:10]})" if b.checked_at else ""
-        return color(f"{head}  MOVED  built on {built_on}, tag now {b.remote_digest[:19]}{as_of}", Colors.YELLOW)
+        return color(f"{head}  MOVED  recorded {recorded}, tag now {b.remote_digest[:19]}{as_of}", Colors.YELLOW)
     if state == OFFLINE:
         # Nothing was contacted to confirm any of this, so every cached verdict —
         # the guess flavour included — carries the as-of date and no "today".
@@ -653,7 +655,10 @@ def format_summary(items: list[BaseFreshness], *, checked: bool, applyable: set[
                 )
             )
         services = list(dict.fromkeys(b.service for b in stale))
-        lines.append("Rebuild (a build now refreshes the base: it re-resolves each tag with --pull=newer):")
+        lines.append(
+            "Rebuild (a build now refreshes the base: it re-resolves each tag with --pull=newer):"
+            + color("  apply restarts running containers only", Colors.DIM)
+        )
         lines.append(f"    ./visp.py build {' '.join(services)}")
         if applyable is not None:  # an empty set is an answer too: nothing here is applyable
             for svc in services:
@@ -673,13 +678,13 @@ def format_summary(items: list[BaseFreshness], *, checked: bool, applyable: set[
     failed = [b for b in items if b.remote_error]
     if failed:
         hosts = printable(", ".join(sorted({ImageRef.parse(b.ref).registry for b in failed})))
-        lines.append(
-            color(
-                f"Registry:  check failed — {hosts} "
-                f"({len(failed)} base check(s); their verdicts fall back to the cached checks)",
-                Colors.YELLOW,
-            )
+        cached = any(b.check_source == "cache" for b in failed)
+        clause = (
+            "their verdicts fall back to the cached checks"
+            if cached
+            else "no cached verdicts — run ./visp.py images when a registry is reachable"
         )
+        lines.append(color(f"Registry:  check failed — {hosts} ({len(failed)} base check(s); {clause})", Colors.YELLOW))
 
     dates = [b.checked_at for b in items if b.checked_at]
     if checked and dates:
