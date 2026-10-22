@@ -1429,3 +1429,81 @@ def test_a_digest_pinned_dockerfile_is_not_reported_as_missing(bf, tmp_path):
     )
 
     assert items == []
+
+
+# ── 11. What the real Dockerfile lexer accepts and the scanner must too (F4) ───
+
+
+def _one(bf, tmp_path, name: str, text: str, target: str | None = None):
+    """stage_bases over a synthetic Dockerfile of its own."""
+    _write(tmp_path, f"docker/{name}/Dockerfile", text)
+    return bf.stage_bases(tmp_path, _cfg(f"./docker/{name}", "Dockerfile", target=target))
+
+
+def test_continued_lines_still_name_their_base(bf, tmp_path):
+    """A backslash joins the line before anything is parsed, as it does in buildah."""
+    assert _one(
+        bf,
+        tmp_path,
+        "cont-copy",
+        "FROM docker.io/library/node:22 AS build\n"
+        "RUN npm ci\n"
+        "FROM docker.io/library/nginx:alpine AS production\n"
+        "COPY --chown=1000:1000 \\\n"
+        "     --from=build \\\n"
+        "     /dist /usr/share/nginx/html\n",
+    ) == [("node:22", "build", "build"), ("nginx:alpine", "runtime", "production")]
+
+    assert _one(
+        bf,
+        tmp_path,
+        "cont-from",
+        "FROM \\\n    docker.io/library/debian:trixie-20261020 AS base\nRUN true\n",
+    ) == [("debian:trixie-20261020", "runtime", "base")]
+
+
+def test_a_variable_ref_is_kept_out_of_the_registry_client(bf, tmp_path):
+    """FROM ${BASE_IMAGE} names nothing we can resolve: keep the literal, fetch nothing."""
+    assert _one(bf, tmp_path, "arg", "ARG BASE_IMAGE=docker.io/library/debian:trixie\nFROM ${BASE_IMAGE}\n") == [
+        ("${BASE_IMAGE}", "runtime", None)
+    ]
+    assert bf.fetchable("${BASE_IMAGE}") is False
+    assert bf.fetchable("debian:trixie-20261020") is True
+
+
+def test_a_heredoc_body_is_data_not_stages(bf, tmp_path):
+    """A phantom FROM inside a heredoc must not become a stage: it would also shift a COPY --from=<n>."""
+    assert _one(
+        bf,
+        tmp_path,
+        "heredoc",
+        "FROM docker.io/library/node:22 AS tools\n"
+        "RUN <<EOF\n"
+        "FROM bogus:1\n"
+        "EOF\n"
+        "FROM docker.io/library/debian:trixie AS build\n"
+        "RUN npm ci\n"
+        "FROM docker.io/library/nginx:alpine\n"
+        "COPY --from=1 /out /out\n",
+    ) == [("debian:trixie", "build", "build"), ("nginx:alpine", "runtime", None)]
+
+
+def test_stage_names_match_whatever_case_they_were_declared_in(bf, tmp_path):
+    """buildah lowercases stage names; a case-sensitive lookup reads 'FROM base' as a registry image."""
+    assert _one(
+        bf,
+        tmp_path,
+        "case",
+        "FROM docker.io/library/debian:trixie AS Base\n" "RUN true\n" "FROM base AS final\n" "COPY --from=BASE /a /b\n",
+    ) == [("debian:trixie", "runtime", "final")]
+
+
+def test_a_space_separated_from_flag_does_not_swallow_the_ref(bf, tmp_path):
+    """'--platform linux/amd64' is one flag; an unknown '--foo' must not eat the token after it either."""
+    assert _one(bf, tmp_path, "flag", "FROM --platform linux/amd64 docker.io/library/debian:trixie-20261020\n") == [
+        ("debian:trixie-20261020", "runtime", None)
+    ]
+
+    assert _one(bf, tmp_path, "flag2", "FROM --foo docker.io/library/nginx:alpine\n") == [
+        ("nginx:alpine", "runtime", None)
+    ]

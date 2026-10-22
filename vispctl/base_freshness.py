@@ -81,6 +81,37 @@ def _normalize_ref(ref: str) -> str:
     return ref
 
 
+_FROM_SPACE_FLAGS = {"--platform"}  # "FROM --platform linux/amd64 x" is a flag plus its own token
+_HEREDOC_VERBS = ("RUN", "CMD", "ENTRYPOINT", "SHELL")
+
+
+def _from_args(parts: list[str]) -> list[str]:
+    """The arguments of a FROM line, with both flag spellings removed.
+
+    Only a known flag may swallow the token after it: ``--platform linux/amd64``
+    and ``--platform=linux/amd64`` both mean one flag, and an unknown ``--foo``
+    must not eat the real ref that follows it.
+    """
+    args: list[str] = []
+    skip = False
+    for part in parts[1:]:
+        if skip:
+            skip = False
+        elif part.startswith("--"):
+            skip = part in _FROM_SPACE_FLAGS
+        else:
+            args.append(part)
+    return args
+
+
+def _heredoc_term(tokens: list[str]) -> str:
+    """The word that ends a heredoc body: ``<<EOF`` ends at a bare ``EOF``, quotes and a trailing ``+`` aside."""
+    for token in tokens:
+        if token.startswith("<<"):
+            return token.lstrip("<").strip("'\"").rstrip("+") or "EOF"
+    return "EOF"
+
+
 def _parse_stages(text: str) -> list[dict]:
     r"""Parse FROM/COPY lines into ``{name, ref, copies}`` stages, in file order.
 
@@ -89,38 +120,51 @@ def _parse_stages(text: str) -> list[dict]:
     keeps the earlier stage's name so the real registry base can be resolved
     through the chain (apache: production <- base <- debian).
 
+    Three things the line-oriented scanner must borrow from the real Dockerfile
+    lexer, because these files are third-party (``external/**``): backslash
+    continuations are joined before parsing, a heredoc body is data and must not
+    be read as instructions, and stage names match case-insensitively.
+
     A line we cannot read reliably — a ref outside ``[\w.+/@:-]`` (a ``$`` variable,
     control bytes) or a stage name outside ``[\w.-]`` — becomes one literal entry:
     it is reported verbatim (sanitized at display) and never fetched, because a
     guessed ref would be printed as a verdict and sent to a registry.
     """
+    lines = re.sub(r"\\\r?\n", " ", text).splitlines()
     stages: list[dict] = []
     defined: set[str] = set()
-    for line in text.splitlines():
-        parts = line.strip().split()
+    i = 0
+    while i < len(lines):
+        parts = lines[i].strip().split()
+        i += 1
         if not parts or parts[0].startswith("#"):
             continue
         verb = parts[0].upper()
+        if verb in _HEREDOC_VERBS and any(p.startswith("<<") for p in parts[1:]):
+            term = _heredoc_term(parts[1:])
+            while i < len(lines) and lines[i].strip() != term:
+                i += 1  # a FROM inside the body is a string, not a stage
+            continue
         if verb == "FROM":
-            args = [p for p in parts[1:] if not p.startswith("--")]
+            args = _from_args(parts)
             if not args:
                 continue
             ref = args[0]
-            name = args[2] if len(args) >= 3 and args[1].upper() == "AS" else None
+            name = args[2].lower() if len(args) >= 3 and args[1].upper() == "AS" else None
             from_stage = None
             if "@sha256:" in ref:
                 ref = None
-            elif ref in defined:
-                ref, from_stage = None, ref
+            elif ref.lower() in defined:
+                ref, from_stage = None, ref.lower()
             else:
                 ref = _normalize_ref(ref)
             if (ref and not _REF_CHARS.fullmatch(ref)) or (name and not _STAGE_NAME.fullmatch(name)):
-                ref, name, from_stage = " ".join(args), None, None
+                ref, name, from_stage = _normalize_ref(" ".join(args)), None, None
             stages.append({"name": name, "ref": ref, "from_stage": from_stage, "copies": []})
             if name:
                 defined.add(name)
         elif verb == "COPY" and stages:
-            stages[-1]["copies"] += [p.partition("=")[2] for p in parts if p.startswith("--from=")]
+            stages[-1]["copies"] += [p.partition("=")[2].lower() for p in parts if p.startswith("--from=")]
     return stages
 
 
@@ -194,7 +238,7 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
 
     target = len(stages) - 1
     if cfg.get("target"):
-        target = next((i for i, s in enumerate(stages) if s["name"] == cfg["target"]), target)
+        target = next((i for i, s in enumerate(stages) if s["name"] == cfg["target"].lower()), target)
 
     items: list[tuple[str, str, str | None]] = []
     seen: set[tuple[str, str]] = set()
