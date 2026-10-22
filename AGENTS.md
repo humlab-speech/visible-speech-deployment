@@ -487,6 +487,7 @@ whenever images, quadlets, or service names change.
 ./visp.py status                 # service status + image list
 ./visp.py images                 # built images + pulled third-party images vs registry
                                  # (same digest? newer minor/major tag?); --offline skips the registry
+./visp.py images update matomo   # pick a newer tag (or re-pull a rebuilt one) → quadlets, pull, restart
 ./visp.py restart <service>
 ./visp.py logs <service> -f
 ./visp.py shell <container>      # open bash inside a container
@@ -1075,11 +1076,17 @@ nginx for the placeholder, …) are pulled, not built. `./visp.py images` checks
 against its registry:
 
 - **Digest** — official images are rebuilt under the *same* tag when their base image
-  is patched. Podman never re-pulls a tag it already has, so a "rebuilt upstream"
-  report means: `podman pull <ref> && ./visp.py restart <service>`.
+  is patched. Podman never re-pulls a tag it already has, so it reports "rebuilt upstream".
 - **Newer versions** — the newest tag of the same shape within the current major, and
-  in a later major. Moving to one means editing `Image=` in both `quadlets/dev/` and
-  `quadlets/prod/`, then `./visp.py apply` (Matomo then needs `console core:update`).
+  in a later major.
+
+Act on either with `./visp.py images update <service>` (`--to TAG`, `-y` to skip the
+prompts). It lists the newest tag of the current major and of each later major (so a
+database can move one major at a time), plus the current tag when re-pulling it would
+change something, and warns before a major upgrade or a downgrade. Then it pulls (a
+failed pull changes nothing), rewrites `Image=` in both `quadlets/dev/` and
+`quadlets/prod/`, and converges like `apply`. Commit the quadlet change afterwards, as
+it prints. Matomo still needs `console core:update` afterwards (also printed).
 
 ### Update procedure
 

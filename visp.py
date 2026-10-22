@@ -583,6 +583,13 @@ def cmd_images(args):
     im.display_network_info()
 
 
+def cmd_images_update(args):
+    """Move a pulled third-party image to another tag: quadlets, pull, restart."""
+    from vispctl.image_update import run_image_update
+
+    sys.exit(run_image_update(args, get_config()))
+
+
 def cmd_images_base(args):  # noqa: ARG001
     """List all base images used in Dockerfiles."""
     cfg = get_config()
@@ -1040,13 +1047,23 @@ Examples:
     )
 
     # images
-    p_images = subparsers.add_parser("images", aliases=["img"], help="List VISP container images and build status")
+    p_images = subparsers.add_parser(
+        "images", aliases=["img", "image"], help="List VISP container images and build status"
+    )
     p_images.add_argument("--offline", action="store_true", help="Skip the registry check for newer third-party images")
     p_images.set_defaults(func=cmd_images)
     p_images_sub = p_images.add_subparsers(dest="subcommand", help="Images subcommands")
     p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions").set_defaults(
         func=cmd_images_base
     )
+    p_images_update = p_images_sub.add_parser(
+        "update",
+        help="Move a pulled third-party image (matomo, mongo, …) to another tag: quadlets, pull, restart",
+    )
+    p_images_update.add_argument("service", help="Service whose image to update, e.g. matomo")
+    p_images_update.add_argument("--to", metavar="TAG", help="Tag to move to (otherwise you are asked)")
+    p_images_update.add_argument("-y", "--yes", action="store_true", help="Do not ask for confirmation")
+    p_images_update.set_defaults(func=cmd_images_update)
 
     # deploy
     p_deploy = subparsers.add_parser("deploy", help="Manage deployments: version control, git repos, status")

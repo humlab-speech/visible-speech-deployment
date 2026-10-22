@@ -434,8 +434,7 @@ class ImageManager:
                             Colors.YELLOW,
                         )
                     )
-                    restart = [f"./visp.py restart {s}" for s in img.services if s != "placeholder"]
-                    print(f"                 {' && '.join([f'podman pull {img.ref}', *restart])}")
+                    print(f"                 ./visp.py images update {img.services[0]}   (pick the current tag)")
 
                 if not img.remote_error and not img.pinned_by_digest:
                     print(f"      Newer:     {self._newer_line(img)}")
@@ -456,13 +455,12 @@ class ImageManager:
             if rebuilt:
                 print(
                     color(
-                        f"{len(rebuilt)} image(s) rebuilt upstream under the same tag — pull and restart.",
+                        f"{len(rebuilt)} image(s) rebuilt upstream under the same tag — pull again and restart.",
                         Colors.YELLOW,
                     )
                 )
             if outdated:
-                print(f"{len(outdated)} image(s) have newer versions. To move: edit Image= in quadlets/dev and")
-                print("quadlets/prod, then ./visp.py apply (check the image's release notes first).")
+                print(f"{len(outdated)} image(s) have newer versions. Move one with: ./visp.py images update <service>")
             if failed:
                 print(color(f"{len(failed)} registry check(s) failed.", Colors.YELLOW))
             if not (rebuilt or outdated or failed):

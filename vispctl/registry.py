@@ -190,18 +190,18 @@ def is_version_tag(tag: str | None) -> bool:
     return bool(tag) and _version_key(tag) is not None
 
 
-def newer_versions(current: str | None, tags: Iterable[str]) -> tuple[str | None, str | None]:
-    """Return (newest tag in the current major, newest tag in a later major).
+def newest_by_major(current: str | None, tags: Iterable[str]) -> dict[int, str]:
+    """Map each major version to its newest tag that is newer than *current*.
 
-    Either is None when nothing newer exists, or when *current* is not a
-    version tag at all (``latest``, ``bookworm``).
+    Only tags of the same shape as *current* count (see ``_version_key``).
+    Empty when nothing newer exists or *current* is not a version tag.
     """
     cur = _version_key(current) if current else None
     if cur is None:
-        return None, None
+        return {}
     shape, numbers, variant = cur
 
-    best_same, best_major = None, None
+    best: dict[int, tuple] = {}
     for tag in tags:
         key = _version_key(tag)
         if key is None or key[0] != shape:
@@ -209,10 +209,32 @@ def newer_versions(current: str | None, tags: Iterable[str]) -> tuple[str | None
         rank = (key[1], key[2])
         if rank <= (numbers, variant):
             continue
-        if key[1][0] == numbers[0]:
-            if best_same is None or rank > best_same[0]:
-                best_same = (rank, tag)
-        elif best_major is None or rank > best_major[0]:
-            best_major = (rank, tag)
+        major = key[1][0]
+        if major not in best or rank > best[major][0]:
+            best[major] = (rank, tag)
+    return {major: tag for major, (_, tag) in sorted(best.items())}
 
-    return (best_same[1] if best_same else None, best_major[1] if best_major else None)
+
+def newer_versions(current: str | None, tags: Iterable[str]) -> tuple[str | None, str | None]:
+    """Return (newest tag in the current major, newest tag in a later major).
+
+    Either is None when nothing newer exists, or when *current* is not a
+    version tag at all (``latest``, ``bookworm``).
+    """
+    by_major = newest_by_major(current, tags)
+    if not by_major:
+        return None, None
+    current_major = _version_key(current)[1][0]
+    later = [tag for major, tag in by_major.items() if major > current_major]
+    return by_major.get(current_major), (later[-1] if later else None)
+
+
+def major_of(tag: str | None) -> int | None:
+    key = _version_key(tag) if tag else None
+    return key[1][0] if key else None
+
+
+def is_older(tag: str, than: str | None) -> bool:
+    """True if *tag* is a lower version than *than* (both of the same shape)."""
+    a, b = _version_key(tag), _version_key(than) if than else None
+    return bool(a and b and a[0] == b[0] and (a[1], a[2]) < (b[1], b[2]))
