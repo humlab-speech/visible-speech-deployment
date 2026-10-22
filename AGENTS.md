@@ -1053,7 +1053,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
-| `docker/apache/Dockerfile` | `debian:trixie-20260406` | date-pinned | Trixie = Debian 13 (testing). Update date when new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (a cached build fetches nothing). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `docker/tratt/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `docker/tratt/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |

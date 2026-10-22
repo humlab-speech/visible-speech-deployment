@@ -3,7 +3,7 @@
 # ------------------------------------------------------------
 # base: Apache + Shibboleth + PHP + Node + Composer
 # ------------------------------------------------------------
-FROM docker.io/library/debian:trixie-20260406 AS base
+FROM docker.io/library/debian:trixie-20261020 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="Debian Apache + Shibboleth + PHP (Sury) + Node, for VISP webserver/router/auth layer"
@@ -17,8 +17,14 @@ RUN apt-get update && \
     wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg && \
     echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
 
-# Install system deps + Apache + Shibboleth + PHP
+# Install system deps + Apache + Shibboleth + PHP.
+# 'upgrade' first: 'install' only fetches current versions of the packages it
+# names, so libc6, liblzma5, util-linux etc. from the base image would stay as
+# old as its date tag. With it, './visp.py build apache --no-cache' is fully
+# patched whatever the FROM date is. (Without --no-cache the cached layer is
+# reused and nothing is fetched.)
 RUN apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
     apt-get install -y --no-install-recommends \
       git curl gnupg iputils-ping nano \
       libapache2-mod-shib ntpsec openssl \
