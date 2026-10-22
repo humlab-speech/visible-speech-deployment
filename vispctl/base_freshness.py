@@ -14,7 +14,9 @@ guessed "fresh".
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -47,25 +49,93 @@ def fetchable(ref: str) -> bool:
 
 
 def load_lock(project_dir: Path) -> dict:
-    """Read the base-lock file; missing or unparsable degrades to no record."""
+    """Read the base-lock file; a missing, torn or broken one degrades to a smaller record."""
+    path = Path(project_dir) / LOCK_FILE
     try:
-        data = json.loads((Path(project_dir) / LOCK_FILE).read_text(errors="replace"))
-    except (OSError, ValueError):
+        text = path.read_text(errors="replace")
+    except OSError:
         return {}
+    try:
+        data = json.loads(text)
+    except (ValueError, RecursionError):
+        return _salvage_truncated(text)
     return data if isinstance(data, dict) else {}
 
 
+def _salvage_truncated(text: str) -> dict:
+    """Read what a truncated JSON object still holds.
+
+    A lock written by an interrupted process ends mid-value. Cutting back to the
+    last complete element and closing the containers that were still open costs
+    that last entry instead of every record and every cached check in the file —
+    whole-file loss would silently pin the host on ``heuristic`` forever. Only a
+    read path reaches here: :func:`save_lock` writes atomically.
+    """
+    stack: list[str] = []
+    in_string = escaped = False
+    ends: list[tuple[int, int]] = []  # (position, open containers there) after every complete element
+    for i, char in enumerate(text):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char in "{[":
+            stack.append(char)
+        elif char in "}]":
+            if not stack:
+                break
+            stack.pop()
+            ends.append((i + 1, len(stack)))
+        elif char == ",":
+            ends.append((i, len(stack)))  # whatever came before the comma is finished
+    for cut, depth in reversed(ends):  # newest complete element first
+        closers = "".join("}" if char == "{" else "]" for char in reversed(stack[:depth]))
+        try:
+            data = json.loads(text[:cut] + closers)
+        except ValueError:
+            continue
+        if isinstance(data, dict):
+            return data
+    return {}
+
+
 def save_lock(project_dir: Path, lock: dict) -> None:
-    """Write the base-lock file (gitignored machine state, not a committed pin)."""
+    """Write the base-lock file (gitignored machine state, not a committed pin).
+
+    Atomic on purpose: ``visp.py images`` caches checks from a read command while
+    ``visp.py build`` records a build, and a reader that landed inside a plain
+    write would parse nothing, merge nothing, and save the file back without the
+    records it never saw.
+    """
     path = Path(project_dir) / LOCK_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(lock, indent=1, sort_keys=True))
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")  # 0600, no symlink following
+    try:
+        with os.fdopen(fd, "w") as handle:
+            handle.write(json.dumps(lock, indent=1, sort_keys=True))
+        os.replace(tmp, path)
+    except OSError:
+        Path(tmp).unlink(missing_ok=True)
+        raise
+
+
+def _section(lock: dict, name: str) -> dict:
+    """One top-level lock section, coerced to a mapping (a hand-edited file may hold anything)."""
+    value = lock.get(name)
+    if not isinstance(value, dict):
+        lock[name] = value = {}
+    return value
 
 
 def record_build(project_dir: Path, built_image_id: str, bases: dict, built_at: str, pull_policy: str) -> dict:
     """Record the bases *built_image_id* consumed. The caller saves the returned lock."""
     lock = load_lock(project_dir)
-    lock.setdefault("images", {})[built_image_id] = {
+    _section(lock, "images")[built_image_id] = {
         "built_at": built_at,
         "pull_policy": pull_policy,
         "bases": bases,
@@ -262,9 +332,11 @@ def local_image_state(runner) -> tuple[dict[str, dict], dict[str, dict]]:
     """
     rc, stdout, _ = runner.run_quiet(["podman", "images", "--format", "json"])
     try:
-        entries = json.loads(stdout) if rc == 0 and stdout else []
-    except ValueError:
-        entries = []
+        data = json.loads(stdout) if rc == 0 and stdout else []
+    except (ValueError, RecursionError):
+        data = []
+    # An unexpected answer — an object, a bare null, a list of strings — is no local state at all.
+    entries = [entry for entry in data if isinstance(entry, dict)] if isinstance(data, list) else []
 
     bases: dict[str, dict] = {}
     built: dict[str, dict] = {}
@@ -354,6 +426,32 @@ def _lookup_remote(client: RegistryClient, ref: str) -> tuple[str, str | None, s
         return ref, None, str(e)
 
 
+def _lock_record(image: object, ref: str) -> dict:
+    """One base's record inside the lock, shape-coerced: the lock file is outside input."""
+    bases = image.get("bases") if isinstance(image, dict) else None
+    entry = bases.get(ref) if isinstance(bases, dict) else None
+    return entry if isinstance(entry, dict) else {}
+
+
+def _digests(value: object) -> frozenset[str]:
+    """A digests list from the lock, whatever shape it arrived in."""
+    if not isinstance(value, (list, tuple, set, frozenset)):
+        return frozenset()
+    return frozenset(str(item) for item in value)
+
+
+_DATE_PREFIX = re.compile(r"\d{4}-")
+
+
+def _check_date(value: object) -> str | None:
+    """A cached check date, accepted only as a date-shaped string.
+
+    It ends up on a line that says 'as of', so a number or a stray word from a
+    hand-edited lock is treated as no date rather than printed as one.
+    """
+    return value if isinstance(value, str) and _DATE_PREFIX.match(value) else None
+
+
 def get_base_freshness(
     runner,
     project_dir: Path | None = None,
@@ -367,8 +465,11 @@ def get_base_freshness(
     configs = build_configs if build_configs is not None else BUILD_CONFIGS
 
     lock = load_lock(project_dir)
-    records = lock.get("images") or {}
-    checks = lock.setdefault("checks", {})
+    if not lock and (project_dir / LOCK_FILE).is_file():
+        # Something had to go wrong to get here; say it before printing a wall of heuristic rows
+        print(color("base-lock unparsable — starting records fresh", Colors.YELLOW))
+    records = lock.get("images") if isinstance(lock.get("images"), dict) else {}
+    checks = _section(lock, "checks")
     local_bases, built = local_image_state(runner)
 
     entries: list[tuple[str, str, str, str | None]] = []
@@ -393,7 +494,10 @@ def get_base_freshness(
         client = client or RegistryClient()
         with ThreadPoolExecutor(max_workers=4) as pool:
             for ref, digest, error in pool.map(lambda r: _lookup_remote(client, r), refs):
-                (errors if error else remote)[ref] = error or digest
+                if error is None and digest is not None:
+                    remote[ref] = digest
+                else:  # an empty error message is still a failure: never cache it as a resolved ref
+                    errors[ref] = error or f"{ref}: registry answered no digest"
         if remote:
             now = datetime.now(timezone.utc).isoformat(timespec="seconds")
             for ref, digest in remote.items():
@@ -407,14 +511,16 @@ def get_base_freshness(
 
     items: list[BaseFreshness] = []
     for service, ref, role, stage in entries:
-        record = ((records.get(ids[service]) or {}).get("bases") or {}).get(ref) or {}
-        check = checks.get(ref) or {}
+        record = _lock_record(records.get(ids[service]), ref)
+        check = checks.get(ref)
+        check = check if isinstance(check, dict) else {}
+        cached = check.get("remote_digest")
         if ref in remote:
-            digest, source, checked_at = remote[ref], "live", checks[ref]["checked_at"]
-        elif check.get("remote_digest"):
-            digest, source, checked_at = check["remote_digest"], "cache", check.get("checked_at")
+            digest, source, checked_at = remote[ref], "live", _check_date(checks[ref]["checked_at"])
+        elif isinstance(cached, str) and cached:
+            digest, source, checked_at = cached, "cache", _check_date(check.get("checked_at"))
         else:
-            digest, source, checked_at = None, "none", check.get("checked_at")
+            digest, source, checked_at = None, "none", _check_date(check.get("checked_at"))
         items.append(
             BaseFreshness(
                 service=service,
@@ -422,7 +528,7 @@ def get_base_freshness(
                 role=role,
                 stage_name=stage,
                 built_image_id=ids[service],
-                recorded_digests=frozenset(record.get("digests") or ()),
+                recorded_digests=_digests(record.get("digests")),
                 local_digests=frozenset((local_bases.get(ref) or {}).get("digests") or ()),
                 remote_digest=digest,
                 remote_error=errors.get(ref),

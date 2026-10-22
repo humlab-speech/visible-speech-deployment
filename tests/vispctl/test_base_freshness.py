@@ -1507,3 +1507,113 @@ def test_a_space_separated_from_flag_does_not_swallow_the_ref(bf, tmp_path):
     assert _one(bf, tmp_path, "flag2", "FROM --foo docker.io/library/nginx:alpine\n") == [
         ("nginx:alpine", "runtime", None)
     ]
+
+
+# ── 12. The lock file is outside input (F6) ───────────────────────────────────
+
+TORN_FULL = {
+    "images": {
+        "idA": {
+            "built_at": "2026-10-22T06:00:00+00:00",
+            "pull_policy": "newer",
+            "bases": {"node:22": {"digests": ["sha256:aa"], "id": "b1"}},
+        }
+    },
+    "checks": {"node:22": {"remote_digest": "sha256:aa", "checked_at": "2026-10-20T05:00:00+00:00"}},
+}
+
+
+def _lock_file(tmp_path, text: str):
+    path = tmp_path / ".visp" / "base-lock.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
+
+
+def test_a_torn_lock_costs_its_last_entry_not_the_whole_file(bf, tmp_path):
+    """A reader must never save the file back without the records it could not parse.
+
+    Whole-file loss is silent (every verdict falls back to heuristic forever), so a
+    truncated file is cut back to its last complete element instead of discarded.
+    """
+    import json
+
+    text = json.dumps(TORN_FULL)
+    _lock_file(tmp_path, text[: len(text) // 2])  # exactly what a mid-write reader sees
+
+    bf.save_lock(tmp_path, bf.record_build(tmp_path, "idB", {}, "2026-10-23T06:00:00+00:00", "newer"))
+
+    stored = bf.load_lock(tmp_path)
+    assert "idA" in stored["images"] and "idB" in stored["images"]
+
+
+def test_save_lock_replaces_the_file_privately_and_leaves_no_traces(bf, tmp_path):
+    """Atomic rename, owner-only: a build and an images run overlap on this file."""
+    import stat
+
+    bf.save_lock(tmp_path, TORN_FULL)
+
+    path = tmp_path / ".visp" / "base-lock.json"
+    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert [p.name for p in path.parent.iterdir()] == ["base-lock.json"]
+
+
+@pytest.mark.parametrize("body", ['{"checks": null}', '{"checks": []}', '{"images": null}'])
+def test_a_lock_section_of_the_wrong_shape_is_not_a_crash(bf, tmp_path, body):
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _lock_file(tmp_path, body)
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        check_remote=False,
+        client=_NoClient(),
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert [(i.service, i.state) for i in items] == [("wsrng-server", "never-checked")]
+
+
+@pytest.mark.parametrize("body", ['{"a": {}}', "null", '["a"]', "13"])
+def test_unexpected_podman_output_is_no_local_state(bf, body):
+    """A read command must not traceback because podman answered in another shape."""
+
+    class _Shape:
+        def run_quiet(self, cmd):
+            return 0, body, ""
+
+    assert bf.local_image_state(_Shape()) == ({}, {})
+
+
+def test_a_cached_check_date_is_accepted_only_as_a_date(bf, tmp_path):
+    """1712345678 in checked_at is a hand edit, not something to print as 'as of'."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _seed_lock(bf, tmp_path, digests=[DIG_A], checks={NODE: {"remote_digest": DIG_MOVED, "checked_at": 1712345678}})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        check_remote=False,
+        client=_NoClient(),
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert items[0].state == "offline"  # the cached digest is still evidence
+    assert items[0].checked_at is None  # but its date is not
+    assert "as of ?" in _plain(bf.format_base_line(items[0]))
+
+
+def test_an_unparsable_lock_says_so_before_the_verdicts(bf, tmp_path, capsys):
+    """Degrading to no records is right; doing it silently next to a wall of heuristic rows is not."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _lock_file(tmp_path, "{ not json at all")
+
+    bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        check_remote=False,
+        client=_NoClient(),
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert "base-lock unparsable" in capsys.readouterr().out
