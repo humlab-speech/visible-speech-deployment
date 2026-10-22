@@ -578,8 +578,9 @@ def cmd_images(args):
     """List VISP container images and their status."""
     cfg = get_config()
     im = ImageManager(cfg.runner, cfg.build_configs, cfg.network_services)
-    im.display_visp_images()
-    im.display_third_party_images(check_remote=not getattr(args, "offline", False))
+    check_remote = not getattr(args, "offline", False)
+    im.display_visp_images(check_remote=check_remote)
+    im.display_third_party_images(check_remote=check_remote)
     im.display_network_info()
 
 

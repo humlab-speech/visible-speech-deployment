@@ -115,3 +115,6 @@ mounts/apache/apache/vhosts-*/octra-redirect.vhost.conf
 scratchpad.md
 # Browser test output (./visp.py test <name>)
 tests/e2e/artifacts/
+
+# Base-image freshness lock and cached registry checks
+.visp/
