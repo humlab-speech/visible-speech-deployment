@@ -485,6 +485,9 @@ whenever images, quadlets, or service names change.
 
 # Day-to-day
 ./visp.py status                 # service status + image list
+./visp.py images                 # built images + pulled third-party images vs registry
+                                 # (same digest? newer minor/major tag?); --offline skips the registry
+./visp.py images update matomo   # pick a newer tag (or re-pull a rebuilt one) → quadlets, pull, restart
 ./visp.py restart <service>
 ./visp.py logs <service> -f
 ./visp.py shell <container>      # open bash inside a container
@@ -1065,6 +1068,25 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | fully pinned ✅ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | fully pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
 | `external/wsrng-server/Dockerfile` | `node:24.16.0-alpine3.22` | fully pinned ✅ | Node 24 = Active LTS (moved off EOL Node 20). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+
+### Third-party (pulled) images
+
+Images in quadlet `Image=` lines that are not `localhost/` (matomo, mariadb, mongo,
+nginx for the placeholder, …) are pulled, not built. `./visp.py images` checks each
+against its registry:
+
+- **Digest** — official images are rebuilt under the *same* tag when their base image
+  is patched. Podman never re-pulls a tag it already has, so it reports "rebuilt upstream".
+- **Newer versions** — the newest tag of the same shape within the current major, and
+  in a later major.
+
+Act on either with `./visp.py images update <service>` (`--to TAG`, `-y` to skip the
+prompts). It lists the newest tag of the current major and of each later major (so a
+database can move one major at a time), plus the current tag when re-pulling it would
+change something, and warns before a major upgrade or a downgrade. Then it pulls (a
+failed pull changes nothing), rewrites `Image=` in both `quadlets/dev/` and
+`quadlets/prod/`, and converges like `apply`. Commit the quadlet change afterwards, as
+it prints. Matomo still needs `console core:update` afterwards (also printed).
 
 ### Update procedure
 

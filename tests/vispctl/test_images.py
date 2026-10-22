@@ -1,6 +1,9 @@
-"""Tests for vispctl.images — ImageManager stale-container detection."""
+"""Tests for vispctl.images — stale containers, base images, third-party images."""
+
+import json
 
 from vispctl.images import ImageManager
+from vispctl.registry import RegistryError
 from vispctl.service import Service
 
 
@@ -144,3 +147,130 @@ def test_scan_base_images_includes_stage_names(tmp_path, monkeypatch):
 
     assert base["node:24.15.0"] == [("docker/octra/Dockerfile", "builder")]
     assert base["httpd:2.4.67"] == [("docker/octra/Dockerfile", None)]
+
+
+# ── Third-party (pulled) images ────────────────────────────────────────────────
+
+
+def _write_quadlets(root):
+    prod = root / "quadlets" / "prod"
+    prod.mkdir(parents=True)
+    (prod / "matomo.container").write_text("[Container]\nImage=docker.io/library/matomo:5.8.0\n")
+    (prod / "mongo.container").write_text("[Container]\nImage=docker.io/library/mongo:6.0.27\n")
+    (prod / "apache.container").write_text("[Container]\nImage=localhost/visp-apache:latest\n")
+    placeholder = root / "quadlets" / "placeholder"
+    placeholder.mkdir()
+    (placeholder / "prod.container").write_text("[Container]\nImage=docker.io/library/nginx:1.30.0-alpine3.23\n")
+
+
+def test_scan_third_party_images_skips_localhost_and_includes_placeholder(tmp_path):
+    from vispctl.images import scan_third_party_images
+
+    _write_quadlets(tmp_path)
+
+    assert scan_third_party_images(tmp_path, "prod") == {
+        "docker.io/library/matomo:5.8.0": ["matomo"],
+        "docker.io/library/mongo:6.0.27": ["mongo"],
+        "docker.io/library/nginx:1.30.0-alpine3.23": ["placeholder"],
+    }
+
+
+class _PodmanImagesRunner:
+    """Fake runner answering `podman images --format json` and `podman ps`."""
+
+    def __init__(self, images, ps=""):
+        self.images, self.ps = images, ps
+
+    def run_quiet(self, cmd):
+        if cmd[:2] == ["podman", "images"]:
+            return 0, json.dumps(self.images), ""
+        if cmd[:2] == ["podman", "ps"]:
+            return 0, self.ps, ""
+        return 1, "", ""
+
+
+class _FakeClient:
+    def __init__(self, tags, digests):
+        self.tags, self.digests = tags, digests
+
+    def list_tags(self, ref):
+        return self.tags[ref.repository]
+
+    def tag_digest(self, ref):
+        if ref.repository not in self.digests:
+            raise RegistryError("cannot reach registry-1.docker.io: timed out")
+        return self.digests[ref.repository]
+
+
+def test_get_third_party_images_compares_digests_and_versions(tmp_path, monkeypatch):
+    from vispctl import images as images_mod
+
+    _write_quadlets(tmp_path)
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    monkeypatch.setattr(images_mod, "get_current_mode", lambda: "prod")
+
+    local = [
+        {  # matomo: pulled before the registry rebuilt 5.8.0
+            "Id": "aaa111",
+            "Names": ["docker.io/library/matomo:5.8.0"],
+            "RepoDigests": ["docker.io/library/matomo@sha256:old", "docker.io/library/matomo@sha256:arch"],
+            "CreatedAt": "2026-04-22T10:00:00Z",
+        },
+        {"Id": "bbb222", "Names": ["docker.io/library/matomo:5.14.0"], "RepoDigests": []},
+        {  # mongo: identical to the registry
+            "Id": "ccc333",
+            "Names": ["docker.io/library/mongo:6.0.27"],
+            "RepoDigests": ["docker.io/library/mongo@sha256:same"],
+            "CreatedAt": "2025-12-29T00:00:00Z",
+        },
+        # nginx: not pulled at all
+    ]
+    # The matomo container was started from an image the tag no longer points at.
+    ps = "matomo\tdocker.io/library/matomo:5.8.0\tzzz999\nmongo\tdocker.io/library/mongo:6.0.27\tccc333"
+    client = _FakeClient(
+        tags={
+            "library/matomo": ["5.8.0", "5.9.0", "5.14.0", "5.14"],
+            "library/mongo": ["6.0.27", "6.0.28", "9.0.4"],
+            "library/nginx": ["1.30.0-alpine3.23"],
+        },
+        digests={"library/matomo": "sha256:new", "library/mongo": "sha256:same"},
+    )
+
+    im = ImageManager(_PodmanImagesRunner(local, ps))
+    result = {i.services[0]: i for i in im.get_third_party_images(client=client)}
+
+    matomo = result["matomo"]
+    assert matomo.local_id == "aaa111"
+    assert matomo.digest_matches is False  # same tag, rebuilt upstream
+    assert matomo.other_local_tags == ["5.14.0"]
+    assert matomo.stale_containers == ["matomo"]
+    assert (matomo.latest_same_major, matomo.latest_new_major) == ("5.14.0", None)
+    assert matomo.created == "2026-04-22"
+
+    mongo = result["mongo"]
+    assert mongo.digest_matches is True
+    assert mongo.stale_containers == []
+    assert (mongo.latest_same_major, mongo.latest_new_major) == ("6.0.28", "9.0.4")
+
+    nginx = result["placeholder"]
+    assert nginx.local_id is None
+    assert nginx.digest_matches is None
+    assert nginx.remote_error == "cannot reach registry-1.docker.io: timed out"
+
+
+def test_get_third_party_images_offline_skips_registry(tmp_path, monkeypatch):
+    from vispctl import images as images_mod
+
+    _write_quadlets(tmp_path)
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    monkeypatch.setattr(images_mod, "get_current_mode", lambda: "prod")
+
+    class _NoClient:
+        def __getattr__(self, name):
+            raise AssertionError("registry must not be contacted offline")
+
+    im = ImageManager(_PodmanImagesRunner([]))
+    images = im.get_third_party_images(check_remote=False, client=_NoClient())
+
+    assert len(images) == 3
+    assert all(i.remote_digest is None and i.remote_error is None for i in images)
