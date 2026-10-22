@@ -107,21 +107,35 @@ def _parse_stages(text: str) -> list[dict]:
     return stages
 
 
+def _from_chain(stages: list[dict], i: int) -> list[int]:
+    """Indices of stage ``i`` and every stage it inherits FROM, chain head last."""
+    chain = [i]
+    while stages[chain[-1]]["ref"] is None and stages[chain[-1]]["from_stage"]:
+        prev = [j for j, s in enumerate(stages[: chain[-1]]) if s["name"] == stages[chain[-1]]["from_stage"]]
+        if not prev:
+            break  # a FROM naming an unknown stage has no registry base we could name
+        chain.append(prev[-1])  # from_stage always names an earlier stage: the walk terminates
+    return chain
+
+
 def _resolved_ref(stages: list[dict], i: int) -> str | None:
     """Registry ref at the head of stage ``i``'s internal FROM chain, if any."""
-    while stages[i]["ref"] is None and stages[i]["from_stage"]:
-        prev = [j for j, s in enumerate(stages[:i]) if s["name"] == stages[i]["from_stage"]]
-        if not prev:
-            return None
-        i = prev[-1]  # from_stage always names an earlier stage: the walk terminates
-    return stages[i]["ref"]
+    return stages[_from_chain(stages, i)[-1]]["ref"]
 
 
 def _referenced_stages(stages: list[dict], target: int) -> set[int]:
-    """Indices of the stages *target* pulls artifacts from, transitively."""
+    """Indices of the stages whose artifacts *target* ends up carrying, transitively.
+
+    The walk starts from the target's whole ``FROM <earlier-stage>`` chain, not from
+    the target alone: a stage inherited via FROM also inherits what that stage
+    ``COPY --from``'d, so an artifact pulled in several stages up ships in the target
+    as well. The inherited stages themselves are excluded — their registry base is
+    reported as the runtime base, not twice.
+    """
     by_name = {stage["name"]: i for i, stage in enumerate(stages) if stage["name"]}
+    inherited = set(_from_chain(stages, target))
     found: set[int] = set()
-    queue = [target]
+    queue = list(inherited)
     while queue:
         for src in stages[queue.pop()]["copies"]:
             i = by_name.get(src)
@@ -130,7 +144,7 @@ def _referenced_stages(stages: list[dict], target: int) -> set[int]:
             if i is not None and i not in found:
                 found.add(i)
                 queue.append(i)
-    return found
+    return found - inherited
 
 
 def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None]]:
@@ -139,8 +153,8 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
     The Dockerfile is located exactly as ``build.py`` composes its ``-f``
     argument. The runtime base is the target stage's (or the last stage's) FROM,
     resolved through internal ``FROM <earlier-stage>`` chains to the registry
-    ref at the head; build bases are the bases of the stages the target
-    COPY --from's.
+    ref at the head; build bases are the bases of the stages the target inherits
+    artifacts from, directly or through a stage it inherits FROM.
     """
     dockerfile = cfg.get("dockerfile", "Dockerfile")
     if dockerfile.startswith("./"):
@@ -161,7 +175,7 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
 
     items: list[tuple[str, str, str | None]] = []
     seen: set[tuple[str, str]] = set()
-    for i in sorted(_referenced_stages(stages, target) - {target}):
+    for i in sorted(_referenced_stages(stages, target)):
         ref = _resolved_ref(stages, i)
         if ref and (ref, "build") not in seen:
             seen.add((ref, "build"))

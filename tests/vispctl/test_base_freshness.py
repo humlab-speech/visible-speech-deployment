@@ -377,6 +377,41 @@ def test_stage_bases_resolves_a_two_hop_runtime_chain(bf, tmp_path):
     assert out == [("quay.io/jupyter/datascience-notebook:r-4.5.2", "runtime", "final")]
 
 
+def test_stage_bases_inherits_build_deps_of_a_from_inherited_stage(bf, tmp_path):
+    """The reviewer's graph: `FROM base AS final` ships what `base` COPY --from'd.
+
+    Following only the target's own copies lost node:22 entirely — the artifact
+    enters the image in `base`, which `final` inherits, so its build base counts.
+    """
+    _write(
+        tmp_path,
+        "docker/z/Dockerfile",
+        "FROM docker.io/library/node:22 AS build\n"
+        "RUN true\n"
+        "FROM docker.io/library/alpine:3.23 AS base\n"
+        "COPY --from=build /usr/local/bin/node /usr/bin/node\n"
+        "FROM base AS final\n",
+    )
+    # ... and two hops down the chain the dependency still counts (transitive, not adjacent)
+    _write(
+        tmp_path,
+        "docker/z2/Dockerfile",
+        "FROM docker.io/library/node:22 AS build\n"
+        "RUN true\n"
+        "FROM docker.io/library/alpine:3.23 AS base\n"
+        "COPY --from=build /usr/local/bin/node /usr/bin/node\n"
+        "FROM base AS mid\n"
+        "RUN true\n"
+        "FROM mid AS final\n",
+    )
+
+    for docker_dir in ("docker/z", "docker/z2"):
+        assert bf.stage_bases(tmp_path, _cfg(f"./{docker_dir}", "Dockerfile")) == [
+            ("node:22", "build", "build"),  # the artifact source, inherited via FROM
+            ("alpine:3.23", "runtime", "final"),  # named once, as the runtime base only
+        ]
+
+
 def test_stage_bases_on_the_real_apache_dockerfile(bf):
     """apache production's FROM base chain must land on a debian runtime base."""
     out = bf.stage_bases(REPO_ROOT, _cfg("./docker/apache", "Dockerfile", target="production"))
