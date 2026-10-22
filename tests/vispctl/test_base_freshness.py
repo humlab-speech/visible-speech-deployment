@@ -1,0 +1,909 @@
+"""Tests for vispctl.base_freshness — six-state base-image verdicts for built images.
+
+Hermetic by construction: fake runners answer ``podman images --format json``,
+fake registry clients answer ``tag_digest``, and every Dockerfile is synthetic
+under ``tmp_path``. No podman, no network. Idioms follow test_images.py.
+
+The module under test is imported through the ``bf`` fixture rather than at the
+top of the file, so this file collects while the module is still in flight.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import json
+import re
+from pathlib import Path
+
+import pytest
+
+from vispctl.images import ImageManager
+from vispctl.registry import RegistryError
+
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+NODE = "node:24.16.0-alpine3.22"
+NODE_KEY = f"library/{NODE}"  # repository:tag as ImageRef.parse sees it
+DIG_A = "sha256:191c9f00"
+DIG_B = "sha256:8106d433"
+DIG_MOVED = "sha256:2abea424"
+
+BUILT_WSRNG = {"Id": "built1", "Names": ["localhost/visp-wsrng-server:latest"], "RepoDigests": []}
+BUILT_TRATT = {"Id": "built2", "Names": ["localhost/visp-tratt:latest"], "RepoDigests": []}
+LOCAL_NODE = {
+    "Id": "base1",
+    "Names": [f"docker.io/library/{NODE}"],
+    "RepoDigests": [f"docker.io/library/node@{DIG_A}", f"docker.io/library/node@{DIG_B}"],
+}
+
+CFG_WSRNG = {"context": "./docker/wsrng", "dockerfile": "Dockerfile", "image": "visp-wsrng-server"}
+CFG_TRATT = {"context": "./docker/tratt", "dockerfile": "Dockerfile", "image": "visp-tratt"}
+CFG_APACHE = {"context": "./docker/apache", "dockerfile": "Dockerfile", "image": "visp-apache"}
+
+
+@pytest.fixture
+def bf():
+    """vispctl.base_freshness, imported lazily (see module docstring)."""
+    from vispctl import base_freshness
+
+    return base_freshness
+
+
+def _plain(text: str) -> str:
+    """Strip colour codes: display assertions are about wording, never about colours."""
+    return _ANSI.sub("", text)
+
+
+def _write(root, rel: str, text: str):
+    path = root.joinpath(*rel.split("/"))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
+
+
+def _cfg(context: str, dockerfile: str, target: str | None = None) -> dict:
+    cfg = {"context": context, "dockerfile": dockerfile, "image": "visp-svc"}
+    if target:
+        cfg["target"] = target
+    return cfg
+
+
+def _item(bf, **kw):
+    """Build a BaseFreshness, deriving snapshot whether the module stores it as a field or a property."""
+    args = {
+        "service": "svc",
+        "ref": NODE,
+        "role": "runtime",
+        "stage_name": None,
+        "built_image_id": "built1",
+        "recorded_digests": frozenset(),
+        "local_digests": frozenset(),
+        "remote_digest": None,
+        "remote_error": None,
+        "checked_at": None,
+        "check_source": "none",
+    }
+    args.update(kw)
+    if any(f.name == "snapshot" for f in dataclasses.fields(bf.BaseFreshness)):
+        args["snapshot"] = bf.is_snapshot_ref(args["ref"])
+    return bf.BaseFreshness(**args)
+
+
+class _PodmanImagesRunner:
+    """Fake runner answering `podman images --format json` and nothing else."""
+
+    def __init__(self, images):
+        self.images = images
+        self.calls = []
+
+    def run_quiet(self, cmd):
+        self.calls.append(list(cmd))
+        if cmd[:3] == ["podman", "images", "--format"]:
+            return 0, json.dumps(self.images), ""
+        return 1, "", ""
+
+
+class _FakeClient:
+    """Registry stand-in: answers tag_digest for 'repository:tag' keys, records what was asked."""
+
+    def __init__(self, digests):
+        self.digests = digests  # value: digest string, or an exception to raise
+        self.seen: list[str] = []
+
+    def tag_digest(self, ref):
+        key = f"{ref.repository}:{ref.tag}"
+        self.seen.append(key)
+        value = self.digests[key]  # KeyError if the ref should never have been looked up
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    def list_tags(self, ref):
+        raise AssertionError("base freshness only needs the tag digest")
+
+
+class _NoClient:
+    def __getattr__(self, name):
+        raise AssertionError("registry must not be contacted when check_remote=False")
+
+
+def _seed_lock(bf, tmp_path, *, built_id="built1", ref=NODE, digests=(), checks=None) -> dict:
+    """Write a base-lock.json describing one built image (and optionally cached checks)."""
+    bases = {ref: {"stage": "runtime", "digests": list(digests), "id": "base1"}} if digests else {}
+    lock = {
+        "images": {
+            built_id: {
+                "built_at": "2026-10-22T06:00:00+00:00",
+                "pull_policy": "newer",
+                "bases": bases,
+            }
+        },
+        "checks": checks or {},
+    }
+    bf.save_lock(tmp_path, lock)
+    return lock
+
+
+# ── 1. Six-state verdict machine ───────────────────────────────────────────────
+
+
+def test_state_fresh_when_registry_still_serves_a_recorded_digest(bf):
+    """Set membership, not equality: the registry digest may be the second RepoDigest tail."""
+    item = _item(
+        bf,
+        check_source="live",
+        recorded_digests=[DIG_A, DIG_B],
+        local_digests=[DIG_A, DIG_B],
+        remote_digest=DIG_B,
+    )
+    assert item.state == "fresh"
+
+
+def test_state_moved_when_the_tag_now_serves_something_else(bf):
+    item = _item(
+        bf, check_source="live", recorded_digests=[DIG_A, DIG_B], local_digests=[DIG_A], remote_digest=DIG_MOVED
+    )
+    assert item.state == "moved"
+
+
+def test_state_moved_beats_immobile_for_a_snapshot_tag(bf):
+    """A snapshot tag whose recorded digest does not match is still moved, never immobile."""
+    item = _item(
+        bf,
+        ref="debian:trixie-20260406",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+    assert item.state == "moved"
+
+
+def test_state_immobile_for_a_matched_snapshot_tag(bf):
+    item = _item(
+        bf,
+        ref="debian:trixie-20260406",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_A,
+    )
+    assert item.snapshot is True
+    assert item.state == "immobile"
+
+
+def test_state_heuristic_without_a_lock_record_either_way(bf):
+    """No lock record means we only compare the local base copy — a guess, in both directions."""
+    differs = _item(bf, check_source="live", local_digests=[DIG_A], remote_digest=DIG_MOVED)
+    matches = _item(bf, check_source="live", local_digests=[DIG_MOVED], remote_digest=DIG_MOVED)
+    cached = _item(
+        bf,
+        check_source="cache",
+        local_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+    assert (differs.state, matches.state, cached.state) == ("heuristic", "heuristic", "heuristic")
+
+
+def test_state_never_checked_beats_everything(bf):
+    """No check source means no verdict — even when a fetch error was captured."""
+    silent = _item(bf, check_source="none")
+    errored = _item(bf, check_source="none", remote_error="cannot reach registry-1.docker.io")
+    assert silent.state == "never-checked"
+    assert errored.state == "never-checked"
+
+
+def test_state_offline_when_a_cached_check_shares_the_place_of_a_failed_fetch(bf):
+    """cache + error is offline even though the digests would compare (rule ordering)."""
+    item = _item(
+        bf,
+        ref="nginx:alpine",
+        check_source="cache",
+        remote_error="cannot reach registry-1.docker.io: timed out",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+    assert item.state == "offline"
+
+
+def test_remediation_is_build_then_apply_for_that_service(bf):
+    assert _item(bf, service="artic").remediation == "./visp.py build artic && ./visp.py apply artic"
+
+
+# ── 2. Snapshot refs ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "ref, expected",
+    [
+        ("debian:trixie-20260406", True),
+        ("debian:bookworm-20260505-slim", True),
+        (NODE, False),  # dotted patch pin: content still moves
+        ("alpine:3.23", False),
+        ("linuxserver/code-server:version-v3.11.1", False),
+        ("quay.io/jupyter/datascience-notebook", False),  # no tag → latest → can move
+        ("localhost:5000/team/app", False),  # ':' before the last '/' is a port, not a tag
+    ],
+)
+def test_is_snapshot_ref(bf, ref, expected):
+    assert bf.is_snapshot_ref(ref) is expected
+
+
+# ── 3. Stage graph: which FROM refs a build actually consumes ─────────────────
+
+
+def test_stage_bases_single_stage_normalizes_display_ref(bf, tmp_path):
+    _write(tmp_path, "docker/nginx/Dockerfile", "FROM docker.io/library/nginx:1.30.0-alpine3.23\nRUN apk add curl\n")
+
+    assert bf.stage_bases(tmp_path, _cfg(".", "./docker/nginx/Dockerfile")) == [
+        ("nginx:1.30.0-alpine3.23", "runtime", None)
+    ]
+
+
+def test_stage_bases_multi_stage_names_build_stages_and_dedups(bf, tmp_path):
+    """Build stages feeding the target (directly or transitively) are bases; stage names are not."""
+    _write(
+        tmp_path,
+        "docker/artic/Dockerfile",
+        "FROM docker.io/library/node:22-bookworm-slim AS build\n"
+        "RUN npm ci\n"
+        "FROM node:22-bookworm-slim AS assets\n"
+        "COPY --from=build /dist /dist\n"
+        "FROM docker.io/library/nginx:alpine AS production\n"
+        "COPY --from=assets /dist /usr/share/nginx/html\n",
+    )
+
+    out = bf.stage_bases(tmp_path, _cfg("./docker/artic", "Dockerfile"))
+
+    assert [(ref, role) for ref, role, _ in out] == [("node:22-bookworm-slim", "build"), ("nginx:alpine", "runtime")]
+    assert out[-1][2] == "production"
+    assert "build" not in [ref for ref, _, _ in out] and "assets" not in [ref for ref, _, _ in out]
+
+
+def test_stage_bases_follows_a_cross_stage_from_reference(bf, tmp_path):
+    """`FROM <earlier-stage>` is internal, not a base; its own base still counts as build."""
+    _write(
+        tmp_path,
+        "docker/session-manager/jupyter-session/Dockerfile",
+        "FROM docker.io/node:20.20.2-alpine3.22 AS container_agent_builder\n"
+        "RUN npm ci\n"
+        "FROM container_agent_builder AS agent_assets\n"
+        "COPY --from=container_agent_builder /app /opt/agent\n"
+        "FROM quay.io/jupyter/datascience-notebook:r-4.5.2\n"
+        "COPY --from=agent_assets /opt/agent /opt/agent\n",
+    )
+
+    out = bf.stage_bases(tmp_path, _cfg("./docker/session-manager/jupyter-session", "Dockerfile"))
+
+    assert [ref for ref, _, _ in out] == ["node:20.20.2-alpine3.22", "quay.io/jupyter/datascience-notebook:r-4.5.2"]
+    assert [role for _, role, _ in out] == ["build", "runtime"]
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_stage_bases_resolves_runtime_base_through_internal_from_chain(bf, tmp_path):
+    """A target stage FROM'd from an earlier stage gets the registry base at the chain head."""
+    _write(
+        tmp_path,
+        "docker/x/Dockerfile",
+        "FROM docker.io/library/debian:trixie-20261020 AS base\n"
+        "RUN apt-get update\n"
+        "FROM base AS webclient-build\n"
+        "RUN npm ci\n"
+        "FROM base AS production\n"
+        "COPY --from=webclient-build /out/ /var/www/html/\n",
+    )
+
+    out = bf.stage_bases(tmp_path, _cfg("./docker/x", "Dockerfile", target="production"))
+
+    assert out == [
+        ("debian:trixie-20261020", "build", "webclient-build"),
+        ("debian:trixie-20261020", "runtime", "production"),
+    ]
+
+
+def test_stage_bases_resolves_a_two_hop_runtime_chain(bf, tmp_path):
+    """final <- r_packages <- base resolves through both hops to the quay.io head."""
+    _write(
+        tmp_path,
+        "docker/y/Dockerfile",
+        "FROM quay.io/jupyter/datascience-notebook:r-4.5.2 AS base\n"
+        "RUN install-r\n"
+        "FROM base AS r_packages\n"
+        "RUN install-more\n"
+        "FROM r_packages AS final\n"
+        "RUN nothing\n",
+    )
+
+    out = bf.stage_bases(tmp_path, _cfg("./docker/y", "Dockerfile"))
+
+    assert out == [("quay.io/jupyter/datascience-notebook:r-4.5.2", "runtime", "final")]
+
+
+def test_stage_bases_on_the_real_apache_dockerfile(bf):
+    """apache production's FROM base chain must land on a debian runtime base."""
+    out = bf.stage_bases(REPO_ROOT, _cfg("./docker/apache", "Dockerfile", target="production"))
+
+    runtime = [ref for ref, role, _ in out if role == "runtime"]
+    assert len(runtime) == 1 and runtime[0].startswith("debian:"), out
+    assert any(role == "build" for _, role, _ in out)
+
+
+def test_stage_bases_on_the_real_jupyter_session_dockerfile(bf):
+    """The jupyter final stage chains back to the quay.io notebook runtime base."""
+    out = bf.stage_bases(REPO_ROOT, _cfg("./docker/session-manager/jupyter-session", "Dockerfile"))
+
+    assert ("quay.io/jupyter/datascience-notebook:r-4.5.2", "runtime") in [(ref, role) for ref, role, _ in out]
+    assert ("node:20.20.2-alpine3.22", "build") in [(ref, role) for ref, role, _ in out]
+
+
+def test_stage_bases_resolves_numeric_copy_from_index(bf, tmp_path):
+    """COPY --from=1 is the second stage (zero-based); unreferenced stage 0 is not a base."""
+    _write(
+        tmp_path,
+        "docker/svc/Dockerfile",
+        "FROM docker.io/library/node:20-alpine AS tools\n"
+        "FROM docker.io/library/node:22.22.2-bookworm AS build\n"
+        "RUN npm ci\n"
+        "FROM docker.io/library/alpine:3.23\n"
+        "COPY --from=1 /app /app\n",
+    )
+
+    out = bf.stage_bases(tmp_path, _cfg("./docker/svc", "Dockerfile"))
+
+    assert [(ref, role) for ref, role, _ in out] == [("node:22.22.2-bookworm", "build"), ("alpine:3.23", "runtime")]
+
+
+def test_stage_bases_target_selects_the_named_stage(bf, tmp_path):
+    _write(
+        tmp_path,
+        "docker/tratt/Dockerfile",
+        "FROM docker.io/node:24.15.0 AS build\n"
+        "RUN npm ci\n"
+        "FROM docker.io/httpd:2.4.67\n"
+        "COPY --from=build /app /usr/share/apache2/htdocs\n",
+    )
+
+    assert bf.stage_bases(tmp_path, _cfg("./docker/tratt", "Dockerfile", target="build")) == [
+        ("node:24.15.0", "runtime", "build")
+    ]
+    # An unknown target falls back to the last stage.
+    fallback = bf.stage_bases(tmp_path, _cfg("./docker/tratt", "Dockerfile", "production"))
+    assert [(ref, role) for ref, role, _ in fallback] == [
+        ("node:24.15.0", "build"),
+        ("httpd:2.4.67", "runtime"),
+    ]
+
+
+def test_stage_bases_drops_refs_pinned_by_digest(bf, tmp_path):
+    """A @sha256: FROM cannot move, so there is nothing to check and nothing to report."""
+    _write(
+        tmp_path,
+        "docker/svc/Dockerfile",
+        "FROM python:3.12.11-slim@sha256:00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff AS build\n"
+        "FROM docker.io/library/nginx:alpine\n",
+    )
+    assert bf.stage_bases(tmp_path, _cfg("./docker/svc", "Dockerfile")) == [("nginx:alpine", "runtime", None)]
+
+    _write(tmp_path, "docker/pinned/Dockerfile", "FROM python:3.12.11-slim@sha256:00112233445566778899aabbccddeeff\n")
+    assert bf.stage_bases(tmp_path, _cfg("./docker/pinned", "Dockerfile")) == []
+
+
+def test_stage_bases_resolves_dockerfile_path_like_build_does(bf, tmp_path):
+    """whisperx's Containerfile lives under the context; `./` refs are project-relative."""
+    _write(tmp_path, "external/WhisperVault/container/Containerfile", "FROM python:3.12.11-slim\n")
+    whisperx = {"context": "./external/WhisperVault", "dockerfile": "container/Containerfile", "image": "visp-whisperx"}
+    assert bf.stage_bases(tmp_path, whisperx) == [("python:3.12.11-slim", "runtime", None)]
+
+    # artic builds from the external context with a path that climbs back into docker/.
+    _write(tmp_path, "docker/artic/Dockerfile", "FROM docker.io/library/node:22-bookworm-slim\n")
+    assert bf.stage_bases(tmp_path, _cfg("./external/artic", "../../docker/artic/Dockerfile")) == [
+        ("node:22-bookworm-slim", "runtime", None)
+    ]
+
+    # A leading './' is project-relative even when the context is elsewhere.
+    _write(tmp_path, "docker/apache/Dockerfile", "FROM docker.io/library/debian:trixie-20260406 AS base\n")
+    assert bf.stage_bases(tmp_path, _cfg("./external/webclient", "./docker/apache/Dockerfile")) == [
+        ("debian:trixie-20260406", "runtime", "base")
+    ]
+
+
+def test_stage_bases_missing_dockerfile_is_not_an_error(bf, tmp_path):
+    assert bf.stage_bases(tmp_path, _cfg(".", "./docker/ghost/Dockerfile")) == []
+
+
+# ── 4. scan_base_images sees Containerfiles ────────────────────────────────────
+
+
+def test_scan_base_images_includes_containerfiles(tmp_path, monkeypatch):
+    """whisperx's base lives in external/**/container/Containerfile — it must be visible (README finding 1)."""
+    from vispctl import images as images_mod
+
+    _write(tmp_path, "external/WhisperVault/container/Containerfile", "FROM python:3.12.11-slim\n")
+    _write(tmp_path, "docker/nginx/Dockerfile", "FROM docker.io/library/nginx:alpine\n")
+    _write(tmp_path, "docker/ARCHIVE/old/Dockerfile", "FROM docker.io/library/httpd:2.4.67\n")
+    _write(tmp_path, "external/app/node_modules/pkg/Dockerfile", "FROM docker.io/library/node:20-alpine\n")
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+
+    base = ImageManager(runner=None).scan_base_images()
+
+    assert base["python:3.12.11-slim"] == [("external/WhisperVault/container/Containerfile", None)]
+    assert base["nginx:alpine"] == [("docker/nginx/Dockerfile", None)]
+    assert "httpd:2.4.67" not in base  # ARCHIVE still excluded
+    assert "node:20-alpine" not in base  # node_modules still excluded
+
+
+# ── 5. Lock file ──────────────────────────────────────────────────────────────
+
+
+def test_lock_round_trip_under_visp_dir(bf, tmp_path):
+    lock = {
+        "images": {"sha256:aa": {"built_at": "2026-10-22T06:00:00+00:00", "pull_policy": "newer", "bases": {}}},
+        "checks": {NODE: {"remote_digest": DIG_A, "checked_at": "2026-10-22T06:31:00+00:00"}},
+    }
+
+    bf.save_lock(tmp_path, lock)
+
+    assert (tmp_path / ".visp" / "base-lock.json").exists()
+    assert bf.load_lock(tmp_path) == lock
+
+
+def test_load_lock_degrades_to_empty(bf, tmp_path):
+    assert bf.load_lock(tmp_path) == {}
+
+    lock_file = tmp_path / ".visp" / "base-lock.json"
+    lock_file.parent.mkdir(parents=True)
+    lock_file.write_text("{not json")
+    assert bf.load_lock(tmp_path) == {}
+
+
+def test_record_build_merges_by_built_image_id(bf, tmp_path):
+    """Each build merges into the saved lock (Phase 2's caller flow) — nothing else is clobbered."""
+    node_base = {NODE: {"stage": "runtime", "digests": [DIG_A], "id": "base1"}}
+    nginx_base = {"nginx:alpine": {"stage": "runtime", "digests": [DIG_B], "id": "base2"}}
+    checks = {NODE: {"remote_digest": DIG_A, "checked_at": "2026-10-22T06:31:00+00:00"}}
+
+    lock = bf.record_build(tmp_path, "sha256:aaa", node_base, "2026-10-22T06:00:00+00:00", "newer")
+    assert not (tmp_path / ".visp" / "base-lock.json").exists()  # callers save
+    bf.save_lock(tmp_path, lock)
+
+    lock = bf.record_build(tmp_path, "sha256:bbb", nginx_base, "2026-10-22T07:00:00+00:00", "missing")
+    lock["checks"] = checks
+    bf.save_lock(tmp_path, lock)
+
+    stored = bf.load_lock(tmp_path)
+    assert stored["images"]["sha256:aaa"]["bases"] == node_base
+    assert stored["images"]["sha256:bbb"]["pull_policy"] == "missing"
+
+    # Rebuilding the same id replaces its bases; other images and checks survive.
+    lock = bf.record_build(tmp_path, "sha256:aaa", nginx_base, "2026-11-01T06:00:00+00:00", "newer")
+    assert lock["images"]["sha256:aaa"]["bases"] == nginx_base
+    bf.save_lock(tmp_path, lock)
+
+    stored = bf.load_lock(tmp_path)
+    assert stored["images"]["sha256:aaa"]["bases"] == nginx_base
+    assert stored["images"]["sha256:bbb"] == {
+        "built_at": "2026-10-22T07:00:00+00:00",
+        "pull_policy": "missing",
+        "bases": nginx_base,
+    }
+    assert stored["checks"] == checks
+
+
+# ── local_image_state ──────────────────────────────────────────────────────────
+
+
+def test_local_image_state_one_call_normalized_names_and_built_tags(bf):
+    runner = _PodmanImagesRunner(
+        [
+            {**LOCAL_NODE, "Names": [f"docker.io/library/{NODE}", "docker.io/library/node:24-alpine"]},
+            BUILT_WSRNG,
+            {"Id": "built3", "Names": ["localhost/visp-tratt:1.2.3"], "RepoDigests": []},
+        ]
+    )
+
+    bases, built = bf.local_image_state(runner)
+
+    assert runner.calls == [["podman", "images", "--format", "json"]]  # one podman call
+    assert bases[NODE] == {"id": "base1", "digests": {DIG_A, DIG_B}}
+    assert bases["node:24-alpine"]["id"] == "base1"
+    assert built["localhost/visp-wsrng-server"]["id"] == "built1"
+    assert "localhost/visp-tratt" not in built  # only :latest tags name our built images
+
+
+def test_local_image_state_tolerates_unparsable_output(bf):
+    class _Noise:
+        def run_quiet(self, cmd):
+            return 0, "not json at all", ""
+
+    assert bf.local_image_state(_Noise()) == ({}, {})
+
+
+# ── 6. get_base_freshness ──────────────────────────────────────────────────────
+
+
+def test_get_base_freshness_fresh_when_the_recorded_digest_still_wins(bf, tmp_path):
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM docker.io/library/{NODE}\n")
+    _seed_lock(bf, tmp_path, digests=[DIG_A])
+    client = _FakeClient({NODE_KEY: DIG_A})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert len(items) == 1
+    (item,) = items
+    assert (item.service, item.ref, item.role, item.stage_name) == ("wsrng-server", NODE, "runtime", None)
+    assert item.built_image_id == "built1"
+    assert item.recorded_digests == frozenset({DIG_A})
+    assert item.local_digests == frozenset({DIG_A, DIG_B})
+    assert item.remote_digest == DIG_A
+    assert item.check_source == "live"
+    assert item.state == "fresh"
+    assert client.seen == [NODE_KEY]
+
+
+def test_get_base_freshness_moved_when_the_recorded_digest_is_gone(bf, tmp_path):
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _seed_lock(bf, tmp_path, digests=[DIG_A, DIG_B])
+    client = _FakeClient({NODE_KEY: DIG_MOVED})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert items[0].state == "moved"
+    assert items[0].remote_digest == DIG_MOVED
+
+
+def test_get_base_freshness_heuristic_without_a_lock_record(bf, tmp_path):
+    """Pre-Phase-2 images have no record: compare the local base copy, call it a guess."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    client = _FakeClient({NODE_KEY: DIG_MOVED})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert items[0].recorded_digests == frozenset()
+    assert items[0].local_digests == frozenset({DIG_A, DIG_B})
+    assert items[0].state == "heuristic"
+    assert items[0].check_source == "live"
+
+
+def test_get_base_freshness_never_checked_offline_without_cache(bf, tmp_path):
+    _write(tmp_path, "docker/wsrng/Dockerfile", "FROM alpine:3.23\n")
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG]),
+        project_dir=tmp_path,
+        check_remote=False,
+        client=_NoClient(),
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert [(i.service, i.state, i.check_source) for i in items] == [("wsrng-server", "never-checked", "none")]
+    assert items[0].remote_digest is None and items[0].remote_error is None
+
+
+def test_get_base_freshness_offline_falls_back_to_the_cached_check(bf, tmp_path):
+    """A failed live check must not lose the cached verdict, its date, or the file."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    seeded = _seed_lock(
+        bf,
+        tmp_path,
+        digests=[DIG_A],
+        checks={NODE: {"remote_digest": DIG_MOVED, "checked_at": "2026-10-20T05:00:00+00:00"}},
+    )
+    client = _FakeClient({NODE_KEY: RegistryError("cannot reach registry-1.docker.io: timed out")})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    (item,) = items
+    assert item.state == "offline"
+    assert item.check_source == "cache"
+    assert item.remote_digest == DIG_MOVED
+    assert item.checked_at == "2026-10-20T05:00:00+00:00"
+    assert "cannot reach registry-1.docker.io" in item.remote_error
+    assert json.loads((tmp_path / ".visp" / "base-lock.json").read_text()) == seeded
+
+
+def test_get_base_freshness_caches_successful_checks(bf, tmp_path):
+    """The live pass must persist checks (merged, with a UTC checked_at) for the next offline run."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _seed_lock(bf, tmp_path, digests=[DIG_A], checks={"alpine:3.23": {"remote_digest": DIG_B, "checked_at": "x"}})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=_FakeClient({NODE_KEY: DIG_MOVED}),
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+    assert items[0].state == "moved"
+
+    stored = json.loads((tmp_path / ".visp" / "base-lock.json").read_text())
+    assert stored["checks"][NODE]["remote_digest"] == DIG_MOVED
+    assert stored["checks"][NODE]["checked_at"].endswith("+00:00")
+    assert stored["checks"]["alpine:3.23"] == {"remote_digest": DIG_B, "checked_at": "x"}
+    assert stored["images"]["built1"]["bases"][NODE]["digests"] == [DIG_A]
+
+
+def test_get_base_freshness_cache_only_verdict_and_default_project_dir(bf, tmp_path, monkeypatch):
+    """`images base` shape: cache-only, no network, project_dir from get_config()."""
+    _write(tmp_path, "docker/apache/Dockerfile", "FROM docker.io/library/debian:trixie-20260406\n")
+    _seed_lock(
+        bf,
+        tmp_path,
+        built_id="built-apache",
+        ref="debian:trixie-20260406",
+        digests=[DIG_A],
+        checks={"debian:trixie-20260406": {"remote_digest": DIG_A, "checked_at": "2026-10-20T05:00:00+00:00"}},
+    )
+    monkeypatch.setattr(bf, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([{"Id": "built-apache", "Names": ["localhost/visp-apache:latest"], "RepoDigests": []}]),
+        check_remote=False,
+        client=_NoClient(),
+        build_configs={"apache": CFG_APACHE},
+    )
+
+    assert [(i.service, i.state, i.check_source) for i in items] == [("apache", "immobile", "cache")]
+    assert items[0].checked_at == "2026-10-20T05:00:00+00:00"
+
+
+def test_get_base_freshness_excludes_unbuilt_services(bf, tmp_path):
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _write(tmp_path, "docker/tratt/Dockerfile", "FROM docker.io/httpd:2.4.67\n")
+    client = _FakeClient({NODE_KEY: DIG_A})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG, "tratt": CFG_TRATT},
+    )
+
+    assert [i.service for i in items] == ["wsrng-server"]
+    assert client.seen == [NODE_KEY]  # tratt's base was never looked up
+
+
+def test_get_base_freshness_fetches_a_shared_base_once(bf, tmp_path):
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM docker.io/library/{NODE}\n")
+    _write(tmp_path, "docker/tratt/Dockerfile", f"FROM {NODE}\nRUN true\n")
+    client = _FakeClient({NODE_KEY: DIG_MOVED})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, BUILT_TRATT, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG, "tratt": CFG_TRATT},
+    )
+
+    assert sorted(i.service for i in items) == ["tratt", "wsrng-server"]
+    assert all(i.state == "heuristic" for i in items)
+    assert client.seen == [NODE_KEY]  # one HEAD for a base two services share
+
+
+def test_get_base_freshness_reports_build_stage_role(bf, tmp_path):
+    """artic: node is the build stage, nginx is what actually ships."""
+    _write(
+        tmp_path,
+        "docker/artic/Dockerfile",
+        "FROM docker.io/library/node:22-bookworm-slim AS build\n"
+        "RUN npm ci\n"
+        "FROM docker.io/library/nginx:alpine AS production\n"
+        "COPY --from=build /dist /usr/share/nginx/html\n",
+    )
+    client = _FakeClient({"library/node:22-bookworm-slim": DIG_A, "library/nginx:alpine": DIG_B})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([{"Id": "built-artic", "Names": ["localhost/visp-artic:latest"], "RepoDigests": []}]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={
+            "artic": {
+                "context": "./docker/artic",
+                "dockerfile": "Dockerfile",
+                "image": "visp-artic",
+                "target": "production",
+            }
+        },
+    )
+
+    assert [(i.ref, i.role, i.stage_name, i.state) for i in items] == [
+        ("node:22-bookworm-slim", "build", "build", "heuristic"),
+        ("nginx:alpine", "runtime", "production", "heuristic"),
+    ]
+    assert sorted(client.seen) == ["library/nginx:alpine", "library/node:22-bookworm-slim"]
+
+
+# ── 7. Fan-out and display ─────────────────────────────────────────────────────
+
+
+def test_fan_out_groups_unique_service_roles_by_base(bf):
+    items = [
+        _item(bf, service="artic", ref="nginx:alpine", role="runtime"),
+        _item(bf, service="artic", ref="node:22-bookworm-slim", role="build", stage_name="build"),
+        _item(bf, service="nginx", ref="nginx:alpine", role="runtime"),
+        _item(bf, service="artic", ref="nginx:alpine", role="runtime"),  # duplicate
+    ]
+
+    assert bf.fan_out(items) == {
+        "nginx:alpine": [("artic", "runtime"), ("nginx", "runtime")],
+        "node:22-bookworm-slim": [("artic", "build")],
+    }
+
+
+def test_format_base_line_fresh_and_moved(bf):
+    fresh = _plain(
+        bf.format_base_line(
+            _item(bf, ref="nginx:alpine", check_source="live", recorded_digests=[DIG_A], remote_digest=DIG_A)
+        )
+    )
+    assert fresh.startswith("  ") and "Base:" in fresh and "nginx:alpine" in fresh
+    assert "fresh" in fresh and "immobile" not in fresh
+
+    moved = _plain(
+        bf.format_base_line(
+            _item(
+                bf,
+                ref="nginx:alpine",
+                role="build",
+                check_source="live",
+                recorded_digests=["sha256:abcdef0123456789"],
+                remote_digest="sha256:2abea424fedcba98",
+            )
+        )
+    )
+    assert moved.startswith("  ") and "Base:" in moved and "MOVED" in moved
+    assert "abcdef012345" in moved and "2abea424fedc" in moved  # first 12 hex of built-on vs now
+
+
+def test_format_base_line_degrades_honestly(bf):
+    never = _plain(bf.format_base_line(_item(bf, ref="alpine:3.23", check_source="none")))
+    assert never.startswith("  ") and "Base:" in never and "never" in never.lower() and "MOVED" not in never
+
+    offline = _plain(
+        bf.format_base_line(
+            _item(
+                bf,
+                ref="nginx:alpine",
+                check_source="cache",
+                remote_error="cannot reach registry-1.docker.io: timed out",
+                recorded_digests=[DIG_A],
+                remote_digest=DIG_MOVED,
+                checked_at="2026-10-20T05:00:00+00:00",
+            )
+        )
+    )
+    assert "2026-10-20" in offline and "MOVED" in offline  # cached verdict + evidence age
+
+    immobile = _plain(
+        bf.format_base_line(
+            _item(bf, ref="debian:trixie-20260406", check_source="live", recorded_digests=[DIG_A], remote_digest=DIG_A)
+        )
+    )
+    assert "immobile" in immobile
+
+    guess_local = _plain(
+        bf.format_base_line(_item(bf, check_source="live", local_digests=[DIG_MOVED], remote_digest=DIG_MOVED))
+    )
+    guess_older = _plain(
+        bf.format_base_line(_item(bf, check_source="live", local_digests=[DIG_A], remote_digest=DIG_MOVED))
+    )
+    assert "local" in guess_local.lower() and "local" in guess_older.lower()
+    assert guess_local != guess_older  # the two flavours must not read the same
+    # ... and both say they compare the local copy, never the baked-in content.
+    assert all("baked" in line.lower() for line in (guess_local, guess_older))
+
+
+def test_format_summary_empty_without_items(bf):
+    assert bf.format_summary([], checked=True) == []
+
+
+def test_format_summary_counts_names_remediation_and_fan_out(bf):
+    moved = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-22T06:31:00+00:00",
+    )
+    guess = _item(
+        bf,
+        service="hs-wsr-client",
+        ref="httpd:2.4",
+        check_source="live",
+        local_digests=["sha256:aaa111"],
+        remote_digest=DIG_MOVED,
+    )
+    ok = _item(
+        bf,
+        service="nginx",
+        ref="nginx:alpine",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_A,
+    )
+
+    lines = [_plain(line) for line in bf.format_summary([moved, guess, ok], checked=True)]
+    text = "\n".join(lines)
+
+    assert "2 of 3" in text and "NOT FRESH" in text
+    remediation = [line for line in lines if "./visp.py build" in line]
+    assert remediation, text
+    for line in remediation:
+        assert "artic" in line and "hs-wsr-client" in line and "./visp.py apply" in line
+    assert "refresh" in text.lower()  # the build is what pulls the refreshed base
+    assert "nginx:alpine" in text and "(runtime)" in text
+    assert "Registry last checked" in text and "2026-10-22" in text
+    assert "CVE" in lines[-1] and "digest" in lines[-1].lower()
+
+
+def test_format_summary_last_checked_and_always_the_caveat(bf):
+    old = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="cache",
+        remote_digest=DIG_MOVED,
+        recorded_digests=[DIG_A],
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+    recent = _item(
+        bf,
+        service="nginx",
+        ref="nginx:alpine",
+        check_source="cache",
+        remote_digest=DIG_A,
+        checked_at="2026-10-22T06:31:00+00:00",
+    )
+
+    lines = [_plain(line) for line in bf.format_summary([old, recent], checked=True)]
+    assert any("Registry last checked" in line and "2026-10-22" in line for line in lines)
+
+    offline_lines = [_plain(line) for line in bf.format_summary([old], checked=False)]
+    assert "not checked" in "\n".join(offline_lines).lower()
+    assert "CVE" in offline_lines[-1]
+
+    fresh_only = [_plain(line) for line in bf.format_summary([recent], checked=True)]
+    assert "CVE" in fresh_only[-1]
