@@ -388,16 +388,29 @@ def format_summary(items: list[BaseFreshness], *, checked: bool) -> list[str]:
             )
         )
         services = " ".join(dict.fromkeys(b.service for b in stale))
-        lines.append("Rebuild (this build refreshes the base; a plain rebuild would not):")
+        lines.append("Rebuild (a build now refreshes the base: it re-resolves each tag with --pull=newer):")
         lines.append(f"    ./visp.py build {services} && ./visp.py apply {services}")
         lines.append("Bases and who they implicate:")
         for ref, pairs in fan_out(stale).items():
             lines.append(f"    {ref} → " + ", ".join(f"{svc} ({role})" for svc, role in pairs))
 
+    # One outage line for the whole host set: a wall of never-checked is unreadable
+    # when the real news is that the registry could not be reached at all.
+    failed = [b for b in items if b.remote_error]
+    if failed:
+        hosts = ", ".join(sorted({ImageRef.parse(b.ref).registry for b in failed}))
+        lines.append(
+            color(
+                f"Registry:  check failed — {hosts} "
+                f"({len(failed)} base check(s); their verdicts fall back to the cached checks)",
+                Colors.YELLOW,
+            )
+        )
+
     dates = [b.checked_at for b in items if b.checked_at]
     if checked and dates:
         lines.append(f"Registry last checked: {max(dates)[:19].replace('T', ' ')}")
-    else:
+    elif not failed:
         lines.append("Registry not checked (--offline).")
 
     lines.append(color("fresh means the registry digest matches, not that there are no CVEs.", Colors.DIM))

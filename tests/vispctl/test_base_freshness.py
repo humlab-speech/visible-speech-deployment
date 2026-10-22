@@ -961,6 +961,34 @@ def test_format_summary_counts_images_not_base_rows(bf):
     assert "1 of 2 images are NOT FRESH" in plain
 
 
+def test_format_summary_names_the_registry_that_failed(bf):
+    """A full outage reads as an outage, not as a wall of silent never-checked."""
+    outage = "cannot reach registry-1.docker.io: timed out"
+    down = [
+        _item(bf, service="artic", ref=NODE, check_source="none", remote_error=outage),
+        _item(bf, service="artic", ref="httpd:2.4", role="build", check_source="none", remote_error=outage),
+    ]
+
+    lines = [_plain(line) for line in bf.format_summary(down, checked=True)]
+    text = "\n".join(lines)
+    failed = [line for line in lines if "check failed" in line]
+    assert len(failed) == 1  # one line naming the host, never one per base
+    assert "registry-1.docker.io" in failed[0]
+    assert "not checked" not in text  # an outage must not also read as --offline
+
+    healthy = _item(
+        bf,
+        service="svc",
+        ref=NODE,
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_A,
+        checked_at="2026-10-22T06:31:00+00:00",
+    )
+    plain = "\n".join(_plain(line) for line in bf.format_summary([healthy], checked=True))
+    assert "check failed" not in plain
+
+
 def test_display_visp_images_offline_never_constructs_a_registry_client(bf, monkeypatch, tmp_path, capsys):
     """Air-gapped operators run --offline: the display wiring itself must not reach the registry."""
     from vispctl import images as images_mod
