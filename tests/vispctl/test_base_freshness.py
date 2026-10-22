@@ -907,3 +907,85 @@ def test_format_summary_last_checked_and_always_the_caveat(bf):
 
     fresh_only = [_plain(line) for line in bf.format_summary([recent], checked=True)]
     assert "CVE" in fresh_only[-1]
+
+
+def test_get_base_freshness_fresh_on_a_later_recorded_digest(bf, tmp_path):
+    """The lock keeps every RepoDigest tail: the registry serving a later one is still fresh."""
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _seed_lock(bf, tmp_path, digests=[DIG_A, DIG_B])
+    client = _FakeClient({NODE_KEY: DIG_B})
+
+    items = bf.get_base_freshness(
+        _PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE]),
+        project_dir=tmp_path,
+        client=client,
+        build_configs={"wsrng-server": CFG_WSRNG},
+    )
+
+    assert items[0].recorded_digests == frozenset({DIG_A, DIG_B})
+    assert items[0].state == "fresh"
+
+
+def test_format_summary_counts_images_not_base_rows(bf):
+    """One image with two bad bases is one not-fresh image, not two (DESIGN 3.2)."""
+    stale_rows = [
+        _item(
+            bf,
+            service="artic",
+            ref="nginx:alpine",
+            check_source="live",
+            recorded_digests=[DIG_A],
+            remote_digest=DIG_MOVED,
+        ),
+        _item(
+            bf,
+            service="artic",
+            ref="node:22-bookworm-slim",
+            role="build",
+            check_source="live",
+            recorded_digests=[DIG_A],
+            remote_digest=DIG_MOVED,
+        ),
+    ]
+    fresh = _item(
+        bf,
+        service="tratt",
+        ref="httpd:2.4.67",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_A,
+    )
+
+    plain = "\n".join(_plain(line) for line in bf.format_summary(stale_rows + [fresh], checked=True))
+
+    assert "1 of 2 images are NOT FRESH" in plain
+
+
+def test_display_visp_images_offline_never_constructs_a_registry_client(bf, monkeypatch, tmp_path, capsys):
+    """Air-gapped operators run --offline: the display wiring itself must not reach the registry."""
+    from vispctl import images as images_mod
+
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    _seed_lock(
+        bf,
+        tmp_path,
+        digests=[DIG_A],
+        checks={NODE: {"remote_digest": DIG_A, "checked_at": "2026-10-22T06:31:00+00:00"}},
+    )
+    monkeypatch.setattr(bf, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    monkeypatch.setattr(bf, "BUILD_CONFIGS", {"wsrng-server": CFG_WSRNG})
+
+    class Boom:
+        def __init__(self, *a, **k):
+            raise AssertionError("registry must not be contacted when check_remote=False")
+
+    monkeypatch.setattr(bf, "RegistryClient", Boom)
+    found = {"visp-wsrng-server": {"tag": "latest", "size": "1 kB", "created": "yesterday"}}
+    monkeypatch.setattr(
+        images_mod.ImageManager, "get_visp_images", lambda self: (found, {"visp-wsrng-server": "wsrng-server"})
+    )
+
+    images_mod.ImageManager(_PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE])).display_visp_images(check_remote=False)
+
+    out = capsys.readouterr().out
+    assert "Base:" in out and NODE in out and "fresh" in out

@@ -1051,7 +1051,11 @@ Examples:
     p_images = subparsers.add_parser(
         "images", aliases=["img", "image"], help="List VISP container images and build status"
     )
-    p_images.add_argument("--offline", action="store_true", help="Skip the registry check for newer third-party images")
+    p_images.add_argument(
+        "--offline",
+        action="store_true",
+        help="Skip registry checks (third-party image versions and base-image freshness)",
+    )
     p_images.set_defaults(func=cmd_images)
     p_images_sub = p_images.add_subparsers(dest="subcommand", help="Images subcommands")
     p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions").set_defaults(

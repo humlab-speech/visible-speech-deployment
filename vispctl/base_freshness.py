@@ -23,7 +23,7 @@ from pathlib import Path
 from .build import BUILD_CONFIGS
 from .config import get_config
 from .images import _classify_tag
-from .registry import ImageRef, RegistryClient, RegistryError
+from .registry import ImageRef, RegistryClient
 from .runner import Colors, color
 
 FRESH = "fresh"
@@ -39,7 +39,7 @@ LOCK_FILE = Path(".visp") / "base-lock.json"
 def load_lock(project_dir: Path) -> dict:
     """Read the base-lock file; missing or unparsable degrades to no record."""
     try:
-        data = json.loads((Path(project_dir) / LOCK_FILE).read_text())
+        data = json.loads((Path(project_dir) / LOCK_FILE).read_text(errors="replace"))
     except (OSError, ValueError):
         return {}
     return data if isinstance(data, dict) else {}
@@ -151,7 +151,7 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
     if not path.is_file():
         return []
 
-    stages = _parse_stages(path.read_text())
+    stages = _parse_stages(path.read_text(errors="replace"))
     if not stages:
         return []
 
@@ -233,6 +233,10 @@ class BaseFreshness:
             return NEVER_CHECKED
         if self.check_source == "cache" and self.remote_error:
             return OFFLINE
+        return self._digest_verdict()
+
+    def _digest_verdict(self) -> str:
+        """Verdict implied by the digest evidence alone, ignoring how fresh the check was."""
         if self.recorded_digests and self.remote_digest:
             if self.remote_digest in self.recorded_digests:
                 return IMMOBILE if self.snapshot else FRESH
@@ -248,7 +252,7 @@ def _lookup_remote(client: RegistryClient, ref: str) -> tuple[str, str | None, s
     """Return (ref, digest, error): failures are recorded, not raised."""
     try:
         return ref, client.tag_digest(ImageRef.parse(ref)), None
-    except RegistryError as e:
+    except Exception as e:  # malformed ref, API drift — record, never abort the whole report
         return ref, None, str(e)
 
 
@@ -290,7 +294,12 @@ def get_base_freshness(
             now = datetime.now(timezone.utc).isoformat(timespec="seconds")
             for ref, digest in remote.items():
                 checks[ref] = {"remote_digest": digest, "checked_at": now}
-            save_lock(project_dir, lock)
+            try:
+                save_lock(
+                    project_dir, lock
+                )  # cached checks are best-effort: a read-only or full disk must not crash a read command
+            except OSError:
+                pass
 
     items: list[BaseFreshness] = []
     for service, ref, role, stage in entries:
@@ -343,11 +352,11 @@ def format_base_line(b: BaseFreshness) -> str:
         as_of = f" (as of {b.checked_at[:10]})" if b.checked_at else ""
         return color(f"{head}  MOVED  built on {built_on}, tag now {b.remote_digest[:19]}{as_of}", Colors.YELLOW)
     if state == OFFLINE:
-        if b.recorded_digests and b.remote_digest:
-            verdict = "fresh" if b.remote_digest in b.recorded_digests else "MOVED"
-        else:
-            verdict = HEURISTIC
-        return color(f"{head}  offline — {verdict} as of {b.checked_at or '?'}", Colors.YELLOW)
+        verdict = {FRESH: "fresh", MOVED: "MOVED", IMMOBILE: "immobile (dated snapshot)"}.get(
+            b._digest_verdict(), HEURISTIC
+        )
+        as_of = b.checked_at[:10] if b.checked_at else "?"
+        return color(f"{head}  offline — cached {verdict} as of {as_of}", Colors.YELLOW)
     if state == HEURISTIC:
         if b.remote_digest and b.remote_digest in b.local_digests:
             evidence = "the base you have matches registry content today"
@@ -372,7 +381,8 @@ def format_summary(items: list[BaseFreshness], *, checked: bool) -> list[str]:
     if stale:
         lines.append(
             color(
-                f"{len(stale)} of {len(items)} images are NOT FRESH (base content moved behind a tag "
+                f"{len({b.service for b in stale})} of {len({b.service for b in items})} images are NOT FRESH "
+                "(base content moved behind a tag "
                 "since they were built, or only the local copy can be compared)",
                 Colors.YELLOW,
             )
