@@ -1,6 +1,6 @@
 [Unit]
 Description=Apache Web Server with Webclient (Production)
-After=network-online.target visp-net.service tratt-net.service session-manager.service
+After=network-online.target visp-net-network.service tratt-net-network.service artic-net-network.service session-manager.service
 Wants=session-manager.service
 
 [Container]
@@ -8,6 +8,7 @@ ContainerName=apache
 Image=localhost/visp-apache:latest
 Network=visp-net.network
 Network=tratt-net.network
+Network=artic-net.network
 # Production: Expose on standard HTTP port (behind host nginx/reverse proxy)
 PublishPort=8081:80
 EnvironmentFile=@@PROJECT_DIR@@/.env

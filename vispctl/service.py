@@ -23,6 +23,7 @@ DEFAULT_SERVICES: list[Service] = [
     # Networks first
     Service("visp-net", "network", "visp-net.network"),
     Service("tratt-net", "network", "tratt-net.network"),
+    Service("artic-net", "network", "artic-net.network"),
     # Then containers in dependency order
     Service("mongo", "container", "mongo.container"),
     Service("mongo-express", "container", "mongo-express.container", dev_only=True),
