@@ -374,6 +374,7 @@ class BaseFreshness:
     checked_at: str | None
     check_source: str  # live | cache | none
     snapshot: bool | None = None  # defaults to is_snapshot_ref(ref)
+    local_id: str | None = None  # the base's id in the local store, when it is there at all
 
     def __post_init__(self) -> None:
         if self.snapshot is None:
@@ -530,6 +531,7 @@ def get_base_freshness(
                 built_image_id=ids[service],
                 recorded_digests=_digests(record.get("digests")),
                 local_digests=frozenset((local_bases.get(ref) or {}).get("digests") or ()),
+                local_id=(local_bases.get(ref) or {}).get("id"),
                 remote_digest=digest,
                 remote_error=errors.get(ref),
                 checked_at=checked_at,
@@ -605,6 +607,10 @@ def format_base_line(b: BaseFreshness) -> str:
             evidence = "the base you have matches registry content today"
         elif b.remote_digest and b.local_digests:
             evidence = f"the base you have is {min(b.local_digests)[:19]}, tag now {b.remote_digest[:19]}"
+        elif b.local_id:
+            # In the store, but pulled without a manifest digest recorded: there is
+            # nothing here to compare the baked-in base against, so say that.
+            evidence = f"{b.local_id[:12]} is present locally with no digest recorded (loaded, not pulled)"
         else:
             evidence = "the base is not in the local store"
         return color(

@@ -349,8 +349,15 @@ class BuildManager:
             return
 
         for ref, record in bases.items():
-            digest = next(iter(record["digests"]), record["id"]).rpartition(":")[2][:12]
-            print(f"  Base: {printable(ref)} {digest or 'not in the local store'}")
+            if record["digests"]:
+                shown = next(iter(record["digests"])).rpartition(":")[2][:12]
+            elif record["id"]:
+                # A base loaded into the store without a manifest digest: the id names the
+                # image we consumed but proves nothing about the tag, so it says which it is.
+                shown = f"{record['id']} (no registry digest)"
+            else:
+                shown = "not in the local store"
+            print(f"  Base: {printable(ref)} {shown}")
 
     def _add_git_labels(self, cmd: list[str], path: Path, label_prefix: str) -> None:
         """Add git commit and dirty labels for a path to the build command."""

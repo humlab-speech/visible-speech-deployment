@@ -1617,3 +1617,18 @@ def test_an_unparsable_lock_says_so_before_the_verdicts(bf, tmp_path, capsys):
     )
 
     assert "base-lock unparsable" in capsys.readouterr().out
+
+
+# ── 13. A base that is in the store but carries no digest (F7) ────────────────
+
+
+def test_a_local_base_with_no_recorded_digest_says_so(bf):
+    """Loaded, not pulled: the store has the image but no manifest digest to compare."""
+    loaded = _plain(
+        bf.format_base_line(_item(bf, check_source="live", remote_digest=DIG_MOVED, local_id="base1a2b3c4d"))
+    )
+    absent = _plain(bf.format_base_line(_item(bf, check_source="live", remote_digest=DIG_MOVED)))
+
+    assert "base1a2b3c4d is present locally with no digest recorded (loaded, not pulled)" in loaded
+    assert "not in the local store" not in loaded
+    assert "not in the local store" in absent

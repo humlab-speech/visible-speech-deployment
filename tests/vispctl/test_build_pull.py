@@ -160,3 +160,32 @@ def test_lock_write_failure_degrades_to_a_warning(tmp_path, monkeypatch, capsys)
     assert bm.build_image("fake", CFG, pull_policy="newer") is True
     assert "base lock not recorded" in capsys.readouterr().out
     assert not (tmp_path / ".visp" / "base-lock.json").exists()
+
+
+def test_a_base_with_no_recorded_digest_is_not_printed_as_one(tmp_path, monkeypatch, capsys):
+    """A base loaded into the store without a manifest digest: name the id, do not imply a digest."""
+    _project(tmp_path, monkeypatch)
+    runner = _Runner()
+
+    def run_quiet(cmd, **kwargs):  # noqa: ARG001 — the store answers this base with no RepoDigests
+        cmd = list(cmd)
+        if cmd[:3] == ["podman", "image", "inspect"]:
+            return 0, BUILT_ID, ""
+        if cmd[:3] == ["podman", "images", "--format"]:
+            return 0, json.dumps([{"Id": "baseid1234567890", "Names": [f"docker.io/library/{BASE}"]}]), ""
+        return 1, "", ""
+
+    runner.run_quiet = run_quiet
+    build_mod.cmd_build(
+        types.SimpleNamespace(
+            services=["fake"], list=False, no_cache=False, pull=False, offline=False, config=None, force=True
+        ),
+        runner=runner,
+        build_configs={"fake": CFG},
+        node_configs={},
+        all_buildable=["fake"],
+    )
+
+    assert f"Base: {BASE} baseid123456 (no registry digest)" in capsys.readouterr().out
+    lock = json.loads((tmp_path / ".visp" / "base-lock.json").read_text())
+    assert lock["images"][BUILT_ID]["bases"][BASE]["digests"] == []
