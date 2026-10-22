@@ -75,7 +75,9 @@ def _parse_stages(text: str) -> list[dict]:
     """Parse FROM/COPY lines into ``{name, ref, copies}`` stages, in file order.
 
     ``ref`` is None for a stage built FROM an earlier stage and for a FROM
-    pinned by ``@sha256:``, which cannot move and needs no verdict.
+    pinned by ``@sha256:``, which cannot move and needs no verdict. ``from_stage``
+    keeps the earlier stage's name so the real registry base can be resolved
+    through the chain (apache: production <- base <- debian).
     """
     stages: list[dict] = []
     defined: set[str] = set()
@@ -90,16 +92,29 @@ def _parse_stages(text: str) -> list[dict]:
                 continue
             ref = args[0]
             name = args[2] if len(args) >= 3 and args[1].upper() == "AS" else None
-            if "@sha256:" in ref or ref in defined:
+            from_stage = None
+            if "@sha256:" in ref:
                 ref = None
+            elif ref in defined:
+                ref, from_stage = None, ref
             else:
                 ref = _normalize_ref(ref)
-            stages.append({"name": name, "ref": ref, "copies": []})
+            stages.append({"name": name, "ref": ref, "from_stage": from_stage, "copies": []})
             if name:
                 defined.add(name)
         elif verb == "COPY" and stages:
             stages[-1]["copies"] += [p.partition("=")[2] for p in parts if p.startswith("--from=")]
     return stages
+
+
+def _resolved_ref(stages: list[dict], i: int) -> str | None:
+    """Registry ref at the head of stage ``i``'s internal FROM chain, if any."""
+    while stages[i]["ref"] is None and stages[i]["from_stage"]:
+        prev = [j for j, s in enumerate(stages[:i]) if s["name"] == stages[i]["from_stage"]]
+        if not prev:
+            return None
+        i = prev[-1]  # from_stage always names an earlier stage: the walk terminates
+    return stages[i]["ref"]
 
 
 def _referenced_stages(stages: list[dict], target: int) -> set[int]:
@@ -122,8 +137,10 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
     """Return ``[(ref, role, stage name)]`` of the registry bases of one build config.
 
     The Dockerfile is located exactly as ``build.py`` composes its ``-f``
-    argument. The runtime base is the target stage's (or the last stage's) FROM;
-    build bases are the bases of the stages the target COPY --from's.
+    argument. The runtime base is the target stage's (or the last stage's) FROM,
+    resolved through internal ``FROM <earlier-stage>`` chains to the registry
+    ref at the head; build bases are the bases of the stages the target
+    COPY --from's.
     """
     dockerfile = cfg.get("dockerfile", "Dockerfile")
     if dockerfile.startswith("./"):
@@ -145,12 +162,13 @@ def stage_bases(project_dir: Path, cfg: dict) -> list[tuple[str, str, str | None
     items: list[tuple[str, str, str | None]] = []
     seen: set[tuple[str, str]] = set()
     for i in sorted(_referenced_stages(stages, target) - {target}):
-        ref = stages[i]["ref"]
+        ref = _resolved_ref(stages, i)
         if ref and (ref, "build") not in seen:
             seen.add((ref, "build"))
             items.append((ref, "build", stages[i]["name"]))
-    if stages[target]["ref"]:
-        items.append((stages[target]["ref"], "runtime", stages[target]["name"]))
+    runtime = _resolved_ref(stages, target)
+    if runtime:
+        items.append((runtime, "runtime", stages[target]["name"]))
     return items
 
 
