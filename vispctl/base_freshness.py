@@ -388,13 +388,31 @@ def fan_out(items: list[BaseFreshness]) -> dict[str, list[tuple[str, str]]]:
 
 
 def needs_rebuild(b: BaseFreshness) -> bool:
-    """True when the digest evidence says a rebuild could change the image.
+    """True when a rebuild could change the image — on the evidence we actually have.
 
     Deliberately reads the digest verdict, not ``state``: an offline (cached)
     verdict must keep counting here, or an air-gapped run would quietly lose the
-    not-fresh count and read as all-clear.
+    not-fresh count and read as all-clear. Everything except a confirmed
+    fresh/immobile is treated as stale (unknown fails safe), but a base with no
+    registry evidence at all — ``never-checked``, whether from ``--offline``
+    without a cache or from a total outage — proves nothing and is excluded: it is
+    named by its own line, not counted as a move.
     """
-    return b._digest_verdict() in (MOVED, HEURISTIC)
+    return b.remote_digest is not None and b._digest_verdict() not in (FRESH, IMMOBILE)
+
+
+def is_moved(b: BaseFreshness) -> bool:
+    """True when the digests say the tag moved, offline qualification aside.
+
+    Gates the per-base rebuild hint: a heuristic row must not print a
+    ``build && apply`` as if a move were confirmed, and a cached move still must.
+    """
+    return b._digest_verdict() == MOVED
+
+
+def _images(count: int) -> str:
+    """``1 image`` / ``2 images``, so a headline never reads ``1 images``."""
+    return f"{count} image" + ("" if count == 1 else "s")
 
 
 def format_base_line(b: BaseFreshness) -> str:
@@ -447,14 +465,25 @@ def format_summary(items: list[BaseFreshness], *, checked: bool, applyable: set[
     lines: list[str] = []
     stale = [b for b in items if needs_rebuild(b)]
     if stale:
+        moved = {b.service for b in stale if is_moved(b)}
+        guessed = {b.service for b in stale} - moved
         lines.append(
-            color(
-                f"{len({b.service for b in stale})} of {len({b.service for b in items})} images are NOT FRESH "
-                "(base content moved behind a tag "
-                "since they were built, or only the local copy can be compared)",
-                Colors.YELLOW,
-            )
+            color(f"{len(moved | guessed)} of {len({b.service for b in items})} images are NOT FRESH", Colors.YELLOW)
         )
+        if moved:
+            lines.append(
+                color(
+                    f"    {_images(len(moved))}: base moved behind the tag since the build baked it in", Colors.YELLOW
+                )
+            )
+        if guessed:
+            lines.append(
+                color(
+                    f"    {_images(len(guessed))}: no build record (heuristic) — a rebuild with --pull=newer"
+                    " makes the verdict exact",
+                    Colors.YELLOW,
+                )
+            )
         services = list(dict.fromkeys(b.service for b in stale))
         lines.append("Rebuild (a build now refreshes the base: it re-resolves each tag with --pull=newer):")
         lines.append(f"    ./visp.py build {' '.join(services)}")

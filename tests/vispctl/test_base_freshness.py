@@ -1264,3 +1264,108 @@ def test_unparsable_from_line_is_reported_but_never_fetched(bf, tmp_path):
 
     assert [(i.service, i.state, i.check_source) for i in items] == [("wsrng-server", "never-checked", "none")]
     assert items[0].ref == "${BASE}"
+
+
+# ── 9. What the summary may claim (F2) ─────────────────────────────────────────
+
+
+def test_summary_splits_a_moved_base_from_an_unrecorded_one(bf):
+    """Two different kinds of stale must not print as one confirmed verdict."""
+    moved = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+    guess = _item(
+        bf,
+        service="hs-wsr-client",
+        ref="httpd:2.4",
+        check_source="live",
+        local_digests=["sha256:aaa111"],
+        remote_digest=DIG_MOVED,
+    )
+
+    text = "\n".join(_plain(line) for line in bf.format_summary([moved, guess], checked=True, applyable=set()))
+
+    assert "2 of 2 images are NOT FRESH" in text
+    assert "1 image: base moved behind the tag" in text
+    assert "1 image: no build record (heuristic)" in text
+    assert "--pull=newer makes the verdict exact" in text
+
+
+def test_summary_prints_only_the_non_zero_half_of_the_split(bf):
+    moved = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+
+    text = "\n".join(_plain(line) for line in bf.format_summary([moved], checked=True, applyable={"artic"}))
+
+    assert "1 image: base moved behind the tag" in text
+    assert "no build record" not in text
+
+
+def test_never_checked_is_excluded_from_the_stale_count_and_the_remediation(bf):
+    """No registry evidence is not evidence of staleness — offline or outage alike."""
+    silent_offline = _item(bf, service="tratt", ref="node:22", check_source="none")
+    outage = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="none",
+        remote_error="cannot reach registry-1.docker.io: timed out",
+    )
+    moved = _item(
+        bf,
+        service="nginx",
+        ref="httpd:2.4.67",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+
+    assert [bf.needs_rebuild(b) for b in (silent_offline, outage)] == [False, False]
+    assert bf.needs_rebuild(moved) is True
+
+    text = "\n".join(
+        _plain(line) for line in bf.format_summary([silent_offline, outage, moved], checked=True, applyable=set())
+    )
+
+    assert "1 of 3 images are NOT FRESH" in text  # the silent rows count, but only in the denominator
+    assert "./visp.py build nginx" in text and "tratt" not in text and "artic" not in text.split("check failed")[0]
+
+
+def test_a_heuristic_row_is_not_reported_as_a_move(bf):
+    """is_moved drives the per-base rebuild hint: a guess must not order a build && apply."""
+    guess = _item(bf, check_source="live", local_digests=[DIG_A], remote_digest=DIG_MOVED)
+    cached_move = _item(bf, check_source="cache", recorded_digests=[DIG_A], remote_digest=DIG_MOVED)
+    never = _item(bf, check_source="none")
+
+    assert [bf.is_moved(b) for b in (guess, never)] == [False, False]
+    assert bf.is_moved(cached_move) is True  # an offline move still earns its command line
+
+
+def test_display_visp_images_prints_no_rebuild_arrow_for_a_heuristic_base(bf, monkeypatch, tmp_path, capsys):
+    from vispctl import images as images_mod
+
+    _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
+    monkeypatch.setattr(bf, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    monkeypatch.setattr(bf, "BUILD_CONFIGS", {"wsrng-server": CFG_WSRNG})
+    monkeypatch.setattr(bf, "RegistryClient", lambda *a, **k: _FakeClient({NODE_KEY: DIG_MOVED}))
+    found = {"visp-wsrng-server": {"tag": "latest", "size": "1 kB", "created": "yesterday"}}
+    monkeypatch.setattr(
+        images_mod.ImageManager, "get_visp_images", lambda self: (found, {"visp-wsrng-server": "wsrng-server"})
+    )
+
+    images_mod.ImageManager(_PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE])).display_visp_images(check_remote=True)
+    out = _plain(capsys.readouterr().out)
+
+    assert "heuristic" in out and "→ ./visp.py build" not in out
+    assert "1 of 1 images are NOT FRESH" in out  # the guess is still named, just not as a move
