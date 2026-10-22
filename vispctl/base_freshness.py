@@ -250,9 +250,19 @@ class BaseFreshness:
             return MOVED
         return HEURISTIC
 
-    @property
-    def remediation(self) -> str:
-        return f"./visp.py build {self.service} && ./visp.py apply {self.service}"
+    def remediation(self, applyable: set[str] | None = None) -> str:
+        """The commands that actually finish the job for this base.
+
+        ``./visp.py apply`` takes exactly one service and refuses names that have no
+        runtime quadlet (``jupyter-session`` among them), so the apply half appears
+        only for a service the caller confirmed has one. ``applyable=None`` means
+        nobody confirmed anything: name the shape, never guess a target.
+        """
+        if applyable is None:
+            return f"./visp.py build {self.service}  (then ./visp.py apply <service>, one service per run)"
+        if self.service in applyable:
+            return f"./visp.py build {self.service} && ./visp.py apply {self.service}"
+        return f"./visp.py build {self.service}  (no quadlet to apply — picked up when the next session starts)"
 
 
 def _lookup_remote(client: RegistryClient, ref: str) -> tuple[str, str | None, str | None]:
@@ -393,8 +403,13 @@ def format_base_line(b: BaseFreshness) -> str:
     return color(f"{head}  {NEVER_CHECKED} — no verdict", Colors.DIM)
 
 
-def format_summary(items: list[BaseFreshness], *, checked: bool) -> list[str]:
-    """The not-fresh count, one remediation command, the base fan-out, the caveats."""
+def format_summary(items: list[BaseFreshness], *, checked: bool, applyable: set[str] | None = None) -> list[str]:
+    """The not-fresh count, the remediation commands, the base fan-out, the caveats.
+
+    ``applyable`` names the services ``./visp.py apply`` accepts (the ones with a
+    runtime quadlet). The build is batched into one command because it takes many
+    services; apply is not, because it takes exactly one.
+    """
     if not items:
         return []
 
@@ -409,9 +424,18 @@ def format_summary(items: list[BaseFreshness], *, checked: bool) -> list[str]:
                 Colors.YELLOW,
             )
         )
-        services = " ".join(dict.fromkeys(b.service for b in stale))
+        services = list(dict.fromkeys(b.service for b in stale))
         lines.append("Rebuild (a build now refreshes the base: it re-resolves each tag with --pull=newer):")
-        lines.append(f"    ./visp.py build {services} && ./visp.py apply {services}")
+        lines.append(f"    ./visp.py build {' '.join(services)}")
+        if applyable is not None:  # an empty set is an answer too: nothing here is applyable
+            for svc in services:
+                lines.append(
+                    f"    ./visp.py apply {svc}"
+                    if svc in applyable
+                    else f"    {svc} has no quadlet to apply — picked up when the next session starts"
+                )
+        else:
+            lines.append("    then ./visp.py apply <service> per runtime service you run (apply takes one service)")
         lines.append("Bases and who they implicate:")
         for ref, pairs in fan_out(stale).items():
             lines.append(f"    {ref} → " + ", ".join(f"{svc} ({role})" for svc, role in pairs))

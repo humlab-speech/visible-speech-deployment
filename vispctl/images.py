@@ -389,6 +389,10 @@ class ImageManager:
 
         found_images, expected_images = self.get_visp_images()
         bases = self.get_base_freshness(check_remote)
+        # ./visp.py apply takes one service and refuses names without a runtime quadlet,
+        # so a remediation may only name a service that is both built here and a quadlet
+        # service — the pulled third-party images (mongo, matomo) are never apply targets.
+        applyable = container_service_names() & {b.service for b in bases}
 
         # Print status for each expected image
         for image_name, build_name in sorted(expected_images.items()):
@@ -399,7 +403,7 @@ class ImageManager:
                 for base in [b for b in bases if b.service == build_name]:
                     print(format_base_line(base))
                     if needs_rebuild(base):
-                        print(f"      → {base.remediation}")
+                        print(f"      → {base.remediation(applyable)}")
             else:
                 print(f"  {color('✗', Colors.RED)} {color(build_name, Colors.BLUE):25} {image_name} (not built)")
             print()
@@ -419,7 +423,7 @@ class ImageManager:
             )
             print("  ./visp.py build all")
 
-        for line in format_summary(bases, checked=check_remote):
+        for line in format_summary(bases, checked=check_remote, applyable=applyable):
             print(line)
         print()
 

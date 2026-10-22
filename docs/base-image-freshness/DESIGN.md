@@ -158,7 +158,9 @@ timestamps are exactly the lie being fixed.
 
   2 of 11 images are NOT FRESH: base content moved behind a tag since they were built.
   Rebuild (this pulls the refreshed base; a plain rebuild would not):
-      ./visp.py build artic hs-wsr-client && ./visp.py apply
+      ./visp.py build artic hs-wsr-client
+      ./visp.py apply artic
+      hs-wsr-client has no quadlet to apply — picked up when the next session starts
   Bases and who they implicate:
       nginx:alpine        → artic (runtime), nginx (runtime)
       httpd:2.4           → hs-wsr-client (runtime), webclient (runtime)
@@ -169,9 +171,13 @@ timestamps are exactly the lie being fixed.
 Rules: never print "last built N ago" as a green signal; always name the **remediation
 = build**, never pull (requirement (c), consistent with `image_update.py:165`);
 `build` alone is not enough until `--pull` default changes (§3.4/Phase 2), so the hint
-says so; `apply` at the end because `get_stale_containers`
+says so; `apply` after the build because `get_stale_containers`
 (`images.py:209` → `quadlets.py:234`) is what converts the new image into restarted
-containers. Third-party section unchanged. `images base` gains the fan-out and the
+containers — but `apply` takes exactly ONE service and refuses names without a quadlet,
+so it is printed once per applyable service (the intersection of the build configs with
+`vispctl.service.container_service_names()`), and a built service with no unit of its own
+(`jupyter-session`, `session-proxy`) is told it is picked up when the next session starts
+instead. Third-party section unchanged. `images base` gains the fan-out and the
 runtime/build-stage distinction (its `└─ docker/...` lines already show file+stage).
 
 ### 3.3 Offline (requirement (d))

@@ -246,7 +246,24 @@ def test_state_offline_for_any_cached_check_even_without_an_error(bf):
 
 
 def test_remediation_is_build_then_apply_for_that_service(bf):
-    assert _item(bf, service="artic").remediation == "./visp.py build artic && ./visp.py apply artic"
+    """apply only exists for services that own a quadlet, and takes exactly one of them."""
+    assert (
+        _item(bf, service="artic").remediation({"artic", "apache"}) == "./visp.py build artic && ./visp.py apply artic"
+    )
+
+
+def test_remediation_drops_apply_for_a_service_without_a_quadlet(bf):
+    """jupyter-session is built but has no unit: ./visp.py apply would refuse the name."""
+    item = _item(bf, service="jupyter-session")
+
+    assert item.remediation({"artic"}) == (
+        "./visp.py build jupyter-session  (no quadlet to apply — picked up when the next session starts)"
+    )
+    assert "./visp.py apply" not in item.remediation({"artic"})
+    # an unconfirmed caller gets the shape of the command, never a guessed target
+    assert (
+        item.remediation() == "./visp.py build jupyter-session  (then ./visp.py apply <service>, one service per run)"
+    )
 
 
 # ── 2. Snapshot refs ──────────────────────────────────────────────────────────
@@ -945,18 +962,79 @@ def test_format_summary_counts_names_remediation_and_fan_out(bf):
         remote_digest=DIG_A,
     )
 
-    lines = [_plain(line) for line in bf.format_summary([moved, guess, ok], checked=True)]
+    lines = [_plain(line) for line in bf.format_summary([moved, guess, ok], checked=True, applyable={"artic"})]
     text = "\n".join(lines)
 
     assert "2 of 3" in text and "NOT FRESH" in text
-    remediation = [line for line in lines if "./visp.py build" in line]
-    assert remediation, text
-    for line in remediation:
-        assert "artic" in line and "hs-wsr-client" in line and "./visp.py apply" in line
+    builds = [line for line in lines if "./visp.py build" in line]
+    applies = [line for line in lines if "./visp.py apply" in line]
+    assert builds == ["    ./visp.py build artic hs-wsr-client"]  # build takes them all at once
+    assert applies == ["    ./visp.py apply artic"]  # apply takes one, and only names an applyable service
+    assert "hs-wsr-client has no quadlet to apply" in text
     assert "refresh" in text.lower()  # the build is what pulls the refreshed base
     assert "nginx:alpine" in text and "(runtime)" in text
     assert "Registry last checked" in text and "2026-10-22" in text
     assert "CVE" in lines[-1] and "digest" in lines[-1].lower()
+
+
+def test_format_summary_with_an_empty_applyable_set_still_says_what_happens(bf):
+    """Confirmed "nothing here is applyable" is not the same as "nobody looked".
+
+    A machine whose only stale image is a session image must not be invited to run
+    `./visp.py apply jupyter-session`, which the CLI would refuse.
+    """
+    item = _item(
+        bf,
+        service="jupyter-session",
+        ref="quay.io/jupyter/datascience-notebook:r-4.5.2",
+        check_source="live",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+    )
+
+    text = "\n".join(_plain(line) for line in bf.format_summary([item], checked=True, applyable=set()))
+
+    assert "./visp.py build jupyter-session" in text
+    assert "jupyter-session has no quadlet to apply — picked up when the next session starts" in text
+    assert "./visp.py apply" not in text
+
+
+def test_printed_apply_targets_resolve_in_the_real_service_definitions(bf):
+    """The reviewer's CLI coverage: ./visp.py apply takes one service and refuses the rest.
+
+    Every apply target printed must be a name ``apply`` accepts (a container service
+    with a quadlet), every applyable built service must get its own line, and the
+    built-but-unapplyable ones must get the next-session guidance instead. Pulled
+    third-party quadlets (mongo, matomo) are not build targets and must never appear.
+    """
+    from vispctl.build import BUILD_CONFIGS
+    from vispctl.service import DEFAULT_SERVICES, container_service_names
+
+    stale = [
+        _item(
+            bf,
+            service=svc,
+            ref="nginx:alpine",
+            check_source="live",
+            recorded_digests=[DIG_A],
+            remote_digest=DIG_MOVED,
+        )
+        for svc in BUILD_CONFIGS
+    ]
+    applyable = container_service_names() & set(BUILD_CONFIGS)
+    lines = [_plain(line) for line in bf.format_summary(stale, checked=True, applyable=applyable)]
+
+    targets = [line.split()[-1] for line in lines if line.strip().startswith("./visp.py apply")]
+    quadlets = {s.name for s in DEFAULT_SERVICES if s.type == "container"}
+    built_without_quadlet = set(BUILD_CONFIGS) - applyable
+
+    assert targets  # the mapping is not vacuously true
+    assert set(targets) == applyable  # exactly one apply line per applyable built service
+    assert set(targets) <= quadlets  # every target really resolves as an apply argument
+    assert set(targets) & {"mongo", "mongo-express", "matomo", "matomo-db"} == set()
+    assert {"jupyter-session", "session-proxy"} <= built_without_quadlet
+    for svc in built_without_quadlet:
+        assert any(line.strip().startswith(f"{svc} has no quadlet to apply") for line in lines)
 
 
 def test_format_summary_last_checked_and_always_the_caveat(bf):
@@ -1111,4 +1189,5 @@ def test_display_visp_images_offline_still_flags_a_cached_move(bf, monkeypatch, 
     out = _offline_display(bf, monkeypatch, tmp_path, capsys, DIG_MOVED)
 
     assert "offline — cached MOVED as of 2026-10-20" in out
-    assert "→ ./visp.py build wsrng-server" in out
+    # wsrng-server owns a quadlet, so the real wiring may name its apply target
+    assert "→ ./visp.py build wsrng-server && ./visp.py apply wsrng-server" in out
