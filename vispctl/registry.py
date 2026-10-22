@@ -44,6 +44,28 @@ class RegistryError(Exception):
     """The registry could not be reached or gave an unusable answer."""
 
 
+_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+
+
+def _apex(host: str) -> str:
+    """The domain a host belongs to, port dropped: ``auth.docker.io`` → ``docker.io``."""
+    labels = host.partition(":")[0].split(".")
+    return ".".join(labels[-2:]) if len(labels) >= 2 else labels[0]
+
+
+def _same_registry_or_auth_host(host: str, registry: str) -> bool:
+    """True when *host* is the registry we asked, or an auth host under its own domain.
+
+    A 401 challenge names the realm to fetch a token from, and a pagination Link
+    names where the next page lives. Following either to another operator's host
+    would send a credential (and a pull intent) collected for this registry
+    somewhere else, so only the registry's own domain is trusted. Docker Hub
+    legitimately splits the two: API on registry-1.docker.io, token on
+    auth.docker.io. A single-label host (localhost) or an address matches exactly.
+    """
+    return _apex(host) == _apex(registry)
+
+
 @dataclass(frozen=True)
 class ImageRef:
     """A parsed image reference such as ``docker.io/library/matomo:5.8.0``."""
@@ -111,6 +133,9 @@ class RegistryClient:
             digest = resp.headers.get("Docker-Content-Digest")
         if not digest:
             raise RegistryError(f"{ref.registry} sent no digest for {ref.repository}:{tag}")
+        if not _DIGEST.fullmatch(digest):
+            # A header is outside input: it must not reach a terminal or be compared as a digest
+            raise RegistryError(f"{ref.registry} sent an unusable digest for {ref.repository}:{tag}")
         return digest
 
     def _request(self, ref: ImageRef, url: str, method: str = "GET", headers: dict | None = None):
@@ -123,7 +148,7 @@ class RegistryClient:
                 return self._open(urllib.request.Request(url, headers=hdrs, method=method), timeout=self.timeout)
             except urllib.error.HTTPError as e:
                 if e.code == 401 and attempt == 0 and key not in self._tokens:
-                    self._tokens[key] = self._fetch_token(e.headers.get("WWW-Authenticate", ""))
+                    self._tokens[key] = self._fetch_token(e.headers.get("WWW-Authenticate", ""), ref.registry)
                     continue
                 raise RegistryError(f"{ref.registry} answered HTTP {e.code} for {ref.repository}") from e
             except (urllib.error.URLError, OSError) as e:
@@ -131,14 +156,23 @@ class RegistryClient:
                 raise RegistryError(f"cannot reach {ref.registry}: {reason}") from e
         raise RegistryError(f"{ref.registry} refused anonymous access to {ref.repository}")
 
-    def _fetch_token(self, challenge: str) -> str:
-        """Exchange a ``WWW-Authenticate: Bearer realm=…`` challenge for an anonymous token."""
+    def _fetch_token(self, challenge: str, registry: str | None = None) -> str:
+        """Exchange a ``WWW-Authenticate: Bearer realm=…`` challenge for an anonymous token.
+
+        ``registry`` is the host that issued the challenge. Passing it pins the
+        realm to that host's own domain over https; a caller that cannot say who
+        challenged it only gets the https floor.
+        """
         if not challenge.lower().startswith("bearer "):
             raise RegistryError(f"unsupported registry auth challenge: {challenge or '(none)'}")
         params = dict(re.findall(r'(\w+)="([^"]*)"', challenge))
         realm = params.pop("realm", None)
         if not realm:
             raise RegistryError(f"registry auth challenge has no realm: {challenge}")
+        if not realm.startswith("https://"):
+            raise RegistryError(f"registry auth challenge has a cleartext realm: {realm}")
+        if registry and not _same_registry_or_auth_host(urllib.parse.urlparse(realm).hostname or "", registry):
+            raise RegistryError(f"registry {registry} sent a token realm on a different host: {realm}")
         url = f"{realm}?{urllib.parse.urlencode(params)}"
         try:
             with self._open(urllib.request.Request(url), timeout=self.timeout) as resp:
@@ -152,13 +186,18 @@ class RegistryClient:
 
 
 def _next_link(link: str | None, registry: str) -> str | None:
-    """Return the absolute URL of a ``Link: <…>; rel="next"`` header, if any."""
+    """Return the absolute URL of a ``Link: <…>; rel="next"`` header, if it stays on *registry*."""
     if not link:
         return None
     m = re.search(r'<([^>]+)>\s*;\s*rel="?next"?', link)
     if not m:
         return None
-    return urllib.parse.urljoin(f"https://{registry}/", m.group(1))
+    url = urllib.parse.urljoin(f"https://{registry}/", m.group(1))
+    if not url.startswith("https://") or not _same_registry_or_auth_host(
+        urllib.parse.urlparse(url).hostname or "", registry
+    ):
+        return None  # a next page off this registry's own domain is a redirect, not pagination
+    return url
 
 
 # --- Version tags ---------------------------------------------------------

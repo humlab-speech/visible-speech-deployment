@@ -88,11 +88,11 @@ class _FakeOpener:
         auth = req.get_header("Authorization")
         self.requests.append((req.get_method(), url, auth))
 
-        if url.startswith("https://auth.example/token"):
+        if url.startswith("https://auth.registry.example/token"):
             assert "service=registry.example" in url and "scope=repository%3Alibrary%2Fmatomo%3Apull" in url
             return _Resp(json.dumps({"token": "T"}).encode())
         if auth != "Bearer T":
-            challenge = 'Bearer realm="https://auth.example/token",service="registry.example",'
+            challenge = 'Bearer realm="https://auth.registry.example/token",service="registry.example",'
             challenge += 'scope="repository:library/matomo:pull"'
             raise urllib.error.HTTPError(url, 401, "Unauthorized", {"WWW-Authenticate": challenge}, None)
         if url.endswith("/tags/list"):
@@ -103,7 +103,7 @@ class _FakeOpener:
         if "/manifests/5.8.0" in url:
             assert req.get_method() == "HEAD"
             assert "application/vnd.oci.image.index.v1+json" in req.get_header("Accept")
-            return _Resp(headers={"Docker-Content-Digest": "sha256:remote"})
+            return _Resp(headers={"Docker-Content-Digest": REAL_DIGEST})
         raise AssertionError(f"unexpected request {url}")
 
 
@@ -111,14 +111,17 @@ def _ref():
     return ImageRef("registry.example", "library/matomo", "5.8.0")
 
 
+REAL_DIGEST = "sha256:" + "191c9f00" * 8  # a real digest is 64 hex after the algorithm
+
+
 def test_client_fetches_token_once_and_follows_pagination():
     opener = _FakeOpener()
     client = RegistryClient(opener=opener)
 
     assert client.list_tags(_ref()) == ["5.7.0", "5.8.0", "5.14.0"]
-    assert client.tag_digest(_ref()) == "sha256:remote"
+    assert client.tag_digest(_ref()) == REAL_DIGEST
 
-    token_requests = [r for r in opener.requests if r[1].startswith("https://auth.example/")]
+    token_requests = [r for r in opener.requests if r[1].startswith("https://auth.registry.example/")]
     assert len(token_requests) == 1  # cached for the second page and the digest
     assert opener.requests[-1][0] == "HEAD"
 
@@ -136,4 +139,73 @@ def test_client_reports_http_errors():
         raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
 
     with pytest.raises(RegistryError, match="HTTP 404"):
+        RegistryClient(opener=opener).tag_digest(_ref())
+
+
+# --- Registry boundary: where a challenge or a Link may send the client (F5) ---
+
+
+def _challenge(realm: str) -> dict:
+    return {
+        "WWW-Authenticate": f'Bearer realm="{realm}",service="registry.example",'
+        'scope="repository:library/matomo:pull"'
+    }
+
+
+def _challenging_client(realm: str):
+    """A registry that asks for a token from *realm* and otherwise answers normally."""
+
+    def opener(req, timeout=None):
+        url = req.full_url
+        if url.startswith(realm):
+            return _Resp(json.dumps({"token": "T"}).encode())
+        if req.get_header("Authorization") != "Bearer T":
+            raise urllib.error.HTTPError(url, 401, "Unauthorized", _challenge(realm), None)
+        return _Resp(json.dumps({"tags": ["5.8.0"]}).encode())
+
+    return RegistryClient(opener=opener)
+
+
+def test_a_token_realm_may_live_on_the_registrys_own_auth_host():
+    """The real Docker Hub shape: API on registry-1.docker.io, token on auth.docker.io."""
+    client = _challenging_client("https://auth.docker.io/token")
+    ref = ImageRef("registry-1.docker.io", "library/matomo", "5.8.0")
+
+    assert client.list_tags(ref) == ["5.8.0"]
+
+
+@pytest.mark.parametrize(
+    "realm",
+    [
+        "https://evil.example/token",  # a different operator's domain
+        "http://auth.registry.example/token",  # the right domain, but cleartext
+    ],
+)
+def test_a_token_realm_off_the_registrys_domain_is_refused(realm):
+    """A challenge may not route the pull intent (and the token it buys) elsewhere."""
+    with pytest.raises(RegistryError, match="realm"):
+        _challenging_client(realm).list_tags(_ref())
+
+
+def test_pagination_stops_at_a_link_off_the_registry():
+    """An absolute Link to someone else's host ends pagination; it is never followed."""
+
+    def opener(req, timeout=None):
+        url = req.full_url
+        assert url == f"https://registry.example/v2/{'library/matomo'}/tags/list", f"followed a link to {url}"
+        return _Resp(
+            json.dumps({"tags": ["5.7.0"]}).encode(),
+            {"Link": '<https://evil.example/v2/library/matomo/tags/list?last=5.7.0>; rel="next"'},
+        )
+
+    assert RegistryClient(opener=opener).list_tags(_ref()) == ["5.7.0"]
+
+
+def test_an_unusable_digest_header_is_refused():
+    """A digest header is outside input: shape-check it before it becomes a verdict or a terminal write."""
+
+    def opener(req, timeout=None):
+        return _Resp(headers={"Docker-Content-Digest": "sha256:remote\x1b]0;owned\x07"})
+
+    with pytest.raises(RegistryError, match="unusable digest"):
         RegistryClient(opener=opener).tag_digest(_ref())

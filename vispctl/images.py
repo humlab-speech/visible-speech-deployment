@@ -14,8 +14,8 @@ from .config import get_config
 from .placeholder import placeholder_template
 from .quadlets import get_current_mode
 from .registry import ImageRef, RegistryClient, RegistryError, is_version_tag, newer_versions
-from .runner import Colors, Runner, color
-from .service import Service, container_service_names
+from .runner import Colors, Runner, color, printable
+from .service import Service, container_service_names, get_runtime_services
 
 
 def _classify_tag(tag: str) -> str:
@@ -299,8 +299,14 @@ class ImageManager:
         base_dir = get_config().project_dir
         dockerfiles = []
 
-        # Search in docker/ and external/
-        for pattern in ["docker/**/Dockerfile*", "external/**/Dockerfile*"]:
+        # Search in docker/ and external/. Containerfile* too: whisperx's only
+        # base lives in external/WhisperVault/container/Containerfile.
+        for pattern in [
+            "docker/**/Dockerfile*",
+            "external/**/Dockerfile*",
+            "docker/**/Containerfile*",
+            "external/**/Containerfile*",
+        ]:
             dockerfiles.extend(base_dir.glob(pattern))
 
         # Exclude ARCHIVE and node_modules
@@ -364,19 +370,46 @@ class ImageManager:
 
         return dict(base_images)
 
-    def display_visp_images(self) -> None:
-        """Display VISP container images and their status."""
+    def get_base_freshness(self, check_remote: bool = True) -> list:
+        """Freshness verdict of every registry base behind a built visp image.
+
+        Imported here rather than at module scope: base_freshness imports this
+        module, so a top-level import would be circular.
+        """
+        from .base_freshness import get_base_freshness
+
+        return get_base_freshness(self.runner, check_remote=check_remote)
+
+    def display_visp_images(self, check_remote: bool = True) -> None:
+        """Display VISP container images, the freshness of their bases, and their status."""
+        from .base_freshness import format_base_line, format_summary, is_moved, needs_rebuild
+
         print(color("=== VISP Container Images ===", Colors.CYAN))
         print()
 
         found_images, expected_images = self.get_visp_images()
+        bases = self.get_base_freshness(check_remote)
+        # ./visp.py apply takes one service and refuses names without a runtime quadlet,
+        # so a remediation may only name a service the runtime actually runs: a quadlet
+        # service (mongo and matomo are pulled, never built), still running after .env
+        # has had its say. A service disabled here has no container to restart.
+        runtime = {svc.name for svc in get_runtime_services(get_config().project_dir)}
+        applyable = runtime & {b.service for b in bases}
+        stale_services = {b.service for b in bases if needs_rebuild(b)}
 
         # Print status for each expected image
         for image_name, build_name in sorted(expected_images.items()):
             if image_name in found_images:
                 info = found_images[image_name]
-                print(f"  {color('✓', Colors.GREEN)} {color(build_name, Colors.BLUE):25} {image_name}:{info['tag']}")
+                # A stale base is a reason to look, so the marker says so rather than smiling
+                marker = color("⚠", Colors.YELLOW) if build_name in stale_services else color("✓", Colors.GREEN)
+                print(f"  {marker} {color(build_name, Colors.BLUE):25} {image_name}:{info['tag']}")
                 print(f"      Size: {info['size']:12}  Created: {info['created']}")
+                for base in [b for b in bases if b.service == build_name]:
+                    print(format_base_line(base))
+                    if is_moved(base):
+                        # Only a confirmed move earns a build-and-apply command line.
+                        print(f"      → {base.remediation(applyable)}")
             else:
                 print(f"  {color('✗', Colors.RED)} {color(build_name, Colors.BLUE):25} {image_name} (not built)")
             print()
@@ -395,6 +428,9 @@ class ImageManager:
                 )
             )
             print("  ./visp.py build all")
+
+        for line in format_summary(bases, checked=check_remote, applyable=applyable):
+            print(line)
         print()
 
     def display_third_party_images(self, check_remote: bool = True) -> None:
@@ -574,3 +610,16 @@ class ImageManager:
             )
         else:
             print(color("✓ All images are pinned to specific versions", Colors.GREEN))
+        print()
+
+        from .base_freshness import fan_out
+
+        print(color("=== Base freshness fan-out (cached checks, no network) ===", Colors.CYAN))
+        checked_bases = self.get_base_freshness(check_remote=False)
+        if not any(b.check_source != "none" for b in checked_bases):
+            print("  no cached checks yet — run ./visp.py images to populate")
+            return
+        for ref, pairs in fan_out(checked_bases).items():
+            who = ", ".join(f"{service} ({role})" for service, role in pairs)
+            print(f"  {printable(ref)} → {who}")
+        print()
