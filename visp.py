@@ -16,7 +16,7 @@ Commands:
   reload      Reload systemd daemon (after quadlet changes)
   apply       Apply quadlet changes in one step (install --force + reload + restart)
   mode        Show or set deployment mode (dev/prod)
-  build       Build container images (supports --no-cache, --pull)
+  build       Build container images (supports --no-cache, --pull, --offline)
   images      List built VISP images, pulled third-party images (vs registry), networks
   exec        Execute command in container
   shell       Open shell in container
@@ -1018,7 +1018,12 @@ Examples:
     p_build.add_argument(
         "--pull",
         action="store_true",
-        help="Always pull the latest base images",
+        help="Always pull the latest base images (default: newer — pull only when the tag moved upstream)",
+    )
+    p_build.add_argument(
+        "--offline",
+        action="store_true",
+        help="Air-gapped build: never pull base images (overrides --pull)",
     )
     p_build.add_argument(
         "--list",

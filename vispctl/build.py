@@ -59,10 +59,13 @@ class BuildManager:
         self,
         ordered: list[str],
         no_cache: bool = False,
-        pull: bool = False,
+        pull_policy: str | None = None,
         build_config: str | None = None,
     ) -> dict[str, list[str]]:
         """Execute the build loop for an ordered list of services.
+
+        ``pull_policy`` is podman's ``--pull`` policy (missing | newer | always |
+        never); None keeps podman's own default for direct callers.
 
         Returns a dict with keys "success", "failed", "skipped" containing
         service name lists.
@@ -122,7 +125,7 @@ class BuildManager:
                         print()
                         continue
 
-                ok = self.build_image(svc_name, cfg, no_cache=no_cache, pull=pull)
+                ok = self.build_image(svc_name, cfg, no_cache=no_cache, pull_policy=pull_policy)
                 if ok:
                     results["success"].append(svc_name)
                 else:
@@ -240,7 +243,7 @@ class BuildManager:
         svc_name: str,
         config: Dict[str, Any],
         no_cache: bool = False,
-        pull: bool = False,
+        pull_policy: str | None = None,
     ) -> bool:
         context = config["context"]
         dockerfile = config.get("dockerfile", "Dockerfile")
@@ -250,8 +253,8 @@ class BuildManager:
         cmd = ["podman", "build"]
         if no_cache:
             cmd.append("--no-cache")
-        if pull:
-            cmd.append("--pull")
+        if pull_policy:
+            cmd.append(f"--pull={pull_policy}")
         if target:
             cmd.extend(["--target", target])
 
@@ -300,10 +303,54 @@ class BuildManager:
         try:
             print(color(f"Building {svc_name}...", Colors.BLUE))
             res = self.runner.run(cmd, check=False)
+            if res.returncode == 0:
+                self._record_base_lock(svc_name, config, pull_policy or "missing")
             return res.returncode == 0
         except Exception as e:
             print(color(f"✗ {svc_name} build error: {e}", Colors.RED))
             return False
+
+    def _record_base_lock(self, svc_name: str, config: Dict[str, Any], pull_policy: str) -> None:
+        """Record the base digests this build baked in, keyed by the built image id.
+
+        The record is what turns ``visp.py images`` base verdicts from heuristic
+        into exact. Record-not-raise: a lock problem warns, it never fails a
+        build that succeeded.
+        """
+        from .base_freshness import load_lock, local_image_state, record_build, save_lock, stage_bases
+
+        project_dir = get_config().project_dir
+        try:
+            rc, stdout, _ = self.runner.run_quiet(
+                ["podman", "image", "inspect", f"{config['image']}:latest", "--format", "{{.Id}}"]
+            )
+            built_image_id = stdout.strip()
+            if rc != 0 or not built_image_id:
+                return  # no id to key the record by: the bases simply stay unverified
+
+            local_bases, _ = local_image_state(self.runner)
+            checks = load_lock(project_dir).get("checks") or {}
+            bases: dict[str, dict] = {}
+            for ref, role, _stage in stage_bases(project_dir, config):
+                local = local_bases.get(ref) or {}
+                bases[ref] = {
+                    "stage": role,
+                    "digests": sorted(local.get("digests") or ()),
+                    "id": (local.get("id") or "")[:12],
+                }
+                if (checks.get(ref) or {}).get("remote_digest"):
+                    bases[ref]["remote_digest"] = checks[ref]["remote_digest"]
+
+            built_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            lock = record_build(project_dir, built_image_id, bases, built_at, pull_policy)
+            save_lock(project_dir, lock)
+        except Exception as e:  # noqa: BLE001 — a failed record costs a verdict, never a build
+            print(color(f"  ⚠ base lock not recorded for {svc_name}: {e}", Colors.YELLOW))
+            return
+
+        for ref, record in bases.items():
+            digest = next(iter(record["digests"]), record["id"]).rpartition(":")[2][:12]
+            print(f"  Base: {ref} {digest or 'not in the local store'}")
 
     def _add_git_labels(self, cmd: list[str], path: Path, label_prefix: str) -> None:
         """Add git commit and dirty labels for a path to the build command."""
@@ -683,6 +730,7 @@ def cmd_build(
 
     no_cache = getattr(args, "no_cache", False)
     pull = getattr(args, "pull", False)
+    offline = getattr(args, "offline", False)
     raw_services = getattr(args, "services", ["all"])
     build_config = getattr(args, "config", None)
     force = getattr(args, "force", False)
@@ -696,6 +744,9 @@ def cmd_build(
         requested = list(raw_services)
 
     ordered, auto_added = resolve_build_order(requested, build_configs, node_configs)
+
+    # An air-gapped build must never reach for a registry; --pull still forces a pull.
+    pull_policy = "never" if offline else "always" if pull else "newer"
 
     if auto_added:
         print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
@@ -728,14 +779,12 @@ def cmd_build(
     print(f"  Order: {' -> '.join(ordered)}")
     print()
 
+    print(f"  Base image pull policy: --pull={pull_policy} (newer = re-pull only when the tag moved upstream)")
     if no_cache:
-        print(color("Building with --no-cache (clean rebuild)", Colors.YELLOW))
-    if pull:
-        print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
-    if no_cache or pull:
-        print()
+        print(color("  Building with --no-cache (clean rebuild)", Colors.YELLOW))
+    print()
 
-    results = bm.run_builds(ordered, no_cache=no_cache, pull=pull, build_config=build_config)
+    results = bm.run_builds(ordered, no_cache=no_cache, pull_policy=pull_policy, build_config=build_config)
 
     print(color("=== Build Summary ===", Colors.CYAN))
     if results["success"]:

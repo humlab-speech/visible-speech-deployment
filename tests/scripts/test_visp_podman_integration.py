@@ -15,7 +15,7 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
         def check_version_drift(self, ordered, mode):
             return [], False
 
-        def run_builds(self, ordered, no_cache=False, pull=False, build_config=None):
+        def run_builds(self, ordered, no_cache=False, pull_policy=None, build_config=None):
             node_names = set(self.node_configs.keys())
             for svc_name in ordered:
                 if svc_name in node_names:
@@ -23,14 +23,14 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
                     self.build_node_project(svc_name, cfg, no_cache, build_config)
                 else:
                     cfg = self.build_configs[svc_name]
-                    self.build_image(svc_name, cfg, no_cache=no_cache, pull=pull)
+                    self.build_image(svc_name, cfg, no_cache=no_cache, pull_policy=pull_policy)
             return {"success": list(ordered), "failed": [], "skipped": []}
 
         def build_node_project(self, name, config, no_cache, build_config):
             called["node"] = (name, build_config)
             return True
 
-        def build_image(self, svc_name, config, no_cache=False, pull=False):
+        def build_image(self, svc_name, config, no_cache=False, pull_policy=None):
             called.setdefault("images", []).append(svc_name)
             return True
 
