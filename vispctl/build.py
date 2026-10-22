@@ -722,6 +722,16 @@ NODE_BUILD_CONFIGS: dict[str, dict] = {
 }
 
 
+def _podman_client_version(runner) -> str:
+    """podman's client version string, or '' when the probe says nothing.
+
+    '' is read as 'modern': an unparsable answer usually means podman is fine or
+    absent, and an absent podman fails the build loudly on its own.
+    """
+    rc, out, _ = runner.run_quiet(["podman", "version", "--format", "{{.Client.Version}}"])
+    return out.strip() if rc == 0 else ""
+
+
 def cmd_build(
     args,
     runner=None,
@@ -755,6 +765,21 @@ def cmd_build(
     # --offline wins over --pull: an air-gapped build must never reach for a registry.
     pull_policy = "never" if offline else "always" if pull else "newer"
 
+    # --pull=newer and --pull=never are newer podman flags, and README.md names 4.6 as the
+    # install floor: ask the client instead of handing it a value it cannot parse.
+    if pull_policy in ("newer", "never"):
+        version = _podman_client_version(runner)
+        major = version.removeprefix("v").split(".")[0]
+        if major.isdigit() and int(major) < 5:
+            print(
+                color(
+                    f"  podman {version} predates --pull={pull_policy}: falling back to podman's own pull"
+                    " behaviour — bases are not refreshed (docs/base-image-freshness/README.md)",
+                    Colors.YELLOW,
+                )
+            )
+            pull_policy = None
+
     if auto_added:
         print(color(f"Auto-adding dependencies: {', '.join(auto_added)}", Colors.YELLOW))
         print()
@@ -787,7 +812,8 @@ def cmd_build(
     print()
 
     note = " (newer = re-pull only when the tag moved upstream)" if pull_policy == "newer" else ""
-    print(f"  Base image pull policy: --pull={pull_policy}{note}")
+    policy = f"--pull={pull_policy}{note}" if pull_policy else "podman's own (no --pull token on this client)"
+    print(f"  Base image pull policy: {policy}")
     if no_cache:
         print(color("  Building with --no-cache (clean rebuild)", Colors.YELLOW))
     print()

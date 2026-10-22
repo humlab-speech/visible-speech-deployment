@@ -197,3 +197,39 @@ def test_only_the_newer_policy_needs_explaining(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
 
     assert "--pull=always" in out and "newer = re-pull" not in out
+
+
+class _VersionRunner(_Runner):
+    """The Phase-2 fake plus the one ``podman version`` probe an older client has to answer."""
+
+    def __init__(self, version: str | None):
+        super().__init__()
+        self.version = version
+
+    def run_quiet(self, cmd, **kwargs):
+        cmd = list(cmd)
+        if cmd[:3] == ["podman", "version", "--format"]:
+            return (0, self.version, "") if self.version else (1, "", "")
+        return super().run_quiet(cmd, **kwargs)
+
+
+@pytest.mark.parametrize(
+    ("version", "policy"),
+    [
+        ("4.6.0", None),  # the documented install floor: no flag it cannot parse
+        ("5.7.0", "newer"),
+        ("", "newer"),  # a probe that says nothing is read as modern: failing open
+    ],
+)
+def test_an_older_podman_is_not_offered_a_flag_it_cannot_parse(tmp_path, monkeypatch, version, policy):
+    cmd = _run_build(tmp_path, monkeypatch, _VersionRunner(version))
+
+    assert [c for c in cmd if c.startswith("--pull")] == ([] if policy is None else [f"--pull={policy}"])
+
+
+def test_the_pull_fallback_is_said_in_plain_words(tmp_path, monkeypatch, capsys):
+    _run_build(tmp_path, monkeypatch, _VersionRunner("4.6.0"))
+    out = capsys.readouterr().out
+
+    assert "predates --pull=newer" in out and "bases are not refreshed" in out
+    assert "podman's own" in out

@@ -63,6 +63,20 @@ quadlet `Image=` lines. FROM bases are out of scope there by construction.
 - **Later, only on demand**: `--pin-base`, `images --json`,
   `images rebuild-stale`, committed bases.lock, CVE lookup, npm ci.
 
+## Podman compatibility
+
+The build side assumes a podman client that understands `--pull=newer` (the
+default) and `--pull=never` (`--offline`). Both were measured on podman 5.7.0
+while `README.md` names 4.6 as the installation floor, so `cmd_build` asks
+`podman version` once and, on a client below 5, prints one yellow line and
+drops the `--pull` token instead of handing podman a value it cannot parse.
+That is the pre-feature behaviour: builds succeed, the base lock is still
+recorded, and the verdicts stay exact — but a rebuild does not refresh a moved
+base tag. On such a host, refresh it by hand (`podman rmi <base>` or
+`podman pull <base>`, then rebuild: podman's own `missing` policy then
+re-resolves the tag). `./visp.py images` verdicts are not affected: they read
+the local store and the registry API, not podman's build flags.
+
 ## Open questions for the implementer
 
 - Cache/lock file location: `.visp/base-lock.json` vs the quadlet install
