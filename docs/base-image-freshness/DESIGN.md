@@ -131,7 +131,7 @@ State machine (requirement (b) — three states plus honest degradation):
 | `moved` | `remote != recorded` | **NOT SECURE FRESH** — rebuild. Build recency is irrelevant by construction: this compares digests, never timestamps (requirement (a)) |
 | `heuristic` | no record (image built before stamping existed / built by hand), `remote != local` | the base **you have** is older than the tag; the baked-in content could be older still. Labelled as a guess |
 | `never-checked` | no record, base not present locally, no cached check | unknown; no error noise |
-| `offline (as of DATE)` | `RegistryError`, cached check exists | last known verdict + evidence age, no error (requirement (d)) |
+| `offline (as of DATE)` | the verdict comes from the cached check, whatever made us use it: `RegistryError`, or `--offline` on a cache of any age | last known verdict + evidence age, never a bare `fresh`/`heuristic` (requirement (d)) |
 | `immobile` | snapshot tag w/o registry movement possible in practice (`debian:trixie-20260406`) — decided by `tag_digest` == recorded *and* `_classify_tag(tag)=="pinned"` with a dated suffix | shown green, no recheck spam |
 
 Refused cheap alternative: `podman pull --dry-run`, `podman image exists`+timestamps —

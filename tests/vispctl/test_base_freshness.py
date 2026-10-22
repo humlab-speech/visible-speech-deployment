@@ -194,14 +194,7 @@ def test_state_heuristic_without_a_lock_record_either_way(bf):
     """No lock record means we only compare the local base copy — a guess, in both directions."""
     differs = _item(bf, check_source="live", local_digests=[DIG_A], remote_digest=DIG_MOVED)
     matches = _item(bf, check_source="live", local_digests=[DIG_MOVED], remote_digest=DIG_MOVED)
-    cached = _item(
-        bf,
-        check_source="cache",
-        local_digests=[DIG_A],
-        remote_digest=DIG_MOVED,
-        checked_at="2026-10-20T05:00:00+00:00",
-    )
-    assert (differs.state, matches.state, cached.state) == ("heuristic", "heuristic", "heuristic")
+    assert (differs.state, matches.state) == ("heuristic", "heuristic")
 
 
 def test_state_never_checked_beats_everything(bf):
@@ -224,6 +217,32 @@ def test_state_offline_when_a_cached_check_shares_the_place_of_a_failed_fetch(bf
         checked_at="2026-10-20T05:00:00+00:00",
     )
     assert item.state == "offline"
+    assert item._digest_verdict() == "moved"  # the evidence still backs the qualified wording
+
+
+def test_state_offline_for_any_cached_check_even_without_an_error(bf):
+    """A cached digest records the past: no bare fresh/heuristic from cache.
+
+    The case a stale cache and a deliberate ``--offline`` share — nothing was
+    contacted today, so the verdict is never presented unqualified.
+    """
+    cached_fresh = _item(
+        bf,
+        check_source="cache",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_A,
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+    cached_guess = _item(
+        bf,
+        check_source="cache",
+        local_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+
+    assert (cached_fresh.state, cached_guess.state) == ("offline", "offline")
+    assert (cached_fresh._digest_verdict(), cached_guess._digest_verdict()) == ("fresh", "heuristic")
 
 
 def test_remediation_is_build_then_apply_for_that_service(bf):
@@ -684,7 +703,8 @@ def test_get_base_freshness_cache_only_verdict_and_default_project_dir(bf, tmp_p
         build_configs={"apache": CFG_APACHE},
     )
 
-    assert [(i.service, i.state, i.check_source) for i in items] == [("apache", "immobile", "cache")]
+    assert [(i.service, i.state, i.check_source) for i in items] == [("apache", "offline", "cache")]
+    assert items[0]._digest_verdict() == "immobile"  # cached evidence still says immobile, just not "today"
     assert items[0].checked_at == "2026-10-20T05:00:00+00:00"
 
 
@@ -796,6 +816,33 @@ def test_format_base_line_fresh_and_moved(bf):
     assert "abcdef012345" in moved and "2abea424fedc" in moved  # first 12 hex of built-on vs now
 
 
+def test_format_base_line_qualifies_every_cached_verdict(bf):
+    """No cached line may describe the registry as it is today, in any verdict flavour."""
+    stale = "2026-10-20T05:00:00+00:00"
+    cached_guess = _plain(
+        bf.format_base_line(
+            _item(
+                bf,
+                check_source="cache",
+                local_digests=[DIG_A],
+                remote_digest=DIG_MOVED,
+                checked_at=stale,
+            )
+        )
+    )
+    cached_fresh = _plain(
+        bf.format_base_line(
+            _item(bf, check_source="cache", recorded_digests=[DIG_A], remote_digest=DIG_A, checked_at=stale)
+        )
+    )
+
+    assert "offline" in cached_guess and "2026-10-20" in cached_guess
+    assert "today" not in cached_guess and "✓" not in cached_guess
+    assert "local" in cached_guess.lower()  # still says it only compared the local copy
+    assert cached_fresh.startswith("  ") and "cached fresh as of 2026-10-20" in cached_fresh
+    assert "✓" not in cached_fresh  # an offline green is never printed as a confirmed green
+
+
 def test_format_base_line_degrades_honestly(bf):
     never = _plain(bf.format_base_line(_item(bf, ref="alpine:3.23", check_source="none")))
     assert never.startswith("  ") and "Base:" in never and "never" in never.lower() and "MOVED" not in never
@@ -836,6 +883,39 @@ def test_format_base_line_degrades_honestly(bf):
 
 def test_format_summary_empty_without_items(bf):
     assert bf.format_summary([], checked=True) == []
+
+
+def test_format_summary_offline_keeps_the_not_fresh_count(bf):
+    """The trap: cached (offline) verdicts must still count and still be named.
+
+    Filtering the not-fresh line on ``state`` instead of the digest verdict would
+    drop every cached row, so an air-gapped run would read as all-clear.
+    """
+    cached_move = _item(
+        bf,
+        service="artic",
+        ref="nginx:alpine",
+        check_source="cache",
+        recorded_digests=[DIG_A],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-20T05:00:00+00:00",
+    )
+    cached_guess = _item(
+        bf,
+        service="hs-wsr-client",
+        ref="httpd:2.4",
+        check_source="cache",
+        local_digests=["sha256:aaa111"],
+        remote_digest=DIG_MOVED,
+        checked_at="2026-10-19T05:00:00+00:00",
+    )
+
+    text = "\n".join(_plain(line) for line in bf.format_summary([cached_move, cached_guess], checked=False))
+
+    assert "2 of 2 images are NOT FRESH" in text
+    assert "./visp.py build artic hs-wsr-client" in text
+    assert "nginx:alpine" in text and "artic (runtime)" in text
+    assert "newest cached check 2026-10-20" in text  # the age of the evidence, not just "not checked"
 
 
 def test_format_summary_counts_names_remediation_and_fan_out(bf):
@@ -989,8 +1069,8 @@ def test_format_summary_names_the_registry_that_failed(bf):
     assert "check failed" not in plain
 
 
-def test_display_visp_images_offline_never_constructs_a_registry_client(bf, monkeypatch, tmp_path, capsys):
-    """Air-gapped operators run --offline: the display wiring itself must not reach the registry."""
+def _offline_display(bf, monkeypatch, tmp_path, capsys, cached_digest: str) -> str:
+    """Run the real ``--offline`` display for one built image whose only evidence is a cached check."""
     from vispctl import images as images_mod
 
     _write(tmp_path, "docker/wsrng/Dockerfile", f"FROM {NODE}\n")
@@ -998,7 +1078,7 @@ def test_display_visp_images_offline_never_constructs_a_registry_client(bf, monk
         bf,
         tmp_path,
         digests=[DIG_A],
-        checks={NODE: {"remote_digest": DIG_A, "checked_at": "2026-10-22T06:31:00+00:00"}},
+        checks={NODE: {"remote_digest": cached_digest, "checked_at": "2026-10-20T05:00:00+00:00"}},
     )
     monkeypatch.setattr(bf, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
     monkeypatch.setattr(bf, "BUILD_CONFIGS", {"wsrng-server": CFG_WSRNG})
@@ -1014,6 +1094,21 @@ def test_display_visp_images_offline_never_constructs_a_registry_client(bf, monk
     )
 
     images_mod.ImageManager(_PodmanImagesRunner([BUILT_WSRNG, LOCAL_NODE])).display_visp_images(check_remote=False)
+    return _plain(capsys.readouterr().out)
 
-    out = capsys.readouterr().out
-    assert "Base:" in out and NODE in out and "fresh" in out
+
+def test_display_visp_images_offline_never_constructs_a_registry_client(bf, monkeypatch, tmp_path, capsys):
+    """Air-gapped operators run --offline: no registry, and no unqualified green either."""
+    out = _offline_display(bf, monkeypatch, tmp_path, capsys, DIG_A)
+
+    assert "Base:" in out and NODE in out
+    assert "offline — cached fresh as of 2026-10-20" in out
+    assert "✓ fresh" not in out
+
+
+def test_display_visp_images_offline_still_flags_a_cached_move(bf, monkeypatch, tmp_path, capsys):
+    """The per-base rebuild hint must survive --offline, or an air-gapped run goes silent."""
+    out = _offline_display(bf, monkeypatch, tmp_path, capsys, DIG_MOVED)
+
+    assert "offline — cached MOVED as of 2026-10-20" in out
+    assert "→ ./visp.py build wsrng-server" in out

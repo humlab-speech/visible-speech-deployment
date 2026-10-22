@@ -228,10 +228,17 @@ class BaseFreshness:
 
     @property
     def state(self) -> str:
-        """Six-state verdict; the first match wins (silence never reads as safe)."""
+        """Six-state verdict; the first match wins (silence never reads as safe).
+
+        A cached check is *always* qualified as offline, whether or not a fetch was
+        attempted and failed: a cached digest records what the tag served on
+        ``checked_at``, never what it serves today — so a deliberate ``--offline``
+        run over a stale cache may not print a bare green ``fresh``. ``remote_error``
+        feeds only the yellow registry line of :func:`format_summary`.
+        """
         if self.check_source == "none":
             return NEVER_CHECKED
-        if self.check_source == "cache" and self.remote_error:
+        if self.check_source == "cache":
             return OFFLINE
         return self._digest_verdict()
 
@@ -339,6 +346,16 @@ def fan_out(items: list[BaseFreshness]) -> dict[str, list[tuple[str, str]]]:
     return {ref: sorted(pairs) for ref, pairs in out.items()}
 
 
+def needs_rebuild(b: BaseFreshness) -> bool:
+    """True when the digest evidence says a rebuild could change the image.
+
+    Deliberately reads the digest verdict, not ``state``: an offline (cached)
+    verdict must keep counting here, or an air-gapped run would quietly lose the
+    not-fresh count and read as all-clear.
+    """
+    return b._digest_verdict() in (MOVED, HEURISTIC)
+
+
 def format_base_line(b: BaseFreshness) -> str:
     """The indented one-line verdict printed under a built image."""
     head = f"  Base:  {b.ref}  {b.role}" + (f" ({b.stage_name})" if b.stage_name else "")
@@ -352,9 +369,14 @@ def format_base_line(b: BaseFreshness) -> str:
         as_of = f" (as of {b.checked_at[:10]})" if b.checked_at else ""
         return color(f"{head}  MOVED  built on {built_on}, tag now {b.remote_digest[:19]}{as_of}", Colors.YELLOW)
     if state == OFFLINE:
-        verdict = {FRESH: "fresh", MOVED: "MOVED", IMMOBILE: "immobile (dated snapshot)"}.get(
-            b._digest_verdict(), HEURISTIC
-        )
+        # Nothing was contacted to confirm any of this, so every cached verdict —
+        # the guess flavour included — carries the as-of date and no "today".
+        verdict = {
+            FRESH: "fresh",
+            MOVED: "MOVED",
+            IMMOBILE: "immobile (dated snapshot)",
+            HEURISTIC: f"{HEURISTIC} (compares the local base copy, not the baked-in content)",
+        }[b._digest_verdict()]
         as_of = b.checked_at[:10] if b.checked_at else "?"
         return color(f"{head}  offline — cached {verdict} as of {as_of}", Colors.YELLOW)
     if state == HEURISTIC:
@@ -377,7 +399,7 @@ def format_summary(items: list[BaseFreshness], *, checked: bool) -> list[str]:
         return []
 
     lines: list[str] = []
-    stale = [b for b in items if b.state in (MOVED, HEURISTIC)]
+    stale = [b for b in items if needs_rebuild(b)]
     if stale:
         lines.append(
             color(
@@ -411,7 +433,10 @@ def format_summary(items: list[BaseFreshness], *, checked: bool) -> list[str]:
     if checked and dates:
         lines.append(f"Registry last checked: {max(dates)[:19].replace('T', ' ')}")
     elif not failed:
-        lines.append("Registry not checked (--offline).")
+        # Cached verdicts are on screen above; say how old they are, not just that
+        # the registry was not contacted.
+        age = f" — newest cached check {max(dates)[:10]}" if dates else ""
+        lines.append(f"Registry not checked (--offline){age}.")
 
     lines.append(color("fresh means the registry digest matches, not that there are no CVEs.", Colors.DIM))
     return lines

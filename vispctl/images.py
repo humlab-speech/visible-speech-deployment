@@ -382,7 +382,7 @@ class ImageManager:
 
     def display_visp_images(self, check_remote: bool = True) -> None:
         """Display VISP container images, the freshness of their bases, and their status."""
-        from .base_freshness import HEURISTIC, MOVED, format_base_line, format_summary
+        from .base_freshness import format_base_line, format_summary, needs_rebuild
 
         print(color("=== VISP Container Images ===", Colors.CYAN))
         print()
@@ -398,7 +398,7 @@ class ImageManager:
                 print(f"      Size: {info['size']:12}  Created: {info['created']}")
                 for base in [b for b in bases if b.service == build_name]:
                     print(format_base_line(base))
-                    if base.state in (MOVED, HEURISTIC):
+                    if needs_rebuild(base):
                         print(f"      → {base.remediation}")
             else:
                 print(f"  {color('✗', Colors.RED)} {color(build_name, Colors.BLUE):25} {image_name} (not built)")
