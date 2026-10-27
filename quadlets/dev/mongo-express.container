@@ -12,7 +12,6 @@ Secret=visp_mongo_root_password,type=env,target=ME_CONFIG_MONGODB_ADMINPASSWORD
 Environment=ME_CONFIG_MONGODB_SERVER=mongo
 Environment=ME_CONFIG_BASICAUTH_USERNAME=mongo
 Secret=visp_mongo_express_password,type=env,target=ME_CONFIG_BASICAUTH_PASSWORD
-Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Security hardening
