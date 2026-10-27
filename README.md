@@ -136,12 +136,15 @@ See `./visp.py --help` for the full command reference.
    The app redirects to `/DS/Login` and then to `https://idp.BASE_DOMAIN/simplesaml/`.
    Default test users:
    ```
-   test1 / test1pass
-   test2 / test2pass
-   test3 / test3pass
+   test1 / test1pass   sys_admin
+   test2 / test2pass   user
+   test3 / test3pass   no access yet — use it to try invite codes
    ```
+   test1 and test2 are seeded by `mounts/mongo/initdb-dev/`, which mongo runs only
+   when it initializes an empty `mounts/mongo/data/`. On an older database, grant
+   access with `./visp.py users activate testuser1_at_visp_dot_local`.
 
-3. Grant user privileges:
+3. Grant user privileges (prod, or other accounts in dev):
    ```bash
     ./visp.py users list
     ./visp.py users set-system-role <username> sys_admin
