@@ -1126,7 +1126,13 @@ def print_next_steps(
                 "    e.g. with host nginx — see README.md → 'Local Dev Host Nginx'.",
             ]
         )
-        login = f"Sign in at https://{domain} (test users: test1 / test1pass), then make yourself an admin:"
+        steps.append(
+            [
+                f"Sign in at https://{domain} as test1 / test1pass (a sys_admin) or test2 / test2pass.",
+                "    Both are seeded when mongo initializes an empty database (mounts/mongo/initdb-dev/);",
+                "    on an older database: ./visp.py users activate testuser1_at_visp_dot_local",
+            ]
+        )
     else:
         steps.append(
             [
@@ -1134,14 +1140,13 @@ def print_next_steps(
                 "    — see README.md → 'Reverse Proxy (Production)'.",
             ]
         )
-        login = f"Sign in at https://{domain}, then make yourself an admin:"
-    steps.append(
-        [
-            login,
-            "    ./visp.py users list",
-            "    ./visp.py users set-system-role <username> sys_admin",
-        ]
-    )
+        steps.append(
+            [
+                f"Sign in at https://{domain}, then make yourself an admin:",
+                "    ./visp.py users list",
+                "    ./visp.py users set-system-role <username> sys_admin",
+            ]
+        )
 
     print()
     print(color("=== Next steps ===", Colors.CYAN))

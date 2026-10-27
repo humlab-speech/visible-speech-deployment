@@ -967,7 +967,11 @@ menu (**Invitation codes**), by that project's admins.
 ```bash
 ./visp.py users list
 ```
-Without one, nobody can create projects or reach the admin panel. The test user created
+Without one, nobody can create projects or reach the admin panel. In dev, a fresh
+database already has one: `mounts/mongo/initdb-dev/` (mounted by the dev mongo quadlet
+only, run by mongo only when `mounts/mongo/data/` is empty) seeds the local IdP's test1
+as `sys_admin` and test2 as `user`, both with `loginAllowed: true`; test3 is left
+unauthorized for invite-code testing. The test user created
 by `?login=<TEST_USER_LOGIN_KEY>` gets `loginAllowed: true` automatically but is a plain
 `user` — promote it explicitly.
 
