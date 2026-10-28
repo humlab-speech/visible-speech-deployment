@@ -525,13 +525,16 @@ def cmd_session_doctor(args):
 
 def cmd_build(args):
     cfg = get_config()
-    _cmd_build(
+    rc = _cmd_build(
         args,
         runner=cfg.runner,
         build_configs=cfg.build_configs,
         node_configs=cfg.node_configs,
         all_buildable=cfg.all_buildable,
     )
+    if rc:
+        # A failed image must not look green to 'visp.py build && ...' chains.
+        sys.exit(rc)
 
 
 def cmd_build_list(args):  # noqa: ARG001
