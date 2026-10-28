@@ -274,3 +274,20 @@ def test_get_third_party_images_offline_skips_registry(tmp_path, monkeypatch):
 
     assert len(images) == 3
     assert all(i.remote_digest is None and i.remote_error is None for i in images)
+
+
+def test_scan_base_images_finds_containerfiles(tmp_path, monkeypatch):
+    """Containerfile* counts too — whisperx's only base lives in one, and the
+    Dockerfile-only glob silently reported no bases for that image."""
+    from vispctl import images as images_mod
+
+    containerfile = tmp_path / "external" / "whispervault" / "container" / "Containerfile"
+    containerfile.parent.mkdir(parents=True)
+    containerfile.write_text("FROM python:3.12.11-slim AS base\nRUN pip install x\n")
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+
+    im = ImageManager(runner=None)
+    base = im.scan_base_images()
+
+    assert base["python:3.12.11-slim"] == [("external/whispervault/container/Containerfile", "base")]
