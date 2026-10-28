@@ -44,6 +44,51 @@ class RegistryError(Exception):
     """The registry could not be reached or gave an unusable answer."""
 
 
+# Docker Hub answers its 401 challenge with a token realm on its own auth
+# host, so the realm check needs one named delegate. It is honoured for
+# token realms only: a registry paginates on its own host, never here.
+_DOCKER_HUB_TOKEN_HOST = "auth.docker.io"
+
+
+def _bare_host(netloc: str) -> str:
+    """Lowercase hostname of a netloc (``[::1]:5000`` → ``::1``), port and
+    userinfo stripped, brackets removed. Empty for anything unparseable —
+    callers must treat empty as untrusted, never as a wildcard: cutting the
+    host at the first colon (an earlier draft) turned ``[::1]`` into ``""``
+    and made every trailing-dot realm a trusted subdomain of "nothing".
+    """
+    try:
+        host = urllib.parse.urlsplit(f"//{netloc}").hostname
+    except ValueError:
+        return ""
+    return (host or "").lower()
+
+
+def _port_is_sane(parts: "urllib.parse.SplitResult") -> bool:
+    """Reject netlocs like ``host:443:443`` where we and urllib would disagree on the port."""
+    try:
+        parts.port
+    except ValueError:
+        return False
+    return True
+
+
+def _host_is_self_or_subdomain(host: str, registry: str) -> bool:
+    """True when *host* is the registry itself or lives under it on a dot boundary.
+
+    Comparing whole suffixes (not last-two-labels, which made every tenant of a
+    shared provider one registry: ``evil.azurecr.io`` for ``mine.azurecr.io``,
+    any ``*.amazonaws.com`` for ECR, ``library.co.uk`` for ``evil.co.uk``):
+    a subdomain of the exact host we asked for shares that host's owner.
+    """
+    return host == registry or host.endswith("." + registry)
+
+
+def _netloc_is_clean(netloc: str) -> bool:
+    """Reject netlocs whose userinfo/backslash makes Python and curl disagree on the host."""
+    return bool(netloc) and "@" not in netloc and "\\" not in netloc
+
+
 @dataclass(frozen=True)
 class ImageRef:
     """A parsed image reference such as ``docker.io/library/matomo:5.8.0``."""
@@ -83,11 +128,19 @@ class RegistryClient:
     Bearer tokens are fetched on the first 401 and cached per repository.
     Uses HEAD for digests: on Docker Hub, HEAD requests do not count against
     the anonymous pull rate limit.
+
+    The default opener refuses redirects: urllib's stock behaviour would
+    follow a 302 to another host with the ``Authorization`` header still
+    attached, walking past every realm/Link host check below.
     """
 
-    def __init__(self, timeout: float = 15.0, opener: Callable = urllib.request.urlopen):
+    def __init__(self, timeout: float = 15.0, opener: Callable | None = None):
         self.timeout = timeout
-        self._open = opener
+        # An OpenerDirector is not callable; wire its public open() (which, unlike
+        # _open, attaches the timeout to the request the way handlers expect), and
+        # keep the real default reachable (unit tests that inject openers would
+        # otherwise never exercise the production path at all).
+        self._open = opener if opener is not None else _NO_REDIRECT_OPENER.open
         self._tokens: dict[tuple[str, str], str] = {}
 
     def list_tags(self, ref: ImageRef) -> list[str]:
@@ -123,7 +176,7 @@ class RegistryClient:
                 return self._open(urllib.request.Request(url, headers=hdrs, method=method), timeout=self.timeout)
             except urllib.error.HTTPError as e:
                 if e.code == 401 and attempt == 0 and key not in self._tokens:
-                    self._tokens[key] = self._fetch_token(e.headers.get("WWW-Authenticate", ""))
+                    self._tokens[key] = self._fetch_token(e.headers.get("WWW-Authenticate", ""), ref.registry)
                     continue
                 raise RegistryError(f"{ref.registry} answered HTTP {e.code} for {ref.repository}") from e
             except (urllib.error.URLError, OSError) as e:
@@ -131,34 +184,87 @@ class RegistryClient:
                 raise RegistryError(f"cannot reach {ref.registry}: {reason}") from e
         raise RegistryError(f"{ref.registry} refused anonymous access to {ref.repository}")
 
-    def _fetch_token(self, challenge: str) -> str:
+    def _fetch_token(self, challenge: str, registry: str) -> str:
         """Exchange a ``WWW-Authenticate: Bearer realm=…`` challenge for an anonymous token."""
         if not challenge.lower().startswith("bearer "):
-            raise RegistryError(f"unsupported registry auth challenge: {challenge or '(none)'}")
+            raise RegistryError(f"unsupported registry auth challenge: {ascii(challenge or '(none)')}")
         params = dict(re.findall(r'(\w+)="([^"]*)"', challenge))
         realm = params.pop("realm", None)
         if not realm:
-            raise RegistryError(f"registry auth challenge has no realm: {challenge}")
+            raise RegistryError(f"registry auth challenge has no realm: {ascii(challenge)}")
+        if not _realm_is_trusted(realm, registry):
+            raise RegistryError(f"refusing auth realm outside the registry {registry}: {ascii(realm)}")
         url = f"{realm}?{urllib.parse.urlencode(params)}"
         try:
             with self._open(urllib.request.Request(url), timeout=self.timeout) as resp:
                 body = json.load(resp)
         except (urllib.error.URLError, OSError, ValueError) as e:
-            raise RegistryError(f"could not get a registry token from {realm}: {e}") from e
+            raise RegistryError(f"could not get a registry token from {ascii(realm)}: {e}") from e
         token = body.get("token") or body.get("access_token")
         if not token:
-            raise RegistryError(f"no token in the answer from {realm}")
+            raise RegistryError(f"no token in the answer from {ascii(realm)}")
         return token
 
 
+def _realm_is_trusted(realm: str, registry: str) -> bool:
+    """Whether the 401 challenge may send us (with a token) to *realm*.
+
+    Rules: https only; no userinfo or backslash in the netloc; the host is the
+    registry, a dot-boundary subdomain of it, or the one named Docker Hub
+    delegate. A hostile realm is a way to deliver our Authorization header to
+    an attacker's server, so anything uncertain is a hard no.
+    """
+    try:
+        parts = urllib.parse.urlsplit(realm)
+    except ValueError:  # a broken bracket in a netloc must not raise out of the client
+        return False
+    if parts.scheme != "https" or not _netloc_is_clean(parts.netloc):
+        return False
+    if not _port_is_sane(parts) or any(ord(c) < 0x21 or ord(c) == 0x7F for c in realm):
+        return False  # control chars or an ambiguous port: parsers diverge, so refuse
+    host, reg = (parts.hostname or "").lower(), _bare_host(registry)
+    if not host or not reg:
+        return False
+    if _host_is_self_or_subdomain(host, reg):
+        return True
+    return reg == DOCKER_HUB_API and host == _DOCKER_HUB_TOKEN_HOST
+
+
 def _next_link(link: str | None, registry: str) -> str | None:
-    """Return the absolute URL of a ``Link: <…>; rel="next"`` header, if any."""
+    """Return the URL of a ``Link: <…>; rel="next"`` header, if it is this registry's own.
+
+    Pagination is served by the registry itself, so the token delegate is
+    deliberately not honoured here; off-registry links are dropped (the run
+    keeps the pages already fetched instead of handing tokens to a stranger).
+    """
     if not link:
         return None
     m = re.search(r'<([^>]+)>\s*;\s*rel="?next"?', link)
     if not m:
         return None
-    return urllib.parse.urljoin(f"https://{registry}/", m.group(1))
+    url = urllib.parse.urljoin(f"https://{registry}/", m.group(1))
+    try:
+        parts = urllib.parse.urlsplit(url)
+    except ValueError:
+        return None
+    if parts.scheme != "https" or not _netloc_is_clean(parts.netloc) or not _port_is_sane(parts):
+        return None
+    reg = _bare_host(registry)
+    if not reg or (parts.hostname or "").lower() != reg:
+        return None
+    return url
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Turn redirects into errors instead of following them (with headers attached)."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ARG002
+        raise urllib.error.HTTPError(req.full_url, code, f"redirect refused to {ascii(newurl)}", headers, fp)
+
+
+# Subclassing HTTPRedirectHandler keeps urllib from installing its stock
+# following handler alongside this one.
+_NO_REDIRECT_OPENER = urllib.request.build_opener(_NoRedirectHandler())
 
 
 # --- Version tags ---------------------------------------------------------

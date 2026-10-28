@@ -2,7 +2,7 @@
 
 import json
 
-from vispctl.images import ImageManager
+from vispctl.images import ImageManager, ThirdPartyImage
 from vispctl.registry import RegistryError
 from vispctl.service import Service
 
@@ -291,3 +291,17 @@ def test_scan_base_images_finds_containerfiles(tmp_path, monkeypatch):
     base = im.scan_base_images()
 
     assert base["python:3.12.11-slim"] == [("external/whispervault/container/Containerfile", "base")]
+
+
+def test_digest_match_is_exact_not_suffix():
+    """A last-two-chars matcher would call 'sha256:gold' a match for 'sha256:old'."""
+    img = ThirdPartyImage(
+        ref="docker.io/library/app:1",
+        services=["x"],
+        local_id="aaa111",
+        local_digests={"sha256:old"},
+        remote_digest="sha256:gold",
+    )
+    assert img.digest_matches is False
+    img.remote_digest = "sha256:old"
+    assert img.digest_matches is True
