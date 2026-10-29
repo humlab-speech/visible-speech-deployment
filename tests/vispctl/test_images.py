@@ -305,3 +305,20 @@ def test_digest_match_is_exact_not_suffix():
     assert img.digest_matches is False
     img.remote_digest = "sha256:old"
     assert img.digest_matches is True
+
+
+def test_digest_match_checks_every_local_digest_not_just_one():
+    """A pulled image stores index AND manifest digest; comparing against one
+    picks a winner by hash seed and reports a moved tag as current."""
+    img = ThirdPartyImage(
+        ref="docker.io/library/app:1",
+        services=["x"],
+        local_id="aaa111",
+        local_digests={"sha256:first", "sha256:second"},
+        remote_digest="sha256:second",
+    )
+    assert img.digest_matches is True
+    img.remote_digest = "sha256:first"
+    assert img.digest_matches is True
+    img.remote_digest = "sha256:third"
+    assert img.digest_matches is False

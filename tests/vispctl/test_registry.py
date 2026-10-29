@@ -219,6 +219,33 @@ def test_docker_hub_token_delegate_is_allowed():
     assert RegistryClient(opener=opener).list_tags(ref) == ["5.8.0"]
 
 
+def test_pagination_link_on_a_subdomain_of_the_registry_is_dropped():
+    """Pages come from the exact registry host; a subdomain Link passes a
+    loosened subdomain check and must still never be fetched."""
+
+    def opener(req, timeout=None):
+        url = req.full_url
+        if url.startswith("https://registry.example/token"):
+            return _Resp(json.dumps({"token": "T"}).encode())
+        if url.startswith("https://tok.registry.example/"):
+            raise AssertionError(f"client followed a subdomain pagination lure to {url}")
+        if req.get_header("Authorization") != "Bearer T":
+            raise urllib.error.HTTPError(
+                url,
+                401,
+                "Unauthorized",
+                {"WWW-Authenticate": 'Bearer realm="https://registry.example/token",service="s"'},
+                None,
+            )
+        return _Resp(
+            json.dumps({"tags": ["1.0"]}).encode(),
+            {"Link": '<https://tok.registry.example/v2/lib/app/tags/list?n=2>; rel="next"'},
+        )
+
+    ref = ImageRef("registry.example", "lib/app", "1.0")
+    assert RegistryClient(opener=opener).list_tags(ref) == ["1.0"]
+
+
 @pytest.mark.parametrize(
     ("registry", "realm"),
     [
