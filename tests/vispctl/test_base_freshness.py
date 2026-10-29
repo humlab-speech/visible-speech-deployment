@@ -131,7 +131,7 @@ def _statuses(st_map):
                     "local_digests": set(),
                     "remote_digest": None,
                     "error": err,
-                    "error_class": (spec + (None,))[2] if err else None,
+                    "error_class": (spec + (None, None))[2] if err else None,
                     "status": st,
                 }
                 for img, spec in st_map.items()
@@ -152,12 +152,15 @@ def test_stale_and_absent_get_pulled_current_does_not(monkeypatch):
     assert sorted(runner.pulled) == ["docker.io/library/a:1", "docker.io/library/c:1"]
 
 
-def test_unreachable_registry_warns_and_build_proceeds_green(monkeypatch, capsys):
+def test_unreachable_registry_is_a_transport_failure_not_a_green_light(monkeypatch, capsys):
+    """Transport class end-to-end: warn, pull nothing, never raise (the build proceeds)."""
     runner = _Runner({})
-    monkeypatch.setattr(images_mod, "ImageManager", _statuses({"a:1": ("unknown", "no route")}))
+    monkeypatch.setattr(images_mod, "ImageManager", _statuses({"a:1": ("unknown", "no route", "transport")}))
     build_mod.refresh_base_images(runner, {"octra": {"context": "./docker/octra"}}, ["octra"], client=object())
+    out = capsys.readouterr().out
     assert runner.pulled == []
-    assert "building from cached base" in capsys.readouterr().out
+    assert "registry not reachable" in out  # the transport wording, not the 'answered oddly' catch-all
+    assert "building from cached base" in out
 
 
 def test_failed_pull_warns_without_raising(monkeypatch, capsys):
@@ -235,9 +238,14 @@ def test_pull_names_are_fully_qualified(monkeypatch):
 def test_entry_shape_is_pinned_and_drives_refresh(scanned, monkeypatch):
     """refresh_base_images consumes real base_freshness entries verbatim.
 
-    A rename on either side of the dict contract must not ship green: the
-    key set is pinned, and the pull decision is driven by the real producer,
-    not by a hand-written fake entry.
+    The producer key set is pinned and the pull decision is driven by a
+    real clean entry; the class-key READ on errored entries is pinned by
+    test_consumer_reads_the_class_key_from_real_entries,
+    and the wording and streak placement by test_base_freshness_guards.
+    Originally this docstring claimed either-side renames die here alone —
+    a consumer-only error_class rename stayed green on it; the pull
+    decision here is driven by the real producer, not by a hand-written
+    fake entry.
     """
     real = ImageManager(runner=_Runner({}))  # nothing local -> absent
     monkeypatch.setattr(images_mod, "ImageManager", lambda *a, **k: real)
@@ -445,21 +453,33 @@ def test_error_class_maps_registry_exceptions():
     assert _error_class(RegistryError("x")) == "other"
 
 
-def test_real_exception_flows_to_auth_wording(monkeypatch, capsys):
-    """A 401 through the real _error_class path (not a faked class) prints credential wording."""
+def test_real_exception_flows_to_auth_wording(tmp_path, monkeypatch, capsys):
+    """A real 401 exception (not a faked class) reaches BOTH reporters as credential wording.
+
+    The bases swept have to come from a real scan, so the Dockerfile lives in a
+    tmp project dir — a claim that points at a nonexistent Dockerfile would
+    leave refresh_base_images with nothing to print and the assertions vacuous.
+    """
     from vispctl.registry import RegistryHTTPStatusError
 
-    runner = _Runner({})
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    dockerfile = tmp_path / "docker" / "x" / "Dockerfile"
+    dockerfile.parent.mkdir(parents=True)
+    dockerfile.write_text("FROM x:1.0\n")
 
     class Client:
         def tag_digest(self, ref):
             raise RegistryHTTPStatusError("registry.example.com answered HTTP 401 for repo", 401)
 
-    im = images_mod.ImageManager(runner)
-    st = im.base_freshness(Client())
-    build_mod.refresh_base_images(runner, {"x": {"context": ".", "dockerfile": "docker/x/Dockerfile"}}, ["x"], client=Client())
-    found = [e for e in st.values() if e["error_class"] == "auth"]
-    assert found, [e["error_class"] for e in st.values()]
+    runner = _Runner({})
+    st = images_mod.ImageManager(runner).base_freshness(Client())
+    assert [e["error_class"] for e in st.values()] == ["auth"], st
+
+    build_mod.refresh_base_images(runner, {"x": {"context": "./docker/x"}}, ["x"], client=Client())
+    out = capsys.readouterr().out
+    assert "needs credentials" in out, out  # the wording the name promises, on the refresh path too
+    assert "HTTP 401" in out, out  # the underlying reason is not swallowed
+    assert "not reachable" not in out and "REFUSED" not in out, out
 
 def test_two_transport_failures_stop_before_remaining_work(monkeypatch, capsys):
     """The stop is at TWO, and it protects the rest: a stale base after the
