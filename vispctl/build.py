@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import posixpath
 import shutil
 import subprocess
 from datetime import datetime, timezone
@@ -668,6 +669,117 @@ NODE_BUILD_CONFIGS: dict[str, dict] = {
 }
 
 
+def _pull_ref(image: str) -> str:
+    """Fully qualified name for 'podman pull'.
+
+    scan_base_images reports short names ('node:24.15.0'); podman resolves
+    those against a local match or unqualified-search-registries — a base that
+    is *absent* on a default host would fail short-name resolution and never
+    be refreshed. Qualifying is valid for every host, local or remote.
+    """
+    from .registry import DOCKER_HUB_API, ImageRef
+
+    ref = ImageRef.parse(image)
+    host = "docker.io" if ref.registry == DOCKER_HUB_API else ref.registry
+    tail = f"@{ref.digest}" if ref.digest else f":{ref.tag}"
+    return f"{host}/{ref.repository}{tail}"
+
+
+def _service_base_claims(build_configs, ordered):
+    """Exact Dockerfile paths the services in this build run own.
+
+    Membership by exact context+dockerfile path, never by directory prefix:
+    a context of '.' would otherwise claim every Dockerfile in the repo.
+    Normalisation handles artic's '../../docker/artic/Dockerfile' escaping
+    its own context (podman allows -f outside the build context).
+    """
+    claims = set()
+    for svc in ordered or []:
+        cfg = (build_configs or {}).get(svc) or {}
+        ctx, dockerfile = cfg.get("context", ""), cfg.get("dockerfile", "Dockerfile")
+        if ctx:
+            path = posixpath.normpath(posixpath.join(ctx, dockerfile)).removeprefix("./")
+            claims.add(path)
+    return claims
+
+
+def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=None):
+    """Pull mutable registry bases before building, unless already current.
+
+    podman's default pull policy is 'missing': a tag already in local storage
+    is never re-resolved, so a rebuild silently re-bakes yesterday's base even
+    though the publisher shipped a security fix under the same tag
+    ('--pull=newer' looks like the fix and is a no-op on podman 5.7 — measured:
+    no registry contact at all; replicated on 4.6.2 too). So we ask the registry
+    for the digest directly (HEAD, quota-friendly) and pull only when the tag
+    moved or the base is missing, and only for Dockerfiles the services in this
+    run actually own (see _service_base_claims).
+
+    Registry failures sort into four classes with different meanings:
+    transport (never answered — after two in a row we stop checking the rest,
+    since the network is clearly down and every further probe is the same
+    question), gone (404), auth (401/403, needs credentials), and refused
+    (our token-realm host-trust guard stopped an auth walk — a security
+    event: the registry aimed our token elsewhere; loud, never worded as an
+    outage; an off-registry pagination link is dropped inside the client and
+    is not reported here). Answered questions do not stop the sweep; only
+    consecutive transport failures do. Air-gapped operation stays possible,
+    and the build exit code keeps reflecting build results only.
+    """
+    if no_pull:
+        print(color("  Bases: not refreshed (--no-pull)", Colors.YELLOW))
+        return
+
+    claims = _service_base_claims(build_configs, ordered)
+    if not claims:
+        return  # node-only build: no registry base is at stake, no registry contact
+
+    from .images import ImageManager
+    from .registry import RegistryClient
+
+    statuses = ImageManager(runner).base_freshness(client if client is not None else RegistryClient())
+    transport_streak = 0
+    for image, st in sorted(statuses.items()):
+        if not any(f in claims for f, _stage in st["files"]):
+            continue  # base belongs to a Dockerfile outside this build run
+        if st["error"]:
+            kind = st.get("error_class") or "other"
+            if kind == "refused":
+                print(color(f"  ✖ {image}: host-trust check REFUSED ({st['error']}) — base NOT refreshed, investigate", Colors.RED))
+                transport_streak = 0  # answered (and a security event to chase, not an outage)
+            elif kind == "gone":
+                print(color(f"  ⚠ {image}: tag not at the registry ({st['error']}) — building from cached base", Colors.YELLOW))
+                transport_streak = 0
+            elif kind == "auth":
+                print(color(f"  ⚠ {image}: registry needs credentials ({st['error']}) — base NOT refreshed", Colors.YELLOW))
+                transport_streak = 0
+            elif kind == "skipped":
+                print(color(f"  ○ {image}: {st['error']} — base NOT refreshed", Colors.YELLOW))
+            elif kind == "transport":
+                print(color(f"  ⚠ {image}: registry not reachable ({st['error']}) — building from cached base", Colors.YELLOW))
+                transport_streak += 1
+                if transport_streak >= 2:
+                    print(color("  ⚠ two consecutive registry transport failures — skipping the remaining base checks (--no-pull to silence)", Colors.YELLOW))
+                    break
+            else:
+                print(color(f"  ⚠ {image}: registry answered oddly ({st['error']}) — building from cached base", Colors.YELLOW))
+                transport_streak = 0
+            continue
+        transport_streak = 0  # an answered question (current/stale/absent) ends any outage run
+        if st["status"] not in ("stale", "absent"):
+            continue
+        rc, _, err = runner.run_quiet(["podman", "pull", _pull_ref(image)])
+        if rc == 0:
+            print(color(f"  ↻ refreshed base {image}", Colors.GREEN))
+        else:
+            print(
+                color(
+                    f"  ⚠ could not pull {image} ({err.strip()[:120]}) — building from cached base",
+                    Colors.YELLOW,
+                )
+            )
+
+
 def cmd_build(
     args,
     runner=None,
@@ -734,6 +846,8 @@ def cmd_build(
         print(color("Building with --pull (fetch latest base images)", Colors.YELLOW))
     if no_cache or pull:
         print()
+
+    refresh_base_images(runner, build_configs, ordered, no_pull=getattr(args, "no_pull", False))
 
     results = bm.run_builds(ordered, no_cache=no_cache, pull=pull, build_config=build_config)
 

@@ -44,6 +44,21 @@ class RegistryError(Exception):
     """The registry could not be reached or gave an unusable answer."""
 
 
+class RegistryTransportError(RegistryError):
+    """The registry never answered — the only failure the base-refresh fail-fast counts."""
+
+
+class RegistryHTTPStatusError(RegistryError):
+    """The registry answered with an unexpected status; ``code`` carries it."""
+
+    def __init__(self, message: str, code: int) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+class RegistryTrustError(RegistryError):
+    """The registry pointed auth at another host — a security event, not an outage."""
+
 # Docker Hub answers its 401 challenge with a token realm on its own auth
 # host, so the realm check needs one named delegate. It is honoured for
 # token realms only: a registry paginates on its own host, never here.
@@ -178,11 +193,15 @@ class RegistryClient:
                 if e.code == 401 and attempt == 0 and key not in self._tokens:
                     self._tokens[key] = self._fetch_token(e.headers.get("WWW-Authenticate", ""), ref.registry)
                     continue
-                raise RegistryError(f"{ref.registry} answered HTTP {e.code} for {ref.repository}") from e
+                raise RegistryHTTPStatusError(
+                    f"{ref.registry} answered HTTP {e.code} for {ref.repository}", code=e.code
+                ) from e
             except (urllib.error.URLError, OSError) as e:
                 reason = getattr(e, "reason", e)
-                raise RegistryError(f"cannot reach {ref.registry}: {reason}") from e
-        raise RegistryError(f"{ref.registry} refused anonymous access to {ref.repository}")
+                raise RegistryTransportError(f"cannot reach {ref.registry}: {reason}") from e
+        raise RegistryHTTPStatusError(
+            f"{ref.registry} refused anonymous access to {ref.repository}", code=401
+        )
 
     def _fetch_token(self, challenge: str, registry: str) -> str:
         """Exchange a ``WWW-Authenticate: Bearer realm=…`` challenge for an anonymous token."""
@@ -193,7 +212,7 @@ class RegistryClient:
         if not realm:
             raise RegistryError(f"registry auth challenge has no realm: {ascii(challenge)}")
         if not _realm_is_trusted(realm, registry):
-            raise RegistryError(f"refusing auth realm outside the registry {registry}: {ascii(realm)}")
+            raise RegistryTrustError(f"refusing auth realm outside the registry {registry}: {ascii(realm)}")
         url = f"{realm}?{urllib.parse.urlencode(params)}"
         try:
             with self._open(urllib.request.Request(url), timeout=self.timeout) as resp:
