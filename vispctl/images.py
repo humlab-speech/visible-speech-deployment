@@ -299,8 +299,14 @@ class ImageManager:
         base_dir = get_config().project_dir
         dockerfiles = []
 
-        # Search in docker/ and external/
-        for pattern in ["docker/**/Dockerfile*", "external/**/Dockerfile*"]:
+        # Search in docker/ and external/. Containerfile* too: whisperx's only
+        # base lives in external/WhisperVault/container/Containerfile.
+        for pattern in [
+            "docker/**/Dockerfile*",
+            "external/**/Dockerfile*",
+            "docker/**/Containerfile*",
+            "external/**/Containerfile*",
+        ]:
             dockerfiles.extend(base_dir.glob(pattern))
 
         # Exclude ARCHIVE and node_modules
