@@ -319,3 +319,29 @@ def test_display_skipped_marker_keeps_its_own_wording(tmp_path, monkeypatch, cap
     skipped_lines = [ln for ln in out.splitlines() if "not checked (two unreachable" in ln]
     assert skipped_lines, out
     assert not any(word in ln for ln in skipped_lines for word in forbidden), skipped_lines
+
+
+def test_two_refusals_do_not_stop_the_probe_sweep(tmp_path, monkeypatch):
+    """Refusals are answered questions: the sweep keeps probing and nothing is skipped."""
+    from vispctl.registry import RegistryTrustError
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    (tmp_path / "docker" / "x").mkdir(parents=True)
+    (tmp_path / "docker" / "x" / "Dockerfile").write_text(
+        "FROM reg.example/a:1\nFROM reg.example/b:1\nFROM reg.example/c:1\n"
+    )
+
+    calls = []
+
+    class Client:
+        def tag_digest(self, ref):
+            calls.append(ref.repository)
+            if ref.repository in ("a", "b"):
+                raise RegistryTrustError("token realm escapes the registry host")
+            return "sha256:cccc"
+
+    st = images_mod.ImageManager(_Runner({})).base_freshness(Client())
+    assert len(calls) == 3  # nothing skipped behind the refusals
+    assert st["reg.example/a:1"]["error_class"] == "refused"
+    assert st["reg.example/b:1"]["error_class"] == "refused"
+    assert st["reg.example/c:1"]["error_class"] is None  # answered, not 'skipped'
