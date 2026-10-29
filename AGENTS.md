@@ -488,6 +488,7 @@ whenever images, quadlets, or service names change.
 ./visp.py images                 # built images + pulled third-party images vs registry
                                  # (same digest? newer minor/major tag?); --offline skips the registry
 ./visp.py images base            # per-Dockerfile base: local vs registry digest (stale = rebuilt upstream)
+./visp.py images base --offline    # same report shape with zero registry contact: every base says unknown
 ./visp.py images update matomo   # pick a newer tag (or re-pull a rebuilt one) → quadlets, pull, restart
 ./visp.py restart <service>
 ./visp.py logs <service> -f
@@ -1084,7 +1085,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
-| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (`./visp.py build` now refreshes mutable bases before building; `--no-cache` still needed for the other layers). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (`./visp.py build`'s base refresh cannot help this row — a dated tag never moves, so the check always answers 'current'; `--no-cache` is what re-runs `apt-get upgrade`, and a newer dated tag is what changes the base itself). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `docker/tratt/Dockerfile` | `node:24.15.0` | pinned by version; tag content is mutable ⚠ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `docker/tratt/Dockerfile` | `httpd:2.4.67` | mutable content ⚠ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
@@ -1106,9 +1107,12 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 official images under the same tag (security fixes land in `node:24.16.0-alpine3.22`
 without the string changing). Two commands make that visible and handled:
 `./visp.py images base` reports local-vs-registry digest per base, and
-`./visp.py build` pulls any base whose tag moved upstream unless `--no-pull`
-is set. Podman's own `--pull=newer` does nothing on 5.7 (measured: no registry
-contact), so the check lives in visp.py.
+`./visp.py build` refreshes the bases whose tag moved upstream before
+building — for the Dockerfiles the services in that run build, and only as
+far as the registry answers (a 401/404/403 or a host-trust refusal leaves the
+base alone, and two consecutive transport failures end the sweep early; the
+lines it prints say which happened). Podman's own `--pull=newer` does nothing on 5.7 (measured: no registry
+contact), so the check lives in visp.py. Add `--offline` to the first command to see the report shape with zero registry contact: every base in the report then reads **unknown (registry not consulted)** — an honest unknown, never a green light. `--no-pull` skips the whole base phase of a build — no digest check, no pull, one line saying the bases were not refreshed.
 
 ### Third-party (pulled) images
 
