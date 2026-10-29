@@ -317,8 +317,15 @@ def _serve(handler_cls):
 import http.server  # noqa: E402
 
 
-def test_default_opener_is_callable_and_never_follows_redirects():
-    """The default opener is used for real here: 200 works, 302 raises, the target is never touched."""
+def test_default_opener_is_callable_and_never_follows_redirects(monkeypatch):
+    """The default opener is used for real here: 200 works, 302 raises, the target is never touched.
+
+    no_proxy keeps the loopback servers out of a configured HTTP_PROXY
+    (urllib proxies 127.0.0.1 by default); the opener itself stays the
+    production default, which is the point of the test.
+    """
+    monkeypatch.setenv("no_proxy", "127.0.0.1,localhost")
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
 
     class Target(http.server.BaseHTTPRequestHandler):
         hits = 0
