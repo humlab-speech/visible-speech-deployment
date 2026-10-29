@@ -674,12 +674,12 @@ def cmd_build(
     build_configs=None,
     node_configs=None,
     all_buildable: list[str] | None = None,
-) -> None:
-    """Build container images and node projects."""
+) -> int:
+    """Build container images and node projects. Returns 1 if any build failed."""
 
     if getattr(args, "list", False):
         cmd_build_list(args, build_configs=build_configs, node_configs=node_configs)
-        return
+        return 0
 
     no_cache = getattr(args, "no_cache", False)
     pull = getattr(args, "pull", False)
@@ -720,7 +720,7 @@ def cmd_build(
                 print("   1. Run: ./visp.py deploy update")
                 print("   2. Use --force to override (not recommended)")
                 print()
-                return
+                return 1
             print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
             print()
 
@@ -771,6 +771,8 @@ def cmd_build(
                 Colors.YELLOW,
             )
         )
+
+    return 1 if results["failed"] else 0
 
 
 def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa: ARG001
