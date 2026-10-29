@@ -267,3 +267,55 @@ def test_consumer_reads_the_class_key_from_real_entries(tmp_path, monkeypatch, c
     out = capsys.readouterr().out
     assert "needs credentials" in out, out
     assert "answered oddly" not in out, out
+
+
+def test_an_answer_between_two_blips_does_not_stop_the_probe_sweep(tmp_path, monkeypatch):
+    """base_freshness' own reset: blip, answered, blip -> the next base is still asked."""
+    from vispctl.registry import RegistryTransportError
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    (tmp_path / "docker" / "x").mkdir(parents=True)
+    (tmp_path / "docker" / "x" / "Dockerfile").write_text(
+        "FROM reg.example/a:1\nFROM reg.example/b:1\nFROM reg.example/c:1\nFROM reg.example/d:1\n"
+    )
+
+    calls = []
+
+    class Client:
+        def tag_digest(self, ref):
+            calls.append(ref.repository)
+            if ref.repository in ("a", "c"):
+                raise RegistryTransportError("blip")
+            return "sha256:aaaa"
+
+    st = images_mod.ImageManager(_Runner({})).base_freshness(Client())
+    assert calls == ["a", "b", "c", "d"]
+    assert st["reg.example/d:1"]["error_class"] is None  # answered, not skipped
+
+
+def test_display_skipped_marker_keeps_its_own_wording(tmp_path, monkeypatch, capsys):
+    """The not-checked marker must not borrow any other class's sentence."""
+
+    forbidden = ("not reachable", "credentials", "REFUSED", "not at the registry", "answered oddly")
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    (tmp_path / "docker" / "x").mkdir(parents=True)
+    (tmp_path / "docker" / "x" / "Dockerfile").write_text(
+        "FROM reg.example/a:1\nFROM reg.example/b:1\nFROM reg.example/c:1\n"
+    )
+
+    class Client:
+        def __init__(self):
+            self.n = 0
+
+        def tag_digest(self, ref):
+            from vispctl.registry import RegistryTransportError
+
+            self.n += 1
+            raise RegistryTransportError("no route to host")
+
+    monkeypatch.setattr(images_mod, "RegistryClient", lambda *a, **k: Client())
+    images_mod.ImageManager(_Runner({})).display_base_images(check_remote=True)
+    out = capsys.readouterr().out
+    skipped_lines = [ln for ln in out.splitlines() if "not checked (two unreachable" in ln]
+    assert skipped_lines, out
+    assert not any(word in ln for ln in skipped_lines for word in forbidden), skipped_lines
