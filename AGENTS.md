@@ -487,6 +487,7 @@ whenever images, quadlets, or service names change.
 ./visp.py status                 # service status + image list
 ./visp.py images                 # built images + pulled third-party images vs registry
                                  # (same digest? newer minor/major tag?); --offline skips the registry
+./visp.py images base            # per-Dockerfile base: local vs registry digest (stale = rebuilt upstream)
 ./visp.py images update matomo   # pick a newer tag (or re-pull a rebuilt one) → quadlets, pull, restart
 ./visp.py restart <service>
 ./visp.py logs <service> -f
@@ -1072,23 +1073,42 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 > **Versions confirmed current as of 2026-05-13.** Docker Hub pages to check for updates
 > are linked in the "Where to check" column.
 
+> **Pinned string vs pinned content.** Dated Debian tags (trixie-YYYYMMDD) are
+> content-pinned: publishers ship fixes as a NEW dated tag and never rebuild the
+> old one, so the ✅ there is real. Version/minor/patch tags on httpd, alpine and
+> python are NOT: publishers rebuild them in place under the same name (measured:
+> alpine 3.23's digest moved within days), so 'pinned' there describes the string,
+> not the bytes — those rows are mutable content ⚠. `./visp.py images base`
+> reports what the registry serves today under each tag, and `./visp.py build`
+> refreshes mutable bases before building.
+
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
-| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (a cached build fetches nothing). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `docker/tratt/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
-| `docker/tratt/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
+| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (`./visp.py build` now refreshes mutable bases before building; `--no-cache` still needed for the other layers). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `docker/tratt/Dockerfile` | `node:24.15.0` | pinned by version; tag content is mutable ⚠ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `docker/tratt/Dockerfile` | `httpd:2.4.67` | mutable content ⚠ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
-| `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | fully pinned ✅ | Dev image only — not deployed |
+| `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | pinned by version; tag content is mutable ⚠ | Dev image only — not deployed |
 | `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
-| `docker/session-proxy/Dockerfile` | `alpine:3.23` | minor pinned ✅ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
+| `docker/session-proxy/Dockerfile` | `alpine:3.23` | mutable content ⚠ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
 | `docker/whisper/Dockerfile` | `debian:bookworm-20260406-slim` | date-pinned | ⚠️ This Dockerfile is **not used** — superseded by WhisperVault |
-| `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | patch pinned ✅ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
-| `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | fully pinned ✅ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
+| `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | mutable content ⚠ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
+| `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | pinned by version; tag content is mutable ⚠ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
 | `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | fully pinned ✅ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
-| `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | fully pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
-| `external/wsrng-server/Dockerfile` | `node:24.16.0-alpine3.22` | fully pinned ✅ | Node 24 = Active LTS (moved off EOL Node 20). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+| `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | pinned by version; tag content is mutable ⚠ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | node tag content is mutable ⚠; debian base date-pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
+| `external/wsrng-server/Dockerfile` | `node:24.16.0-alpine3.22` | pinned by version; tag content is mutable ⚠ | Node 24 = Active LTS (moved off EOL Node 20). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
+
+### Mutable tags: what ⚠ means here
+
+"Pinned by version" fixes the *tag*, not its *content*: publishers rebuild
+official images under the same tag (security fixes land in `node:24.16.0-alpine3.22`
+without the string changing). Two commands make that visible and handled:
+`./visp.py images base` reports local-vs-registry digest per base, and
+`./visp.py build` pulls any base whose tag moved upstream unless `--no-pull`
+is set. Podman's own `--pull=newer` does nothing on 5.7 (measured: no registry
+contact), so the check lives in visp.py.
 
 ### Third-party (pulled) images
 
@@ -1120,9 +1140,11 @@ it prints. Matomo still needs `console core:update` afterwards (also printed).
 2. **External repo Dockerfiles** (in `external/`): file a PR in the upstream repo
    (`humlab-speech/<repo>`). After the PR is merged, run `./visp.py deploy update`
    then rebuild.
-3. **Version check frequency**: check Docker Hub once a month, or whenever a CVE advisory
-   is announced that affects a dependency in the image (e.g. libssl, libexpat, curl).
-   Kernel CVEs can be ignored — containers share the host kernel.
+3. **Version check frequency**: `./visp.py images base` and `./visp.py build` catch
+   rebuilt tags automatically; check Docker Hub monthly for NEW version tags, or
+   whenever a CVE advisory is announced that affects a dependency in the image
+   (e.g. libssl, libexpat, curl). Kernel CVEs can be ignored — containers share the
+   host kernel.
 
 ### Debian release notes
 
