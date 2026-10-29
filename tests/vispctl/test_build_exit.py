@@ -38,7 +38,9 @@ def _run_build(monkeypatch, result):
     runner = _FakeRunner()
     monkeypatch.setattr(build_mod, "BuildManager", _fake_bm(result))
     monkeypatch.setattr(build_mod, "Runner", lambda: runner)
-    args = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True)
+    args = types.SimpleNamespace(
+        services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True, no_pull=True
+    )
     return build_mod.cmd_build(
         args,
         runner=runner,
@@ -94,7 +96,9 @@ def test_blocked_build_before_starting_exits_nonzero(monkeypatch):
 
     monkeypatch.setattr(build_mod, "BuildManager", BM)
     monkeypatch.setattr(build_mod, "Runner", lambda: _FakeRunner())
-    args = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=False)
+    args = types.SimpleNamespace(
+        services=["apache"], list=False, no_cache=False, pull=False, config=None, force=False, no_pull=True
+    )
     rc = build_mod.cmd_build(
         args,
         runner=_FakeRunner(),
