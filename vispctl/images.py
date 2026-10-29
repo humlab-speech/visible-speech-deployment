@@ -13,9 +13,76 @@ from typing import Any, Dict, List, Tuple
 from .config import get_config
 from .placeholder import placeholder_template
 from .quadlets import get_current_mode
-from .registry import ImageRef, RegistryClient, RegistryError, is_version_tag, newer_versions
+from .registry import (
+    ImageRef,
+    RegistryClient,
+    RegistryError,
+    RegistryHTTPStatusError,
+    RegistryTransportError,
+    RegistryTrustError,
+    is_version_tag,
+    newer_versions,
+)
 from .runner import Colors, Runner, color
 from .service import Service, container_service_names
+
+
+def _error_class(error: Exception) -> str:
+    """Four failure classes the base-refresh reporting must tell apart.
+
+    transport: never answered (counts toward the fail-fast streak);
+    refused: our own host-trust guard stopped a token realm — a security
+    event, reported loudly (an off-registry pagination link is dropped
+    silently inside the client and never reaches this reporting); gone and
+    auth: answered questions (404, 401/403); other: any other protocol
+    oddity, also answered.
+    """
+    if isinstance(error, RegistryTransportError):
+        return "transport"
+    if isinstance(error, RegistryTrustError):
+        return "refused"
+    if isinstance(error, RegistryHTTPStatusError):
+        if error.code == 404:
+            return "gone"
+        if error.code in (401, 403):
+            return "auth"
+    return "other"
+
+
+def _print_base_freshness(st: Dict[str, Any]) -> None:
+    """One indented line: does the local base match what the registry serves?
+
+    Separate from _classify_tag on purpose: that one asks whether the tag
+    *shape* is fixed; this asks whether the *content* we hold is what the
+    registry serves under it today (official images are rebuilt in place).
+    """
+    if st["status"] == "current":
+        print(f"     {color('current — registry serves the digest we hold', Colors.GREEN)}")
+    elif st["status"] == "stale":
+        short_local = next(iter(sorted(st["local_digests"])), "?")[:19]
+        print(
+            color(
+                f"⚠ STALE — registry now serves {str(st['remote_digest'])[:19]}, local is {short_local}"
+                " — the cached base is not what that tag points at today",
+                Colors.YELLOW,
+            )
+        )
+    elif st["status"] == "absent":
+        print(f"     {color('not local yet (a build will pull it)', Colors.CYAN)}")
+    elif st["status"] == "unknown" and st["error"]:
+        kind = st.get("error_class") or "other"
+        if kind == "refused":
+            print(color(f"     check REFUSED by the registry host-trust guard ({st['error']}) — investigate, content NOT verified", Colors.RED))
+        elif kind == "gone":
+            print(color(f"     tag not at the registry ({st['error']}) — content NOT verified", Colors.YELLOW))
+        elif kind == "auth":
+            print(color(f"     registry needs credentials ({st['error']}) — content NOT verified", Colors.YELLOW))
+        elif kind == "transport":
+            print(color(f"     registry not reachable ({st['error']}) — content NOT verified", Colors.YELLOW))
+        else:
+            print(color(f"     registry answered oddly ({st['error']}) — content NOT verified", Colors.YELLOW))
+    elif st["status"] == "unknown":
+        print(f"     {color('unknown (registry not consulted: --offline)', Colors.CYAN)}")
 
 
 def _classify_tag(tag: str) -> str:
@@ -527,8 +594,58 @@ class ImageManager:
         for container, nets in container_networks.items():
             print(f"  {container}: {nets}")
 
-    def display_base_images(self) -> None:
-        """Display base images from Dockerfiles with pinning status."""
+    def base_freshness(self, client=None) -> Dict[str, Dict[str, Any]]:
+        """Per registry base tag: what we hold locally versus what the registry serves now.
+
+        Statuses: ``pinned`` (a @sha256 ref — cannot drift), ``current``
+        (registry digest is among the local ones), ``stale`` (registry serves a
+        different digest for the same tag: a security rebuild happened and we
+        do not have it), ``absent`` (not local yet), ``unknown`` (registry not
+        consulted or unreachable). Bases on localhost never talk to a registry
+        and are omitted. Comparison is set membership over RepoDigests: a
+        pulled image stores both the index and the manifest digest there.
+        """
+        out: Dict[str, Dict[str, Any]] = {}
+        for image, files in self.scan_base_images().items():
+            ref = ImageRef.parse(image)
+            if "." not in ref.registry:
+                continue  # localhost/other local builds
+            entry: Dict[str, Any] = {"files": files, "local_digests": set(), "remote_digest": None, "error": None, "error_class": None}
+            if ref.digest is not None:
+                entry["status"] = "pinned"
+                out[image] = entry
+                continue
+            rc, stdout, _ = self.runner.run_quiet(
+                ["podman", "image", "inspect", "--format", "{{json .RepoDigests}}", image]
+            )
+            present = rc == 0 and bool(stdout.strip())
+            if present:
+                try:
+                    entry["local_digests"] = {d.partition("@")[2] for d in json.loads(stdout)}
+                except ValueError:
+                    present = False
+            if client is not None:
+                try:
+                    entry["remote_digest"] = client.tag_digest(ref)
+                except RegistryError as e:
+                    entry["status"] = "unknown"
+                    entry["error"] = str(e)
+                    entry["error_class"] = _error_class(e)
+                    out[image] = entry
+                    continue
+            if entry["remote_digest"] is None:
+                entry["status"] = "unknown"
+            elif not present:
+                entry["status"] = "absent"
+            elif entry["remote_digest"] in entry["local_digests"]:
+                entry["status"] = "current"
+            else:
+                entry["status"] = "stale"
+            out[image] = entry
+        return out
+
+    def display_base_images(self, check_remote: bool = False) -> None:
+        """Display base images from Dockerfiles with pinning and freshness status."""
         print(color("=== Base Images in Dockerfiles ===", Colors.CYAN))
         print()
 
@@ -537,6 +654,8 @@ class ImageManager:
         if not base_images:
             print(color("No base images found", Colors.YELLOW))
             return
+
+        freshness = self.base_freshness(RegistryClient() if check_remote else None)
 
         # Sort and display results
         for image in sorted(base_images.keys()):
@@ -562,11 +681,16 @@ class ImageManager:
             for f, stage in files:
                 stage_label = f" ({stage})" if stage else ""
                 print(f"     └─ {f}{stage_label}")
+
+            st = freshness.get(image)
+            if st:
+                _print_base_freshness(st)
             print()
 
         # Summary
         total = len(base_images)
         unpinned = sum(1 for img in base_images if _classify_tag(img.rsplit(":", 1)[-1]) == "unpinned")
+        stale = [img for img, st in freshness.items() if st["status"] == "stale"]
 
         print(color("=== Summary ===", Colors.CYAN))
         print(f"Total base images: {total}")
@@ -578,5 +702,14 @@ class ImageManager:
                     Colors.YELLOW,
                 )
             )
-        else:
-            print(color("✓ All images are pinned to specific versions", Colors.GREEN))
+        elif not stale:
+            print(color("✓ All image tags are pinned to specific versions", Colors.GREEN))
+        if stale:
+            print(
+                color(
+                    f"⚠  Stale bases: {len(stale)} ({', '.join(sorted(stale))}) — tags pinned by version "
+                    "still get rebuilt upstream; './visp.py build' re-pulls the bases of what it "
+                    "builds (see --no-pull)",
+                    Colors.YELLOW,
+                )
+            )

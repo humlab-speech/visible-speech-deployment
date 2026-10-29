@@ -16,7 +16,7 @@ Commands:
   reload      Reload systemd daemon (after quadlet changes)
   apply       Apply quadlet changes in one step (install --force + reload + restart)
   mode        Show or set deployment mode (dev/prod)
-  build       Build container images (supports --no-cache, --pull)
+  build       Build container images (supports --no-cache, --pull, --no-pull)
   images      List built VISP images, pulled third-party images (vs registry), networks
   exec        Execute command in container
   shell       Open shell in container
@@ -594,7 +594,7 @@ def cmd_images_base(args):  # noqa: ARG001
     """List all base images used in Dockerfiles."""
     cfg = get_config()
     im = ImageManager(cfg.runner, cfg.build_configs, cfg.network_services)
-    im.display_base_images()
+    im.display_base_images(check_remote=not getattr(args, "offline", False))
 
 
 # === Deploy Commands ===
@@ -1004,6 +1004,12 @@ Examples:
     p_build = subparsers.add_parser("build", aliases=["b"], help="Build container images")
     p_build.set_defaults(func=cmd_build)
     p_build.add_argument(
+        "--no-pull",
+        dest="no_pull",
+        action="store_true",
+        help="Do not refresh mutable base images from registries before building (mirrors 'images --offline')",
+    )
+    p_build.add_argument(
         "services",
         nargs="*",
         default=["all"],
@@ -1048,13 +1054,18 @@ Examples:
 
     # images
     p_images = subparsers.add_parser(
-        "images", aliases=["img", "image"], help="List VISP container images and build status"
+        "images", aliases=["img", "image"], help="List VISP container images and build status (subcommand: base)"
     )
     p_images.add_argument("--offline", action="store_true", help="Skip the registry check for newer third-party images")
     p_images.set_defaults(func=cmd_images)
     p_images_sub = p_images.add_subparsers(dest="subcommand", help="Images subcommands")
-    p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions").set_defaults(
-        func=cmd_images_base
+    p_images_base = p_images_sub.add_parser("base", help="List all base images from Dockerfiles with versions")
+    p_images_base.set_defaults(func=cmd_images_base)
+    p_images_base.add_argument(
+        "--offline",
+        action="store_true",
+        default=argparse.SUPPRESS,  # else the subparser default clobbers a parent-level --offline
+        help="Skip the registry digest check for base images",
     )
     p_images_update = p_images_sub.add_parser(
         "update",
