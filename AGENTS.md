@@ -1085,14 +1085,14 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
-| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (`./visp.py build`'s base refresh cannot help this row — a dated tag never moves, so the check always answers 'current'; `--no-cache` is what re-runs `apt-get upgrade`, and a newer dated tag is what changes the base itself). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (`./visp.py build`'s base refresh can never report a *moved* tag here — dated tags do not move — but it does act on this row: an uncached base prints 'not local yet' and gets pulled, and a base held without its pull digests reads STALE and gets re-pulled. A genuinely newer base comes from a newer dated tag; `--no-cache` is what re-runs `apt-get upgrade`). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
 | `docker/tratt/Dockerfile` | `node:24.15.0` | pinned by version; tag content is mutable ⚠ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `docker/tratt/Dockerfile` | `httpd:2.4.67` | mutable content ⚠ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
 | `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | pinned by version; tag content is mutable ⚠ | Dev image only — not deployed |
 | `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
-| `docker/session-proxy/Dockerfile` | `alpine:3.23` | mutable content ⚠ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
+| `docker/session-proxy/Dockerfile` | `alpine:3.23` | mutable content ⚠ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.24 is out (2026-10-21); 3.23 still receives fixes |
 | `docker/whisper/Dockerfile` | `debian:bookworm-20260406-slim` | date-pinned | ⚠️ This Dockerfile is **not used** — superseded by WhisperVault |
 | `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | mutable content ⚠ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
 | `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | pinned by version; tag content is mutable ⚠ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
@@ -1109,9 +1109,9 @@ without the string changing). Two commands make that visible and handled:
 `./visp.py images base` reports local-vs-registry digest per base, and
 `./visp.py build` refreshes the bases whose tag moved upstream before
 building — for the Dockerfiles the services in that run build, and only as
-far as the registry answers (a 401/404/403 or a host-trust refusal leaves the
-base alone, and two consecutive transport failures end the sweep early; the
-lines it prints say which happened). Podman's own `--pull=newer` does nothing on 5.7 (measured: no registry
+far as the registry answers (a 401/404/403, a host-trust refusal, or any other
+surprise answer leaves the base alone, and two consecutive transport failures
+end the sweep early; the lines it prints say which happened). Podman's own `--pull=newer` does nothing on 5.7 (measured: no registry
 contact), so the check lives in visp.py. Add `--offline` to the first command to see the report shape with zero registry contact: every base in the report then reads **unknown (registry not consulted)** — an honest unknown, never a green light. `--no-pull` skips the whole base phase of a build — no digest check, no pull, one line saying the bases were not refreshed.
 
 ### Third-party (pulled) images
