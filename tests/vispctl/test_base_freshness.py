@@ -505,3 +505,75 @@ def test_two_transport_failures_stop_before_remaining_work(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "two consecutive" in out
     assert runner.pulled == []  # c:1 never reached
+
+def test_two_unreachable_bases_stop_the_probe_sweep(tmp_path, monkeypatch):
+    """After two consecutive transport failures nothing further is probed."""
+    from vispctl.registry import RegistryTransportError
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    dockerfile = tmp_path / "docker" / "x" / "Dockerfile"
+    dockerfile.parent.mkdir(parents=True)
+    dockerfile.write_text("FROM reg.example/a:1\nFROM reg.example/b:1\nFROM reg.example/c:1\n")
+
+    calls = []
+
+    class Client:
+        def tag_digest(self, ref):
+            calls.append(ref.repository)
+            if len(calls) <= 2:
+                raise RegistryTransportError("cannot reach reg.example: refused")
+            return "sha256:deadbeef"
+
+    st = images_mod.ImageManager(_Runner({})).base_freshness(Client())
+    assert st["reg.example/a:1"]["error_class"] == "transport"
+    assert st["reg.example/b:1"]["error_class"] == "transport"
+    assert st["reg.example/c:1"]["error_class"] == "skipped"
+    assert st["reg.example/c:1"]["status"] == "unknown"
+    assert len(calls) == 2  # the third base was never probed
+
+
+def test_display_reports_unchecked_bases_honestly(tmp_path, monkeypatch, capsys):
+    """'images base' on a dead network: two real failures, the rest labelled not-checked."""
+    from vispctl.registry import RegistryTransportError
+
+    monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
+    dockerfile = tmp_path / "docker" / "x" / "Dockerfile"
+    dockerfile.parent.mkdir(parents=True)
+    dockerfile.write_text("FROM reg.example/a:1\nFROM reg.example/b:1\nFROM reg.example/c:1\n")
+
+    state = {"n": 0}
+
+    class Client:
+        def tag_digest(self, ref):
+            state["n"] += 1
+            raise RegistryTransportError("no route to host")
+
+    monkeypatch.setattr(images_mod, "RegistryClient", lambda *a, **k: Client())
+    images_mod.ImageManager(_Runner({})).display_base_images(check_remote=True)
+    out = capsys.readouterr().out
+    assert out.count("not reachable") == 2
+    assert "not checked (two unreachable bases in a row)" in out
+    assert "content NOT verified" in out
+    assert state["n"] == 2
+
+
+def test_build_sweep_labels_skipped_entries_without_counting_them(monkeypatch, capsys):
+    """A skipped marker is neither a failure to count nor an answered question."""
+    runner = _Runner({})
+    monkeypatch.setattr(
+        images_mod,
+        "ImageManager",
+        _statuses({
+            "a:1": ("unknown", "no route", "transport"),
+            "b:1": ("unknown", "answered HTTP 404", "gone"),
+            "c:1": ("unknown", "not checked (two unreachable bases in a row)", "skipped"),
+            "d:1": ("unknown", "still down", "transport"),
+            "e:1": ("absent", None),
+        }),
+    )
+    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
+    out = capsys.readouterr().out
+    assert "not checked" in out
+    assert "two consecutive" not in out  # transport, reset, (skipped: no count), transport: never two in a row
+    assert "answered oddly" not in out
+    assert sorted(runner.pulled) == ["docker.io/library/e:1"]  # swept past the marker to real work

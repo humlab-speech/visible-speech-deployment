@@ -753,6 +753,8 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
             elif kind == "auth":
                 print(color(f"  ⚠ {image}: registry needs credentials ({st['error']}) — base NOT refreshed", Colors.YELLOW))
                 transport_streak = 0
+            elif kind == "skipped":
+                print(color(f"  ○ {image}: {st['error']} — base NOT refreshed", Colors.YELLOW))
             elif kind == "transport":
                 print(color(f"  ⚠ {image}: registry not reachable ({st['error']}) — building from cached base", Colors.YELLOW))
                 transport_streak += 1

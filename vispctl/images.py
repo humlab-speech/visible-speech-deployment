@@ -30,7 +30,9 @@ from .service import Service, container_service_names
 def _error_class(error: Exception) -> str:
     """Four failure classes the base-refresh reporting must tell apart.
 
-    transport: never answered (counts toward the fail-fast streak);
+    transport: never answered (counts toward the fail-fast streak; after
+    two in a row base_freshness itself marks the rest 'skipped' without
+    probing);
     refused: our own host-trust guard stopped a token realm — a security
     event, reported loudly (an off-registry pagination link is dropped
     silently inside the client and never reaches this reporting); gone and
@@ -79,6 +81,8 @@ def _print_base_freshness(st: Dict[str, Any]) -> None:
             print(color(f"     registry needs credentials ({st['error']}) — content NOT verified", Colors.YELLOW))
         elif kind == "transport":
             print(color(f"     registry not reachable ({st['error']}) — content NOT verified", Colors.YELLOW))
+        elif kind == "skipped":
+            print(color(f"     {st['error']} — content NOT verified", Colors.YELLOW))
         else:
             print(color(f"     registry answered oddly ({st['error']}) — content NOT verified", Colors.YELLOW))
     elif st["status"] == "unknown":
@@ -606,6 +610,8 @@ class ImageManager:
         pulled image stores both the index and the manifest digest there.
         """
         out: Dict[str, Dict[str, Any]] = {}
+        transport_streak = 0
+        unreachable = False
         for image, files in self.scan_base_images().items():
             ref = ImageRef.parse(image)
             if "." not in ref.registry:
@@ -624,13 +630,24 @@ class ImageManager:
                     entry["local_digests"] = {d.partition("@")[2] for d in json.loads(stdout)}
                 except ValueError:
                     present = False
+            if unreachable:
+                entry["status"] = "unknown"
+                entry["error"] = "not checked (two unreachable bases in a row)"
+                entry["error_class"] = "skipped"
+                out[image] = entry
+                continue
             if client is not None:
                 try:
                     entry["remote_digest"] = client.tag_digest(ref)
+                    transport_streak = 0
                 except RegistryError as e:
                     entry["status"] = "unknown"
                     entry["error"] = str(e)
                     entry["error_class"] = _error_class(e)
+                    if entry["error_class"] == "transport":
+                        transport_streak += 1
+                        if transport_streak >= 2:
+                            unreachable = True
                     out[image] = entry
                     continue
             if entry["remote_digest"] is None:
