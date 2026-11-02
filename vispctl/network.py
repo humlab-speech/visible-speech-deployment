@@ -37,6 +37,10 @@ class NetworkManager:
 
         for net in required_networks:
             if net["name"] in existing_networks:
+                ok, why = self._network_matches(net)
+                if not ok:
+                    print(color(f"  ✗ {net['name']}: {why}", Colors.RED))
+                    return False
                 print(color(f"  ○ {net['name']}: exists", Colors.YELLOW))
                 continue
 
@@ -54,6 +58,30 @@ class NetworkManager:
                 return False
 
         return True
+
+    def _network_matches(self, net: dict) -> Tuple[bool, str]:
+        """An existing network must match the spec it is claimed to satisfy.
+
+        Round-2 reproduced live: a systemd-tratt-net WITHOUT --internal (e.g.
+        created by hand or an older version) was accepted as satisfying the
+        internal requirement — a silent security downgrade. Recreating is not
+        safe while containers are attached, so refuse loudly instead.
+        """
+        rc, stdout, _ = self.runner.run_quiet(
+            ["podman", "network", "inspect", net["name"], "--format", "{{.Driver}}|{{.Internal}}"]
+        )
+        if rc != 0:
+            return False, "exists but cannot be inspected"
+        parts = stdout.strip().split("|")
+        if len(parts) != 2:
+            return False, "exists but inspect output is unparseable"
+        driver, internal = parts[0], parts[1].lower() == "true"
+        if driver != "bridge":
+            return False, f"exists with driver {driver}, expected bridge"
+        if internal != net["internal"]:
+            want = "internal" if net["internal"] else "non-internal"
+            return False, f"exists but is not {want}; recreate it manually"
+        return True, ""
 
     def configure_netavark(self) -> bool:
         """Configure Podman to use netavark backend."""
