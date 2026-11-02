@@ -150,7 +150,10 @@ class ServiceManager:
             # (no daemon-reload after install).
             state_res = self.runner.systemctl("is-enabled", self._svc_name(svc))
             state = state_res.stdout.strip()
-            if not state:
+            # Modern systemd answers a never-loaded unit with 'not-found'/
+            # 'bad' on stdout (rc 4) instead of empty output — both shapes
+            # mean the same thing here: daemon-reload first.
+            if not state or state in ("not-found", "bad"):
                 print(color("  Not loaded yet — run ./visp.py reload if newly installed", Colors.YELLOW))
                 continue
 
