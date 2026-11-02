@@ -1206,6 +1206,12 @@ class DeployManager:
                 print(f"✅ Updated {repo_name}")
                 updated_count += 1
 
+            except subprocess.CalledProcessError as e:
+                # git's own reason (stderr) is the actionable part; the
+                # bare "exit status 128" from str(e) told operators nothing.
+                reason = (e.stderr or b"").decode(errors="replace").strip() if isinstance(e.stderr, bytes) else (e.stderr or "").strip()
+                print(f"❌ Error updating {repo_name}: {reason or e}")
+                error_count += 1
             except Exception as e:
                 print(f"❌ Error updating {repo_name}: {e}")
                 error_count += 1
