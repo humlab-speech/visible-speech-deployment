@@ -94,8 +94,22 @@ def placeholder_up(
 
     # Refuse unless VISP was taken down with 'down': a plain 'stop' leaves
     # apache enabled, and both units would then race for the port at boot.
-    if runner.unit_is_active(_APACHE.name):
+    # unit_is_active() reads stdout and ignores the return code: an empty OR
+    # unreachable user manager answers the very same 'inactive' (rc 4 / 1),
+    # which would silently bless a port collision (round-2 F2). Interpret rc:
+    # 0 = active (refuse), 3/4 = inactive/not-found (nothing holds the port),
+    # anything else = the question was never answered -> fail closed.
+    res = runner.systemctl("is-active", _APACHE.name + ".service")
+    state = (res.stdout or "").strip()
+    if res.returncode == 0 or state in ("active", "activating"):
         raise ServiceError("apache is running. Take VISP down first: ./visp.py down")
+    if res.returncode not in (3, 4):
+        raise ServiceError(
+            "cannot verify apache state (systemctl rc="
+            + str(res.returncode)
+            + "); refusing to start the placeholder. Check 'systemctl --user "
+            "status apache.service' manually."
+        )
     if (systemd_dir / _APACHE.file).exists() and not autostart_dropin(systemd_dir, _APACHE).exists():
         raise ServiceError(
             "apache is stopped but would start again at boot. Take VISP down first: ./visp.py down "
