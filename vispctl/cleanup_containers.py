@@ -76,7 +76,21 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
 
     removed = 0
     failures = []
+    skipped_running = []
     for cid, name in containers:
+        # A '-proxy' sidecar of a session whose main container is RUNNING must
+        # survive: the session is alive even if the sidecar itself is exited,
+        # and removing it silently breaks the session's uploads (round-2 F4).
+        if name.endswith("-proxy"):
+            main = name[: -len("-proxy")]
+            ps = runner.run(
+                ["podman", "ps", "--filter", f"name=^{main}$", "--quiet"],
+                capture=True,
+                check=False,
+            )
+            if getattr(ps, "stdout", "").strip():
+                skipped_running.append(name)
+                continue
         # stop if running
         if runner.run(["podman", "ps", "--filter", f"id={cid}", "--quiet"], capture=True, check=False).stdout.strip():
             runner.run(["podman", "stop", cid], check=False)
@@ -86,6 +100,12 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
             removed += 1
         else:
             failures.append(name)
+
+    if skipped_running:
+        print(
+            "  Skipped proxy sidecars of running sessions: "
+            + ", ".join(skipped_running)
+        )
 
     if failures:
         return {

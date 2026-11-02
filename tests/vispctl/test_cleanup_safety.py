@@ -30,15 +30,19 @@ PS_LINES = "\n".join(
 
 
 class FakeRunner:
-    def __init__(self, ps_rc=0, rm_rc=0):
+    def __init__(self, ps_rc=0, rm_rc=0, running_main=""):
         self.ps_rc = ps_rc
         self.rm_rc = rm_rc
+        self.running_main = running_main
         self.rmed = []
 
     def run(self, cmd, capture=False, check=True):
         if cmd[:3] == ["podman", "ps", "-a"] or cmd[:2] == ["podman", "ps"]:
-            if len(cmd) > 3 and "id=" in " ".join(cmd):
+            if "id=" in " ".join(cmd):
                 return types.SimpleNamespace(stdout="", returncode=0)
+            if any(f.startswith("name=^") and f.endswith("$") for f in cmd):
+                # main-session liveness probe (exact-match anchored)
+                return types.SimpleNamespace(stdout=self.running_main, returncode=0)
             return types.SimpleNamespace(stdout=PS_LINES, returncode=self.ps_rc)
         if cmd[:2] == ["podman", "rm"]:
             self.rmed.append(cmd[2])
@@ -92,3 +96,55 @@ def test_cmd_exits_1_on_partial(monkeypatch):
     with pytest.raises(SystemExit) as exc:
         vp.cmd_cleanup_containers(types.SimpleNamespace(mode="all", yes=True))
     assert exc.value.code == 1
+
+
+PROXY_LINES = "\n".join(
+    [
+        "bbb1 visp-session-alice-proj",
+        "bbb2 visp-session-alice-proj-proxy",
+    ]
+)
+
+
+class ProxyFake:
+    """Session main + proxy sidecar; main container is RUNNING."""
+
+    def __init__(self, main_running=True):
+        self.main_running = main_running
+        self.rmed = []
+
+    def run(self, cmd, capture=False, check=True):
+        if cmd[:2] == ["podman", "ps"]:
+            if any(f.startswith("name=^") and f.endswith("$") for f in cmd):
+                return types.SimpleNamespace(
+                    stdout="aaa" if self.main_running else "", returncode=0
+                )
+            if "id=" in " ".join(cmd):
+                return types.SimpleNamespace(
+                    stdout="bbb1" if self.main_running else "", returncode=0
+                )
+            return types.SimpleNamespace(stdout=PROXY_LINES, returncode=0)
+        if cmd[:2] == ["podman", "rm"]:
+            self.rmed.append(cmd[2])
+            return types.SimpleNamespace(stdout="", returncode=0)
+        if cmd[:2] == ["podman", "stop"]:
+            return types.SimpleNamespace(stdout="", returncode=0)
+        return types.SimpleNamespace(stdout="", returncode=0)
+
+
+def test_proxy_of_running_session_survives(monkeypatch):
+    import vispctl.cleanup_containers as cc
+
+    fr = ProxyFake(main_running=True)
+    monkeypatch.setattr(cc, "Runner", lambda: fr)
+    res = cleanup_containers(mode="all", yes=True)
+    assert "bbb2" not in fr.rmed  # proxy kept
+
+
+def test_proxy_of_stopped_session_is_removed(monkeypatch):
+    import vispctl.cleanup_containers as cc
+
+    fr = ProxyFake(main_running=False)
+    monkeypatch.setattr(cc, "Runner", lambda: fr)
+    cleanup_containers(mode="all", yes=True)
+    assert "bbb2" in fr.rmed  # orphan proxy cleaned
