@@ -11,7 +11,6 @@ Environment=MONGO_INITDB_ROOT_USERNAME=root
 Secret=visp_mongo_root_password,type=env,target=MONGO_INITDB_ROOT_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/mongo/data:/data/db:Z
 Volume=@@PROJECT_DIR@@/mounts/mongo/logs:/var/log/mongodb:Z
-Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 Exec=--logpath /var/log/mongodb/mongodb.log
 

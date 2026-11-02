@@ -1037,3 +1037,120 @@ def run_install(
             sm.start(container_names)
         else:
             print(color("No container services to restart.", Colors.GREEN))
+
+    # --- Phase 17: tell the user what is still left to do ---
+    print_next_steps(project_dir, systemd_dir, runner, mode, all_services, disabled_optional)
+
+
+def _unresolved_hosts(hostnames: list[str]) -> list[str]:
+    """Return the hostnames that do not resolve (e.g. missing from /etc/hosts)."""
+    import socket
+
+    missing = []
+    for name in hostnames:
+        try:
+            socket.getaddrinfo(name, None)
+        except OSError:
+            missing.append(name)
+    return missing
+
+
+def print_next_steps(
+    project_dir: Path,
+    systemd_dir: Path,
+    runner: Runner,
+    mode: str,
+    all_services: list[Service],
+    disabled_optional: dict[str, str],
+) -> None:
+    """Print what is still needed before VISP is reachable.
+
+    Install only writes config and quadlets — it never builds images or starts
+    stopped services — so check the real state and list only the steps that
+    are still open.
+    """
+    from .build import BUILD_CONFIGS
+    from .env import load_env_file
+
+    env = load_env_file(project_dir / ".env")
+    domain = env.get("BASE_DOMAIN", "visp.local")
+    steps: list[list[str]] = []
+
+    missing_images = [
+        name
+        for name, cfg in BUILD_CONFIGS.items()
+        if name not in disabled_optional
+        and runner.run_quiet(["podman", "image", "exists", f"localhost/{cfg['image']}:latest"])[0] != 0
+    ]
+    if missing_images:
+        steps.append(
+            [
+                f"Build the missing images ({len(missing_images)}) — this takes a while:",
+                f"    ./visp.py build {' '.join(missing_images)}",
+            ]
+        )
+
+    if mode == "dev":
+        # Phase 8b can't do this before the image exists, so on a first install
+        # it is always left over — and the dev quadlet's nodemon lives in there.
+        from .npm import NPM_SERVICES
+
+        for npm_service, (rel_source, _, _) in sorted(NPM_SERVICES.items()):
+            source = project_dir / rel_source
+            if source.is_dir() and not (source / "node_modules").is_dir():
+                steps.append(
+                    [
+                        f"Install {npm_service}'s dependencies (dev mode runs it from the source tree):",
+                        f"    ./visp.py npm {npm_service} -- ci",
+                    ]
+                )
+
+    not_running = [
+        s.name
+        for s in all_services
+        if s.type == "container" and (systemd_dir / s.file).exists() and not runner.unit_is_active(s.name)
+    ]
+    if not_running:
+        steps.append([f"Start the services ({len(not_running)} not running):", "    ./visp.py start all"])
+
+    if mode == "dev":
+        subdomains = ["app", "artic", env.get("TRATT_SUBDOMAIN", "tratt"), "recorder", "matomo", "mongo"]
+        if "local-idp" not in disabled_optional:
+            subdomains.append("idp")
+        unresolved = _unresolved_hosts([domain] + [f"{sub}.{domain}" for sub in subdomains])
+        if unresolved:
+            steps.append(["Add the local hostnames to /etc/hosts:", f"    127.0.0.1 {' '.join(unresolved)}"])
+        steps.append(
+            [
+                f"Proxy https://{domain} (port 443) to Apache on 127.0.0.1:8443,",
+                "    e.g. with host nginx — see README.md → 'Local Dev Host Nginx'.",
+            ]
+        )
+        steps.append(
+            [
+                f"Sign in at https://{domain} as test1 / test1pass (a sys_admin) or test2 / test2pass.",
+                "    Both are seeded when mongo initializes an empty database (mounts/mongo/initdb-dev/);",
+                "    on an older database: ./visp.py users activate testuser1_at_visp_dot_local",
+            ]
+        )
+    else:
+        steps.append(
+            [
+                f"Point the host reverse proxy at Apache on port {env.get('HTTP_PORT', '8081')}",
+                "    — see README.md → 'Reverse Proxy (Production)'.",
+            ]
+        )
+        steps.append(
+            [
+                f"Sign in at https://{domain}, then make yourself an admin:",
+                "    ./visp.py users list",
+                "    ./visp.py users set-system-role <username> sys_admin",
+            ]
+        )
+
+    print()
+    print(color("=== Next steps ===", Colors.CYAN))
+    for i, lines in enumerate(steps, 1):
+        print(f"  {i}. {lines[0]}")
+        for line in lines[1:]:
+            print(f"   {line}")

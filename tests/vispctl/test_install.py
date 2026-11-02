@@ -24,6 +24,7 @@ from vispctl.install import (
     generate_tracker_config,
     install_quadlets,
     normalize_repository_ownership,
+    print_next_steps,
     scaffold_directories,
     sync_octra_redirect_vhost,
     verify_repository_write_access,
@@ -713,3 +714,94 @@ def test_redirect_vhost_defaults_to_tratt(redirect_tree):
     sync_octra_redirect_vhost(project_dir, {"BASE_DOMAIN": "visp.local"})
     http = (apache / "vhosts-http" / "octra-redirect.vhost.conf").read_text()
     assert "http://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]" in http
+
+
+# ---------------------------------------------------------------------------
+# print_next_steps
+# ---------------------------------------------------------------------------
+
+
+class _StateRunner:
+    """Fake runner: which images exist and which units are active."""
+
+    def __init__(self, images=(), active=()):
+        self.images = set(images)
+        self.active = set(active)
+
+    def run_quiet(self, cmd):
+        return (0 if cmd[-1] in self.images else 1), "", ""
+
+    def unit_is_active(self, unit):
+        return unit in self.active
+
+
+@pytest.fixture
+def next_steps_tree(tmp_path, monkeypatch):
+    import vispctl.build as build_mod
+
+    monkeypatch.setattr(
+        build_mod,
+        "BUILD_CONFIGS",
+        {"apache": {"image": "visp-apache"}, "whisperx": {"image": "visp-whisperx"}},
+    )
+    project_dir = tmp_path / "project"
+    project_dir.mkdir()
+    (project_dir / ".env").write_text("BASE_DOMAIN=visp.test\n")
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+    (systemd_dir / "apache.container").write_text("")
+    services = [Service("visp-net", "network", "visp-net.network"), Service("apache", "container", "apache.container")]
+    return project_dir, systemd_dir, services
+
+
+def test_next_steps_lists_missing_images_and_stopped_services(next_steps_tree, monkeypatch, capsys):
+    import vispctl.install as install_mod
+
+    monkeypatch.setattr(install_mod, "_unresolved_hosts", lambda names: [])
+    project_dir, systemd_dir, services = next_steps_tree
+    print_next_steps(project_dir, systemd_dir, _StateRunner(), "dev", services, {})
+    out = capsys.readouterr().out
+    assert "./visp.py build apache whisperx" in out
+    assert "1 not running" in out and "./visp.py start all" in out
+    assert "/etc/hosts" not in out
+    assert "https://visp.test" in out
+
+
+def test_next_steps_skips_done_and_disabled_steps(next_steps_tree, monkeypatch, capsys):
+    import vispctl.install as install_mod
+
+    monkeypatch.setattr(install_mod, "_unresolved_hosts", lambda names: [n for n in names if n.startswith("idp.")])
+    project_dir, systemd_dir, services = next_steps_tree
+    runner = _StateRunner(images={"localhost/visp-apache:latest"}, active={"apache"})
+    print_next_steps(project_dir, systemd_dir, runner, "dev", services, {"whisperx": "WHISPERX_ENABLED"})
+    out = capsys.readouterr().out
+    assert "./visp.py build" not in out  # whisperx is disabled, apache is built
+    assert "start all" not in out
+    assert "127.0.0.1 idp.visp.test" in out
+
+
+def test_next_steps_prod_points_at_reverse_proxy(next_steps_tree, capsys):
+    project_dir, systemd_dir, services = next_steps_tree
+    runner = _StateRunner(images={"localhost/visp-apache:latest", "localhost/visp-whisperx:latest"}, active={"apache"})
+    print_next_steps(project_dir, systemd_dir, runner, "prod", services, {})
+    out = capsys.readouterr().out
+    assert "Reverse Proxy (Production)" in out
+    assert "/etc/hosts" not in out and "test1" not in out
+
+
+def test_next_steps_dev_lists_missing_node_modules(next_steps_tree, monkeypatch, capsys):
+    import vispctl.install as install_mod
+    import vispctl.npm as npm_mod
+
+    monkeypatch.setattr(install_mod, "_unresolved_hosts", lambda names: [])
+    monkeypatch.setattr(npm_mod, "NPM_SERVICES", {"session-manager": ("external/session-manager", "img", "/sm")})
+    project_dir, systemd_dir, services = next_steps_tree
+    (project_dir / "external/session-manager").mkdir(parents=True)
+    runner = _StateRunner(images={"localhost/visp-apache:latest", "localhost/visp-whisperx:latest"}, active={"apache"})
+
+    print_next_steps(project_dir, systemd_dir, runner, "dev", services, {})
+    assert "./visp.py npm session-manager -- ci" in capsys.readouterr().out
+
+    (project_dir / "external/session-manager/node_modules").mkdir()
+    print_next_steps(project_dir, systemd_dir, runner, "dev", services, {})
+    assert "npm session-manager" not in capsys.readouterr().out

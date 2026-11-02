@@ -60,7 +60,6 @@ Volume=@@PROJECT_DIR@@/mounts/apache/apache/php.ini:/etc/php/8.4/apache2/php.ini
 # every user out - the store is in-image otherwise, and shibd's session cache
 # goes with it, leaving browsers holding a cookie for a session nothing knows.
 Volume=@@PROJECT_DIR@@/mounts/apache/php-sessions:/var/lib/php/sessions:Z
-Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 

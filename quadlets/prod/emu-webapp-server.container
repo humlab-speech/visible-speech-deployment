@@ -16,7 +16,6 @@ Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
 Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 Volume=@@PROJECT_DIR@@/mounts/emu-webapp-server/logs:/home/node/app/logs:Z
-Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Pin this container's real service identity (node = uid 1000 / gid 1000 in the

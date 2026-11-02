@@ -100,6 +100,37 @@ def test_cmd_apply_nothing_to_do(tmp_path, monkeypatch, capsys):
     assert "up to date" in out.lower() or "nothing to apply" in out.lower()
 
 
+def test_cmd_apply_nothing_to_do_reports_stopped_services(tmp_path, monkeypatch, capsys):
+    """'Nothing to apply' must not read as 'everything is running'."""
+    import vispctl.images as img_mod
+    import vispctl.service as svc_mod
+    from vispctl import quadlets as q_mod
+    from vispctl.service import Service
+
+    systemd_dir = tmp_path / "systemd"
+    systemd_dir.mkdir()
+    (systemd_dir / "mongo.container").write_text("")
+    (systemd_dir / "apache.container").write_text("")
+    services = [
+        Service("mongo", "container", "mongo.container"),
+        Service("apache", "container", "apache.container"),
+        Service("tratt", "container", "tratt.container"),  # not installed → not reported
+    ]
+    monkeypatch.setattr(q_mod, "get_current_mode", lambda: "dev")
+    monkeypatch.setattr(q_mod, "get_quadlet_drift", lambda *a, **kw: ([], []))
+    monkeypatch.setattr(svc_mod, "resolve_services", lambda s, *a, **kw: services)
+    monkeypatch.setattr(
+        img_mod, "ImageManager", lambda *a, **kw: type("FakeIM", (), {"get_stale_containers": lambda self, s: []})()
+    )
+    runner = types.SimpleNamespace(unit_is_active=lambda unit: unit == "mongo")
+
+    q_mod.cmd_apply(types.SimpleNamespace(service="all"), project_dir=tmp_path, systemd_dir=systemd_dir, runner=runner)
+
+    out = capsys.readouterr().out
+    assert "Nothing to apply" in out
+    assert "Not running (1): apache" in out
+
+
 def test_cmd_apply_installs_drifted_and_restarts(tmp_path, monkeypatch, capsys):
     import vispctl.images as img_mod
     import vispctl.service as svc_mod
