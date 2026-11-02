@@ -21,10 +21,17 @@ class PermissionsManager:
         self.project_dir = Path(project_dir) if project_dir else get_config().project_dir
 
     def _resolve_target(self, uid: int | None, gid: int | None, host_owner: bool) -> str:
-        if host_owner:
+        # Every value returned here is interpreted INSIDE the user namespace
+        # by `podman unshare`. The host login user is namespace uid 0 — a raw
+        # os.getuid() (a HOST uid) would land on subuid_base+hostuid, not on
+        # the host user (round-2 confirmed live: a repair meant for the host
+        # user moved a mount tree to the wrong subuid and claimed success).
+        # Explicit uid/gid arguments are therefore container/namespace
+        # coordinates, never host ids.
+        if host_owner or (uid is None and gid is None):
             return "0:0"
-        target_uid = uid if uid is not None else os.getuid()
-        target_gid = gid if gid is not None else os.getgid()
+        target_uid = uid if uid is not None else 0
+        target_gid = gid if gid is not None else 0
         return f"{target_uid}:{target_gid}"
 
     def _build_cmd(self, tool: str, path: str, recursive: bool, *args: str) -> list[str]:
@@ -55,7 +62,7 @@ class PermissionsManager:
         for p in paths:
             pathstr = str(p)
             chown_cmd = self._build_cmd("chown", pathstr, recursive, target)
-            chmod_cmd = self._build_cmd("chmod", pathstr, recursive, "a+rx")
+            chmod_cmd = self._build_cmd("chmod", pathstr, recursive, "a+rX")
             cmds.append(" ".join(chown_cmd))
             cmds.append(" ".join(chmod_cmd))
         return cmds
@@ -89,7 +96,7 @@ class PermissionsManager:
                 ok = False
                 # do not bail out; attempt chmod too to surface errors
 
-            chmod_cmd = self._build_cmd("chmod", pathstr, recursive, "a+rx")
+            chmod_cmd = self._build_cmd("chmod", pathstr, recursive, "a+rX")
 
             res2 = self.runner.run(chmod_cmd, check=False)
             if res2.returncode != 0:
