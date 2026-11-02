@@ -203,7 +203,9 @@ def cmd_start(args):
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     names = _resolve_service_names(args, cfg)
-    sm.start(names)
+    failed = sm.start(names)
+    if failed:
+        sys.exit(1)
 
 
 def cmd_stop(args):
@@ -220,7 +222,9 @@ def cmd_up(args):
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     names = _resolve_service_names(args, cfg)
     sm.enable(names)
-    sm.start(names)
+    failed = sm.start(names)
+    if failed:
+        sys.exit(1)
 
 
 def cmd_down(args):

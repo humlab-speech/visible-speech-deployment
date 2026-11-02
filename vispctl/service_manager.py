@@ -79,8 +79,10 @@ class ServiceManager:
         if remove_placeholder(self.runner, self.systemd_dir):
             print(color("  Removed the offline placeholder page (it holds apache's port)", Colors.YELLOW))
 
-    def start(self, names: Iterable[str] | str = "all") -> None:
+    def start(self, names: Iterable[str] | str = "all") -> list[str]:
+        """Start services; returns the names that failed to come up."""
         targets = self._resolve_targets(names)
+        failed: list[str] = []
         for svc in targets:
             if svc.type == "network":
                 self._note_skip_network(svc)
@@ -104,8 +106,24 @@ class ServiceManager:
             res = self.runner.systemctl("start", self._svc_name(svc))
             if res.returncode != 0:
                 print(color(f"  Failed: {res.stderr}", Colors.RED))
-            else:
+                failed.append(svc.name)
+            elif self._unit_came_up(svc.name):
                 print(color("  Started", Colors.GREEN))
+            else:
+                print(color("  Failed: unit is not active after start", Colors.RED))
+                failed.append(svc.name)
+        return failed
+
+    def _unit_came_up(self, name: str, attempts: int = 5, delay: float = 0.4) -> bool:
+        """A start request returning 0 is not proof the unit is up (crash-loop
+        units accept the request, then die). Require active/activating soon."""
+        import time
+        for i in range(attempts):
+            if self.runner.unit_is_active(name):
+                return True
+            if i < attempts - 1:
+                time.sleep(delay)
+        return False
 
     def enable(self, names: Iterable[str] | str = "all") -> None:
         targets = self._resolve_targets(names)

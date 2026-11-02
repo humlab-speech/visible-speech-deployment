@@ -5,11 +5,14 @@ from vispctl.service_manager import ServiceManager
 class FakeRunner:
     def __init__(self):
         self.systemctl_calls = []
+        self.started_units = set()
 
     def run_quiet(self, cmd):
-        # Simulate units that are not running, so start/stop take the real path
+        # Simulate units that are not running, so start/stop take the real
+        # path — except ones this fake has been told to start: those come up.
         if cmd and "is-active" in cmd:
-            return 0, "inactive", ""
+            unit = cmd[-1].replace(".service", "")
+            return 0, ("active" if unit in self.started_units else "inactive"), ""
         if cmd and cmd[0] == "podman":
             # podman network exists -> returncode 0 to indicate existence
             return 0, "", ""
@@ -21,6 +24,8 @@ class FakeRunner:
 
     def systemctl(self, *args, **kwargs):
         self.systemctl_calls.append(args)
+        if args and args[0] == "start" and len(args) > 1:
+            self.started_units.add(args[1].replace(".service", ""))
 
         class R:
             def __init__(self):
@@ -170,6 +175,8 @@ class IsEnabledRunner:
 
     def systemctl(self, *args, **kwargs):
         self.systemctl_calls.append(args)
+        if args and args[0] == "start" and len(args) > 1:
+            self.started_units.add(args[1].replace(".service", ""))
 
         class R:
             returncode = 0
