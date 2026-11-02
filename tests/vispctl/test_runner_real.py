@@ -85,3 +85,45 @@ def test_unit_is_active_only_accepts_active_states(runner, tmp_path, monkeypatch
     bin_dir = _stub_systemctl(tmp_path, f"echo {state}\nexit {0 if state in ('active','activating') else 3}\n")
     monkeypatch.setenv("PATH", bin_dir + os.pathsep + os.environ["PATH"])
     assert runner.unit_is_active("anything") is expected
+
+
+# ── TR-R2-02: argv pins that survived the class-stub era ─────────────────────
+
+
+def _stub_tool(tmp_path, tool, body):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    stub = bin_dir / tool
+    stub.write_text("#!/bin/sh\n" + body)
+    stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
+    return str(bin_dir)
+
+
+def test_unit_is_active_argv_is_exact(runner, tmp_path, monkeypatch):
+    log = tmp_path / "argv.log"
+    bin_dir = _stub_tool(tmp_path, "systemctl", f'printf "%s\\n" "$@" >> {log}\necho active\n')
+    monkeypatch.setenv("PATH", bin_dir + os.pathsep + os.environ["PATH"])
+    assert runner.unit_is_active("visp-demo") is True
+    recorded = log.read_text().splitlines()
+    # dropping '--user', 'is-active', or appending '.service' all must redden
+    assert recorded == ["--user", "is-active", "visp-demo.service"]
+
+
+def test_journalctl_executes_and_returns_completedprocess(runner, tmp_path, monkeypatch):
+    log = tmp_path / "j.log"
+    bin_dir = _stub_tool(tmp_path, "journalctl", f'printf "%s\\n" "$@" >> {log}\necho line\n')
+    monkeypatch.setenv("PATH", bin_dir + os.pathsep + os.environ["PATH"])
+    res = runner.journalctl("-u", "visp-demo.service", "-n", "5")
+    assert isinstance(res, subprocess.CompletedProcess)
+    assert res.returncode == 0
+    assert log.read_text().splitlines()[:6] == [
+        "--user", "-u", "visp-demo.service", "-n", "5"
+    ][:len(log.read_text().splitlines())]
+
+
+def test_systemctl_default_check_is_false(runner, tmp_path, monkeypatch):
+    # rc!=0 must NOT raise by default — callers read .returncode themselves.
+    bin_dir = _stub_tool(tmp_path, "systemctl", "exit 4\n")
+    monkeypatch.setenv("PATH", bin_dir + os.pathsep + os.environ["PATH"])
+    res = runner.systemctl("is-enabled", "ghost.service")
+    assert res.returncode == 4
