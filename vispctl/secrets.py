@@ -111,6 +111,19 @@ def parse_quadlet_secret_map(quadlets_dir: Path) -> Dict[str, set]:
     return mapping
 
 
+def filter_remove_keep(to_remove: List[str], systemd_dir: Path) -> List[str]:
+    """Never remove a secret that a still-installed unit file references.
+
+    The repo template map does not know about user-authored quadlets living in
+    the systemd directory; those are the authority on what must survive.
+    """
+    installed = parse_quadlet_secret_map(Path(systemd_dir))
+    keep: set = set()
+    for secrets in installed.values():
+        keep |= secrets
+    return [s for s in to_remove if s not in keep]
+
+
 def secrets_to_remove_for_uninstall(
     uninstalled: set,
     secret_map: Dict[str, set],

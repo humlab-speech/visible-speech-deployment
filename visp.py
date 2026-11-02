@@ -346,6 +346,7 @@ def cmd_uninstall(args):
     print(color("Removing Podman secrets...", Colors.CYAN))
     from vispctl.secrets import (
         SecretManager,
+        filter_remove_keep,
         parse_quadlet_secret_map,
         secrets_to_remove_for_uninstall,
     )
@@ -360,6 +361,9 @@ def cmd_uninstall(args):
         to_remove = secrets_to_remove_for_uninstall(
             uninstalled, secret_map, existing, remove_all=(args.service == "all")
         )
+        # User-authored quadlets in the systemd dir are invisible to the repo
+        # template map; protect every secret a surviving installed unit cites.
+        to_remove = filter_remove_keep(to_remove, cfg.systemd_dir)
         if to_remove:
             sm.remove_secrets(to_remove)
         else:
