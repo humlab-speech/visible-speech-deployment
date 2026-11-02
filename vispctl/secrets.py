@@ -71,6 +71,8 @@ class SecretManager:
             res = self.runner.run(["podman", "secret", "rm", name], capture=True, check=False)
             if res.returncode == 0:
                 print(color(f"  ✓ Secret '{name}': removed", Colors.GREEN))
+            else:
+                print(color(f"  ✗ Secret '{name}': remove failed - {res.stderr}", Colors.RED))
 
     def list_secrets(self) -> List[str]:
         res = self.runner.run(
