@@ -181,6 +181,8 @@ def _fix_stale_bundle_list_entries(
     *,
     dry_run: bool = True,
     only_ids: set[str] | None = None,
+    session_filter: str | None = None,
+    bundle_filter: str | None = None,
 ) -> None:
     """Remove bundle list entries that reference missing sessions or bundles on disk.
 
@@ -208,6 +210,11 @@ def _fix_stale_bundle_list_entries(
         for entry in entries:
             ses = entry.get("session", "")
             bndl = entry.get("name", "")
+            if (session_filter and ses != session_filter) or (
+                bundle_filter and bndl != bundle_filter
+            ):
+                kept.append(entry)  # outside the requested scope — never touched
+                continue
             ses_dir = db_path / f"{ses}_ses"
             bndl_dir = ses_dir / f"{bndl}_bndl"
 
@@ -257,6 +264,8 @@ def _fix_orphan_bundles(
     *,
     dry_run: bool = True,
     only_ids: set[str] | None = None,
+    session_filter: str | None = None,
+    bundle_filter: str | None = None,
 ) -> None:
     """Move orphan sessions/bundles to _lost+found/.
 
@@ -273,6 +282,9 @@ def _fix_orphan_bundles(
     lf_base = db_path / LOST_FOUND_DIR
 
     for ses_name, ses_path in disk_ses.items():
+        # --session/--bundle scope the APPLY pass too, not just the report
+        if session_filter and ses_name != session_filter:
+            continue
         if ses_name not in mongo_sessions:
             # ── Whole session is orphaned — move entire directory ───────
             fid = _fix_id("orphan_session", project_id, ses_name)
@@ -306,6 +318,8 @@ def _fix_orphan_bundles(
             mongo_files.add(_file_to_bundle_name(f["name"]))
 
         for bndl_name, bndl_path in _disk_bundles(ses_path).items():
+            if bundle_filter and bndl_name != bundle_filter:
+                continue
             if bndl_name not in mongo_files:
                 fid = _fix_id("orphan_bundle", project_id, ses_name, bndl_name)
                 desc = (
@@ -559,8 +573,16 @@ def _diagnose_project(
         # Move orphan bundles first, then prune bundle lists (order matters:
         # moving orphans creates new stale bundle list entries that the
         # prune step should clean up in the same pass)
-        _fix_orphan_bundles(pid, db_path, mongo_sessions, report["fixes"], dry_run=dry_run, only_ids=only_ids)
-        _fix_stale_bundle_list_entries(pid, db_path, report["fixes"], dry_run=dry_run, only_ids=only_ids)
+        _fix_orphan_bundles(
+            pid, db_path, mongo_sessions, report["fixes"],
+            dry_run=dry_run, only_ids=only_ids,
+            session_filter=session_filter, bundle_filter=bundle_filter,
+        )
+        _fix_stale_bundle_list_entries(
+            pid, db_path, report["fixes"],
+            dry_run=dry_run, only_ids=only_ids,
+            session_filter=session_filter, bundle_filter=bundle_filter,
+        )
 
     return report
 
