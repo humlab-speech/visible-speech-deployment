@@ -139,3 +139,61 @@ def test_npm_services_target_the_session_manager_source_tree() -> None:
     assert image == "localhost/visp-session-manager:latest"
     # Must match the dev quadlet mount destination, or npm writes to the wrong tree.
     assert workdir == "/session-manager"
+
+
+# --- round-2 pins: check=False and TTY-conditional flags (surviving mutants) ---
+
+
+import sys
+
+from vispctl.npm import NPM_SERVICES, run_npm
+
+
+class KwRunner:
+    def __init__(self, rc=0):
+        self.rc = rc
+        self.cmds = []
+        self.kwargs = []
+
+    def run_quiet(self, cmd):
+        return 0, "", ""
+
+    def run(self, cmd, **kwargs):
+        self.cmds.append(list(cmd))
+        self.kwargs.append(kwargs)
+        return FakeResult(self.rc)
+
+
+def _prep(tmp_path: Path):
+    service = sorted(NPM_SERVICES)[0]
+    rel_source = NPM_SERVICES[service][0]
+    (tmp_path / rel_source).mkdir(parents=True)
+    return service
+
+
+def test_npm_failure_is_reported_via_rc_not_exception(tmp_path: Path):
+    """check=True here would raise CalledProcessError out of run_npm — the
+    CLI contract is a printed code and a returned rc (mutant survived r1)."""
+    service = _prep(tmp_path)
+    fr = KwRunner(rc=7)
+    rc = run_npm(fr, tmp_path, service, ["ci"])
+    assert fr.kwargs and fr.kwargs[0].get("check") is False
+    assert rc == 7
+
+
+def test_tty_flags_only_when_terminal(monkeypatch, tmp_path: Path):
+    service = _prep(tmp_path)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    fr = KwRunner()
+    run_npm(fr, tmp_path, service, ["ci"])
+    assert "-it" not in fr.cmds[0]
+
+
+def test_tty_flags_when_both_terminals(monkeypatch, tmp_path: Path):
+    service = _prep(tmp_path)
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    fr = KwRunner()
+    run_npm(fr, tmp_path, service, ["ci"])
+    assert "-it" in fr.cmds[0]
