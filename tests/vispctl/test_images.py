@@ -16,9 +16,9 @@ class _FakeRunner:
         self.inspected_containers = []
 
     def run_quiet(self, cmd):
-        if cmd[:2] == ["podman", "inspect"] and "{{.ImageID}}" in cmd:
+        if cmd[:2] == ["podman", "inspect"] and any("ImageID" in str(a) for a in cmd):
             self.inspected_containers.append(cmd[2])
-            return 0, self.running_id, ""
+            return 0, f"running {self.running_id}", ""
         if cmd[:3] == ["podman", "image", "inspect"]:
             return 0, self.latest_id, ""
         return 0, "", ""
@@ -50,7 +50,7 @@ def test_get_stale_containers_skips_not_running():
 
     class NotRunningRunner:
         def run_quiet(self, cmd):
-            if cmd[:2] == ["podman", "inspect"] and "{{.ImageID}}" in cmd:
+            if cmd[:2] == ["podman", "inspect"] and any("ImageID" in str(a) for a in cmd):
                 return 1, "", "no such container"
             return 0, "", ""
 
@@ -274,3 +274,31 @@ def test_get_third_party_images_offline_skips_registry(tmp_path, monkeypatch):
 
     assert len(images) == 3
     assert all(i.remote_digest is None and i.remote_error is None for i in images)
+
+
+def test_exited_container_is_never_stale(tmp_path):
+    """R2-1: 'podman inspect' answers for stopped containers too; apply must
+    not resurrect a service the admin stopped."""
+    class ExitedRunner:
+        def run_quiet(self, cmd):
+            if cmd[:2] == ["podman", "inspect"]:
+                return 0, "exited old-image-id", ""
+            if cmd[:3] == ["podman", "image", "inspect"]:
+                return 0, "new-image-id", ""
+            return 0, "", ""
+
+    im = ImageManager(ExitedRunner())
+    svc = Service("mongo", "container", "mongo.container")
+    assert im.get_stale_containers([svc]) == []
+
+
+def test_missing_container_is_never_stale():
+    class GoneRunner:
+        def run_quiet(self, cmd):
+            if cmd[:2] == ["podman", "inspect"]:
+                return 125, "", "no such container"
+            return 0, "whatever", ""
+
+    im = ImageManager(GoneRunner())
+    svc = Service("mongo", "container", "mongo.container")
+    assert im.get_stale_containers([svc]) == []
