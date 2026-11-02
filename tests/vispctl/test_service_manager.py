@@ -1,5 +1,15 @@
-from vispctl.service import DEFAULT_SERVICES
+import pytest
+
+from vispctl.service import DEFAULT_SERVICES, Service
 from vispctl.service_manager import ServiceManager
+
+
+@pytest.fixture(autouse=True)
+def _no_wall_clock(monkeypatch):
+    # stop() verifies pull-up after a 3s pause and _unit_came_up polls with
+    # 0.4s spacing; faking the clock keeps the polling logic exercised without
+    # costing 6s per suite run.
+    monkeypatch.setattr("vispctl.service_manager.time.sleep", lambda s: None)
 
 
 class FakeRunner:
@@ -274,3 +284,38 @@ def test_enable_disable(tmp_path, capsys):
     assert "Enabled" in out
     assert not dropin.exists()
     assert fr.systemctl_calls.count(("daemon-reload",)) == 2
+
+
+def test_stop_order_is_reverse_of_declaration_order():
+    # Requires= chains mean dependents must die before their networks and
+    # early-declared backends; a flipped iteration order passes every older
+    # assertion, so pin the exact sequence.
+    fr = FakeRunner()
+    ServiceManager(fr, DEFAULT_SERVICES).stop("all")
+    stopped = [u for action, u in fr.systemctl_calls if action == "stop"]
+    containers = [f"{s.name}.service" for s in DEFAULT_SERVICES if s.type == "container"]
+    assert stopped == list(reversed(containers))
+
+
+def test_stopped_unit_pulled_back_up_is_warned(capsys):
+    # FakeRunner models 'stop does not clear running state' -> the stopped
+    # unit must be reported as pulled back up.
+    fr = FakeRunner()
+    m = ServiceManager(fr, DEFAULT_SERVICES)
+    m.start("mongo")
+    m.stop("mongo")
+    out = capsys.readouterr().out
+    assert "came back up" in out
+
+
+def test_clean_stop_is_not_warned(capsys):
+    class CleanStopRunner(FakeRunner):
+        def systemctl(self, *args, **kwargs):
+            res = super().systemctl(*args, **kwargs)
+            if args and args[0] == "stop" and len(args) > 1:
+                self.started_units.discard(args[1].replace(".service", ""))
+            return res
+
+    ServiceManager(CleanStopRunner(), DEFAULT_SERVICES).stop("mongo")
+    out = capsys.readouterr().out
+    assert "Stopped" in out and "came back up" not in out
