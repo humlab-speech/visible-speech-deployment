@@ -18,6 +18,24 @@ def load_visp_module():
     return vp
 
 
+def _stub_runner_methods(monkeypatch, vp, rc=0):
+    """Stub the Runner methods that actually exist (there is no _run)."""
+    import subprocess as _sp
+    calls = []
+
+    def fake_run(self, cmd, capture=False, check=True, **kw):
+        calls.append(list(cmd))
+        return _sp.CompletedProcess(list(cmd), rc, "", "")
+
+    def fake_run_quiet(self, cmd):
+        calls.append(list(cmd))
+        return (rc, "", "")
+
+    monkeypatch.setattr(vp.Runner, "run", fake_run)
+    monkeypatch.setattr(vp.Runner, "run_quiet", fake_run_quiet)
+    return calls
+
+
 # ── cmd_status ─────────────────────────────────────────────────────────────────
 
 
@@ -33,7 +51,7 @@ def test_cmd_status_outputs_service_header(tmp_path, monkeypatch, capsys):
             print("=== VISP Service Status ===")
 
     runner = vp.Runner()
-    runner._run = lambda *a, **kw: None
+    _stub_runner_methods(monkeypatch, vp)
     vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
     (tmp_path / "systemd").mkdir(exist_ok=True)
 
@@ -61,7 +79,7 @@ def test_cmd_status_shows_disabled_optional_service(tmp_path, monkeypatch, capsy
             pass
 
     runner = vp.Runner()
-    runner._run = lambda *a, **kw: None
+    _stub_runner_methods(monkeypatch, vp)
     vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
     (tmp_path / "systemd").mkdir(exist_ok=True)
 
@@ -90,7 +108,7 @@ def test_cmd_apply_nothing_to_do(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(q_mod, "get_quadlet_drift", lambda *a, **kw: ([], []))
 
     runner = vp.Runner()
-    runner._run = lambda *a, **kw: None
+    _stub_runner_methods(monkeypatch, vp)
     vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
 
     args = types.SimpleNamespace(service="all")

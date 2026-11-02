@@ -17,11 +17,29 @@ def load_visp_module():
     return vp
 
 
+def _stub_runner_methods(monkeypatch, vp, rc=0):
+    """Stub the Runner methods that actually exist (there is no _run)."""
+    import subprocess as _sp
+    calls = []
+
+    def fake_run(self, cmd, capture=False, check=True, **kw):
+        calls.append(list(cmd))
+        return _sp.CompletedProcess(list(cmd), rc, "", "")
+
+    def fake_run_quiet(self, cmd):
+        calls.append(list(cmd))
+        return (rc, "", "")
+
+    monkeypatch.setattr(vp.Runner, "run", fake_run)
+    monkeypatch.setattr(vp.Runner, "run_quiet", fake_run_quiet)
+    return calls
+
+
 def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     vp = load_visp_module()
 
     runner = vp.Runner()
-    runner._run = lambda *a, **kw: (1, "", "")
+    _stub_runner_methods(monkeypatch, vp, rc=1)
     vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
 
     quad_dir = tmp_path / "quadlets" / "dev"
