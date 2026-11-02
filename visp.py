@@ -183,7 +183,7 @@ def cmd_status(args):  # noqa: ARG001
 def cmd_logs(args):
     """View logs from services (and optionally debug diagnostics)."""
     cfg = get_config()
-    view_logs(
+    failed = view_logs(
         args,
         runner=cfg.runner,
         container_log_files=CONTAINER_LOG_FILES,
@@ -193,6 +193,9 @@ def cmd_logs(args):
         resolve_services=lambda s: resolve_services(s, cfg.project_dir),
         container_services=_container_services,
     )
+    if failed:
+        print(color(f"journalctl failed for: {', '.join(failed)}", Colors.RED))
+        sys.exit(1)
 
 
 # === Service Control Commands ===
