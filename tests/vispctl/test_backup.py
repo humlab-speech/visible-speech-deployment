@@ -45,10 +45,21 @@ class FakeRunner:
             # find destination (last arg)
             dest = cmd[-1]
             try:
-                Path(dest).write_bytes(b"dummy")
+                _write_fake_tar(dest)
             except Exception:
                 pass
         return _Result(returncode=0)
+
+
+
+
+def _write_fake_tar(dest: str) -> None:
+    """A real (tiny) gz tar — success paths must succeed for real reasons."""
+    import io
+    with tarfile.open(dest, "w:gz") as tar:
+        info = tarfile.TarInfo("visp_dump/visp/test.bson")
+        info.size = 4
+        tar.addfile(info, io.BytesIO(b"bson"))
 
 
 class FailingRunner:
@@ -70,7 +81,7 @@ class FailingRunner:
         self.calls.append(("run", cmd))
         if cmd[:2] == ["podman", "cp"]:
             try:
-                Path(cmd[-1]).write_bytes(b"dummy")
+                _write_fake_tar(cmd[-1])
             except Exception:
                 pass
         rc = 1 if self._should_fail(cmd) else 0
@@ -491,3 +502,19 @@ def test_backup_copy_failure_returns_none(tmp_path, capsys):
 def test_list_backups_empty_dir(tmp_path):
     bm = BackupManager(FakeRunner(tmp_path), project_dir=tmp_path)
     assert bm.list_backups(tmp_path) == []
+
+
+def test_backup_rejects_garbage_archive(tmp_path, capsys):
+    """Existence is not a backup: garbage at the output path must fail loudly."""
+    class GarbageCpRunner(FakeRunner):
+        def run(self, cmd, capture=False, check=True, **kwargs):
+            if cmd[:2] == ["podman", "cp"] and not str(cmd[-1]).startswith("mongo:"):
+                Path(cmd[-1]).write_bytes(b"not a tarball at all")
+                return _Result(returncode=0)
+            return super().run(cmd, capture=capture, check=check, **kwargs)
+
+    bm = BackupManager(GarbageCpRunner(tmp_path), project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+    out = bm.backup(output=tmp_path / "out.tar.gz", dry_run=False)
+    assert out is None
+    assert "unreadable" in capsys.readouterr().out
