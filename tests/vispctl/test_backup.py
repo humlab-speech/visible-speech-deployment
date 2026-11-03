@@ -4,10 +4,24 @@ import sys
 import tarfile
 from pathlib import Path
 
+import pytest
+
 # Ensure project package is importable when running tests
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from vispctl.backup import BackupManager  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_repo_litter(tmp_path, monkeypatch):
+    """Keep the suite's snapshots out of the caller's directory.
+
+    backup()'s default output is `./<name>.tar.gz` (a deliberate operator
+    default), and restore()'s pre-restore snapshot calls it without an
+    explicit path — so before this fixture every run of this file dropped a
+    real gzip in the repo root. With CWD pinned to tmp_path, nothing escapes.
+    """
+    monkeypatch.chdir(tmp_path)
 
 
 class _Result:
