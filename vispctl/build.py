@@ -107,9 +107,19 @@ class BuildManager:
 
                 depends_on = cfg.get("depends_on")
                 if depends_on and depends_on not in results["success"]:
-                    rc, _, _ = self.runner.run_quiet(
-                        ["podman", "image", "exists", f"{self.build_configs[depends_on]['image']}:latest"]
-                    )
+                    dep = self.build_configs.get(depends_on)
+                    if dep is None:
+                        # A node project (webclient, container-agent) produces a build
+                        # artefact, not an image: there is nothing in local storage to
+                        # look for, so it counts as satisfied only if it was built in
+                        # this run. A dependency name matching nothing is treated the
+                        # same way — skipping is recoverable, a crash mid-build is not.
+                        kind = "node project, no image" if depends_on in node_names else "unknown dependency"
+                        print(color(f"  ✗ Requires {depends_on} ({kind}) — not built in this run", Colors.RED))
+                        results["skipped"].append(svc_name)
+                        print()
+                        continue
+                    rc, _, _ = self.runner.run_quiet(["podman", "image", "exists", f"{dep['image']}:latest"])
                     if rc != 0:
                         print(color(f"  ✗ Requires {depends_on} image — not built and not present", Colors.RED))
                         results["skipped"].append(svc_name)

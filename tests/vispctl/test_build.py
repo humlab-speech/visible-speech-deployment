@@ -353,3 +353,70 @@ def test_build_list_available_configs_match_whitelist(capsys):
     listed = {c.strip() for c in line.split(":", 1)[1].split(",")}
     assert listed == VALID_BUILD_CONFIGS
     assert "visp.dev" in line
+
+
+class _RecordingRunner:
+    """Records every command run_builds issues; answers 'podman image exists' with a given rc."""
+
+    def __init__(self, image_exists_rc=1):
+        self.commands = []
+        self.image_exists_rc = image_exists_rc
+
+    def run_quiet(self, cmd, **kwargs):
+        self.commands.append(list(cmd))
+        return self.image_exists_rc, "", ""
+
+
+_IMG = {"image": "visp-apache", "context": "./docker/apache"}
+_NODE = {"webclient": {"source": "src", "output": "out"}}
+
+
+def _run_builds(bm, ordered):
+    bm.build_image = lambda *a, **k: True  # the podman build itself is not under test here
+    bm.build_node_project = lambda *a, **k: True  # ...nor is the containerized node build
+    return bm.run_builds(ordered)
+
+
+def test_node_dependency_is_satisfied_only_by_building_it_this_run():
+    """A depends_on naming a node project must skip, not KeyError on build_configs.
+
+    Node projects (webclient, container-agent) produce a build artefact rather
+    than an image, so build_configs has no entry for them and there is no
+    'podman image exists' answer to ask for.
+    """
+    runner = _RecordingRunner()
+    bm = BuildManager(runner, build_configs={"app": {**_IMG, "depends_on": "webclient"}}, node_configs=_NODE)
+    results = _run_builds(bm, ["app"])
+
+    assert results["skipped"] == ["app"]
+    assert results["failed"] == []
+    assert runner.commands == []  # nothing to look for locally: not a single probe
+
+
+def test_node_dependency_built_in_this_run_satisfies_the_build():
+    runner = _RecordingRunner()
+    bm = BuildManager(runner, build_configs={"app": {**_IMG, "depends_on": "webclient"}}, node_configs=_NODE)
+    results = _run_builds(bm, ["webclient", "app"])
+
+    assert results["success"] == ["webclient", "app"]
+    assert results["skipped"] == []
+
+
+def test_unknown_dependency_name_skips_instead_of_crashing():
+    """A typo in depends_on loses the build; it must not raise mid-run."""
+    runner = _RecordingRunner()
+    bm = BuildManager(runner, build_configs={"app": {**_IMG, "depends_on": "no-such-thing"}}, node_configs={})
+    results = _run_builds(bm, ["app"])
+
+    assert results["skipped"] == ["app"]
+    assert runner.commands == []
+
+
+def test_container_dependency_still_probes_local_storage():
+    """The image path is unchanged — same argv, and a present image satisfies the dependency."""
+    runner = _RecordingRunner(image_exists_rc=0)
+    bm = BuildManager(runner, build_configs={"dep": _IMG, "app": {**_IMG, "depends_on": "dep"}}, node_configs={})
+    results = _run_builds(bm, ["app"])
+
+    assert results["success"] == ["app"]
+    assert runner.commands == [["podman", "image", "exists", "visp-apache:latest"]]
