@@ -109,21 +109,50 @@ def test_stream_podman_logs_since_adds_flag() -> None:
 # ── show_debug_info ────────────────────────────────────────────────────────────
 
 
+def _notfound_runner() -> MagicMock:
+    runner = MagicMock(spec=Runner)
+    runner.run_quiet.return_value = (1, "", "")  # container not found
+    return runner
+
+
 def test_show_debug_info_prints_quadlet_file(tmp_path: Path, capsys) -> None:
+    # R2 BROKEN: the header and the 'does not exist' line both satisfied the
+    # old assertions while the file was ABSENT - presence and absence printed
+    # the same substrings. Pin the rendered-template branch specifically.
     sys_dir = tmp_path / "systemd"
     sys_dir.mkdir()
 
     svc = _svc("session-manager")
-    target = sys_dir / svc.file
-    target.write_text("unit content")
+    (sys_dir / svc.file).write_text("unit content")
 
-    runner = MagicMock(spec=Runner)
-    runner.run_quiet.return_value = (1, "", "")  # container not found
-
-    show_debug_info("session-manager", runner, [svc], sys_dir)
+    show_debug_info("session-manager", _notfound_runner(), [svc], sys_dir)
     out = capsys.readouterr().out
-    assert "Quadlet File:" in out
-    assert str(target) in out
+    assert "rendered template" in out
+    assert "does not exist" not in out
+
+
+def test_show_debug_info_flags_missing_quadlet_file(tmp_path: Path, capsys) -> None:
+    sys_dir = tmp_path / "systemd"
+    sys_dir.mkdir()
+    svc = _svc("session-manager")
+
+    show_debug_info("session-manager", _notfound_runner(), [svc], sys_dir)
+    out = capsys.readouterr().out
+    assert "does not exist" in out
+
+
+def test_show_debug_info_flags_legacy_symlink(tmp_path: Path, capsys) -> None:
+    # The legacy symlink arm in logs.py had no test anywhere.
+    sys_dir = tmp_path / "systemd"
+    sys_dir.mkdir()
+    svc = _svc("session-manager")
+    real = tmp_path / "elsewhere.container"
+    real.write_text("x")
+    (sys_dir / svc.file).symlink_to(real)
+
+    show_debug_info("session-manager", _notfound_runner(), [svc], sys_dir)
+    out = capsys.readouterr().out
+    assert "legacy symlink" in out
 
 
 def test_show_debug_info_container_not_found_message(tmp_path: Path, capsys) -> None:
@@ -156,6 +185,26 @@ def test_show_debug_info_prints_systemctl_status(tmp_path: Path, capsys) -> None
     assert "Service Status:" in out
     assert "Active: active (running)" in out
     assert "Main PID: 1234" in out
+    # R2 WEAK: content alone passes however the unit was named (or not).
+    assert runner.systemctl.call_args[0] == ("status", "--no-pager", "mongo.service")
+
+
+def test_show_debug_info_no_placeholder_when_stderr_present(tmp_path: Path, capsys) -> None:
+    """R2: 'and'->'or' in the emptiness guard survived - stderr-only output
+    must render the real error, not the 'no status output' placeholder."""
+    sys_dir = tmp_path / "systemd"
+    sys_dir.mkdir()
+
+    runner = MagicMock(spec=Runner)
+    runner.run_quiet.return_value = (1, "", "")
+    runner.systemctl.return_value = types.SimpleNamespace(
+        stdout="", stderr="Failed to connect to bus: No such file or directory"
+    )
+
+    show_debug_info("mongo", runner, [_svc("mongo")], sys_dir)
+    out = capsys.readouterr().out
+    assert "Failed to connect to bus" in out
+    assert "no status output" not in out
 
 
 def test_show_debug_info_status_placeholder_when_empty(tmp_path: Path, capsys) -> None:
@@ -292,12 +341,16 @@ def test_view_logs_snapshot_tail_suppressed_by_journal_only() -> None:
     mock_tail.assert_not_called()
 
 
-def test_view_logs_snapshot_tail_called_when_not_journal_only() -> None:
-    """When journal_only is False and service has app logs, tail should be called."""
+def test_view_logs_snapshot_tail_called_in_debug_mode() -> None:
+    """R2 BROKEN: the old test invented type 'other' - production apache is a
+    'container' service and the honest way to reach snapshot tail is the
+    --debug path (which bypasses the podman-logs shortcut). Journal argv is
+    pinned in the same breath (R2 TL-R2-01 seam)."""
     runner = MagicMock(spec=Runner)
-    # Use a non-container type so stream_podman_logs shortcut is not taken
-    services = [Service("apache", "other", "apache.container")]
-    args = _make_view_args(service="apache", follow=False, journal_only=False)
+    runner.run_quiet.return_value = (0, "running", "")
+    runner.systemctl.return_value = types.SimpleNamespace(stdout="", stderr="")
+    services = [Service("apache", "container", "apache.container")]
+    args = _make_view_args(service="apache", follow=False, journal_only=False, debug=True)
 
     with patch("vispctl.logs.tail_container_logs") as mock_tail:
         view_logs(
@@ -312,3 +365,28 @@ def test_view_logs_snapshot_tail_called_when_not_journal_only() -> None:
         )
     mock_tail.assert_called_once()
     assert mock_tail.call_args[0][0] == "apache"
+    assert runner.journalctl.call_args[0] == ("-u", "apache.service", "--no-pager", "-n", "100")
+
+
+def test_view_logs_single_container_streams_exact_argv(tmp_path: Path) -> None:
+    """R2: the workhorse path (visp logs <container>) had '-f' in cmd checks
+    but never the full argv - wrong unit, missing --tail, or streaming to the
+    wrong name all stayed green."""
+    runner = MagicMock(spec=Runner)
+    services = [Service("apache", "container", "apache.container")]
+    args = _make_view_args(service="apache", no_follow=True, lines=42)
+
+    with patch("vispctl.logs.subprocess.run") as mock_run:
+        mock_run.return_value = types.SimpleNamespace(returncode=0)
+        failed = view_logs(
+            args,
+            runner=runner,
+            container_log_files=CONTAINER_LOG_FILES,
+            systemd_dir=tmp_path,
+            get_runtime_services=lambda: services,
+            get_all_services=lambda: services,
+            resolve_services=lambda s: services,
+            container_services=lambda svcs: [s for s in svcs if s.type == "container"],
+        )
+    assert mock_run.call_args[0][0] == ["podman", "logs", "--tail", "42", "apache"]
+    assert failed == []
