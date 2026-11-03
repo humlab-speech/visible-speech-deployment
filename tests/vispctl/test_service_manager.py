@@ -86,15 +86,28 @@ def test_status_distinguishes_failed_from_inactive(capsys):
 
 
 def test_network_status_shows_active(capsys):
-    # Ensure network services are shown as active when podman network exists
-    services = DEFAULT_SERVICES
+    # R2 BROKEN: the old assertion scanned ALL output for "active", which is
+    # a substring of the "inactive" lines every other service prints, and the
+    # fake always answered exists=rc0. Pin the visp-net ROW and its negative.
     fr = FakeRunner()
-    m = ServiceManager(fr, services)
-    m.status()
-    captured = capsys.readouterr().out
-    # visp-net is a network in default services and should show as active
-    assert "visp-net" in captured
-    assert "active" in captured.splitlines()[1] or "active" in captured
+    ServiceManager(fr, DEFAULT_SERVICES).status()
+    lines = capsys.readouterr().out.splitlines()
+    row = [l for l in lines if "visp-net:" in l]
+    assert row, "network row missing"
+    assert "active" in row[0]
+
+    missing = FakeRunner()
+    original = missing.run_quiet
+
+    def rc_when_absent(cmd):
+        if "network" in cmd and "exists" in cmd:
+            return 1, "", ""
+        return original(cmd)
+
+    missing.run_quiet = rc_when_absent
+    ServiceManager(missing, DEFAULT_SERVICES).status()
+    row2 = [l for l in capsys.readouterr().out.splitlines() if "visp-net:" in l]
+    assert "not found" in row2[0] and "active" not in row2[0]
 
 
 def test_start_stop(capsys):
@@ -167,12 +180,15 @@ def test_enable_disable_skip_networks(tmp_path, capsys):
     m.disable("visp-net")
     out = capsys.readouterr().out
     assert "skipped" in out
-    assert not (tmp_path / "visp-net.network.d").exists()
 
     m.enable("visp-net")
     out = capsys.readouterr().out
     assert "skipped" in out
-    assert not (tmp_path / "visp-net.network.d").exists()
+    # R2 TAUTOLOGY fix: the .network.d directory never existed in this
+    # fixture, so its absence proved nothing. Pin behaviour instead: no
+    # systemctl verb may ever name the network unit.
+    assert not [c for c in fr.systemctl_calls if "visp-net" in " ".join(c)]
+    assert not list(tmp_path.glob("visp-net*"))
 
 
 class IsEnabledRunner:
@@ -243,6 +259,8 @@ def test_enable_removes_dropin_and_reports_enabled(tmp_path, capsys):
     out = capsys.readouterr().out
 
     assert not (dropin_dir / "90-visp-autostart.conf").exists()
+    # R2: leaving the empty drop-in dir behind survives the old suite
+    assert not dropin_dir.exists(), "enable must remove the emptied drop-in dir"
     assert "Enabled" in out
     assert ("enable", "mongo.service") not in fr.systemctl_calls
 
@@ -275,7 +293,10 @@ def test_enable_disable(tmp_path, capsys):
     assert "Disabling autostart for mongo.service" in out
     assert "Disabled" in out
     assert dropin.exists()
-    assert "WantedBy=" in dropin.read_text()
+    dropin_text = dropin.read_text()
+    assert "WantedBy=" in dropin_text
+    # R2 F3: the old assertion also passed on a drop-in that ENABLES boot
+    assert "WantedBy=default.target" not in dropin_text
     assert ("daemon-reload",) in fr.systemctl_calls
 
     m.enable("mongo")
