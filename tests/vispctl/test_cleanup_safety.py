@@ -5,6 +5,7 @@ let the sweep delete foreign containers and report success when rm failed.
 """
 
 import importlib.util
+import subprocess
 import sys
 import types
 from pathlib import Path
@@ -139,3 +140,77 @@ def test_proxy_of_stopped_session_is_removed(monkeypatch):
     monkeypatch.setattr(cc, "Runner", lambda: fr)
     cleanup_containers(mode="all", yes=True)
     assert "bbb2" in fr.rmed  # orphan proxy cleaned
+
+
+class ModeRecordingRunner:
+    """Answers discovery with one container; records every argv it saw."""
+
+    def __init__(self):
+        self.cmds = []
+
+    def run(self, cmd, capture=False, check=True):
+        self.cmds.append(list(cmd))
+        stdout = ""
+        rc = 0
+        if cmd[:2] == ["podman", "ps"]:
+            stdout = "ccc9 visp-session-mode-probe\n"
+        return types.SimpleNamespace(stdout=stdout, returncode=rc, stderr="")
+
+
+def _discovery_call(cmds):
+    return next(c for c in cmds if c[:2] == ["podman", "ps"] and "--format" in c)
+
+
+@pytest.mark.parametrize(
+    "mode,expect_a,expect_exited_filter",
+    [
+        ("running", False, False),  # live `ps` only: never -a
+        ("all", True, False),  # -a, no status filter
+        ("stopped", True, True),  # -a plus the explicit exited filter
+    ],
+)
+def test_mode_selects_the_right_podman_ps(monkeypatch, mode, expect_a, expect_exited_filter):
+    """Round-3 mutation: `mode == "running"` at :15 survived because nothing
+    pinned which discovery command each mode issues. 'running' must never
+    enumerate exited containers with -a, or a running-only sweep deletes
+    stopped ones too."""
+    import vispctl.cleanup_containers as cc
+
+    fr = ModeRecordingRunner()
+    monkeypatch.setattr(cc, "Runner", lambda: fr)
+    cleanup_containers(mode=mode, yes=True)
+
+    disc = _discovery_call(fr.cmds)
+    assert ("-a" in disc) is expect_a, f"mode={mode} issued wrong discovery: {disc}"
+    assert ("status=exited" in " ".join(disc)) is expect_exited_filter
+
+
+def test_stop_and_rm_errors_do_not_raise_but_report_partial(monkeypatch):
+    """:89/:96 must stay check=False, and their failures must still be VISIBLE.
+
+    Round-3 mutation: a podman error during stop/rm was invisible to the
+    suite. This fake honours `check=` like the real Runner: if cleanup ever
+    flips to check=True the error raises instead of being handled, and if it
+    swallows the failure the partial report disappears."""
+    import vispctl.cleanup_containers as cc
+
+    class ErroringRunner:
+        def __init__(self):
+            self.rm_fail = False
+
+        def run(self, cmd, capture=False, check=True):
+            if cmd[:2] == ["podman", "ps"] and "id=" in " ".join(cmd):
+                return types.SimpleNamespace(stdout="ddd1\n", returncode=0)  # main is running -> stop path
+            if cmd[:2] == ["podman", "ps"]:
+                return types.SimpleNamespace(stdout="ddd1 visp-session-broken-proj\n", returncode=0)
+            rc = 1 if cmd[:2] in (["podman", "rm"], ["podman", "stop"]) else 0
+            if check and rc != 0:
+                raise subprocess.CalledProcessError(rc, cmd)
+            return types.SimpleNamespace(stdout="", returncode=rc, stderr="in use")
+
+    monkeypatch.setattr(cc, "Runner", lambda: ErroringRunner())
+    # must NOT raise CalledProcessError despite a failing rm with check semantics live
+    res = cleanup_containers(mode="all", yes=True)
+    assert res["status"] == "partial"
+    assert res["removed"] == 0
+    assert "visp-session-broken-proj" in res["message"]
