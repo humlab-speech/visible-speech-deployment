@@ -424,6 +424,54 @@ def test_restore_refuses_while_writers_running(tmp_path, capsys):
     assert "Refusing to restore" not in capsys.readouterr().out
 
 
+def test_restore_tocou_recheck_refuses_late_writer(tmp_path, capsys):
+    """The late-writer re-check just before touching data must decide on the
+    re-check's answer, not on --allow-running-writers alone.
+
+    A writer can come back (Restart=always after a crash) between the initial
+    guard and the mongorestore. An inverted or removed :408 check makes that
+    window invisible again — the round-3 mutation sample showed a flipped
+    `if not allow_running_writers:` surviving the whole suite.
+    """
+    tb = _make_tarball(tmp_path / "b.tar.gz", [("data/users/bson", b"x")])
+
+    class LateWriterRunner(FakeRunner):
+        """Quiet during the initial check, active on the re-check."""
+
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            self.is_active_calls = 0
+
+        def unit_is_active(self, unit):
+            self.is_active_calls += 1
+            if unit != "session-manager":
+                return False
+            # first pass (initial guard): all writers quiet.
+            # second pass (TOCTOU re-check right before the write): one is back.
+            return self.is_active_calls > len(BackupManager._MONGO_WRITERS)
+
+    runner = LateWriterRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    res = bm.restore(tb, force=True, no_snapshot=True)
+    out = capsys.readouterr().out
+    assert res is False
+    assert "started since the initial check" in out
+    assert "session-manager" in out
+    # aborted before anything was copied into the container or restored
+    assert not any(c[0] == "run" and c[1][:2] == ["podman", "cp"] for c in runner.calls)
+    assert not any("mongorestore" in str(c) for c in runner.calls)
+
+    # an explicit override must still pass through the re-check (it overrides
+    # the refusal, it does not force an abort) — kills the inverted condition
+    # from the other side
+    capsys.readouterr()
+    res = bm.restore(tb, force=True, no_snapshot=True, allow_running_writers=True)
+    assert "started since the initial check" not in capsys.readouterr().out
+    assert any(c[0] == "run" and c[1][:2] == ["podman", "cp"] for c in runner.calls)
+
+
 def test_restore_rejects_fifo_members(tmp_path, capsys):
     # A FIFO named like a .bson file would make mongorestore block forever.
     tb = _make_tarball(tmp_path / "b.tar.gz", fifos=["db/coll.bson"])
