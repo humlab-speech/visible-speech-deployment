@@ -30,8 +30,15 @@ def _stub_runner_methods(monkeypatch, vp, rc=0):
         calls.append(list(cmd))
         return (rc, "", "")
 
+    def fake_journalctl(self, *a, **kw):
+        # journalctl is HEALTHY here: this file tests the debug panel, not
+        # log-failure accounting (rc=1 here would make cmd_logs exit 1).
+        calls.append(list(a))
+        return _sp.CompletedProcess(list(a), 0, "", "")
+
     monkeypatch.setattr(vp.Runner, "run", fake_run)
     monkeypatch.setattr(vp.Runner, "run_quiet", fake_run_quiet)
+    monkeypatch.setattr(vp.Runner, "journalctl", fake_journalctl)
     return calls
 
 

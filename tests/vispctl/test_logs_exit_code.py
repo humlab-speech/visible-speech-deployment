@@ -71,3 +71,39 @@ def test_cmd_logs_exits_1_on_failure(monkeypatch):
     with pytest.raises(SystemExit) as exc:
         vp.cmd_logs(_args("mongo"))
     assert exc.value.code == 1
+
+
+def _view_podman(service, *, follow=False, no_follow=True):
+    """view_logs through the podman-stream shortcut (container, no debug)."""
+    runner = MagicMock(spec=Runner)
+    args = types.SimpleNamespace(
+        service=service, follow=follow, lines=None, since=None,
+        priority=None, journal_only=False, debug=False, no_follow=no_follow,
+    )
+    return view_logs(
+        args,
+        runner=runner,
+        container_log_files={},
+        systemd_dir=Path("/tmp"),
+        get_runtime_services=lambda: [Service("mongo", "container", "mongo.container")],
+        get_all_services=lambda: [],
+        resolve_services=lambda s: [s],
+        container_services=lambda svcs: svcs,
+    )
+
+
+def test_follow_mode_podman_rc_is_never_a_failure(monkeypatch):
+    # H12: `visp logs mongo` follows by default; a nonzero podman exit after
+    # the stream ends (e.g. 125) must NOT be counted as failure. Flipping
+    # 'if not follow and rc' to 'if rc' used to keep the whole suite green
+    # while turning the default logs path into exit 1.
+    import vispctl.logs as log_mod
+    monkeypatch.setattr(log_mod, "stream_podman_logs", lambda service, **kw: 125)
+    assert _view_podman("mongo", no_follow=False) == []
+
+
+def test_snapshot_mode_podman_rc_is_a_failure(monkeypatch):
+    # The other arm of the same policy: --no-follow must still fail loudly.
+    import vispctl.logs as log_mod
+    monkeypatch.setattr(log_mod, "stream_podman_logs", lambda service, **kw: 125)
+    assert _view_podman("mongo", no_follow=True) == ["mongo"]
