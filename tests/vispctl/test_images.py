@@ -45,16 +45,32 @@ def test_get_stale_containers_not_stale_when_same_image():
     assert im.get_stale_containers([svc]) == []
 
 
-def test_get_stale_containers_skips_not_running():
-    """A service whose container isn't running is skipped."""
+def test_get_stale_containers_skips_stopped_container():
+    """An EXITED container is not stale (5f2b901 contract): inspect answers
+    rc=0 with status 'exited', which must not resurrect it via apply."""
 
-    class NotRunningRunner:
+    class StoppedRunner:
+        def run_quiet(self, cmd):
+            if cmd[:2] == ["podman", "inspect"] and any("ImageID" in str(a) for a in cmd):
+                return 0, "exited d57fdb7fdeadbeef ", ""
+            return 0, "", ""
+
+    im = ImageManager(StoppedRunner())
+    svc = Service("mongo", "container", "mongo.container")
+
+    assert im.get_stale_containers([svc]) == []
+
+
+def test_get_stale_containers_skips_missing_container():
+    """No container at all: inspect fails, nothing to restart."""
+
+    class MissingRunner:
         def run_quiet(self, cmd):
             if cmd[:2] == ["podman", "inspect"] and any("ImageID" in str(a) for a in cmd):
                 return 1, "", "no such container"
             return 0, "", ""
 
-    im = ImageManager(NotRunningRunner())
+    im = ImageManager(MissingRunner())
     svc = Service("mongo", "container", "mongo.container")
 
     assert im.get_stale_containers([svc]) == []
