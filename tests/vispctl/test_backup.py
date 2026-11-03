@@ -38,11 +38,7 @@ class FakeRunner:
             target = self.fextract / Path(str(cmd[-1])).name
             return (0 if target.is_dir() else 1), "", ""
         if "find" in cmd:
-            dirs = sorted(
-                f"/tmp/visp_restore_extract/{d.name}"
-                for d in self.fextract.iterdir()
-                if d.is_dir()
-            )
+            dirs = sorted(f"/tmp/visp_restore_extract/{d.name}" for d in self.fextract.iterdir() if d.is_dir())
             return 0, "\n".join(dirs), ""
         return 0, "", ""
 
@@ -80,11 +76,10 @@ class FakeRunner:
         return _Result(returncode=0)
 
 
-
-
 def _write_fake_tar(dest: str) -> None:
     """A real (tiny) gz tar — success paths must succeed for real reasons."""
     import io
+
     with tarfile.open(dest, "w:gz") as tar:
         info = tarfile.TarInfo("visp_dump/visp/test.bson")
         info.size = 4
@@ -228,9 +223,7 @@ def test_restore_success(tmp_path):
     # its stubs pretended to find. Now the archive IS the premise: extract is
     # simulated from real bytes and 'test -d'/'find' read that state.
     dirname = "visp_mongodb_6.0.14_20260101_120000"
-    backup = _make_tarball(
-        tmp_path / f"{dirname}.tar.gz", [(f"{dirname}/visp/test.bson", b"data")]
-    )
+    backup = _make_tarball(tmp_path / f"{dirname}.tar.gz", [(f"{dirname}/visp/test.bson", b"data")])
 
     res = bm.restore(backup, force=True)
     assert res is True
@@ -566,6 +559,7 @@ def test_list_backups_empty_dir(tmp_path):
 
 def test_backup_rejects_garbage_archive(tmp_path, capsys):
     """Existence is not a backup: garbage at the output path must fail loudly."""
+
     class GarbageCpRunner(FakeRunner):
         def run(self, cmd, capture=False, check=True, **kwargs):
             if cmd[:2] == ["podman", "cp"] and not str(cmd[-1]).startswith("mongo:"):

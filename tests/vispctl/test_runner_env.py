@@ -102,6 +102,6 @@ def test_parse_env_bool_case_insensitive_via_lower_pinned() -> None:
 def test_load_env_vars_ignores_comment_with_equals(tmp_path: Path) -> None:
     # env.py:18 mutant survived because no fixture had '# key=value' (R2 F3).
     f = tmp_path / "x.env"
-    f.write_text('# key=value\nreal=1\n')
+    f.write_text("# key=value\nreal=1\n")
     result = load_env_vars(f)
     assert result == {"real": "1"}

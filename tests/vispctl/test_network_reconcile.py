@@ -1,15 +1,10 @@
 """Existing networks must match their spec, not merely exist (round-2 HIGH)."""
 
+import sys
 import types
 from pathlib import Path
 
-import pytest
-
-proj = str(Path(__file__).resolve().parents[2])
-if proj not in sys.path.insert(0, proj) if False else None:
-    pass
-import sys
-sys.path.insert(0, proj)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from vispctl.network import NetworkManager
 

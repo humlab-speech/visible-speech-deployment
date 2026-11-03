@@ -1,17 +1,14 @@
 """DeployManager anchors to the repo root, not the caller's CWD (w2 HIGH)."""
 
-import os
 import sys
 from pathlib import Path
-
-import pytest
 
 proj = str(Path(__file__).resolve().parents[2])
 if proj not in sys.path:
     sys.path.insert(0, proj)
 
-import vispctl
-from vispctl.deploy import DeployManager
+import vispctl  # noqa: E402
+from vispctl.deploy import DeployManager  # noqa: E402
 
 
 def test_default_basedir_is_repo_root_not_cwd(tmp_path, monkeypatch):

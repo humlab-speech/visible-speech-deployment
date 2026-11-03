@@ -210,9 +210,7 @@ def _fix_stale_bundle_list_entries(
         for entry in entries:
             ses = entry.get("session", "")
             bndl = entry.get("name", "")
-            if (session_filter and ses != session_filter) or (
-                bundle_filter and bndl != bundle_filter
-            ):
+            if (session_filter and ses != session_filter) or (bundle_filter and bndl != bundle_filter):
                 kept.append(entry)  # outside the requested scope — never touched
                 continue
             ses_dir = db_path / f"{ses}_ses"
@@ -574,14 +572,23 @@ def _diagnose_project(
         # moving orphans creates new stale bundle list entries that the
         # prune step should clean up in the same pass)
         _fix_orphan_bundles(
-            pid, db_path, mongo_sessions, report["fixes"],
-            dry_run=dry_run, only_ids=only_ids,
-            session_filter=session_filter, bundle_filter=bundle_filter,
+            pid,
+            db_path,
+            mongo_sessions,
+            report["fixes"],
+            dry_run=dry_run,
+            only_ids=only_ids,
+            session_filter=session_filter,
+            bundle_filter=bundle_filter,
         )
         _fix_stale_bundle_list_entries(
-            pid, db_path, report["fixes"],
-            dry_run=dry_run, only_ids=only_ids,
-            session_filter=session_filter, bundle_filter=bundle_filter,
+            pid,
+            db_path,
+            report["fixes"],
+            dry_run=dry_run,
+            only_ids=only_ids,
+            session_filter=session_filter,
+            bundle_filter=bundle_filter,
         )
 
     return report

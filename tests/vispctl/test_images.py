@@ -295,6 +295,7 @@ def test_get_third_party_images_offline_skips_registry(tmp_path, monkeypatch):
 def test_exited_container_is_never_stale(tmp_path):
     """R2-1: 'podman inspect' answers for stopped containers too; apply must
     not resurrect a service the admin stopped."""
+
     class ExitedRunner:
         def run_quiet(self, cmd):
             if cmd[:2] == ["podman", "inspect"]:

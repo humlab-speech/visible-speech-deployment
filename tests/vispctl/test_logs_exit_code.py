@@ -13,15 +13,21 @@ proj = str(Path(__file__).resolve().parents[2])
 if proj not in sys.path:
     sys.path.insert(0, proj)
 
-from vispctl.logs import view_logs
-from vispctl.runner import Runner
-from vispctl.service import Service
+from vispctl.logs import view_logs  # noqa: E402
+from vispctl.runner import Runner  # noqa: E402
+from vispctl.service import Service  # noqa: E402
 
 
 def _args(service=None, follow=False):
     return types.SimpleNamespace(
-        service=service, follow=follow, lines=None, since=None,
-        priority=None, journal_only=True, debug=False, no_follow=True,
+        service=service,
+        follow=follow,
+        lines=None,
+        since=None,
+        priority=None,
+        journal_only=True,
+        debug=False,
+        no_follow=True,
     )
 
 
@@ -65,8 +71,11 @@ def _load_visp():
 
 def test_cmd_logs_exits_1_on_failure(monkeypatch):
     vp = _load_visp()
-    monkeypatch.setattr(vp, "get_config", lambda: types.SimpleNamespace(
-        runner=_runner_with(1), systemd_dir=Path("/tmp"), project_dir=Path("/tmp")))
+    monkeypatch.setattr(
+        vp,
+        "get_config",
+        lambda: types.SimpleNamespace(runner=_runner_with(1), systemd_dir=Path("/tmp"), project_dir=Path("/tmp")),
+    )
     monkeypatch.setattr(vp, "view_logs", lambda *a, **k: ["mongo"])
     with pytest.raises(SystemExit) as exc:
         vp.cmd_logs(_args("mongo"))
@@ -77,8 +86,14 @@ def _view_podman(service, *, follow=False, no_follow=True):
     """view_logs through the podman-stream shortcut (container, no debug)."""
     runner = MagicMock(spec=Runner)
     args = types.SimpleNamespace(
-        service=service, follow=follow, lines=None, since=None,
-        priority=None, journal_only=False, debug=False, no_follow=no_follow,
+        service=service,
+        follow=follow,
+        lines=None,
+        since=None,
+        priority=None,
+        journal_only=False,
+        debug=False,
+        no_follow=no_follow,
     )
     return view_logs(
         args,
@@ -98,6 +113,7 @@ def test_follow_mode_podman_rc_is_never_a_failure(monkeypatch):
     # 'if not follow and rc' to 'if rc' used to keep the whole suite green
     # while turning the default logs path into exit 1.
     import vispctl.logs as log_mod
+
     monkeypatch.setattr(log_mod, "stream_podman_logs", lambda service, **kw: 125)
     assert _view_podman("mongo", no_follow=False) == []
 
@@ -105,5 +121,6 @@ def test_follow_mode_podman_rc_is_never_a_failure(monkeypatch):
 def test_snapshot_mode_podman_rc_is_a_failure(monkeypatch):
     # The other arm of the same policy: --no-follow must still fail loudly.
     import vispctl.logs as log_mod
+
     monkeypatch.setattr(log_mod, "stream_podman_logs", lambda service, **kw: 125)
     assert _view_podman("mongo", no_follow=True) == ["mongo"]

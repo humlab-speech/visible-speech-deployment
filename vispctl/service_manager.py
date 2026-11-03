@@ -118,6 +118,7 @@ class ServiceManager:
         """A start request returning 0 is not proof the unit is up (crash-loop
         units accept the request, then die). Require active/activating soon."""
         import time
+
         for i in range(attempts):
             if self.runner.unit_is_active(name):
                 return True

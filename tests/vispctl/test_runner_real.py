@@ -69,9 +69,7 @@ def _stub_systemctl(tmp_path, body: str) -> str:
 
 def test_systemctl_always_targets_the_user_manager(runner, tmp_path, monkeypatch):
     argv_log = tmp_path / "argv.log"
-    bin_dir = _stub_systemctl(
-        tmp_path, f'printf "%s\\n" "$@" >> {argv_log}\necho ok\n'
-    )
+    bin_dir = _stub_systemctl(tmp_path, f'printf "%s\\n" "$@" >> {argv_log}\necho ok\n')
     monkeypatch.setenv("PATH", bin_dir + os.pathsep + os.environ["PATH"])
     res = runner.systemctl("restart", "visp-demo.service")
     recorded = argv_log.read_text().splitlines()
@@ -80,9 +78,11 @@ def test_systemctl_always_targets_the_user_manager(runner, tmp_path, monkeypatch
     assert res.stdout.strip() == "ok"
 
 
-@pytest.mark.parametrize("state,expected", [("active", True), ("activating", True), ("inactive", False), ("failed", False)])
+@pytest.mark.parametrize(
+    "state,expected", [("active", True), ("activating", True), ("inactive", False), ("failed", False)]
+)
 def test_unit_is_active_only_accepts_active_states(runner, tmp_path, monkeypatch, state, expected):
-    bin_dir = _stub_systemctl(tmp_path, f"echo {state}\nexit {0 if state in ('active','activating') else 3}\n")
+    bin_dir = _stub_systemctl(tmp_path, f"echo {state}\nexit {0 if state in ('active', 'activating') else 3}\n")
     monkeypatch.setenv("PATH", bin_dir + os.pathsep + os.environ["PATH"])
     assert runner.unit_is_active("anything") is expected
 
@@ -116,9 +116,10 @@ def test_journalctl_executes_and_returns_completedprocess(runner, tmp_path, monk
     res = runner.journalctl("-u", "visp-demo.service", "-n", "5")
     assert isinstance(res, subprocess.CompletedProcess)
     assert res.returncode == 0
-    assert log.read_text().splitlines()[:6] == [
-        "--user", "-u", "visp-demo.service", "-n", "5"
-    ][:len(log.read_text().splitlines())]
+    assert (
+        log.read_text().splitlines()[:6]
+        == ["--user", "-u", "visp-demo.service", "-n", "5"][: len(log.read_text().splitlines())]
+    )
 
 
 def test_systemctl_default_check_is_false(runner, tmp_path, monkeypatch):

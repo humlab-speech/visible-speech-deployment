@@ -163,9 +163,7 @@ def test_stale_sweep_leaves_placeholder_alone(tmp_path):
 
 # ── round-2 F2: guard must fail CLOSED when the manager never answered ───────
 
-import pytest
-
-from vispctl.exceptions import ServiceError
+import pytest  # noqa: E402
 
 
 class _Stub:

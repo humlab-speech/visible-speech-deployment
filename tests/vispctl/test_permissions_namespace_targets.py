@@ -9,7 +9,7 @@ proj = str(Path(__file__).resolve().parents[2])
 if proj not in sys.path:
     sys.path.insert(0, proj)
 
-from vispctl.permissions import PermissionsManager
+from vispctl.permissions import PermissionsManager  # noqa: E402
 
 
 class Rec:

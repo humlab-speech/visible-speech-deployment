@@ -162,6 +162,7 @@ def test_orphan_fix_respects_session_filter(tmp_path, monkeypatch):
 
     def real_move(src, dest):
         import shutil
+
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(src), str(dest))
         return True
@@ -169,9 +170,7 @@ def test_orphan_fix_respects_session_filter(tmp_path, monkeypatch):
     monkeypatch.setattr(doctor, "_podman_move", real_move)
     fixes: list[dict] = []
     # --session names what IS in scope: the filtered-out orphan must survive.
-    doctor._fix_orphan_bundles(
-        "proj", db, {}, fixes, dry_run=False, session_filter="dropme"
-    )
+    doctor._fix_orphan_bundles("proj", db, {}, fixes, dry_run=False, session_filter="dropme")
     moved = [f["desc"] for f in fixes if f["status"] == "applied"]
     assert any("dropme" in m for m in moved)
     assert not any("keepme" in m for m in moved)
@@ -187,8 +186,8 @@ def test_prune_respects_session_filter(tmp_path, monkeypatch):
     bl = db / "bundleLists"
     bl.mkdir(parents=True)
     entries = [
-        {"session": "keepme", "name": "b1"},   # stale (no dirs) but out of scope
-        {"session": "dropme", "name": "b2"},   # stale and in scope
+        {"session": "keepme", "name": "b1"},  # stale (no dirs) but out of scope
+        {"session": "dropme", "name": "b2"},  # stale and in scope
     ]
     (bl / "list.json").write_text(__import__("json").dumps(entries))
     fixes: list[dict] = []

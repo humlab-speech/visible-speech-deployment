@@ -15,8 +15,8 @@ proj = str(Path(__file__).resolve().parents[2])
 if proj not in sys.path:
     sys.path.insert(0, proj)
 
-from vispctl.service import Service
-from vispctl.service_manager import ServiceManager
+from vispctl.service import Service  # noqa: E402
+from vispctl.service_manager import ServiceManager  # noqa: E402
 
 
 class FakeRunner:

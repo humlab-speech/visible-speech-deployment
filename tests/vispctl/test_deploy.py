@@ -278,10 +278,7 @@ def test_update_skips_locked_components(tmp_path, capsys):
         "WhisperVault",
     ]
     shas = {name: _make_local_component(external, name) for name in names}
-    components = {
-        name: {"url": str(project / "origins" / f"{name}.git"), "version": "latest"}
-        for name in names
-    }
+    components = {name: {"url": str(project / "origins" / f"{name}.git"), "version": "latest"} for name in names}
     # is_locked semantics: version != 'latest' (versions.py). Pin to the
     # first commit while the remote tip sits at the second.
     sha1, sha2 = shas["webclient"]

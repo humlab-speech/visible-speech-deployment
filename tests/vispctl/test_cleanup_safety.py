@@ -5,7 +5,6 @@ let the sweep delete foreign containers and report success when rm failed.
 """
 
 import importlib.util
-import subprocess
 import sys
 import types
 from pathlib import Path
@@ -16,7 +15,7 @@ proj = str(Path(__file__).resolve().parents[2])
 if proj not in sys.path:
     sys.path.insert(0, proj)
 
-from vispctl.cleanup_containers import cleanup_containers
+from vispctl.cleanup_containers import cleanup_containers  # noqa: E402
 
 PS_LINES = "\n".join(
     [
@@ -48,8 +47,6 @@ class FakeRunner:
             self.rmed.append(cmd[2])
             return types.SimpleNamespace(stdout="", returncode=self.rm_rc)
         return types.SimpleNamespace(stdout="", returncode=0)
-
-
 
 
 def _run_with(monkeypatch, fr, mode="all"):
@@ -90,9 +87,7 @@ def _load_visp():
 
 def test_cmd_exits_1_on_partial(monkeypatch):
     vp = _load_visp()
-    monkeypatch.setattr(
-        vp, "cleanup_containers", lambda mode, yes: {"status": "partial", "message": "x", "removed": 0}
-    )
+    monkeypatch.setattr(vp, "cleanup_containers", lambda mode, yes: {"status": "partial", "message": "x", "removed": 0})
     with pytest.raises(SystemExit) as exc:
         vp.cmd_cleanup_containers(types.SimpleNamespace(mode="all", yes=True))
     assert exc.value.code == 1
@@ -116,13 +111,9 @@ class ProxyFake:
     def run(self, cmd, capture=False, check=True):
         if cmd[:2] == ["podman", "ps"]:
             if any(f.startswith("name=^") and f.endswith("$") for f in cmd):
-                return types.SimpleNamespace(
-                    stdout="aaa" if self.main_running else "", returncode=0
-                )
+                return types.SimpleNamespace(stdout="aaa" if self.main_running else "", returncode=0)
             if "id=" in " ".join(cmd):
-                return types.SimpleNamespace(
-                    stdout="bbb1" if self.main_running else "", returncode=0
-                )
+                return types.SimpleNamespace(stdout="bbb1" if self.main_running else "", returncode=0)
             return types.SimpleNamespace(stdout=PROXY_LINES, returncode=0)
         if cmd[:2] == ["podman", "rm"]:
             self.rmed.append(cmd[2])
@@ -137,7 +128,7 @@ def test_proxy_of_running_session_survives(monkeypatch):
 
     fr = ProxyFake(main_running=True)
     monkeypatch.setattr(cc, "Runner", lambda: fr)
-    res = cleanup_containers(mode="all", yes=True)
+    _res = cleanup_containers(mode="all", yes=True)
     assert "bbb2" not in fr.rmed  # proxy kept
 
 

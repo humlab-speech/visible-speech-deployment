@@ -47,7 +47,6 @@ def test_every_registered_test_has_a_script_and_the_cli_dispatches_to_it():
     # (leaving the help-lambda) makes this red instead of vacuous.
     parser = argparse.ArgumentParser()
     add_test_parser(parser.add_subparsers())
-    import vispctl.testing as pkg
 
     for name, module in TESTS.items():
         if hasattr(module, "SCRIPT"):
@@ -95,16 +94,12 @@ class _RcRunner:
 
 def test_run_e2e_propagates_the_browser_test_exit_code(tmp_path):
     # rc 3 out of the container must reach the CLI; 'return 0' kept 5/5 green.
-    rc = run_e2e(
-        _RcRunner(3), tmp_path, "dev", "recording", "recording.mjs", {"VISP_URL": "x"}
-    )
+    rc = run_e2e(_RcRunner(3), tmp_path, "dev", "recording", "recording.mjs", {"VISP_URL": "x"})
     assert rc == 3
 
 
 def test_run_e2e_success_path_returns_zero(tmp_path):
-    rc = run_e2e(
-        _RcRunner(0), tmp_path, "dev", "recording", "recording.mjs", {"VISP_URL": "x"}
-    )
+    rc = run_e2e(_RcRunner(0), tmp_path, "dev", "recording", "recording.mjs", {"VISP_URL": "x"})
     assert rc == 0
 
 

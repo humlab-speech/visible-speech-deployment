@@ -102,18 +102,12 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
             failures.append(name)
 
     if skipped_running:
-        print(
-            "  Skipped proxy sidecars of running sessions: "
-            + ", ".join(skipped_running)
-        )
+        print("  Skipped proxy sidecars of running sessions: " + ", ".join(skipped_running))
 
     if failures:
         return {
             "status": "partial",
-            "message": (
-                f"Removed {removed} of {len(containers)}; failed to remove: "
-                + ", ".join(failures)
-            ),
+            "message": (f"Removed {removed} of {len(containers)}; failed to remove: " + ", ".join(failures)),
             "removed": removed,
         }
 

@@ -668,7 +668,9 @@ def run_session_doctor(
     if sessions is None or proxies is None:
         # Without podman evidence every directory looks stale; deleting on that
         # basis destroyed live data once already. Refuse instead.
-        print(f"{_C.RED}podman is not reachable — cannot tell live sessions from stale data; nothing will be cleaned{_C.NC}")
+        print(
+            f"{_C.RED}podman is not reachable — cannot tell live sessions from stale data; nothing will be cleaned{_C.NC}"
+        )
         return 1
     socket_dirs = _collect_socket_dirs()
 

@@ -11,8 +11,6 @@ import sys
 import types
 from pathlib import Path
 
-import pytest
-
 proj = str(Path(__file__).resolve().parents[2])
 if proj not in sys.path:
     sys.path.insert(0, proj)
@@ -67,6 +65,7 @@ def test_cmd_uninstall_wires_the_filter(tmp_path, monkeypatch, capsys):
             removed.extend(names)
 
     import vispctl.secrets as sec
+
     monkeypatch.setattr(sec, "SecretManager", FakeSecretManager)
 
     systemd = tmp_path / "systemd"
@@ -76,20 +75,27 @@ def test_cmd_uninstall_wires_the_filter(tmp_path, monkeypatch, capsys):
 
     quadlets = tmp_path / "quadlets"
     quadlets.mkdir()
-    (quadlets / "mongo.container").write_text("Secret=visp_mongo_uri,type=mount\nSecret=visp_mongo_root_password,type=mount\n")
+    (quadlets / "mongo.container").write_text(
+        "Secret=visp_mongo_uri,type=mount\nSecret=visp_mongo_root_password,type=mount\n"
+    )
     (quadlets / "app.container").write_text("Secret=visp_secret_app,type=mount\n")
 
     cfg = types.SimpleNamespace(project_dir=tmp_path, systemd_dir=systemd, runner=FakeRunner())
     monkeypatch.setattr(vp, "get_config", lambda: cfg)
     monkeypatch.setattr(vp, "get_current_mode", lambda: "dev")
     monkeypatch.setattr(vp, "get_quadlets_dir", lambda mode: quadlets)
-    monkeypatch.setattr(vp, "resolve_services", lambda svc, pdir, **kw: [types.SimpleNamespace(name="mongo", file=systemd / "mongo.container")])
+    monkeypatch.setattr(
+        vp,
+        "resolve_services",
+        lambda svc, pdir, **kw: [types.SimpleNamespace(name="mongo", file=systemd / "mongo.container")],
+    )
     import vispctl.quadlets as qmod
+
     monkeypatch.setattr(qmod, "remove_stale_quadlets", lambda *a, **k: [])
 
     args = types.SimpleNamespace(service="mongo", keep_running=True)
     vp.cmd_uninstall(args)
 
-    out = capsys.readouterr().out
+    _out = capsys.readouterr().out
     assert "visp_mongo_uri" not in removed, f"secret still cited by installed custom-app was removed: {removed}"
     assert "visp_mongo_root_password" in removed, "uninstalled service's own secret should still be removed"

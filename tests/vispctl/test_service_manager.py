@@ -1,6 +1,6 @@
 import pytest
 
-from vispctl.service import DEFAULT_SERVICES, Service
+from vispctl.service import DEFAULT_SERVICES
 from vispctl.service_manager import ServiceManager
 
 
@@ -92,7 +92,7 @@ def test_network_status_shows_active(capsys):
     fr = FakeRunner()
     ServiceManager(fr, DEFAULT_SERVICES).status()
     lines = capsys.readouterr().out.splitlines()
-    row = [l for l in lines if "visp-net:" in l]
+    row = [ln for ln in lines if "visp-net:" in ln]
     assert row, "network row missing"
     assert "active" in row[0]
 
@@ -106,7 +106,7 @@ def test_network_status_shows_active(capsys):
 
     missing.run_quiet = rc_when_absent
     ServiceManager(missing, DEFAULT_SERVICES).status()
-    row2 = [l for l in capsys.readouterr().out.splitlines() if "visp-net:" in l]
+    row2 = [ln for ln in capsys.readouterr().out.splitlines() if "visp-net:" in ln]
     assert "not found" in row2[0] and "active" not in row2[0]
 
 

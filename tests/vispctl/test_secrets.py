@@ -160,9 +160,7 @@ def test_uninstall_keeps_shared_secret_for_other_services():
 
 # ── round-2 pins: failure paths and value-never-in-argv ──────────────────────
 
-import types
-
-from vispctl.secrets import SecretManager
+import types  # noqa: E402
 
 
 class ScriptedRunner:

@@ -144,9 +144,7 @@ def test_npm_services_target_the_session_manager_source_tree() -> None:
 # --- round-2 pins: check=False and TTY-conditional flags (surviving mutants) ---
 
 
-import sys
-
-from vispctl.npm import NPM_SERVICES, run_npm
+import sys  # noqa: E402
 
 
 class KwRunner:

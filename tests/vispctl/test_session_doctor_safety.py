@@ -61,7 +61,9 @@ def test_stale_removal_requires_socket_evidence(sessions_root, monkeypatch):
     data.mkdir()
     (data / "important.csv").write_text("user data")
     monkeypatch.setattr(sd, "_podman_ps_json", lambda *a, **k: [])
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(list(a[0]) if a else [], 0, "", ""))
+    monkeypatch.setattr(
+        subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(list(a[0]) if a else [], 0, "", "")
+    )
 
     sd.run_session_doctor(clean=True, yes=True)
 
@@ -72,7 +74,9 @@ def test_stale_removal_requires_socket_evidence(sessions_root, monkeypatch):
 def test_confirmed_empty_podman_still_cleans_stale_sockets(sessions_root, monkeypatch):
     stale = _stale_socket_dir(sessions_root, name="sessionother456")
     monkeypatch.setattr(sd, "_podman_ps_json", lambda *a, **k: [])
-    monkeypatch.setattr(subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(list(a[0]) if a else [], 0, "", ""))
+    monkeypatch.setattr(
+        subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(list(a[0]) if a else [], 0, "", "")
+    )
 
     sd.run_session_doctor(clean=True, yes=True)
 

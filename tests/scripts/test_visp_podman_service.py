@@ -20,6 +20,7 @@ def load_visp_module():
 def _stub_runner_methods(monkeypatch, vp, rc=0):
     """Stub the Runner methods that actually exist (there is no _run)."""
     import subprocess as _sp
+
     calls = []
 
     def fake_run(self, cmd, capture=False, check=True, **kw):

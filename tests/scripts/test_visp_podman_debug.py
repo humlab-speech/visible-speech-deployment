@@ -20,6 +20,7 @@ def load_visp_module():
 def _stub_runner_methods(monkeypatch, vp, rc=0):
     """Stub the Runner methods that actually exist (there is no _run)."""
     import subprocess as _sp
+
     calls = []
 
     def fake_run(self, cmd, capture=False, check=True, **kw):
@@ -71,14 +72,15 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     # Wave-7 BROKEN: nothing pinned WHICH container debug inspects — the
     # header alone survives any target mutation. Pin the argv correlation.
     joined = [" ".join(c) for c in calls]
-    assert any("session-manager.service" in c for c in joined), \
+    assert any("session-manager.service" in c for c in joined), (
         "diagnostics never targeted session-manager specifically"
+    )
 
 
 def test_cmd_debug_absent_quadlet_says_so(tmp_path, capsys, monkeypatch):
     """The 'does not exist' arm of the debug panel never ran in tests."""
     vp = load_visp_module()
-    calls = _stub_runner_methods(monkeypatch, vp, rc=1)
+    _calls = _stub_runner_methods(monkeypatch, vp, rc=1)
     runner = vp.Runner()
     vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
     (tmp_path / "systemd").mkdir(parents=True)
