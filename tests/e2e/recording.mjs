@@ -201,7 +201,8 @@ async function deleteRecordingSession(page, sessionName) {
     const card = sessionCard(page, dialog, sessionName);
     if ((await card.count()) !== 1) {
         log(`could not identify the card of "${sessionName}"; leaving it in place`);
-        return;
+        process.exitCode = 1;  // silent leftover, not a pass
+        return false;
     }
     page.once("dialog", (d) => d.accept());
     await domClick(card.locator(".session-card-footer button.text-btn-danger"));
@@ -736,16 +737,18 @@ async function main() {
         process.exitCode = 1;
     } finally {
         if (created && !cfg.keep) {
-            await deleteRecordingSession(page, sessionName).catch((err) =>
-                log(`cleanup failed: ${err.message}`),
-            );
+            await deleteRecordingSession(page, sessionName).catch((err) => {
+                log(`cleanup failed: ${err.message}`);
+                process.exitCode = 1;  // a leftover session is a real failure
+            });
         } else if (created) {
             log(`keeping recording session "${sessionName}"`);
         }
         if (uploadCreated && !cfg.keep) {
-            await deleteRecordingSession(page, uploadSessionName).catch((err) =>
-                log(`cleanup failed: ${err.message}`),
-            );
+            await deleteRecordingSession(page, uploadSessionName).catch((err) => {
+                log(`cleanup failed: ${err.message}`);
+                process.exitCode = 1;
+            });
         } else if (uploadCreated) {
             log(`keeping upload session "${uploadSessionName}"`);
         }
