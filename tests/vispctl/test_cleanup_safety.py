@@ -186,12 +186,14 @@ def test_mode_selects_the_right_podman_ps(monkeypatch, mode, expect_a, expect_ex
 
 
 def test_stop_and_rm_errors_do_not_raise_but_report_partial(monkeypatch):
-    """:89/:96 must stay check=False, and their failures must still be VISIBLE.
+    """:89/:96/:97 must stay check=False, and their failures must stay VISIBLE.
 
-    Round-3 mutation: a podman error during stop/rm was invisible to the
-    suite. This fake honours `check=` like the real Runner: if cleanup ever
-    flips to check=True the error raises instead of being handled, and if it
-    swallows the failure the partial report disappears."""
+    Round-3 mutation: a podman error during the proxy liveness probe, stop, or
+    rm was invisible to the suite. This fake honours `check=` like the real
+    Runner: if cleanup ever flips to check=True the error raises instead of
+    being handled, and if it swallows the failure the partial report
+    disappears. The probe path needs a -proxy container (round-3 gap: the
+    probe only runs for sidecars) and it must fail like a real podman error."""
     import vispctl.cleanup_containers as cc
 
     class ErroringRunner:
@@ -202,14 +204,22 @@ def test_stop_and_rm_errors_do_not_raise_but_report_partial(monkeypatch):
             if cmd[:2] == ["podman", "ps"] and "id=" in " ".join(cmd):
                 return types.SimpleNamespace(stdout="ddd1\n", returncode=0)  # main is running -> stop path
             if cmd[:2] == ["podman", "ps"]:
-                return types.SimpleNamespace(stdout="ddd1 visp-session-broken-proj\n", returncode=0)
+                if cmd[3] == "name=^visp-session-broken-proj$":
+                    # proxy sidecar's main-liveness probe errors like a real podman failure
+                    if check:
+                        raise subprocess.CalledProcessError(1, cmd)
+                    return types.SimpleNamespace(stdout="", returncode=1, stderr="cannot connect")
+                return types.SimpleNamespace(
+                    stdout="ddd1 visp-session-broken-proj\nddd2 visp-session-broken-proj-proxy\n",
+                    returncode=0,
+                )
             rc = 1 if cmd[:2] in (["podman", "rm"], ["podman", "stop"]) else 0
             if check and rc != 0:
                 raise subprocess.CalledProcessError(rc, cmd)
             return types.SimpleNamespace(stdout="", returncode=rc, stderr="in use")
 
     monkeypatch.setattr(cc, "Runner", lambda: ErroringRunner())
-    # must NOT raise CalledProcessError despite a failing rm with check semantics live
+    # must NOT raise CalledProcessError despite failing probe/stop/rm with check semantics live
     res = cleanup_containers(mode="all", yes=True)
     assert res["status"] == "partial"
     assert res["removed"] == 0
