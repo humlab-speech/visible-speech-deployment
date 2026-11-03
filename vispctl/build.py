@@ -675,7 +675,12 @@ def cmd_build(
     node_configs=None,
     all_buildable: list[str] | None = None,
 ) -> int:
-    """Build container images and node projects. Returns 1 if any build failed."""
+    """Build container images and node projects.
+
+    Returns 1 if any build failed, or if a service was skipped because an image
+    it depends on was neither built in this run nor present locally — a service
+    that was never built must not look green to a 'visp.py build && ...' chain.
+    """
 
     if getattr(args, "list", False):
         cmd_build_list(args, build_configs=build_configs, node_configs=node_configs)
@@ -772,7 +777,7 @@ def cmd_build(
             )
         )
 
-    return 1 if results["failed"] else 0
+    return 1 if results["failed"] or results["skipped"] else 0
 
 
 def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa: ARG001

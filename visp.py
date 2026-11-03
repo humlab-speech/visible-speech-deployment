@@ -533,7 +533,7 @@ def cmd_build(args):
         all_buildable=cfg.all_buildable,
     )
     if rc:
-        # A failed image must not look green to 'visp.py build && ...' chains.
+        # A failed or skipped image must not look green to 'visp.py build && ...' chains.
         sys.exit(rc)
 
 

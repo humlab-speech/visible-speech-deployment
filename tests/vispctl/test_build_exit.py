@@ -1,8 +1,9 @@
 """A failed build must not report success (see fix: build exit code).
 
-Pins: cmd_build returns 1 when any image failed (0 otherwise), and the visp.py
-entry point turns that into a non-zero process exit so 'visp.py build && ...'
-chains stop on a half-built system.
+Pins: cmd_build returns 1 when an image failed or a service was skipped (0 when
+everything requested was built), and the visp.py entry point turns that into a
+non-zero process exit so 'visp.py build && ...' chains stop on a half-built
+system.
 """
 
 import types
@@ -38,9 +39,7 @@ def _run_build(monkeypatch, result):
     runner = _FakeRunner()
     monkeypatch.setattr(build_mod, "BuildManager", _fake_bm(result))
     monkeypatch.setattr(build_mod, "Runner", lambda: runner)
-    args = types.SimpleNamespace(
-        services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True, no_pull=True
-    )
+    args = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True)
     return build_mod.cmd_build(
         args,
         runner=runner,
@@ -54,9 +53,18 @@ def test_failed_image_returns_failure(monkeypatch):
     assert _run_build(monkeypatch, {"success": [], "failed": ["apache"], "skipped": []}) == 1
 
 
-def test_successful_and_skipped_builds_return_zero(monkeypatch):
+def test_all_builds_succeeding_returns_zero(monkeypatch):
     assert _run_build(monkeypatch, {"success": ["apache"], "failed": [], "skipped": []}) == 0
-    assert _run_build(monkeypatch, {"success": [], "failed": [], "skipped": ["apache"]}) == 0
+
+
+def test_skipped_service_exits_nonzero(monkeypatch):
+    """A service left unbuilt because its dependency image is missing is a failure.
+
+    run_builds() prints the skip in red and moves on; without a non-zero exit the
+    chain below still runs and deploys a service that was never built:
+        ./visp.py build apache && ./visp.py apply apache
+    """
+    assert _run_build(monkeypatch, {"success": [], "failed": [], "skipped": ["apache"]}) == 1
 
 
 def test_cli_exits_nonzero_when_builds_fail(monkeypatch):
@@ -96,9 +104,7 @@ def test_blocked_build_before_starting_exits_nonzero(monkeypatch):
 
     monkeypatch.setattr(build_mod, "BuildManager", BM)
     monkeypatch.setattr(build_mod, "Runner", lambda: _FakeRunner())
-    args = types.SimpleNamespace(
-        services=["apache"], list=False, no_cache=False, pull=False, config=None, force=False, no_pull=True
-    )
+    args = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=False)
     rc = build_mod.cmd_build(
         args,
         runner=_FakeRunner(),
