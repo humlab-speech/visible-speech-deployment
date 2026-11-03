@@ -39,7 +39,7 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     vp = load_visp_module()
 
     runner = vp.Runner()
-    _stub_runner_methods(monkeypatch, vp, rc=1)
+    calls = _stub_runner_methods(monkeypatch, vp, rc=1)
     vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
 
     quad_dir = tmp_path / "quadlets" / "dev"
@@ -60,3 +60,24 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     out = capsys.readouterr().out
     assert "Quadlet File:" in out
     assert str(target) in out
+    assert "does not exist" not in out  # branch-specific: file IS present
+    # Wave-7 BROKEN: nothing pinned WHICH container debug inspects — the
+    # header alone survives any target mutation. Pin the argv correlation.
+    joined = [" ".join(c) for c in calls]
+    assert any("session-manager.service" in c for c in joined), \
+        "diagnostics never targeted session-manager specifically"
+
+
+def test_cmd_debug_absent_quadlet_says_so(tmp_path, capsys, monkeypatch):
+    """The 'does not exist' arm of the debug panel never ran in tests."""
+    vp = load_visp_module()
+    calls = _stub_runner_methods(monkeypatch, vp, rc=1)
+    runner = vp.Runner()
+    vp.init_config(runner=runner, systemd_dir=tmp_path / "systemd", project_dir=tmp_path)
+    (tmp_path / "systemd").mkdir(parents=True)
+    (tmp_path / ".visp-mode").write_text("dev")
+
+    vp.cmd_debug(types.SimpleNamespace(service="session-manager"))
+    out = capsys.readouterr().out
+    assert "does not exist" in out
+    assert "(rendered template)" not in out
