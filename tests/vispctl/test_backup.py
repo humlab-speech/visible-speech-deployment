@@ -22,15 +22,28 @@ class FakeRunner:
         self.tmpdir = Path(tmpdir)
         self.version_out = version_out
         self.calls = []
+        self.host_restore_src: Path | None = None
+        self.fextract = Path(tmpdir) / "fextract"
+        self.fextract.mkdir(parents=True, exist_ok=True)
 
     def run_quiet(self, cmd):
         self.calls.append(("run_quiet", cmd))
         # version detection
         if "mongod" in cmd:
             return 0, self.version_out, ""
-        # find command in restore
+        # 'test -d' and 'find' are answered from the REAL simulated extract
+        # root (R2 TB-R2-03/05: they used to be canned successes, so restore
+        # could 'succeed' from an archive with nothing in it).
+        if "test" in cmd and "-d" in cmd:
+            target = self.fextract / Path(str(cmd[-1])).name
+            return (0 if target.is_dir() else 1), "", ""
         if "find" in cmd:
-            return 0, "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000", ""
+            dirs = sorted(
+                f"/tmp/visp_restore_extract/{d.name}"
+                for d in self.fextract.iterdir()
+                if d.is_dir()
+            )
+            return 0, "\n".join(dirs), ""
         return 0, "", ""
 
     def unit_is_active(self, unit):
@@ -42,12 +55,28 @@ class FakeRunner:
         # Simulate success for all commands
         # If podman cp of archive to host, create the file to satisfy exists() check
         if cmd[:2] == ["podman", "cp"]:
-            # find destination (last arg)
-            dest = cmd[-1]
+            src, dest = str(cmd[2]), str(cmd[-1])
+            if Path(src).exists():
+                # restore direction: a real host archive goes in; remember it
+                # so the simulated tar-extract can unpack REAL bytes
+                self.host_restore_src = Path(src)
+                return _Result(returncode=0)
             try:
                 _write_fake_tar(dest)
             except Exception:
                 pass
+        if "tar" in cmd and any(str(a).startswith("-x") for a in cmd):
+            if self.host_restore_src and self.host_restore_src.exists():
+                import tarfile as _tf
+
+                with _tf.open(self.host_restore_src, "r:gz") as tf:
+                    tf.extractall(self.fextract, filter="data")
+            return _Result(returncode=0)
+        if "rm" in cmd and "visp_restore_extract" in " ".join(str(a) for a in cmd):
+            import shutil
+
+            shutil.rmtree(self.fextract, ignore_errors=True)
+            self.fextract.mkdir(parents=True, exist_ok=True)
         return _Result(returncode=0)
 
 
@@ -126,6 +155,15 @@ def test_backup_dry_run(tmp_path):
     out = bm.backup(output=None, dry_run=True)
     assert out is not None
     assert out.name.endswith(".tar.gz")
+    # R2: a dry run must not EXECUTE anything - the old test checked only the
+    # returned filename and passed even if the guard fell through.
+    executed = [
+        c
+        for kind, c in runner.calls
+        if kind == "run" and (any("mongodump" in str(a) for a in c) or any("podman" in str(a) for a in c))
+    ]
+    assert executed == []
+    assert list(tmp_path.rglob("*.tar.gz")) == []
 
 
 def test_backup_missing_password(tmp_path):
@@ -186,10 +224,32 @@ def test_restore_success(tmp_path):
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
 
-    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
+    # R2 TB-R2-03/05: the old fixture's archive never contained the dump dir
+    # its stubs pretended to find. Now the archive IS the premise: extract is
+    # simulated from real bytes and 'test -d'/'find' read that state.
+    dirname = "visp_mongodb_6.0.14_20260101_120000"
+    backup = _make_tarball(
+        tmp_path / f"{dirname}.tar.gz", [(f"{dirname}/visp/test.bson", b"data")]
+    )
 
     res = bm.restore(backup, force=True)
     assert res is True
+    restore_cmds = [c for kind, c in runner.calls if "mongorestore" in " ".join(str(a) for a in c)]
+    assert restore_cmds, "mongorestore was never invoked"
+    assert dirname in " ".join(str(a) for a in restore_cmds[-1])
+
+
+def test_restore_fails_when_archive_yields_no_directory(tmp_path, capsys):
+    """The mirror of the old FIXTURE-LIE: when extraction leaves no directory
+    at all (and the name is not a dump name), restore must FAIL - the old
+    canned-success stubs made 'test -d'/'find' lie and it rode to True."""
+    runner = FakeRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = _make_tarball(tmp_path / "stray.tar.gz", [("README", b"not a dump")])
+    assert bm.restore(backup, force=True) is False
+    assert "Could not find backup directory" in capsys.readouterr().out
 
 
 # ── Deterministic restore-dir resolution ──────────────────────────────────────
@@ -518,3 +578,31 @@ def test_backup_rejects_garbage_archive(tmp_path, capsys):
     out = bm.backup(output=tmp_path / "out.tar.gz", dry_run=False)
     assert out is None
     assert "unreadable" in capsys.readouterr().out
+
+
+# ── TB-R2-02: the pre-restore snapshot is the default and must stay so ───────
+
+
+def _restore_setup(tmp_path):
+    runner = FakeRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+    dirname = "visp_mongodb_6.0.14_20260101_120000"
+    backup = _make_tarball(tmp_path / f"{dirname}.tar.gz", [(f"{dirname}/visp/test.bson", b"")])
+    return runner, bm, backup
+
+
+def _dumped(runner):
+    return any("mongodump" in str(a) for kind, c in runner.calls for a in c)
+
+
+def test_restore_takes_pre_restore_snapshot_by_default(tmp_path):
+    runner, bm, backup = _restore_setup(tmp_path)
+    assert bm.restore(backup, force=True) is True
+    assert _dumped(runner), "restore must snapshot the live DB before touching it"
+
+
+def test_restore_no_snapshot_skips_the_dump(tmp_path):
+    runner, bm, backup = _restore_setup(tmp_path)
+    assert bm.restore(backup, force=True, no_snapshot=True) is True
+    assert not _dumped(runner), "--no-snapshot must skip the pre-restore dump"
