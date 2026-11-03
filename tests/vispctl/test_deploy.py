@@ -56,10 +56,13 @@ def test_rollback_checks_out_locked_version(tmp_path):
 
     assert ok is True
     assert _head(repo_dir) == sha1  # repo is back at the locked SHA
-    assert dm.config.get_version("webclient") == sha1  # versions.json updated
+    assert dm.config.get_version("webclient") == sha1
+    # TD-R2-01: the in-memory dict proves nothing about the file we wrote
+    disk = json.loads((project / "versions.json").read_text())["components"]["webclient"]
+    assert disk["version"] == sha1
 
 
-def test_rollback_noop_when_already_at_locked(tmp_path):
+def test_rollback_noop_when_already_at_locked(tmp_path, capsys):
     """rollback succeeds (no-op) when the repo is already at the locked SHA."""
     project = tmp_path / "proj"
     project.mkdir()
@@ -69,9 +72,13 @@ def test_rollback_noop_when_already_at_locked(tmp_path):
 
     dm = DeployManager(str(project))
     ok = dm.rollback_components(["webclient"])
+    out = capsys.readouterr().out
 
     assert ok is True
     assert _head(repo_dir) == sha2  # unchanged (no-op)
+    # TD-R2-02: without the short-circuit's own message, a plain
+    # `git checkout HEAD` is indistinguishable from the guard working
+    assert "already at" in out
 
 
 def test_rollback_dirty_repo_skips_checkout(tmp_path):
@@ -250,3 +257,39 @@ def test_summary_dirty_build_alone_is_not_clean(tmp_path):
 
     assert not all_clean
     assert "All repositories are clean" not in "\n".join(lines)
+
+
+def test_update_skips_locked_components(tmp_path, capsys):
+    """TD-R2-04: deleting the is_locked check in update_components kept the
+    whole suite green. Locked components must announce the skip AND their
+    HEAD must not move to the tracked version. All components get local
+    origins — an absent entry falls back to the real default URLs and the
+    suite would clone WhisperVault over the network."""
+    project = tmp_path / "proj"
+    external = project / "external"
+    external.mkdir(parents=True)
+    names = [
+        "webclient",
+        "container-agent",
+        "wsrng-server",
+        "session-manager",
+        "emu-webapp-server",
+        "artic",
+        "WhisperVault",
+    ]
+    shas = {name: _make_local_component(external, name) for name in names}
+    components = {
+        name: {"url": str(project / "origins" / f"{name}.git"), "version": "latest"}
+        for name in names
+    }
+    # is_locked semantics: version != 'latest' (versions.py). Pin to the
+    # first commit while the remote tip sits at the second.
+    sha1, sha2 = shas["webclient"]
+    components["webclient"]["version"] = sha1
+    (project / "versions.json").write_text(json.dumps({"components": components}, indent=2))
+
+    dm = DeployManager(str(project))
+    dm.update_components()
+    out = capsys.readouterr().out
+    assert "Skipping update (component is locked)" in out
+    assert _head(external / "webclient") == sha2  # tip stays; lock honoured
