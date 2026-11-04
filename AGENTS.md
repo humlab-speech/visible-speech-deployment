@@ -168,8 +168,9 @@ Volume=…/external/session-manager:/session-manager:rw,z
 Exec=/session-manager/node_modules/.bin/nodemon --signal SIGTERM --delay 2 --watch src --ext js,json --exec "node src/index.js"
 ```
 Editing anything under `src/` restarts the app in ~2s — **no `./visp.py build session-manager`**.
-nodemon needs no image change: the Dockerfile's `npm ci` installs devDependencies, so it is
-already in the image. Note the `--exec` form: the repo's `nodemon.json` is visible through the
+nodemon needs no image change: it runs from the bind-mounted host `node_modules`
+(devDependencies included), which `install` creates through `./visp.py npm session-manager -- ci`
+and which hides the image's own — the image carries production dependencies only. Note the `--exec` form: the repo's `nodemon.json` is visible through the
 mount and also sets `exec`, and nodemon *appends* a trailing script argument to it — passing
 `… src/index.js` there yields `node src/index.js src/index.js`.
 

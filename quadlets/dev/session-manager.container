@@ -49,7 +49,8 @@ RunInit=true
 PodmanArgs=--dns=10.89.1.1 --dns=10.89.0.1 --memory=2g --cpus=1.0 --pids-limit=200
 
 # DEV MODE: hot reload. Overrides the image CMD (node src/index.js).
-# nodemon ships in the image already — 'npm ci' in the Dockerfile installs devDependencies.
+# nodemon comes from the bind-mounted host node_modules (devDependencies included), which
+# install creates with './visp.py npm session-manager -- ci'; it hides the image's own.
 # Every setting is explicit rather than inherited from the mounted nodemon.json, so this
 # unit keeps working if that file changes in the session-manager repo.
 #   --signal SIGTERM  nodemon defaults to SIGUSR2, which src/index.js does not handle;
