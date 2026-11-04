@@ -1,12 +1,12 @@
 # Stage 1: Build container-agent (no host npm needed!)
-FROM docker.io/node:20.20.2-alpine3.22 AS container_agent_builder
+FROM docker.io/library/node:24.22.2-alpine3.24 AS container_agent_builder
 WORKDIR /build
 COPY ./container-agent /build/
 RUN npm install && \
     npm run build
 
 # Stage 2: Base
-FROM quay.io/jupyter/datascience-notebook:r-4.5.2 AS base
+FROM quay.io/jupyter/datascience-notebook:r-4.5.3 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="Jupyter + R session image. Used for interactive Jupyter sessions AND short-lived operations tasks (EMU-DB creation, audio import, etc.)"
