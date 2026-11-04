@@ -66,6 +66,13 @@ COPY --from=container_agent_builder /build/dist /container-agent
 
 COPY ./files/jupyter_notebook_config.py /home/jovyan/.jupyter/jupyter_notebook_config.py
 
+# Remove Julia: VISP sessions use R and Python, and the base image's Julia
+# carries old bundled libraries (*_jll: OpenSSL, curl, zlib, …) that account
+# for nearly all of its critical CVEs. Takes the Julia kernel out of Jupyter.
+RUN rm -rf /opt/julia /opt/julia-* /usr/local/bin/julia \
+           /opt/conda/share/jupyter/kernels/julia-* /home/jovyan/.julia
+ENV JULIA_DEPOT_PATH= JULIA_PKGDIR=
+
 # Cleanup
 RUN conda clean -a -y -q && \
     apt clean && \
