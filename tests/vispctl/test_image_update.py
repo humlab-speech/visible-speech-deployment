@@ -28,7 +28,9 @@ def _quadlets(root, dev_ref=MATOMO, prod_ref=MATOMO):
     for mode, ref in (("dev", dev_ref), ("prod", prod_ref)):
         d = root / "quadlets" / mode
         d.mkdir(parents=True, exist_ok=True)
-        (d / "matomo.container").write_text(f"[Container]\nContainerName=matomo\nImage={ref}\nNetwork=visp-net.network\n")
+        (d / "matomo.container").write_text(
+            f"[Container]\nContainerName=matomo\nImage={ref}\nNetwork=visp-net.network\n"
+        )
 
 
 # --- helpers ---
