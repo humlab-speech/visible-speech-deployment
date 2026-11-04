@@ -741,11 +741,19 @@ waits on, for work that cannot be scripted. Rules:
 ### Cutting a release
 
 ```bash
-./visp.py release new 1.1.0 [--steps]   # bump + sync (+ upgrades/1.1.0.py)
-./visp.py release pin session-manager   # pin what changed (pushed commits only)
-./visp.py release check
-git commit -am "chore(release): VISP 1.1.0" && git tag -a v1.1.0 -m "VISP 1.1.0"
+./visp.py release create 1.1.0          # everything as checked out → release.json, commit, tag
+./visp.py release create --remote       # … from origin's default branches instead; version asked
+git push origin master v1.1.0           # create never pushes
 ```
+
+`release create` pins every `external/` repo to its checked-out commit, copies the image
+and vendored pins, shows what changed since the last `v*` tag, and after confirmation
+commits `release.json` (plus anything under `upgrades/`) and tags `v<version>`. It
+refuses uncommitted changes (in a component, or in tracked files of this repo outside
+`release.json` / `upgrades/`), commits that are on no remote branch (`--allow-unpushed`),
+and a version not newer than the last tag. Write `upgrades/<version>.py` *before* running
+it, so the steps are part of the tagged commit (`release new x.y.z --steps` scaffolds one).
+The finer-grained `release new` / `pin` / `sync` / `check` remain for editing by hand.
 
 ---
 

@@ -4,6 +4,7 @@
 ./visp.py version --manifest      … plus everything release.json pins
 ./visp.py version mark 1.0.0      record the installed version without running anything
 
+./visp.py release create [1.1.0]  pin everything as checked out, commit, tag — the usual way
 ./visp.py release pin --all [--remote]   pin external repos (HEAD, or origin's default branch)
 ./visp.py release sync            copy image / vendored pins from quadlets and Dockerfiles
 ./visp.py release new 1.1.0 [--steps]    start the next release (and its upgrade module)
@@ -110,6 +111,7 @@ def cmd_release(args) -> None:
         "sync": _cmd_release_sync,
         "new": _cmd_release_new,
         "check": _cmd_release_check,
+        "create": _cmd_release_create,
     }[args.release_command]
     sys.exit(handler(args))
 
@@ -159,6 +161,19 @@ def _cmd_release_new(args) -> int:
     print("Next: pin the components that change ('./visp.py release pin <name>'), then")
     print("'./visp.py release check', commit, and tag the commit: git tag -a v" + args.version)
     return 0
+
+
+def _cmd_release_create(args) -> int:
+    from .release_create import create_release
+
+    return create_release(
+        get_config().project_dir,
+        version=args.version,
+        remote=args.remote,
+        allow_unpushed=args.allow_unpushed,
+        commit=not args.no_commit,
+        assume_yes=args.yes,
+    )
 
 
 def _cmd_release_check(args) -> int:  # noqa: ARG001
@@ -219,6 +234,24 @@ def add_release_parsers(subparsers: argparse._SubParsersAction) -> None:
     p = subparsers.add_parser("release", help="Maintain release.json: pin, sync, new, check")
     p.set_defaults(func=cmd_release)
     sub = p.add_subparsers(dest="release_command", required=True)
+    create = sub.add_parser(
+        "create",
+        help="Create a release from what is checked out now: pin, sync, check, commit, tag",
+        description="Pin every external repo to its checked-out commit, copy the image pins from the quadlets,"
+        " validate, show what changed since the last release, then commit release.json and tag v<version>."
+        " Nothing is pushed.",
+    )
+    create.add_argument("version", nargs="?", help="x.y.z (default: asked, suggesting the next patch version)")
+    create.add_argument(
+        "--remote", action="store_true", help="Pin origin's default-branch tips instead of the checkouts"
+    )
+    create.add_argument(
+        "--allow-unpushed", action="store_true", help="Allow pinning commits that are on no remote branch yet"
+    )
+    create.add_argument("--no-commit", action="store_true", help="Only write release.json; do not commit or tag")
+    create.add_argument(
+        "-y", "--yes", action="store_true", help="Do not ask (uses the suggested version if none given)"
+    )
     pin = sub.add_parser("pin", help="Pin external components to a commit")
     pin.add_argument("components", nargs="*", help="Components to pin (or --all)")
     pin.add_argument("--all", action="store_true", help="Pin every component")
