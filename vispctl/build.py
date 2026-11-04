@@ -263,8 +263,13 @@ class BuildManager:
         if target:
             cmd.extend(["--target", target])
 
-        # Pass build arguments (e.g. WEBCLIENT_BUILD)
-        for key, value in config.get("build_args", {}).items():
+        # Pass build arguments (e.g. WEBCLIENT_CONFIG)
+        build_args = dict(config.get("build_args", {}))
+        site_arg = config.get("site_build_arg")
+        site_config = _site_build_config(get_config().project_dir) if site_arg else None
+        if site_config:
+            build_args[site_arg] = validate_build_config(site_config)
+        for key, value in build_args.items():
             cmd.extend(["--build-arg", f"{key}={value}"])
 
         # Add git commit label if we're building from a git repo
@@ -589,7 +594,9 @@ BUILD_CONFIGS: dict[str, dict] = {
         "dockerfile": "./docker/apache/Dockerfile",
         "image": "visp-apache",
         "target": "production",
-        "build_args": {"WEBCLIENT_BUILD": "visp-build"},
+        "build_args": {"WEBCLIENT_CONFIG": "visp"},
+        # Replaced by WEBCLIENT_BUILD_CONFIG from .env: prod bakes the site's webclient into the image.
+        "site_build_arg": "WEBCLIENT_CONFIG",
         "source_repo": "./external/webclient",  # git.commit label tracks webclient source
     },
     "session-manager": {

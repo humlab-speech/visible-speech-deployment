@@ -80,9 +80,9 @@ EXPOSE 80 443
 # ------------------------------------------------------------
 FROM base AS webclient-build
 
-# Build argument used to choose npm script
-ARG WEBCLIENT_BUILD=visp-dev
-ENV WEBCLIENT_BUILD=${WEBCLIENT_BUILD}
+# Angular configuration of the site (angular.json). visp.py passes the site's
+# WEBCLIENT_BUILD_CONFIG from .env, defaulting to 'visp'.
+ARG WEBCLIENT_CONFIG=visp
 
 WORKDIR /webclient
 
@@ -94,8 +94,8 @@ RUN npm install --legacy-peer-deps
 # Composer dependencies (for PHP api.php bundled in webclient)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
-RUN echo "Building webclient with build target: ${WEBCLIENT_BUILD}" && \
-    npm run "${WEBCLIENT_BUILD}"
+RUN echo "Building webclient with configuration: ${WEBCLIENT_CONFIG}" && \
+    npx ng build --configuration="${WEBCLIENT_CONFIG}" --output-path dist
 
 # Put build output in a neutral path we can copy from
 RUN mkdir -p /out && cp -r dist/* /out/

@@ -717,7 +717,9 @@ backup to `backups/`, then release steps, old version still running) → *apply*
 `post_apply`. Every completed step is recorded in the state file, so after a failure you
 fix the cause and run `upgrade` again — it resumes after the last completed step. In
 prod mode it requires `WEBCLIENT_BUILD_CONFIG` in `.env` (the site's Angular build
-configuration, e.g. `visp-demo`), which `build webclient` now also uses by default.
+configuration, e.g. `visp-demo`). It is also what the prod apache image bakes the
+webclient with (`build apache`, default `visp` — before, every prod site got `visp`), and
+the default for `build webclient --config`.
 
 ### Writing a release's upgrade steps
 
