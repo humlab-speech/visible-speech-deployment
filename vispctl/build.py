@@ -43,6 +43,14 @@ def validate_build_config(build_config: str | None) -> str | None:
     return build_config
 
 
+def _site_build_config(project_dir: Path) -> str | None:
+    """``WEBCLIENT_BUILD_CONFIG`` from ``.env``: the Angular configuration this server is built with."""
+    from .env import load_env_file
+
+    env_file = project_dir / ".env"
+    return (load_env_file(env_file).get("WEBCLIENT_BUILD_CONFIG") or None) if env_file.exists() else None
+
+
 class BuildManager:
     def __init__(
         self,
@@ -140,9 +148,9 @@ class BuildManager:
         - is_blocking: True if the build should be aborted (prod mode mismatch)
         """
         from .git_repo import GitRepository
-        from .versions import ComponentConfig
+        from .versions import RELEASE_FILE, ComponentConfig
 
-        comp_config = ComponentConfig()
+        comp_config = ComponentConfig(str(get_config().project_dir / RELEASE_FILE))
         node_names = set(self.node_configs.keys())
         services_to_check = [s for s in ordered if s in node_names and s in dict(comp_config.get_components())]
 
@@ -344,7 +352,7 @@ class BuildManager:
 
         build_cmd_template = config.get("build_cmd", "npm run build")
         if "{config}" in build_cmd_template:
-            cfg = build_config or config.get("default_config", "production")
+            cfg = build_config or _site_build_config(project_dir) or config.get("default_config", "production")
             validate_build_config(cfg)
             build_cmd = build_cmd_template.format(config=cfg)
         else:

@@ -1,0 +1,42 @@
+{
+  "_comment": "VISP release manifest. 'components' pins each external repository to a commit ('./visp.py release pin'); 'images' and 'vendored' mirror the pins in quadlets/ and Dockerfiles ('./visp.py release sync'). './visp.py release check' validates it.",
+  "visp": "1.0.0",
+  "components": {
+    "webclient": {
+      "ref": "bfbb656486586307b8f0101e3153c155a65e4f75"
+    },
+    "container-agent": {
+      "ref": "793367cab732fc901bb8794b330325e96a608728"
+    },
+    "wsrng-server": {
+      "ref": "113ba34c71f06788512cd962267cea49853d0642"
+    },
+    "session-manager": {
+      "ref": "03caa078fb2956d45d70ebf390bcf1733500e719"
+    },
+    "emu-webapp-server": {
+      "ref": "4164d84010df39d87da40769040abb50f1316af4"
+    },
+    "artic": {
+      "ref": "4d93c533d2940896b88fe57ebb332779f084a0a1"
+    },
+    "WhisperVault": {
+      "ref": "2124d571a25a0e5d3a6e252acf8f3e94a2aeffce"
+    }
+  },
+  "images": {
+    "local-idp": "docker.io/cirrusid/simplesamlphp:v2.4.2",
+    "matomo": "docker.io/library/matomo:5.14",
+    "matomo-db": "docker.io/library/mariadb:10.11.16",
+    "mongo": "docker.io/library/mongo:6.0.27",
+    "mongo-express": "docker.io/library/mongo-express:1.0.2-20-alpine3.19",
+    "placeholder": "docker.io/library/nginx:1.30.0-alpine3.23"
+  },
+  "vendored": {
+    "tratt": {
+      "repo": "https://github.com/humlab-speech/TRATT.git",
+      "ref": "59f9c1f7777ab68e92e10e88ef20cb005ee8b3a4",
+      "pinned_in": "docker/tratt/Dockerfile"
+    }
+  }
+}

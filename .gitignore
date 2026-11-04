@@ -121,3 +121,7 @@ tests/e2e/artifacts/
 
 # Personal notes
 todo-2026.md
+
+# Installed VISP version of this server (written by install / upgrade / version mark)
+mounts/visp-state.json
+mounts/visp-state.tmp

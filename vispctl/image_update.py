@@ -126,9 +126,7 @@ def prompt_for_tag(choices: list[Choice], tags: list[str], input_fn: Callable[[s
 def _warnings(old_tag: str | None, new_tag: str) -> list[str]:
     old_major, new_major = major_of(old_tag), major_of(new_tag)
     if is_older(new_tag, old_tag):
-        return [
-            f"{new_tag} is OLDER than {old_tag}. A database usually cannot read data written by a newer version."
-        ]
+        return [f"{new_tag} is OLDER than {old_tag}. A database usually cannot read data written by a newer version."]
     if old_major is None or new_major is None or new_major == old_major:
         return []
     msg = (
@@ -242,6 +240,10 @@ def run_image_update(
             set_image_pin(pin, retag(pin.ref, new_tag))
             changed.append(str(pin.path.relative_to(project_dir)))
             print(f"  updated {changed[-1]}")
+        manifest_file = _update_manifest_image(project_dir, service, new_ref)
+        if manifest_file:
+            changed.append(manifest_file)
+            print(f"  updated {manifest_file}")
     print()
 
     if service == "placeholder":
@@ -260,6 +262,21 @@ def run_image_update(
         print("Commit the quadlet change, so the next git pull does not conflict with it:")
         print(f"  git commit {' '.join(changed)} -m 'chore(quadlets): {service} {ref.tag} → {new_tag}'")
     return 0
+
+
+def _update_manifest_image(project_dir: Path, service: str, new_ref: str) -> str | None:
+    """Mirror the new pin into release.json's ``images``; return its path if it changed."""
+    from .release import Manifest
+
+    try:
+        manifest = Manifest.load(project_dir)
+    except ConfigError:
+        return None
+    if manifest.images.get(service) == new_ref:
+        return None
+    manifest.images[service] = new_ref
+    manifest.save()
+    return str(manifest.path.relative_to(project_dir))
 
 
 def _apply(service: str, cfg) -> None:
