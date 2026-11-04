@@ -1163,21 +1163,23 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
     external/WhisperVault/container/*/Containerfile 2>/dev/null | sort -u
 ```
 
-### Image inventory (as of 2026-05-13)
+### Image inventory (as of 2026-11-04)
 
 > **Versions confirmed current as of 2026-05-13.** Docker Hub pages to check for updates
 > are linked in the "Where to check" column.
 
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
-| `docker/apache/Dockerfile` | `debian:trixie-20261020` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (a cached build fetches nothing). Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `docker/tratt/Dockerfile` | `node:24.15.0` | fully pinned ✅ | [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
-| `docker/tratt/Dockerfile` | `httpd:2.4.67` | patch pinned ✅ | Check [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
-| `docker/session-manager/jupyter-session/Dockerfile` | `node:20.20.2-alpine3.22` | ⚠️ Node 20 EOL 2026-04-30 | Should move to Node 24 LTS. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
-| `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.2` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
+| `docker/apache/Dockerfile` | `debian:trixie-20261027` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (a cached build fetches nothing). Node 24 (NodeSource) and Composer are only in the `build-tools` stage (webclient build, dev image), never in production. Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
+| `docker/tratt/Dockerfile` | `node:24.22.2` | fully pinned ✅ | Build stage only. [hub.docker.com/_/node](https://hub.docker.com/_/node/tags) |
+| `docker/tratt/Dockerfile` | `httpd:2.4.69` + `apt-get upgrade` | patch pinned ✅ | Runtime. Check [httpd.apache.org/security](https://httpd.apache.org/security/vulnerabilities_24.html) and [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
+| `docker/session-manager/jupyter-session/Dockerfile` | `node:24.22.2-alpine3.24` | fully pinned ✅ | Builder stage for container-agent only. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.24) |
+| `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.3` | R version pinned | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
 | `docker/session-manager/dev/Dockerfile` | `node:22.22.2-bookworm` | fully pinned ✅ | Dev image only — not deployed |
 | `docker/session-manager/build-context/Dockerfile` | `debian:bookworm-20260505` | date-pinned | ⚠️ This Dockerfile is **not used** by the build system — legacy only |
-| `docker/session-proxy/Dockerfile` | `alpine:3.23` | minor pinned ✅ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags). Alpine 3.23 is current |
+| `docker/session-proxy/Dockerfile` | `alpine:3.24.3` + `apk upgrade` | patch pinned ✅ | [hub.docker.com/_/alpine](https://hub.docker.com/_/alpine/tags) |
+| `docker/podman-socket-proxy/Dockerfile` | `node:24.22.2-alpine3.24` + `apk upgrade` | fully pinned ✅ | npm and yarn are removed — the proxy uses only Node built-ins |
+| `docker/artic/Dockerfile` | `node:24.22.2-bookworm-slim` (build) + `nginx:1.30.6-alpine3.24` + `apk upgrade` | fully pinned ✅ | Was the floating `nginx:alpine` |
 | `docker/whisper/Dockerfile` | `debian:bookworm-20260406-slim` | date-pinned | ⚠️ This Dockerfile is **not used** — superseded by WhisperVault |
 | `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | patch pinned ✅ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
 | `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | fully pinned ✅ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
