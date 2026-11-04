@@ -387,6 +387,12 @@ def _converge(ctx: UpgradeContext) -> None:
         render_fn=render_quadlet_template,
         force=False,
     )
+    # install restarts what was running; a step may have stopped services (e.g.
+    # for a database migration), and after an upgrade every enabled service runs.
+    from .service import get_runtime_services
+    from .service_manager import ServiceManager
+
+    ServiceManager(ctx.runner, get_runtime_services(ctx.project_dir)).start("all")
 
 
 @dataclass
@@ -449,7 +455,12 @@ def build_plan(
         builtin("build", "build every VISP image", _build, "apply")
     builtin("pull", "pull the third-party images in release.json", _pull, "apply")
     module_steps("post_build")
-    builtin("converge", "install quadlets, secrets and env files; restart what changed", _converge, "converge")
+    builtin(
+        "converge",
+        "install quadlets, secrets and env files; restart what changed, start the rest",
+        _converge,
+        "converge",
+    )
     module_steps("post_apply")
     return plan
 

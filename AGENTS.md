@@ -780,7 +780,7 @@ Quadlet `Image=` lines **must** use `localhost/visp-*:latest` — never `docker.
 (that attempts a Docker Hub pull and fails).
 
 Third-party images that are pulled from registries (e.g. `docker.io/library/traefik:v3.3`,
-`docker.io/library/mongo:6.0.27`) use the full registry prefix.
+`docker.io/library/mongo:7.0.45`) use the full registry prefix.
 
 ---
 
@@ -1198,6 +1198,12 @@ against its registry:
   is patched. Podman never re-pulls a tag it already has, so it reports "rebuilt upstream".
 - **Newer versions** — the newest tag of the same shape within the current major, and
   in a later major.
+
+⚠️ **MongoDB is held at 7.0** (VISP 1.1.0): `mongo:8.0.x` refuses to start on Linux 6.19
+and newer (SERVER-121912), which current dev machines run. A major MongoDB move needs an
+upgrade step (FCV hop, `vispctl/mongo_upgrade.py` — see `upgrades/1.1.0.py`), never just
+`images update mongo`: a binary two majors ahead of the data's featureCompatibilityVersion
+will not open it.
 
 Act on either with `./visp.py images update <service>` (`--to TAG`, `-y` to skip the
 prompts). It lists the newest tag of the current major and of each later major (so a
