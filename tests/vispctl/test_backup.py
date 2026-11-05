@@ -4,10 +4,24 @@ import sys
 import tarfile
 from pathlib import Path
 
+import pytest
+
 # Ensure project package is importable when running tests
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from vispctl.backup import BackupManager  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_repo_litter(tmp_path, monkeypatch):
+    """Keep the suite's snapshots out of the caller's directory.
+
+    backup()'s default output is `./<name>.tar.gz` (a deliberate operator
+    default), and restore()'s pre-restore snapshot calls it without an
+    explicit path — so before this fixture every run of this file dropped a
+    real gzip in the repo root. With CWD pinned to tmp_path, nothing escapes.
+    """
+    monkeypatch.chdir(tmp_path)
 
 
 class _Result:
@@ -22,15 +36,24 @@ class FakeRunner:
         self.tmpdir = Path(tmpdir)
         self.version_out = version_out
         self.calls = []
+        self.host_restore_src: Path | None = None
+        self.fextract = Path(tmpdir) / "fextract"
+        self.fextract.mkdir(parents=True, exist_ok=True)
 
     def run_quiet(self, cmd):
         self.calls.append(("run_quiet", cmd))
         # version detection
         if "mongod" in cmd:
             return 0, self.version_out, ""
-        # find command in restore
+        # 'test -d' and 'find' are answered from the REAL simulated extract
+        # root (R2 TB-R2-03/05: they used to be canned successes, so restore
+        # could 'succeed' from an archive with nothing in it).
+        if "test" in cmd and "-d" in cmd:
+            target = self.fextract / Path(str(cmd[-1])).name
+            return (0 if target.is_dir() else 1), "", ""
         if "find" in cmd:
-            return 0, "/tmp/visp_restore_extract/visp_mongodb_6.0.14_20260101_120000", ""
+            dirs = sorted(f"/tmp/visp_restore_extract/{d.name}" for d in self.fextract.iterdir() if d.is_dir())
+            return 0, "\n".join(dirs), ""
         return 0, "", ""
 
     def unit_is_active(self, unit):
@@ -42,13 +65,39 @@ class FakeRunner:
         # Simulate success for all commands
         # If podman cp of archive to host, create the file to satisfy exists() check
         if cmd[:2] == ["podman", "cp"]:
-            # find destination (last arg)
-            dest = cmd[-1]
+            src, dest = str(cmd[2]), str(cmd[-1])
+            if Path(src).exists():
+                # restore direction: a real host archive goes in; remember it
+                # so the simulated tar-extract can unpack REAL bytes
+                self.host_restore_src = Path(src)
+                return _Result(returncode=0)
             try:
-                Path(dest).write_bytes(b"dummy")
+                _write_fake_tar(dest)
             except Exception:
                 pass
+        if "tar" in cmd and any(str(a).startswith("-x") for a in cmd):
+            if self.host_restore_src and self.host_restore_src.exists():
+                import tarfile as _tf
+
+                with _tf.open(self.host_restore_src, "r:gz") as tf:
+                    tf.extractall(self.fextract, filter="data")
+            return _Result(returncode=0)
+        if "rm" in cmd and "visp_restore_extract" in " ".join(str(a) for a in cmd):
+            import shutil
+
+            shutil.rmtree(self.fextract, ignore_errors=True)
+            self.fextract.mkdir(parents=True, exist_ok=True)
         return _Result(returncode=0)
+
+
+def _write_fake_tar(dest: str) -> None:
+    """A real (tiny) gz tar — success paths must succeed for real reasons."""
+    import io
+
+    with tarfile.open(dest, "w:gz") as tar:
+        info = tarfile.TarInfo("visp_dump/visp/test.bson")
+        info.size = 4
+        tar.addfile(info, io.BytesIO(b"bson"))
 
 
 class FailingRunner:
@@ -70,7 +119,7 @@ class FailingRunner:
         self.calls.append(("run", cmd))
         if cmd[:2] == ["podman", "cp"]:
             try:
-                Path(cmd[-1]).write_bytes(b"dummy")
+                _write_fake_tar(cmd[-1])
             except Exception:
                 pass
         rc = 1 if self._should_fail(cmd) else 0
@@ -115,6 +164,15 @@ def test_backup_dry_run(tmp_path):
     out = bm.backup(output=None, dry_run=True)
     assert out is not None
     assert out.name.endswith(".tar.gz")
+    # R2: a dry run must not EXECUTE anything - the old test checked only the
+    # returned filename and passed even if the guard fell through.
+    executed = [
+        c
+        for kind, c in runner.calls
+        if kind == "run" and (any("mongodump" in str(a) for a in c) or any("podman" in str(a) for a in c))
+    ]
+    assert executed == []
+    assert list(tmp_path.rglob("*.tar.gz")) == []
 
 
 def test_backup_missing_password(tmp_path):
@@ -175,10 +233,30 @@ def test_restore_success(tmp_path):
     bm = BackupManager(runner, project_dir=tmp_path)
     bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
 
-    backup = _make_tarball(tmp_path / "test.tar.gz", [("db/coll.bson", b"data")])
+    # R2 TB-R2-03/05: the old fixture's archive never contained the dump dir
+    # its stubs pretended to find. Now the archive IS the premise: extract is
+    # simulated from real bytes and 'test -d'/'find' read that state.
+    dirname = "visp_mongodb_6.0.14_20260101_120000"
+    backup = _make_tarball(tmp_path / f"{dirname}.tar.gz", [(f"{dirname}/visp/test.bson", b"data")])
 
     res = bm.restore(backup, force=True)
     assert res is True
+    restore_cmds = [c for kind, c in runner.calls if "mongorestore" in " ".join(str(a) for a in c)]
+    assert restore_cmds, "mongorestore was never invoked"
+    assert dirname in " ".join(str(a) for a in restore_cmds[-1])
+
+
+def test_restore_fails_when_archive_yields_no_directory(tmp_path, capsys):
+    """The mirror of the old FIXTURE-LIE: when extraction leaves no directory
+    at all (and the name is not a dump name), restore must FAIL - the old
+    canned-success stubs made 'test -d'/'find' lie and it rode to True."""
+    runner = FakeRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    backup = _make_tarball(tmp_path / "stray.tar.gz", [("README", b"not a dump")])
+    assert bm.restore(backup, force=True) is False
+    assert "Could not find backup directory" in capsys.readouterr().out
 
 
 # ── Deterministic restore-dir resolution ──────────────────────────────────────
@@ -360,6 +438,54 @@ def test_restore_refuses_while_writers_running(tmp_path, capsys):
     assert "Refusing to restore" not in capsys.readouterr().out
 
 
+def test_restore_tocou_recheck_refuses_late_writer(tmp_path, capsys):
+    """The late-writer re-check just before touching data must decide on the
+    re-check's answer, not on --allow-running-writers alone.
+
+    A writer can come back (Restart=always after a crash) between the initial
+    guard and the mongorestore. An inverted or removed :408 check makes that
+    window invisible again — the round-3 mutation sample showed a flipped
+    `if not allow_running_writers:` surviving the whole suite.
+    """
+    tb = _make_tarball(tmp_path / "b.tar.gz", [("data/users/bson", b"x")])
+
+    class LateWriterRunner(FakeRunner):
+        """Quiet during the initial check, active on the re-check."""
+
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            self.is_active_calls = 0
+
+        def unit_is_active(self, unit):
+            self.is_active_calls += 1
+            if unit != "session-manager":
+                return False
+            # first pass (initial guard): all writers quiet.
+            # second pass (TOCTOU re-check right before the write): one is back.
+            return self.is_active_calls > len(BackupManager._MONGO_WRITERS)
+
+    runner = LateWriterRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+
+    res = bm.restore(tb, force=True, no_snapshot=True)
+    out = capsys.readouterr().out
+    assert res is False
+    assert "started since the initial check" in out
+    assert "session-manager" in out
+    # aborted before anything was copied into the container or restored
+    assert not any(c[0] == "run" and c[1][:2] == ["podman", "cp"] for c in runner.calls)
+    assert not any("mongorestore" in str(c) for c in runner.calls)
+
+    # an explicit override must still pass through the re-check (it overrides
+    # the refusal, it does not force an abort) — kills the inverted condition
+    # from the other side
+    capsys.readouterr()
+    res = bm.restore(tb, force=True, no_snapshot=True, allow_running_writers=True)
+    assert "started since the initial check" not in capsys.readouterr().out
+    assert any(c[0] == "run" and c[1][:2] == ["podman", "cp"] for c in runner.calls)
+
+
 def test_restore_rejects_fifo_members(tmp_path, capsys):
     # A FIFO named like a .bson file would make mongorestore block forever.
     tb = _make_tarball(tmp_path / "b.tar.gz", fifos=["db/coll.bson"])
@@ -491,3 +617,48 @@ def test_backup_copy_failure_returns_none(tmp_path, capsys):
 def test_list_backups_empty_dir(tmp_path):
     bm = BackupManager(FakeRunner(tmp_path), project_dir=tmp_path)
     assert bm.list_backups(tmp_path) == []
+
+
+def test_backup_rejects_garbage_archive(tmp_path, capsys):
+    """Existence is not a backup: garbage at the output path must fail loudly."""
+
+    class GarbageCpRunner(FakeRunner):
+        def run(self, cmd, capture=False, check=True, **kwargs):
+            if cmd[:2] == ["podman", "cp"] and not str(cmd[-1]).startswith("mongo:"):
+                Path(cmd[-1]).write_bytes(b"not a tarball at all")
+                return _Result(returncode=0)
+            return super().run(cmd, capture=capture, check=check, **kwargs)
+
+    bm = BackupManager(GarbageCpRunner(tmp_path), project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+    out = bm.backup(output=tmp_path / "out.tar.gz", dry_run=False)
+    assert out is None
+    assert "unreadable" in capsys.readouterr().out
+
+
+# ── TB-R2-02: the pre-restore snapshot is the default and must stay so ───────
+
+
+def _restore_setup(tmp_path):
+    runner = FakeRunner(tmp_path)
+    bm = BackupManager(runner, project_dir=tmp_path)
+    bm.sm.load_all = lambda: {"MONGO_ROOT_PASSWORD": "pw"}
+    dirname = "visp_mongodb_6.0.14_20260101_120000"
+    backup = _make_tarball(tmp_path / f"{dirname}.tar.gz", [(f"{dirname}/visp/test.bson", b"")])
+    return runner, bm, backup
+
+
+def _dumped(runner):
+    return any("mongodump" in str(a) for kind, c in runner.calls for a in c)
+
+
+def test_restore_takes_pre_restore_snapshot_by_default(tmp_path):
+    runner, bm, backup = _restore_setup(tmp_path)
+    assert bm.restore(backup, force=True) is True
+    assert _dumped(runner), "restore must snapshot the live DB before touching it"
+
+
+def test_restore_no_snapshot_skips_the_dump(tmp_path):
+    runner, bm, backup = _restore_setup(tmp_path)
+    assert bm.restore(backup, force=True, no_snapshot=True) is True
+    assert not _dumped(runner), "--no-snapshot must skip the pre-restore dump"

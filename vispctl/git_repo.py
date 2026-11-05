@@ -86,10 +86,17 @@ class GitRepository:
         self.run_git(args)
 
     def pull(self, rebase: bool = False) -> None:
-        """Pull from current tracking branch."""
-        args = ["pull"]
+        """Pull from current tracking branch, fast-forward only.
+
+        Deploy automation must never invent history: an operator-level
+        pull.rebase=true would otherwise silently rebase local commits
+        while deploy printed "Updated" (round-2 GR-R2-03). -c neutralizes
+        any repo/global pull.* config; --ff-only makes divergence a loud
+        error instead of a merge commit.
+        """
+        args = ["-c", "pull.rebase=false", "pull", "--ff-only"]
         if rebase:
-            args.append("--rebase")
+            args = ["-c", "pull.rebase=true", "pull", "--rebase"]
         self.run_git(args)
 
     def get_current_commit(self) -> Optional[str]:

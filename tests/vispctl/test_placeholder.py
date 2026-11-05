@@ -40,11 +40,18 @@ class FakeRunner:
 
     def systemctl(self, *args, **kwargs):
         self.systemctl_calls.append(args)
+        rc, out = 0, ""
+        if args and args[0] == "is-active":
+            unit = str(args[1]).removesuffix(".service")
+            if unit in self.active:
+                rc, out = 0, "active"
+            else:
+                rc, out = 3, "inactive"
 
         class R:
-            returncode = 0
+            returncode = rc
             stderr = ""
-            stdout = ""
+            stdout = out
 
         return R()
 
@@ -154,3 +161,54 @@ def test_stale_sweep_leaves_placeholder_alone(tmp_path):
     (systemd_dir / PLACEHOLDER_FILE).write_text(f"Volume={project_dir}/mounts/placeholder/html:/x\n")
     assert remove_stale_quadlets(systemd_dir, project_dir, FakeRunner()) == []
     assert (systemd_dir / PLACEHOLDER_FILE).exists()
+
+
+# ── round-2 F2: guard must fail CLOSED when the manager never answered ───────
+
+import pytest  # noqa: E402
+
+
+class _Stub:
+    def __init__(self, rc, out=""):
+        self.rc, self.out = rc, out
+
+    def systemctl(self, *args, **kwargs):
+        rc, out = self.rc, self.out
+
+        class R:
+            returncode = rc
+            stdout = out
+            stderr = ""
+
+        return R()
+
+    def unit_is_active(self, unit):
+        return False
+
+
+def _reach_guard(monkeypatch, tmp_path):
+    import vispctl.placeholder as ph
+
+    tmpl = tmp_path / "prod.container"
+    tmpl.write_text("[Container]\n")
+    monkeypatch.setattr(ph, "placeholder_template", lambda *a, **k: tmpl)
+    return ph
+
+
+def test_guard_refuses_when_bus_unreachable(monkeypatch, tmp_path):
+    """rc=1 'Failed to connect to bus' must NOT read as 'apache is down'."""
+    ph = _reach_guard(monkeypatch, tmp_path)
+    with pytest.raises(ServiceError, match="cannot verify apache state"):
+        ph.placeholder_up(_Stub(1), tmp_path, tmp_path, "prod", lambda x: x)
+
+
+def test_guard_allows_absent_unit(monkeypatch, tmp_path):
+    """rc=4 (no apache unit at all) can proceed — nothing holds the port."""
+    ph = _reach_guard(monkeypatch, tmp_path)
+    try:
+        ph.placeholder_up(_Stub(4, "not-found"), tmp_path, tmp_path, "prod", lambda x: x)
+    except ServiceError as e:
+        assert "apache is running" not in str(e)
+        assert "cannot verify" not in str(e)
+    except Exception:
+        pass  # a later-stage failure still proves the guard let it through

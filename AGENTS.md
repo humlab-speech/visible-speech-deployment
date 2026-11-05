@@ -296,7 +296,9 @@ path-agnostic — they read `PROJECT_PATH` from the environment.
 
 A diagnostic tool for inspecting and cleaning up session containers. Detects orphaned
 containers, adrift sessions (missing from session-manager's tracking), resource usage,
-and provides cleanup options.
+and provides cleanup options. **Fails closed (exit 1) when podman cannot be consulted**
+— with no container evidence every directory looks stale, and `sd --clean` on such a
+view has destroyed live data before; the refusal applies to report mode too.
 
 ---
 
@@ -477,9 +479,12 @@ whenever images, quadlets, or service names change.
 
 # Quadlet lifecycle  (always in this order for a clean reset)
 ./visp.py uninstall              # remove copied quadlet files + podman secrets
+                                 # (scoped uninstall keeps every secret a surviving
+                                 #  installed unit still cites, incl. user-authored units)
 ./visp.py install [--mode dev|prod]  # render + copy quadlets and secrets, then
                                      # converge: daemon-reload + restart affected services
-./visp.py start all              # start what isn't running
+./visp.py start all              # start what isn't running (exits 1 if a unit fails
+                                 # to come up — a 0 exit only means start was accepted)
 
 # ⚠ Editing a quadlet file in quadlets/dev/ or quadlets/prod/ does NOT automatically
 # update the running system — re-copy and converge with:
@@ -493,7 +498,8 @@ whenever images, quadlets, or service names change.
                                  # (same digest? newer minor/major tag?); --offline skips the registry
 ./visp.py images update matomo   # pick a newer tag (or re-pull a rebuilt one) → quadlets, pull, restart
 ./visp.py restart <service>
-./visp.py logs <service> -f
+./visp.py logs <service> -f      # exits 1 when the non-follow log command fails;
+                                 # follow-mode Ctrl-C always exits 0 by design
 ./visp.py shell <container>      # open bash inside a container
 ./visp.py debug <service>        # shows systemd journal + start errors
 
@@ -501,11 +507,14 @@ whenever images, quadlets, or service names change.
 ./visp.py version                # installed vs checked-out VISP version
 ./visp.py upgrade --dry-run      # plan + preflight checks; without --dry-run: do it
 ./visp.py deploy update          # prod: check out release.json pins; dev: pull latest
+                                 # (fast-forward only: a diverged repo is an error, never a merge)
 ./visp.py deploy status          # comprehensive check: repos, images, third-party
 
 # Emergency offline page (e.g. while waiting for a security patch)
 ./visp.py down                   # stop everything + disable autostart
-./visp.py placeholder up         # static nginx page on apache's port(s), every path → 503
+./visp.py placeholder up         # static nginx page on apache's port(s), every path → 503;
+                                 # refuses if apache runs, would run at boot, or its state
+                                 # cannot be verified (fails closed on a dead user bus)
 ./visp.py up                     # bring VISP back; removes the placeholder automatically
 ```
 
@@ -916,7 +925,11 @@ WhisperVault does **not** use a Podman network — it runs with `Network=none` a
 communicates via a Unix Domain Socket (see WhisperVault section above).
 
 Networks are created by the `.network` Quadlet files and auto-ensured by
-`./visp.py network ensure`. The **netavark** backend is required (CNI has 20 s DNS
+`./visp.py network ensure`. An existing network must MATCH its spec (driver, and the
+internal flag for tratt-net/artic-net) — ensure refuses (exit 1) on a mismatch instead
+of accepting a silently-downgraded network or recreating one that containers may be
+attached to; fix a mismatch by removing and recreating that network manually.
+The **netavark** backend is required (CNI has 20 s DNS
 timeouts). Use `podman info | grep networkBackend` to verify.
 
 ---

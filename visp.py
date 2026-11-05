@@ -187,7 +187,7 @@ def cmd_status(args):  # noqa: ARG001
 def cmd_logs(args):
     """View logs from services (and optionally debug diagnostics)."""
     cfg = get_config()
-    view_logs(
+    failed = view_logs(
         args,
         runner=cfg.runner,
         container_log_files=CONTAINER_LOG_FILES,
@@ -197,6 +197,9 @@ def cmd_logs(args):
         resolve_services=lambda s: resolve_services(s, cfg.project_dir),
         container_services=_container_services,
     )
+    if failed:
+        print(color(f"journalctl failed for: {', '.join(failed)}", Colors.RED))
+        sys.exit(1)
 
 
 # === Service Control Commands ===
@@ -207,7 +210,9 @@ def cmd_start(args):
     cfg = get_config()
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     names = _resolve_service_names(args, cfg)
-    sm.start(names)
+    failed = sm.start(names)
+    if failed:
+        sys.exit(1)
 
 
 def cmd_stop(args):
@@ -224,7 +229,9 @@ def cmd_up(args):
     sm = ServiceManager(cfg.runner, get_runtime_services(include_disabled=True))
     names = _resolve_service_names(args, cfg)
     sm.enable(names)
-    sm.start(names)
+    failed = sm.start(names)
+    if failed:
+        sys.exit(1)
 
 
 def cmd_down(args):
@@ -350,6 +357,7 @@ def cmd_uninstall(args):
     print(color("Removing Podman secrets...", Colors.CYAN))
     from vispctl.secrets import (
         SecretManager,
+        filter_remove_keep,
         parse_quadlet_secret_map,
         secrets_to_remove_for_uninstall,
     )
@@ -364,6 +372,9 @@ def cmd_uninstall(args):
         to_remove = secrets_to_remove_for_uninstall(
             uninstalled, secret_map, existing, remove_all=(args.service == "all")
         )
+        # User-authored quadlets in the systemd dir are invisible to the repo
+        # template map; protect every secret a surviving installed unit cites.
+        to_remove = filter_remove_keep(to_remove, cfg.systemd_dir)
         if to_remove:
             sm.remove_secrets(to_remove)
         else:

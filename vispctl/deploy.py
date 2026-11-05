@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from .build import BUILD_CONFIGS, NODE_BUILD_CONFIGS
+from .config import _default_project_dir
 from .git_repo import GitRepository
 from .runner import Colors, color
 from .versions import RELEASE_FILE, ComponentConfig
@@ -45,10 +46,16 @@ class DeployManager:
         Initialize deploy manager.
 
         Args:
-            basedir: Base directory for deployment (defaults to current directory)
+            basedir: Base directory for deployment (defaults to the
+                repository root that contains this package — NOT the caller's
+                working directory)
             runner: Runner instance for executing commands (optional)
         """
-        self.basedir = Path(basedir) if basedir else Path.cwd()
+        # The deployment lives where the code lives, not wherever the command
+        # was typed: a CWD-based default made 'deploy status' outside the repo
+        # silently read a nonexistent release.json, fall back to upstream
+        # GitHub defaults, and clone into $CWD/external claiming success.
+        self.basedir = Path(basedir) if basedir else _default_project_dir()
         self.external_dir = self.basedir / "external"
         self.config = ComponentConfig(str(self.basedir / RELEASE_FILE))
         self.runner = runner
@@ -1230,6 +1237,16 @@ class DeployManager:
                 print(f"✅ Updated {repo_name}")
                 updated_count += 1
 
+            except subprocess.CalledProcessError as e:
+                # git's own reason (stderr) is the actionable part; the
+                # bare "exit status 128" from str(e) told operators nothing.
+                reason = (
+                    (e.stderr or b"").decode(errors="replace").strip()
+                    if isinstance(e.stderr, bytes)
+                    else (e.stderr or "").strip()
+                )
+                print(f"❌ Error updating {repo_name}: {reason or e}")
+                error_count += 1
             except Exception as e:
                 print(f"❌ Error updating {repo_name}: {e}")
                 error_count += 1

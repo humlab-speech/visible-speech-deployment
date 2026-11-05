@@ -284,8 +284,21 @@ class BackupManager:
         finally:
             self._remove_mongo_config(_MONGO_CONFIG_PATH)
 
-        # Verify file
+        # Verify file — existence alone proved nothing: a fake (or a truncated
+        # transfer) leaving garbage at the path used to count as a successful
+        # backup. Require a readable, non-empty archive.
         if output_path.exists():
+            try:
+                with tarfile.open(output_path, "r:gz") as tar:
+                    members = tar.getmembers()
+                if not members:
+                    print(color("✗ Backup archive is empty", Colors.RED))
+                    output_path.unlink(missing_ok=True)
+                    return None
+            except (tarfile.TarError, OSError):
+                print(color("✗ Backup archive is unreadable — refusing to call it a backup", Colors.RED))
+                output_path.unlink(missing_ok=True)
+                return None
             print(color(f"✓ Backup complete: {output_path}", Colors.GREEN))
             print(
                 "\nNote: This backup contains ONLY the database "
