@@ -251,7 +251,14 @@ def test_entry_shape_is_pinned_and_drives_refresh(scanned, monkeypatch):
     monkeypatch.setattr(images_mod, "ImageManager", lambda *a, **k: real)
     client = _freshness_client_for({"24.15.0-bookworm-slim": "sha256:cccc"})
     statuses = real.base_freshness(client)
-    assert set(statuses["node:24.15.0-bookworm-slim"]) == {"files", "local_digests", "remote_digest", "error", "error_class", "status"}
+    assert set(statuses["node:24.15.0-bookworm-slim"]) == {
+        "files",
+        "local_digests",
+        "remote_digest",
+        "error",
+        "error_class",
+        "status",
+    }
     pull_runner = _Runner({})
     build_mod.refresh_base_images(pull_runner, {"octra": {"context": "./docker/octra"}}, ["octra"], client=client)
     assert pull_runner.pulled == ["docker.io/library/node:24.15.0-bookworm-slim"]
@@ -280,6 +287,7 @@ def test_offline_flag_reaches_base_subcommand_from_either_position(monkeypatch):
 
 # ---- four error classes + fail-fast streak (base-image-freshness rev) ----
 
+
 def _err_statuses(spec_map, files=None):
     class IM:
         def __init__(self, runner):
@@ -297,6 +305,7 @@ def _err_statuses(spec_map, files=None):
                 }
                 for img, (err, klass) in spec_map.items()
             }
+
     return IM
 
 
@@ -330,11 +339,13 @@ def test_two_transport_failures_stop_the_sweep(monkeypatch, capsys):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _err_statuses({
-            "a:1": ("no route", "transport"),
-            "b:1": ("no route", "transport"),
-            "c:1": ("no route", "transport"),  # never reached
-        }),
+        _err_statuses(
+            {
+                "a:1": ("no route", "transport"),
+                "b:1": ("no route", "transport"),
+                "c:1": ("no route", "transport"),  # never reached
+            }
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     assert "two consecutive registry transport failures" in capsys.readouterr().out
@@ -346,12 +357,14 @@ def test_one_transport_then_answered_never_stops_the_sweep(monkeypatch, capsys):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _err_statuses({
-            "a:1": ("no route", "transport"),
-            "b:1": ("HTTP 404", "gone"),        # answered -> resets
-            "c:1": ("HTTP 401", "auth"),         # answered -> resets
-            "d:1": ("realm outside registry", "refused"),  # answered -> resets
-        }),
+        _err_statuses(
+            {
+                "a:1": ("no route", "transport"),
+                "b:1": ("HTTP 404", "gone"),  # answered -> resets
+                "c:1": ("HTTP 401", "auth"),  # answered -> resets
+                "d:1": ("realm outside registry", "refused"),  # answered -> resets
+            }
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     assert "two consecutive" not in capsys.readouterr().out
@@ -367,14 +380,38 @@ def test_answered_then_single_blip_then_work_all_gets_checked(monkeypatch, capsy
 
         def base_freshness(self, client):
             return {
-                "a:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": None, "error": "no route", "error_class": "transport", "status": "unknown"},
-                "b:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": None, "error": "HTTP 404", "error_class": "gone", "status": "unknown"},
-                "c:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": None, "error": "no route", "error_class": "transport", "status": "unknown"},
-                "d:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": "sha256:z", "error": None, "error_class": None, "status": "stale"},
+                "a:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": None,
+                    "error": "no route",
+                    "error_class": "transport",
+                    "status": "unknown",
+                },
+                "b:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": None,
+                    "error": "HTTP 404",
+                    "error_class": "gone",
+                    "status": "unknown",
+                },
+                "c:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": None,
+                    "error": "no route",
+                    "error_class": "transport",
+                    "status": "unknown",
+                },
+                "d:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": "sha256:z",
+                    "error": None,
+                    "error_class": None,
+                    "status": "stale",
+                },
             }
 
     monkeypatch.setattr(images_mod, "ImageManager", IM)
@@ -389,19 +426,24 @@ def _claims(build_configs, ordered):
 
 def test_membership_is_exact_path_not_directory_prefix():
     # a repo-root context must NOT claim every Dockerfile
-    assert _claims({"web": {"context": ".", "dockerfile": "docker/web/Dockerfile"}}, ["web"]) == {"docker/web/Dockerfile"}
+    assert _claims({"web": {"context": ".", "dockerfile": "docker/web/Dockerfile"}}, ["web"]) == {
+        "docker/web/Dockerfile"
+    }
     # context-only defaults to <ctx>/Dockerfile (podman's own default)
     assert _claims({"octra": {"context": "./docker/octra"}}, ["octra"]) == {"docker/octra/Dockerfile"}
 
 
 def test_membership_follows_dockerfile_out_of_the_context():
     # artic builds docker/artic/Dockerfile from external/artic via ../../
-    claims = _claims({"artic": {"context": "./external/artic", "dockerfile": "../../docker/artic/Dockerfile"}}, ["artic"])
+    claims = _claims(
+        {"artic": {"context": "./external/artic", "dockerfile": "../../docker/artic/Dockerfile"}}, ["artic"]
+    )
     assert claims == {"docker/artic/Dockerfile"}
 
 
 def test_real_configs_claim_one_dockerfile_each():
     from vispctl.build import BUILD_CONFIGS
+
     claims = _claims(BUILD_CONFIGS, sorted(BUILD_CONFIGS))
     # every real buildable claims exactly one path, none claim a bare directory
     for svc in BUILD_CONFIGS:
@@ -481,6 +523,7 @@ def test_real_exception_flows_to_auth_wording(tmp_path, monkeypatch, capsys):
     assert "HTTP 401" in out, out  # the underlying reason is not swallowed
     assert "not reachable" not in out and "REFUSED" not in out, out
 
+
 def test_two_transport_failures_stop_before_remaining_work(monkeypatch, capsys):
     """The stop is at TWO, and it protects the rest: a stale base after the
     second blip must NOT be pulled (the loop broke, it never saw it)."""
@@ -492,12 +535,30 @@ def test_two_transport_failures_stop_before_remaining_work(monkeypatch, capsys):
 
         def base_freshness(self, client):
             return {
-                "a:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": None, "error": "no route", "error_class": "transport", "status": "unknown"},
-                "b:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": None, "error": "no route", "error_class": "transport", "status": "unknown"},
-                "c:1": {"files": [("docker/octra/Dockerfile", None)], "local_digests": set(),
-                        "remote_digest": "sha256:z", "error": None, "error_class": None, "status": "stale"},
+                "a:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": None,
+                    "error": "no route",
+                    "error_class": "transport",
+                    "status": "unknown",
+                },
+                "b:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": None,
+                    "error": "no route",
+                    "error_class": "transport",
+                    "status": "unknown",
+                },
+                "c:1": {
+                    "files": [("docker/octra/Dockerfile", None)],
+                    "local_digests": set(),
+                    "remote_digest": "sha256:z",
+                    "error": None,
+                    "error_class": None,
+                    "status": "stale",
+                },
             }
 
     monkeypatch.setattr(images_mod, "ImageManager", IM)
@@ -505,6 +566,7 @@ def test_two_transport_failures_stop_before_remaining_work(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "two consecutive" in out
     assert runner.pulled == []  # c:1 never reached
+
 
 def test_two_unreachable_bases_stop_the_probe_sweep(tmp_path, monkeypatch):
     """After two consecutive transport failures nothing further is probed."""
@@ -563,13 +625,15 @@ def test_build_sweep_labels_skipped_entries_without_counting_them(monkeypatch, c
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _statuses({
-            "a:1": ("unknown", "no route", "transport"),
-            "b:1": ("unknown", "answered HTTP 404", "gone"),
-            "c:1": ("unknown", "not checked (two unreachable bases in a row)", "skipped"),
-            "d:1": ("unknown", "still down", "transport"),
-            "e:1": ("absent", None),
-        }),
+        _statuses(
+            {
+                "a:1": ("unknown", "no route", "transport"),
+                "b:1": ("unknown", "answered HTTP 404", "gone"),
+                "c:1": ("unknown", "not checked (two unreachable bases in a row)", "skipped"),
+                "d:1": ("unknown", "still down", "transport"),
+                "e:1": ("absent", None),
+            }
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out

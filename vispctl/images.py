@@ -74,7 +74,13 @@ def _print_base_freshness(st: Dict[str, Any]) -> None:
     elif st["status"] == "unknown" and st["error"]:
         kind = st.get("error_class") or "other"
         if kind == "refused":
-            print(color(f"     check REFUSED by the registry host-trust guard ({st['error']}) — investigate, content NOT verified", Colors.RED))
+            print(
+                color(
+                    f"     check REFUSED by the registry host-trust guard ({st['error']})"
+                    " — investigate, content NOT verified",
+                    Colors.RED,
+                )
+            )
         elif kind == "gone":
             print(color(f"     tag not at the registry ({st['error']}) — content NOT verified", Colors.YELLOW))
         elif kind == "auth":
@@ -616,7 +622,13 @@ class ImageManager:
             ref = ImageRef.parse(image)
             if "." not in ref.registry:
                 continue  # localhost/other local builds
-            entry: Dict[str, Any] = {"files": files, "local_digests": set(), "remote_digest": None, "error": None, "error_class": None}
+            entry: Dict[str, Any] = {
+                "files": files,
+                "local_digests": set(),
+                "remote_digest": None,
+                "error": None,
+                "error_class": None,
+            }
             if ref.digest is not None:
                 entry["status"] = "pinned"
                 out[image] = entry

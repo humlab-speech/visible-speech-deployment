@@ -745,24 +745,54 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
         if st["error"]:
             kind = st.get("error_class") or "other"
             if kind == "refused":
-                print(color(f"  ✖ {image}: host-trust check REFUSED ({st['error']}) — base NOT refreshed, investigate", Colors.RED))
+                print(
+                    color(
+                        f"  ✖ {image}: host-trust check REFUSED ({st['error']}) — base NOT refreshed, investigate",
+                        Colors.RED,
+                    )
+                )
                 transport_streak = 0  # answered (and a security event to chase, not an outage)
             elif kind == "gone":
-                print(color(f"  ⚠ {image}: tag not at the registry ({st['error']}) — building from cached base", Colors.YELLOW))
+                print(
+                    color(
+                        f"  ⚠ {image}: tag not at the registry ({st['error']}) — building from cached base",
+                        Colors.YELLOW,
+                    )
+                )
                 transport_streak = 0
             elif kind == "auth":
-                print(color(f"  ⚠ {image}: registry needs credentials ({st['error']}) — base NOT refreshed", Colors.YELLOW))
+                print(
+                    color(
+                        f"  ⚠ {image}: registry needs credentials ({st['error']}) — base NOT refreshed", Colors.YELLOW
+                    )
+                )
                 transport_streak = 0
             elif kind == "skipped":
                 print(color(f"  ○ {image}: {st['error']} — base NOT refreshed", Colors.YELLOW))
             elif kind == "transport":
-                print(color(f"  ⚠ {image}: registry not reachable ({st['error']}) — building from cached base", Colors.YELLOW))
+                print(
+                    color(
+                        f"  ⚠ {image}: registry not reachable ({st['error']}) — building from cached base",
+                        Colors.YELLOW,
+                    )
+                )
                 transport_streak += 1
                 if transport_streak >= 2:
-                    print(color("  ⚠ two consecutive registry transport failures — skipping the remaining base checks (--no-pull to silence)", Colors.YELLOW))
+                    print(
+                        color(
+                            "  ⚠ two consecutive registry transport failures — skipping the remaining base checks"
+                            " (--no-pull to silence)",
+                            Colors.YELLOW,
+                        )
+                    )
                     break
             else:
-                print(color(f"  ⚠ {image}: registry answered oddly ({st['error']}) — building from cached base", Colors.YELLOW))
+                print(
+                    color(
+                        f"  ⚠ {image}: registry answered oddly ({st['error']}) — building from cached base",
+                        Colors.YELLOW,
+                    )
+                )
                 transport_streak = 0
             continue
         transport_streak = 0  # an answered question (current/stale/absent) ends any outage run

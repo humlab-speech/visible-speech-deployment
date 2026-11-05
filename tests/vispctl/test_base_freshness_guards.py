@@ -8,10 +8,10 @@ image line and cover the display path too.
 """
 
 import pytest
+from test_base_freshness import _OCTRA, _err_statuses, _Runner
 
 import vispctl.build as build_mod
 import vispctl.images as images_mod
-from test_base_freshness import _OCTRA, _Runner, _err_statuses
 
 
 def _line_for(out, img):
@@ -27,12 +27,14 @@ def test_each_error_class_prints_its_own_wording(monkeypatch, capsys):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _err_statuses({
-            "a:1": ("HTTP 401", "auth"),
-            "b:1": ("HTTP 404", "gone"),
-            "c:1": ("no route", "transport"),
-            "d:1": ("realm outside registry", "refused"),
-        }),
+        _err_statuses(
+            {
+                "a:1": ("HTTP 401", "auth"),
+                "b:1": ("HTTP 404", "gone"),
+                "c:1": ("no route", "transport"),
+                "d:1": ("realm outside registry", "refused"),
+            }
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out
@@ -74,11 +76,13 @@ def test_refused_does_not_feed_the_transport_streak(monkeypatch, capsys):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _mixed([
-            ("a:1", "unknown", "realm outside registry", "refused"),
-            ("b:1", "unknown", "no route", "transport"),
-            ("c:1", "stale", None, None),
-        ]),
+        _mixed(
+            [
+                ("a:1", "unknown", "realm outside registry", "refused"),
+                ("b:1", "unknown", "no route", "transport"),
+                ("c:1", "stale", None, None),
+            ]
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out
@@ -92,12 +96,14 @@ def test_refused_then_two_blips_stops_only_at_two(monkeypatch, capsys):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _mixed([
-            ("a:1", "unknown", "realm outside registry", "refused"),
-            ("b:1", "unknown", "no route", "transport"),
-            ("c:1", "unknown", "no route", "transport"),
-            ("d:1", "stale", None, None),
-        ]),
+        _mixed(
+            [
+                ("a:1", "unknown", "realm outside registry", "refused"),
+                ("b:1", "unknown", "no route", "transport"),
+                ("c:1", "unknown", "no route", "transport"),
+                ("d:1", "stale", None, None),
+            ]
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out
@@ -112,12 +118,14 @@ def test_answered_by_status_resets_the_streak(monkeypatch, capsys, answered):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _mixed([
-            ("a:1", "unknown", "no route", "transport"),
-            ("b:1", answered, None, None),
-            ("c:1", "unknown", "no route", "transport"),
-            ("d:1", "stale", None, None),
-        ]),
+        _mixed(
+            [
+                ("a:1", "unknown", "no route", "transport"),
+                ("b:1", answered, None, None),
+                ("c:1", "unknown", "no route", "transport"),
+                ("d:1", "stale", None, None),
+            ]
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out
@@ -133,12 +141,14 @@ def test_first_error_does_not_abort_the_sweep(monkeypatch, capsys):
     monkeypatch.setattr(
         images_mod,
         "ImageManager",
-        _mixed([
-            ("a:1", "unknown", "HTTP 404", "gone"),
-            ("b:1", "unknown", "HTTP 401", "auth"),
-            ("c:1", "stale", None, None),
-            ("d:1", "absent", None, None),
-        ]),
+        _mixed(
+            [
+                ("a:1", "unknown", "HTTP 404", "gone"),
+                ("b:1", "unknown", "HTTP 401", "auth"),
+                ("c:1", "stale", None, None),
+                ("d:1", "absent", None, None),
+            ]
+        ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out
@@ -147,6 +157,7 @@ def test_first_error_does_not_abort_the_sweep(monkeypatch, capsys):
 
 
 # ---- M6: display layer (images base) had NO test at all -------------------
+
 
 def _fresh(out):
     """The freshness lines display_base_images printed (ANSI stripped)."""
@@ -179,10 +190,26 @@ def _display(tmp_path, monkeypatch, capsys, image, digests=None, exc=None, remot
 @pytest.mark.parametrize(
     "exc,want,never",
     [
-        (images_mod.RegistryTransportError("no route"), "not reachable", ["credentials", "REFUSED", "not at the registry"]),
-        (images_mod.RegistryHTTPStatusError("HTTP 404", 404), "not at the registry", ["credentials", "REFUSED", "not reachable"]),
-        (images_mod.RegistryHTTPStatusError("HTTP 401", 401), "needs credentials", ["not at the registry", "REFUSED", "not reachable"]),
-        (images_mod.RegistryTrustError("realm outside registry"), "REFUSED", ["not reachable", "credentials", "cached"]),
+        (
+            images_mod.RegistryTransportError("no route"),
+            "not reachable",
+            ["credentials", "REFUSED", "not at the registry"],
+        ),
+        (
+            images_mod.RegistryHTTPStatusError("HTTP 404", 404),
+            "not at the registry",
+            ["credentials", "REFUSED", "not reachable"],
+        ),
+        (
+            images_mod.RegistryHTTPStatusError("HTTP 401", 401),
+            "needs credentials",
+            ["not at the registry", "REFUSED", "not reachable"],
+        ),
+        (
+            images_mod.RegistryTrustError("realm outside registry"),
+            "REFUSED",
+            ["not reachable", "credentials", "cached"],
+        ),
     ],
 )
 def test_display_base_images_prints_one_line_per_error_class(tmp_path, monkeypatch, capsys, exc, want, never):
@@ -195,16 +222,18 @@ def test_display_base_images_prints_one_line_per_error_class(tmp_path, monkeypat
 
 def test_display_base_images_status_lines(tmp_path, monkeypatch, capsys):
     """current / stale / absent each get their own line too (display layer had none)."""
-    out, lines = _display(tmp_path, monkeypatch, capsys, "octra:1.0", remote="sha256:aaa",
-                         digests={"octra:1.0": ["octra@sha256:aaa"]})
+    out, lines = _display(
+        tmp_path, monkeypatch, capsys, "octra:1.0", remote="sha256:aaa", digests={"octra:1.0": ["octra@sha256:aaa"]}
+    )
     # pin the substance, not the word 'current': the line must claim the registry
     # was asked and agreed, which a bare 'current' substring would not prove
     assert any("registry serves the digest we hold" in ln for ln in lines), out
     assert not any("not consulted" in ln or "NOT verified" in ln for ln in lines), out
 
     capsys.readouterr()
-    out, lines = _display(tmp_path, monkeypatch, capsys, "octra:1.0", remote="sha256:bbb",
-                         digests={"octra:1.0": ["octra@sha256:aaa"]})
+    out, lines = _display(
+        tmp_path, monkeypatch, capsys, "octra:1.0", remote="sha256:bbb", digests={"octra:1.0": ["octra@sha256:aaa"]}
+    )
     assert any("STALE" in ln for ln in lines), out
     # the Summary must agree with the detail line: count it, point at build,
     # and never print the green 'all pinned' line next to a stale base
@@ -247,9 +276,9 @@ def test_consumer_reads_the_class_key_from_real_entries(tmp_path, monkeypatch, c
     consumer-only rename of the error_class key stays green through it because
     no errored entry ever reaches refresh_base_images there. This does that.
     """
-    from vispctl.registry import RegistryHTTPStatusError
-
     from test_base_freshness import _Runner
+
+    from vispctl.registry import RegistryHTTPStatusError
 
     monkeypatch.setattr(images_mod, "get_config", lambda: type("C", (), {"project_dir": tmp_path})())
     dockerfile = tmp_path / "docker" / "octra" / "Dockerfile"

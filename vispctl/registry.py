@@ -59,6 +59,7 @@ class RegistryHTTPStatusError(RegistryError):
 class RegistryTrustError(RegistryError):
     """The registry pointed auth at another host — a security event, not an outage."""
 
+
 # Docker Hub answers its 401 challenge with a token realm on its own auth
 # host, so the realm check needs one named delegate. It is honoured for
 # token realms only: a registry paginates on its own host, never here.
@@ -199,9 +200,7 @@ class RegistryClient:
             except (urllib.error.URLError, OSError) as e:
                 reason = getattr(e, "reason", e)
                 raise RegistryTransportError(f"cannot reach {ref.registry}: {reason}") from e
-        raise RegistryHTTPStatusError(
-            f"{ref.registry} refused anonymous access to {ref.repository}", code=401
-        )
+        raise RegistryHTTPStatusError(f"{ref.registry} refused anonymous access to {ref.repository}", code=401)
 
     def _fetch_token(self, challenge: str, registry: str) -> str:
         """Exchange a ``WWW-Authenticate: Bearer realm=…`` challenge for an anonymous token."""
