@@ -8,6 +8,14 @@ from typing import Tuple
 from .exceptions import NetworkError
 from .runner import Colors, Runner, color
 
+# The networks VISP needs, as the .network quadlets define them. tratt-net and
+# artic-net are internal: their static frontends talk only to apache.
+REQUIRED_NETWORKS = (
+    {"name": "systemd-visp-net", "internal": False},
+    {"name": "systemd-tratt-net", "internal": True},
+    {"name": "systemd-artic-net", "internal": True},
+)
+
 
 class NetworkManager:
     def __init__(self, runner: Runner, containers_conf: Path = None):
@@ -21,21 +29,37 @@ class NetworkManager:
             return (backend == "netavark", backend)
         return (False, "unknown")
 
-    def ensure_networks_exist(self) -> bool:
-        required_networks = [
-            {"name": "systemd-visp-net", "internal": False},
-            {"name": "systemd-tratt-net", "internal": True},
-            {"name": "systemd-artic-net", "internal": True},
-        ]
-
+    def _existing_networks(self) -> set[str] | None:
+        """Names of the networks podman has, or None if they cannot be listed."""
         rc, stdout, _ = self.runner.run_quiet(["podman", "network", "ls", "--format", "{{.Name}}"])
         if rc != 0:
+            return None
+        return set(stdout.strip().split("\n")) if stdout.strip() else set()
+
+    def network_problems(self) -> list[str]:
+        """Read-only: why ensure_networks_exist() would refuse, one entry per problem.
+
+        A missing network is not a problem (ensure creates it); an existing one
+        that does not match its spec is, since ensure refuses to touch it.
+        """
+        existing = self._existing_networks()
+        if existing is None:
+            return ["cannot list podman networks ('podman network ls' failed)"]
+        problems = []
+        for net in REQUIRED_NETWORKS:
+            if net["name"] in existing:
+                ok, why = self._network_matches(net)
+                if not ok:
+                    problems.append(f"{net['name']}: {why}")
+        return problems
+
+    def ensure_networks_exist(self) -> bool:
+        existing_networks = self._existing_networks()
+        if existing_networks is None:
             print(color("  ✗ Failed to list networks", Colors.RED))
             return False
 
-        existing_networks = set(stdout.strip().split("\n")) if stdout.strip() else set()
-
-        for net in required_networks:
+        for net in REQUIRED_NETWORKS:
             if net["name"] in existing_networks:
                 ok, why = self._network_matches(net)
                 if not ok:

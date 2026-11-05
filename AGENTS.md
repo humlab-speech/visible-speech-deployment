@@ -722,9 +722,12 @@ git fetch --tags && git checkout v1.2.0
 ```
 
 `upgrade` runs, oldest pending release first within each phase:
-`preflight` (read-only checks of every pending release) → `pre_apply` (built-in MongoDB
+`preflight` (read-only checks of every pending release, plus built-in ones: no local
+changes, and nothing `install` would refuse later — podman's network backend must be
+netavark, existing networks must match their spec) → `pre_apply` (built-in MongoDB
 backup to `backups/`, then release steps, old version still running) → *apply*
-(check out pins, build every image, pull third-party images) → `post_build` →
+(check out pins, refresh rebuilt base images, build every image, pull third-party
+images) → `post_build` →
 *converge* (`install`: quadlets, secrets, env files, restart what changed) →
 `post_apply`. Every completed step is recorded in the state file, so after a failure you
 fix the cause and run `upgrade` again — it resumes after the last completed step. In
@@ -1223,8 +1226,7 @@ when their base is patched. Podman never re-checks a tag it already has
   token server outside the registry, refused by the host-trust check and printed in
   red — worth investigating), the base is left as it is and the build uses the cached
   copy. After two network failures in a row it stops checking.
-- **`./visp.py upgrade`** does not run this step yet: it builds with the bases it
-  already has.
+- **`./visp.py upgrade`** runs the same step before its build.
 
 Dated Debian tags (✅) never change, so the refresh only pulls them when missing.
 For newer Debian packages, move to a newer dated tag, or rebuild with `--no-cache`

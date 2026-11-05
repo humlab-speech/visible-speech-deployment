@@ -12,11 +12,13 @@ An upgrade runs in this order; the steps of several pending releases are
 interleaved per phase, oldest release first::
 
     preflight    read-only checks of every pending release — nothing has changed yet
-                 when one fails
+                 when one fails (built-in first: the repositories, and everything
+                 converge's install would refuse: podman's network backend, and
+                 networks that do not match their spec)
     pre_apply    the old version is still installed and running (built-in first:
                  a MongoDB backup)
-    ── apply: check out the pinned components, build every image, pull the
-       third-party images
+    ── apply: check out the pinned components, refresh rebuilt base images,
+       build every image, pull the third-party images
     post_build   the new images exist, the old containers still run
     ── converge: install the new quadlets / secrets / env files and restart
        what changed (``./visp.py install``)
@@ -320,6 +322,43 @@ def _check_webclient_config(ctx: UpgradeContext) -> None:
     ctx.info(f"webclient will be built with --config {config}")
 
 
+def _check_network_backend(ctx: UpgradeContext) -> None:
+    """Converge runs install, which stops to offer a netavark migration; find out now."""
+    from .network import NetworkManager
+
+    is_netavark, backend = NetworkManager(ctx.runner).check_netavark()
+    if is_netavark:
+        ctx.info("podman uses the netavark network backend")
+        return
+    if backend == "unknown":
+        ctx.fail("Cannot tell podman's network backend ('podman info' failed). Is podman working?")
+    ctx.fail(
+        f"Podman uses the '{backend}' network backend; VISP requires netavark (CNI's DNS stalls for ~20 s).\n"
+        "      Switching runs 'podman system reset', which deletes every container, image and network\n"
+        "      (mounts/ is kept), so it is never done inside an upgrade. Back up (./visp.py backup),\n"
+        "      migrate deliberately ('./visp.py install' offers it), then run the upgrade again."
+    )
+
+
+def _check_networks(ctx: UpgradeContext) -> None:
+    """Converge runs install, which refuses a network that does not match its spec; find out now."""
+    from .network import NetworkManager
+
+    problems = NetworkManager(ctx.runner).network_problems()
+    if not problems:
+        ctx.info("every existing VISP network matches its spec (missing ones are created by install)")
+        return
+    names = [p.split(":", 1)[0] for p in problems if p.startswith("systemd-")]
+    fix = ""
+    if names:
+        rm = " ".join(names)
+        fix = (
+            "\n    Recreate them before upgrading (VISP is down meanwhile):\n"
+            f"      ./visp.py down && podman network rm {rm} && ./visp.py network ensure && ./visp.py up"
+        )
+    ctx.fail("A VISP network does not match its spec:\n      - " + "\n      - ".join(problems) + fix)
+
+
 def _backup(ctx: UpgradeContext) -> None:
     if not ctx.is_running("mongo"):
         ctx.fail("mongo is not running, so it cannot be backed up. Start it, or pass --no-backup.")
@@ -346,9 +385,13 @@ def _buildable(ctx: UpgradeContext) -> list[str]:
 
 
 def _build(ctx: UpgradeContext) -> None:
-    from .build import BUILD_CONFIGS, NODE_BUILD_CONFIGS, BuildManager
+    from .build import BUILD_CONFIGS, NODE_BUILD_CONFIGS, BuildManager, refresh_base_images
 
     ordered = _buildable(ctx)
+    # Like './visp.py build': pull the bases the registry has rebuilt (security
+    # fixes under the same tag) or that are missing, or the images re-bake stale ones.
+    ctx.info("refreshing base images")
+    refresh_base_images(ctx.runner, BUILD_CONFIGS, ordered)
     ctx.info(f"building: {', '.join(ordered)}")
     bm = BuildManager(ctx.runner, build_configs=BUILD_CONFIGS, node_configs=NODE_BUILD_CONFIGS)
     # The webclient picks up WEBCLIENT_BUILD_CONFIG from .env by itself.
@@ -443,6 +486,8 @@ def build_plan(
                     plan.steps.append(PlannedStep(f"{rel.version}:{step.id}", rel.version, step))
 
     builtin("check-repos", "release.json is complete and no repository has local changes", _check_repos, "preflight")
+    builtin("check-network-backend", "podman uses the netavark network backend", _check_network_backend, "preflight")
+    builtin("check-networks", "existing VISP networks match their spec", _check_networks, "preflight")
     if build:
         builtin("check-webclient-config", "the webclient build configuration is known", _check_webclient_config,
                 "preflight")  # fmt: skip

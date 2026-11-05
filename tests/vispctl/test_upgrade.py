@@ -13,6 +13,20 @@ from vispctl.upgrade import UpgradeError, build_plan, discover_upgrades, run_upg
 
 CALLS: list[str] = []
 
+_BUILTINS = (
+    "_check_repos",
+    "_check_network_backend",
+    "_check_networks",
+    "_check_webclient_config",
+    "_backup",
+    "_checkout",
+    "_build",
+    "_pull",
+    "_converge",
+)
+# The real steps, kept before the autouse fixture swaps them for recorders.
+REAL = {name: getattr(up, name) for name in _BUILTINS}
+
 
 @pytest.fixture(autouse=True)
 def fake_builtins(monkeypatch):
@@ -21,7 +35,7 @@ def fake_builtins(monkeypatch):
 
     CALLS.clear()
     monkeypatch.setattr(builtins, "VISP_TEST_CALLS", CALLS, raising=False)
-    for name in ("_check_repos", "_check_webclient_config", "_backup", "_checkout", "_build", "_pull", "_converge"):
+    for name in _BUILTINS:
         monkeypatch.setattr(up, name, lambda ctx, n=name: CALLS.append(n.lstrip("_")))
     yield
 
@@ -84,7 +98,8 @@ def test_plan_interleaves_releases_per_phase(tmp_path):
 
     assert run_upgrade(project, runner=None, mode="prod", assume_yes=True) == 0
     assert CALLS == [
-        "check_repos", "check_webclient_config", "1.1-check", "1.2-check",
+        "check_repos", "check_network_backend", "check_networks", "check_webclient_config",
+        "1.1-check", "1.2-check",
         "backup", "1.1-pre", "1.2-pre",
         "checkout", "build", "pull",
         "1.2-built",
@@ -216,7 +231,7 @@ def test_dry_run_runs_preflight_only_and_changes_nothing(tmp_path):
     project = _project(tmp_path, "1.1.0", "1.0.0", {"1.1.0": module})
     before = (project / "mounts" / "visp-state.json").read_text()
     assert run_upgrade(project, None, "prod", dry_run=True) == 0
-    assert CALLS == ["check_repos", "check_webclient_config", "look"]
+    assert CALLS == ["check_repos", "check_network_backend", "check_networks", "check_webclient_config", "look"]
     assert (project / "mounts" / "visp-state.json").read_text() == before
 
 
@@ -240,7 +255,7 @@ def test_up_to_date_is_a_noop(tmp_path):
 def test_no_backup_no_build_flags(tmp_path):
     project = _project(tmp_path, "1.1.0", "1.0.0", {})
     assert run_upgrade(project, None, "prod", assume_yes=True, backup=False, build=False) == 0
-    assert CALLS == ["check_repos", "checkout", "pull", "converge"]
+    assert CALLS == ["check_repos", "check_network_backend", "check_networks", "checkout", "pull", "converge"]
 
 
 @pytest.mark.parametrize(
@@ -256,3 +271,93 @@ def test_invalid_modules_are_rejected(tmp_path, steps, message):
     project = _project(tmp_path, "1.1.0", "1.0.0", {"1.1.0": _module("1.1.0", steps)})
     with pytest.raises(ConfigError, match=message):
         discover_upgrades(project)
+
+
+# ── built-in checks against a fake podman ─────────────────────────────────────────
+
+
+class _Podman:
+    """Answers the podman queries the network checks make."""
+
+    def __init__(self, networks=None, ls_rc=0, backend="netavark"):
+        self.networks = networks or {}  # name -> (driver, internal)
+        self.ls_rc = ls_rc
+        self.backend = backend
+
+    def run_quiet(self, cmd, **kwargs):
+        if cmd[:3] == ["podman", "network", "ls"]:
+            return self.ls_rc, "\n".join(self.networks), ""
+        if cmd[:3] == ["podman", "network", "inspect"]:
+            driver, internal = self.networks[cmd[3]]
+            return 0, f"{driver}|{str(internal).lower()}", ""
+        if cmd[:2] == ["podman", "info"]:
+            return (0, self.backend, "") if self.backend else (125, "", "boom")
+        raise AssertionError(f"unexpected command {cmd}")
+
+
+def _ctx(runner, tmp_path=None):
+    from types import SimpleNamespace
+
+    def fail(msg):
+        raise UpgradeError(msg)
+
+    return SimpleNamespace(runner=runner, project_dir=tmp_path, info=lambda msg: None, fail=fail)
+
+
+_GOOD = {
+    "systemd-visp-net": ("bridge", False),
+    "systemd-tratt-net": ("bridge", True),
+    "systemd-artic-net": ("bridge", True),
+}
+
+
+@pytest.mark.parametrize("networks", [_GOOD, {}, {"systemd-visp-net": ("bridge", False)}])
+def test_check_networks_passes_when_networks_match_or_are_missing(networks):
+    REAL["_check_networks"](_ctx(_Podman(networks)))  # missing ones are install's to create
+
+
+def test_check_networks_names_the_mismatch_and_the_fix():
+    networks = dict(_GOOD, **{"systemd-tratt-net": ("bridge", False), "systemd-artic-net": ("macvlan", True)})
+    with pytest.raises(UpgradeError) as err:
+        REAL["_check_networks"](_ctx(_Podman(networks)))
+    msg = str(err.value)
+    assert "systemd-tratt-net: exists but is not internal" in msg
+    assert "systemd-artic-net: exists with driver macvlan" in msg
+    assert "podman network rm systemd-tratt-net systemd-artic-net" in msg
+    assert "./visp.py network ensure" in msg
+
+
+def test_check_networks_fails_when_podman_cannot_list_them():
+    with pytest.raises(UpgradeError, match="cannot list podman networks"):
+        REAL["_check_networks"](_ctx(_Podman(ls_rc=125)))
+
+
+def test_check_network_backend():
+    REAL["_check_network_backend"](_ctx(_Podman(backend="netavark")))
+    with pytest.raises(UpgradeError, match="podman system reset"):
+        REAL["_check_network_backend"](_ctx(_Podman(backend="cni")))
+    with pytest.raises(UpgradeError, match="Cannot tell"):
+        REAL["_check_network_backend"](_ctx(_Podman(backend=None)))
+
+
+def test_build_refreshes_base_images_before_building(tmp_path, monkeypatch):
+    import vispctl.build as build_mod
+
+    order = []
+
+    class FakeBM:
+        def __init__(self, runner, build_configs=None, node_configs=None):
+            pass
+
+        def run_builds(self, ordered, **kwargs):
+            order.append(("build", list(ordered)))
+            return {"success": list(ordered), "failed": [], "skipped": []}
+
+    def refresh(runner, build_configs, ordered, **kwargs):
+        order.append(("refresh", list(ordered)))
+
+    monkeypatch.setattr(build_mod, "BuildManager", FakeBM)
+    monkeypatch.setattr(build_mod, "refresh_base_images", refresh)
+    REAL["_build"](_ctx(runner=None, tmp_path=tmp_path))
+    assert [step for step, _ in order] == ["refresh", "build"]
+    assert order[0][1] == order[1][1]  # the bases of exactly what is built
