@@ -115,9 +115,19 @@ class BuildManager:
 
                 depends_on = cfg.get("depends_on")
                 if depends_on and depends_on not in results["success"]:
-                    rc, _, _ = self.runner.run_quiet(
-                        ["podman", "image", "exists", f"{self.build_configs[depends_on]['image']}:latest"]
-                    )
+                    dep = self.build_configs.get(depends_on)
+                    if dep is None:
+                        # A node project (webclient, container-agent) produces a build
+                        # artefact, not an image: there is nothing in local storage to
+                        # look for, so it counts as satisfied only if it was built in
+                        # this run. A dependency name matching nothing is treated the
+                        # same way — skipping is recoverable, a crash mid-build is not.
+                        kind = "node project, no image" if depends_on in node_names else "unknown dependency"
+                        print(color(f"  ✗ Requires {depends_on} ({kind}) — not built in this run", Colors.RED))
+                        results["skipped"].append(svc_name)
+                        print()
+                        continue
+                    rc, _, _ = self.runner.run_quiet(["podman", "image", "exists", f"{dep['image']}:latest"])
                     if rc != 0:
                         print(color(f"  ✗ Requires {depends_on} image — not built and not present", Colors.RED))
                         results["skipped"].append(svc_name)
@@ -689,12 +699,17 @@ def cmd_build(
     build_configs=None,
     node_configs=None,
     all_buildable: list[str] | None = None,
-) -> None:
-    """Build container images and node projects."""
+) -> int:
+    """Build container images and node projects.
+
+    Returns 1 if any build failed, or if a service was skipped because an image
+    it depends on was neither built in this run nor present locally — a service
+    that was never built must not look green to a 'visp.py build && ...' chain.
+    """
 
     if getattr(args, "list", False):
         cmd_build_list(args, build_configs=build_configs, node_configs=node_configs)
-        return
+        return 0
 
     no_cache = getattr(args, "no_cache", False)
     pull = getattr(args, "pull", False)
@@ -735,7 +750,7 @@ def cmd_build(
                 print("   1. Run: ./visp.py deploy update")
                 print("   2. Use --force to override (not recommended)")
                 print()
-                return
+                return 1
             print(color("Continuing build (use --force to skip this check)...", Colors.YELLOW))
             print()
 
@@ -786,6 +801,8 @@ def cmd_build(
                 Colors.YELLOW,
             )
         )
+
+    return 1 if results["failed"] or results["skipped"] else 0
 
 
 def cmd_build_list(args, build_configs=None, node_configs=None) -> None:  # noqa: ARG001
