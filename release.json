@@ -3,25 +3,25 @@
   "visp": "1.1.0",
   "components": {
     "webclient": {
-      "ref": "bfbb656486586307b8f0101e3153c155a65e4f75"
+      "ref": "a417de108eaf9e0a1b84b3b622a965d3fedbd607"
     },
     "container-agent": {
-      "ref": "793367cab732fc901bb8794b330325e96a608728"
+      "ref": "d2624732d7db01d815b4389e7fbff44ade99ce94"
     },
     "wsrng-server": {
-      "ref": "113ba34c71f06788512cd962267cea49853d0642"
+      "ref": "202d517828c3b67044b6f7592ba5d145fc077279"
     },
     "session-manager": {
-      "ref": "03caa078fb2956d45d70ebf390bcf1733500e719"
+      "ref": "cd11d5dd315b0063219a08afe37142ba8029c0f4"
     },
     "emu-webapp-server": {
-      "ref": "4164d84010df39d87da40769040abb50f1316af4"
+      "ref": "e6b09fc63ed6fb2f301653281d3453e54c930487"
     },
     "artic": {
       "ref": "4d93c533d2940896b88fe57ebb332779f084a0a1"
     },
     "WhisperVault": {
-      "ref": "2124d571a25a0e5d3a6e252acf8f3e94a2aeffce"
+      "ref": "97ee18759470e585fdff9e1eb2a8e2a029be32d2"
     }
   },
   "images": {
