@@ -1,133 +1,109 @@
-"""Version management for VISP components using versions.json."""
+"""Pinned versions of the external VISP components, stored in ``release.json``.
+
+``release.json`` is the release manifest (see ``vispctl/release.py``). Its
+``components`` section pins every repository under ``external/`` to a git
+commit::
+
+    "components": {
+        "session-manager": {"ref": "03caa07…"},
+        …
+    }
+
+This module is the part of the manifest that ``deploy`` works with: where each
+repository comes from and how it is built live here, in
+``DEFAULT_VERSIONS_CONFIG``; *which commit* goes into the release lives in the
+file.
+
+In memory every component is a dict with the defaults below plus ``version``
+(the pinned SHA, or ``"latest"`` when unpinned) and ``locked_version`` (the pin,
+or None). Those two keys are what the ``deploy`` code reads.
+"""
 
 import json
 import os
-import shutil
-from datetime import datetime
 from typing import Optional
 
-# Default configuration for components
+# Where each external component comes from and how it is built.
 DEFAULT_VERSIONS_CONFIG = {
     "webclient": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/webclient.git",
         "npm_install": True,
         "npm_build": True,
     },
     "container-agent": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/container-agent.git",
         "npm_install": True,
         "npm_build": False,
     },
     "wsrng-server": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/wsrng-server.git",
         "npm_install": True,
         "npm_build": False,
     },
     "session-manager": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/session-manager.git",
         "npm_install": True,
         "npm_build": False,
     },
     "emu-webapp-server": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/emu-webapp-server.git",
         "npm_install": True,
         "npm_build": False,
     },
     "artic": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/artic.git",
         "npm_install": True,
         "npm_build": True,
     },
     "WhisperVault": {
-        "version": "latest",
         "url": "https://github.com/humlab-speech/WhisperVault",
         "submodules": True,
     },
 }
 
+RELEASE_FILE = "release.json"
+
 
 class ComponentConfig:
-    """
-    Manages the versions.json configuration file.
-    Encapsulates loading, saving, and manipulation of component versions.
-    """
+    """The component pins of ``release.json``, with the defaults merged in."""
 
-    def __init__(self, filepath: str = "versions.json", defaults: Optional[dict] = None):
-        """
-        Initialize configuration manager.
-
-        Args:
-            filepath: Path to versions.json file
-            defaults: Default configuration dict (uses DEFAULT_VERSIONS_CONFIG if None)
-        """
+    def __init__(self, filepath: str = RELEASE_FILE, defaults: Optional[dict] = None):
         self.filepath = filepath
         self.defaults = defaults or DEFAULT_VERSIONS_CONFIG
         self.config = self._load()
 
+    def _read_file(self) -> dict:
+        if not os.path.exists(self.filepath):
+            return {}
+        try:
+            with open(self.filepath) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"⚠  Error loading {self.filepath}: {e}")
+            print("   Treating every component as unpinned")
+            return {}
+
     def _load(self) -> dict:
-        """Load configuration from file, falling back to defaults."""
-        if os.path.exists(self.filepath):
-            try:
-                with open(self.filepath, "r") as f:
-                    data = json.load(f)
-
-                # Extract components from the wrapper structure
-                config = data.get("components", data)
-
-                # Migrate legacy component names to artic.
-                legacy_names = [name for name in list(config.keys()) if name.lower() in ("emu-webapp", "arctic")]
-                for legacy_name in legacy_names:
-                    legacy_cfg = config.pop(legacy_name)
-                    if "artic" not in config:
-                        config["artic"] = legacy_cfg
-                    else:
-                        for key, value in legacy_cfg.items():
-                            config["artic"].setdefault(key, value)
-
-                # Merge with defaults to ensure all required fields exist
-                for component, default_data in self.defaults.items():
-                    if component not in config:
-                        config[component] = default_data.copy()
-                    else:
-                        # Ensure all default fields exist
-                        for key, value in default_data.items():
-                            if key not in config[component]:
-                                config[component][key] = value
-                return config
-            except (json.JSONDecodeError, IOError) as e:
-                print(f"⚠  Error loading {self.filepath}: {e}")
-                print("   Using default configuration")
-                return self.defaults.copy()
-        return self.defaults.copy()
+        pins = self._read_file().get("components", {})
+        config: dict[str, dict] = {}
+        for name in list(self.defaults) + [n for n in pins if n not in self.defaults]:
+            entry = dict(self.defaults.get(name, {}))
+            ref = (pins.get(name) or {}).get("ref")
+            entry["version"] = ref or "latest"
+            entry["locked_version"] = ref
+            config[name] = entry
+        return config
 
     def save(self) -> None:
-        """
-        Save configuration to file with backup.
-        Creates a timestamped backup before overwriting.
-        """
-        # Create backup if file exists
-        if os.path.exists(self.filepath):
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = f"{self.filepath}.backup_{timestamp}"
-            shutil.copy2(self.filepath, backup_path)
-
-        # Write new config with wrapper structure
-        output = {
-            "_comment": (
-                "Version can be: 'latest' (tracks main/master), "
-                "a git commit SHA, or a git tag. "
-                "Use 'locked_version' to record current stable version for rollback."
-            ),
-            "components": self.config,
+        """Write the pins back into ``release.json``, leaving its other sections as they are."""
+        data = self._read_file()
+        data["components"] = {
+            name: {"ref": entry["version"] if entry.get("version") not in (None, "latest") else None}
+            for name, entry in self.config.items()
         }
         with open(self.filepath, "w") as f:
-            json.dump(output, f, indent=2)
+            json.dump(data, f, indent=2)
+            f.write("\n")
 
     def get_components(self) -> list[tuple[str, dict]]:
         """Get all components as (name, data) tuples."""
@@ -138,30 +114,19 @@ class ComponentConfig:
         return self.config.get(name)
 
     def get_version(self, name: str) -> str:
-        """Get the active version for a component."""
-        component = self.config.get(name, {})
-        return component.get("version", "latest")
+        """The pinned SHA, or ``"latest"`` when the component is not pinned."""
+        return self.config.get(name, {}).get("version", "latest")
 
     def get_locked_version(self, name: str) -> Optional[str]:
-        """Get the locked version for a component."""
-        component = self.config.get(name, {})
-        return component.get("locked_version")
+        """The pinned SHA, or None."""
+        return self.config.get(name, {}).get("locked_version")
 
     def set_version(self, name: str, version: str) -> None:
-        """Set the active version for a component."""
         if name in self.config:
             self.config[name]["version"] = version
 
-    def set_locked_version(self, name: str, version: str) -> None:
-        """Set the locked version for a component."""
-        if name in self.config:
-            self.config[name]["locked_version"] = version
-
     def lock(self, name: str, commit_sha: str) -> bool:
-        """
-        Lock a component to a specific commit.
-        Sets both version and locked_version to the commit SHA.
-        """
+        """Pin a component to *commit_sha*."""
         if name in self.config:
             self.config[name]["version"] = commit_sha
             self.config[name]["locked_version"] = commit_sha
@@ -169,21 +134,14 @@ class ComponentConfig:
         return False
 
     def unlock(self, name: str) -> bool:
-        """
-        Unlock a component to track latest.
-        Sets version to 'latest' but preserves locked_version for rollback.
-        """
+        """Remove a component's pin (a release cannot be cut until it is pinned again)."""
         if name in self.config:
             self.config[name]["version"] = "latest"
-            # Preserve locked_version for rollback
             return True
         return False
 
     def rollback(self, name: str) -> bool:
-        """
-        Rollback a component to its locked version.
-        Sets version to match locked_version.
-        """
+        """Point ``version`` back at the pin (after the repository was checked out to it)."""
         if name in self.config:
             locked = self.config[name].get("locked_version")
             if locked:
@@ -192,5 +150,5 @@ class ComponentConfig:
         return False
 
     def is_locked(self, name: str) -> bool:
-        """Check if a component is locked (version != 'latest')."""
+        """True if the component is pinned."""
         return self.get_version(name) != "latest"

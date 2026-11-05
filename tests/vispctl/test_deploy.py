@@ -29,12 +29,9 @@ def _make_repo(path: Path) -> tuple[str, str]:
     return sha1, sha2
 
 
-def _write_versions(project: Path, component: str, version: str, locked: str) -> None:
-    versions = {
-        "_comment": "test",
-        "components": {component: {"url": None, "version": version, "locked_version": locked}},
-    }
-    (project / "versions.json").write_text(json.dumps(versions, indent=2))
+def _write_versions(project: Path, component: str, pin: str | None) -> None:
+    manifest = {"visp": "1.0.0", "components": {component: {"ref": pin}}}
+    (project / "release.json").write_text(json.dumps(manifest, indent=2))
 
 
 def _head(repo_dir: Path) -> str:
@@ -42,21 +39,21 @@ def _head(repo_dir: Path) -> str:
 
 
 def test_rollback_checks_out_locked_version(tmp_path):
-    """rollback checks the repo out to the locked SHA and updates versions.json."""
+    """rollback checks the repo out to the pinned SHA."""
     project = tmp_path / "proj"
     project.mkdir()
     repo_dir = project / "external" / "webclient"
     sha1, sha2 = _make_repo(repo_dir)
 
-    # Locked to sha1, but the working tree has moved on to sha2.
-    _write_versions(project, "webclient", version=sha2, locked=sha1)
+    # Pinned to sha1, but the working tree has moved on to sha2.
+    _write_versions(project, "webclient", pin=sha1)
 
     dm = DeployManager(str(project))
     ok = dm.rollback_components(["webclient"])
 
     assert ok is True
     assert _head(repo_dir) == sha1  # repo is back at the locked SHA
-    assert dm.config.get_version("webclient") == sha1  # versions.json updated
+    assert dm.config.get_version("webclient") == sha1
 
 
 def test_rollback_noop_when_already_at_locked(tmp_path):
@@ -65,7 +62,7 @@ def test_rollback_noop_when_already_at_locked(tmp_path):
     project.mkdir()
     repo_dir = project / "external" / "webclient"
     _, sha2 = _make_repo(repo_dir)  # HEAD is at sha2
-    _write_versions(project, "webclient", version=sha2, locked=sha2)  # locked == HEAD
+    _write_versions(project, "webclient", pin=sha2)  # pin == HEAD
 
     dm = DeployManager(str(project))
     ok = dm.rollback_components(["webclient"])
@@ -75,12 +72,12 @@ def test_rollback_noop_when_already_at_locked(tmp_path):
 
 
 def test_rollback_dirty_repo_skips_checkout(tmp_path):
-    """rollback skips the checkout (and versions.json) when the repo is dirty."""
+    """rollback skips the checkout when the repo is dirty."""
     project = tmp_path / "proj"
     project.mkdir()
     repo_dir = project / "external" / "webclient"
     sha1, sha2 = _make_repo(repo_dir)
-    _write_versions(project, "webclient", version=sha2, locked=sha1)
+    _write_versions(project, "webclient", pin=sha1)
 
     # Make the working tree dirty.
     (repo_dir / "file.txt").write_text("v2\nlocal edit\n")
@@ -90,16 +87,16 @@ def test_rollback_dirty_repo_skips_checkout(tmp_path):
 
     assert ok is False  # nothing rolled back
     assert _head(repo_dir) == sha2  # repo untouched
-    assert dm.config.get_version("webclient") == sha2  # versions.json untouched
+    assert dm.config.get_version("webclient") == sha1  # the pin is untouched
 
 
 def test_rollback_missing_locked_version_skips(tmp_path):
-    """rollback skips a component that has no locked version."""
+    """rollback skips a component that is not pinned."""
     project = tmp_path / "proj"
     project.mkdir()
     repo_dir = project / "external" / "webclient"
     _, sha2 = _make_repo(repo_dir)
-    _write_versions(project, "webclient", version="latest", locked=None)
+    _write_versions(project, "webclient", pin=None)
 
     dm = DeployManager(str(project))
     ok = dm.rollback_components(["webclient"])
@@ -161,12 +158,14 @@ def test_update_recovers_detached_head_after_rollback(tmp_path, capsys):
     for name in names:
         shas[name] = _make_local_component(external, name)
 
-    components = {name: {"url": str(project / "origins" / f"{name}.git"), "version": "latest"} for name in names}
-    # webclient is locked to its first commit so rollback has a target.
-    components["webclient"]["locked_version"] = shas["webclient"][0]
-    (project / "versions.json").write_text(json.dumps({"components": components}, indent=2))
+    # webclient is pinned to its first commit so rollback has a target.
+    components = {name: {"ref": None} for name in names}
+    components["webclient"]["ref"] = shas["webclient"][0]
+    (project / "release.json").write_text(json.dumps({"visp": "1.0.0", "components": components}, indent=2))
 
     dm = DeployManager(str(project))
+    for name in names:  # clone from the local origins, never the network
+        dm.config.get_component(name)["url"] = str(project / "origins" / f"{name}.git")
     repo_dir = external / "webclient"
 
     # Roll back webclient to its first commit -> detached HEAD.
@@ -178,7 +177,7 @@ def test_update_recovers_detached_head_after_rollback(tmp_path, capsys):
     # Operator unlocks the component to resume tracking latest.
     dm.config.unlock("webclient")
 
-    ok = dm.update_components()
+    ok = dm.update_components(release=False)
 
     assert ok is True
     out = capsys.readouterr().out

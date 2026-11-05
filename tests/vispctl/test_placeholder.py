@@ -121,7 +121,9 @@ def test_up_installs_and_starts(tmp_path, monkeypatch):
     assert "@@" not in installed
     assert "Volume=/srv/visp/mounts/placeholder/html:" in installed
     assert ("restart", "visp-placeholder.service") in runner.systemctl_calls
-    assert ["podman", "pull", "--quiet", "docker.io/library/nginx:1.30.0-alpine3.23"] in runner.run_calls
+    image = next(line[6:] for line in installed.splitlines() if line.startswith("Image="))
+    assert image.startswith("docker.io/library/nginx:")
+    assert ["podman", "pull", "--quiet", image] in runner.run_calls
 
 
 def test_starting_apache_removes_placeholder(tmp_path):

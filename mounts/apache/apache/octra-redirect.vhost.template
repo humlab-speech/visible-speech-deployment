@@ -7,7 +7,7 @@
   ServerName octra.${BASE_DOMAIN}
 
   RewriteEngine On
-  RewriteRule (.*) http://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]
+  RewriteRule (.*) https://${TRATT_SUBDOMAIN}.${BASE_DOMAIN}$1 [R=301,L]
 
   ErrorLog ${APACHE_LOG_DIR}/octra-redirect-error.log
   CustomLog ${APACHE_LOG_DIR}/octra-redirect-access.log combined

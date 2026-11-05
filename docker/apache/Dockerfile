@@ -1,9 +1,11 @@
 # syntax=docker/dockerfile:1
 
 # ------------------------------------------------------------
-# base: Apache + Shibboleth + PHP + Node + Composer
+# base: Apache + Shibboleth + PHP — everything the production image needs.
+# Node and Composer are build tools: they live in 'build-tools' below, so
+# they (and their bundled npm packages) never reach production.
 # ------------------------------------------------------------
-FROM docker.io/library/debian:trixie-20261020 AS base
+FROM docker.io/library/debian:trixie-20261027 AS base
 
 LABEL maintainer="Johan von Boer <johan.von.boer@umu.se>"
 LABEL description="Debian Apache + Shibboleth + PHP (Sury) + Node, for VISP webserver/router/auth layer"
@@ -31,13 +33,7 @@ RUN apt-get update && \
       apache2 \
       php8.4 libapache2-mod-php8.4 php8.4-cli \
       php8.4-mbstring php8.4-zip php8.4-xml php8.4-pgsql php8.4-curl php8.4-mongodb \
-      lsb-release wget && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Node.js 24 and tini
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends nodejs tini && \
+      lsb-release wget tini && \
     rm -rf /var/lib/apt/lists/*
 
 # Enable required Apache modules (including PHP)
@@ -59,15 +55,6 @@ RUN mkdir -p /var/log/api && chmod 0755 /var/log/api && chown -R www-data:www-da
 RUN echo "upload_max_filesize = 10240M\npost_max_size = 10240M\nmemory_limit = 512M" \
     > /etc/php/8.4/apache2/conf.d/99-visp-uploads.ini
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# init_mongodb helper (kept in base so both dev/prod have it)
-WORKDIR /init_mongodb
-COPY ./docker/apache/init_mongodb.js /init_mongodb/
-COPY ./docker/apache/package.json /init_mongodb/
-RUN npm install --legacy-peer-deps && npm update --legacy-peer-deps
-
 # Tini as PID 1
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
@@ -75,14 +62,28 @@ EXPOSE 80 443
 
 
 # ------------------------------------------------------------
+# build-tools: base + Node.js 24 + Composer, for building the webclient
+# (webclient-build) and for the dev image's watch build. Not in production.
+# ------------------------------------------------------------
+FROM base AS build-tools
+
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+
+# ------------------------------------------------------------
 # webclient-build: builds the Angular webclient once (prod artifact)
 # Source: external/webclient/ (managed by visp.py deploy update)
 # ------------------------------------------------------------
-FROM base AS webclient-build
+FROM build-tools AS webclient-build
 
-# Build argument used to choose npm script
-ARG WEBCLIENT_BUILD=visp-dev
-ENV WEBCLIENT_BUILD=${WEBCLIENT_BUILD}
+# Angular configuration of the site (angular.json). visp.py passes the site's
+# WEBCLIENT_BUILD_CONFIG from .env, defaulting to 'visp'.
+ARG WEBCLIENT_CONFIG=visp
 
 WORKDIR /webclient
 
@@ -94,8 +95,8 @@ RUN npm install --legacy-peer-deps
 # Composer dependencies (for PHP api.php bundled in webclient)
 RUN composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
-RUN echo "Building webclient with build target: ${WEBCLIENT_BUILD}" && \
-    npm run "${WEBCLIENT_BUILD}"
+RUN echo "Building webclient with configuration: ${WEBCLIENT_CONFIG}" && \
+    npx ng build --configuration="${WEBCLIENT_CONFIG}" --output-path dist
 
 # Put build output in a neutral path we can copy from
 RUN mkdir -p /out && cp -r dist/* /out/
@@ -126,7 +127,7 @@ CMD ["bash", "-lc", "/etc/init.d/shibd start -w 3600 && exec /usr/sbin/apache2 -
 # ------------------------------------------------------------
 # development: runtime image running watch build into /var/www/html
 # ------------------------------------------------------------
-FROM base AS development
+FROM build-tools AS development
 
 # NOTE:
 # In dev, the local webclient repo is bind-mounted over /webclient,
