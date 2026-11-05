@@ -126,9 +126,9 @@ def stream_podman_logs(
     cmd.append(service)
 
     try:
-        subprocess.run(cmd, check=False)
+        return subprocess.run(cmd, check=False).returncode
     except KeyboardInterrupt:
-        pass
+        return 0
 
 
 def show_debug_info(
@@ -189,7 +189,7 @@ def view_logs(
     get_all_services: Callable[[], list[Service]],
     resolve_services: Callable[[str], list[Service]],
     container_services: Callable[[list[Service]], list[Service]],
-) -> None:
+) -> list[str]:
     """View logs from services (and optionally debug diagnostics).
 
     Parameters
@@ -212,6 +212,17 @@ def view_logs(
     container_services:
         Callable that filters a service list to container-type services only.
     """
+    failed: list[str] = []
+
+    def _journal(*jargs) -> int:
+        """journalctl rc, treating interrupts/non-int results as benign."""
+        try:
+            res = runner.journalctl(*jargs)
+        except KeyboardInterrupt:
+            return 0
+        rc = getattr(res, "returncode", 0)
+        return rc if isinstance(rc, int) and rc > 0 else 0
+
     extra_args: list[str] = []
     journal_only = getattr(args, "journal_only", False)
     debug = getattr(args, "debug", False)
@@ -235,13 +246,15 @@ def view_logs(
 
     if use_podman_logs:
         follow = args.follow or not no_follow
-        stream_podman_logs(
+        rc = stream_podman_logs(
             service_name,
             follow=follow,
             lines=args.lines,
             since=getattr(args, "since", None),
         )
-        return
+        if not follow and rc:
+            failed.append(service_name)
+        return failed
 
     if args.follow:
         extra_args.append("-f")
@@ -259,7 +272,8 @@ def view_logs(
         for svc in container_services(runtime_services):
             units.extend(["-u", f"{svc.name}.service"])
         print(color("=== Viewing logs for all VISP services ===", Colors.CYAN))
-        runner.journalctl(*units, "--no-pager", *extra_args)
+        if _journal(*units, "--no-pager", *extra_args):
+            failed.append("all")
     else:
         service = args.service
         has_app_logs = service in container_log_files
@@ -290,11 +304,15 @@ def view_logs(
                 pass
             finally:
                 stop_event.set()
+            # follow-mode exit codes are interrupts by nature: not failures
         else:
             print(color(f"=== Viewing logs for {service} ===", Colors.CYAN))
-            runner.journalctl("-u", f"{service}.service", "--no-pager", *extra_args)
+            if _journal("-u", f"{service}.service", "--no-pager", *extra_args):
+                failed.append(service)
 
             if has_app_logs and not journal_only:
                 n = args.lines if args.lines else 30
                 print(color(f"\n=== Container app logs (last {n} lines each) ===", Colors.CYAN))
                 tail_container_logs(service, container_log_files, runner, lines=n)
+
+    return failed

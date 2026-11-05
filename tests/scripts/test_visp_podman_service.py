@@ -17,8 +17,28 @@ def load_visp_module():
     return vp
 
 
+def _stub_runner_methods(monkeypatch, vp, rc=0):
+    """Stub the Runner methods that actually exist (there is no _run)."""
+    import subprocess as _sp
+
+    calls = []
+
+    def fake_run(self, cmd, capture=False, check=True, **kw):
+        calls.append(list(cmd))
+        return _sp.CompletedProcess(list(cmd), rc, "", "")
+
+    def fake_run_quiet(self, cmd):
+        calls.append(list(cmd))
+        return (rc, "", "")
+
+    monkeypatch.setattr(vp.Runner, "run", fake_run)
+    monkeypatch.setattr(vp.Runner, "run_quiet", fake_run_quiet)
+    return calls
+
+
 def test_cmd_start_delegates_to_servicemanager(monkeypatch):
     vp = load_visp_module()
+    _stub_runner_methods(monkeypatch, vp)
     called = {}
 
     class FakeSM:
@@ -40,6 +60,7 @@ def test_cmd_start_delegates_to_servicemanager(monkeypatch):
 
 def test_cmd_up_enables_then_starts(monkeypatch):
     vp = load_visp_module()
+    _stub_runner_methods(monkeypatch, vp)
     called = {}
 
     class FakeSM:
@@ -65,6 +86,7 @@ def test_cmd_up_enables_then_starts(monkeypatch):
 
 def test_cmd_down_stops_then_disables(monkeypatch):
     vp = load_visp_module()
+    _stub_runner_methods(monkeypatch, vp)
     called = {}
 
     class FakeSM:
@@ -90,6 +112,7 @@ def test_cmd_down_stops_then_disables(monkeypatch):
 
 def test_cmd_down_all_skips_dev_only_services_in_prod(monkeypatch):
     vp = load_visp_module()
+    _stub_runner_methods(monkeypatch, vp)
     called = {}
 
     class FakeSM:
@@ -123,6 +146,7 @@ def test_cmd_down_all_skips_dev_only_services_in_prod(monkeypatch):
 
 def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
     vp = load_visp_module()
+    _stub_runner_methods(monkeypatch, vp)
     called = {}
 
     class FakeSM:
@@ -155,6 +179,7 @@ def test_cmd_restart_all_invokes_stop_then_start(monkeypatch):
 
 def test_cmd_restart_all_skips_disabled_whisperx(monkeypatch):
     vp = load_visp_module()
+    _stub_runner_methods(monkeypatch, vp)
     called = {}
 
     class FakeSM:

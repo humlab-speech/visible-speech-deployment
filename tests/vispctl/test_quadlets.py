@@ -173,3 +173,76 @@ def test_no_quadlet_mounts_etc_timezone() -> None:
         str(f.relative_to(quadlets)) for f in sorted(quadlets.rglob("*.container")) if "/etc/timezone" in f.read_text()
     ]
     assert offenders == []
+
+
+# ── R2 pins: call-site positional contract + env-file skip paths ─────────────
+
+
+class _Sentinel(Exception):
+    pass
+
+
+def test_show_quadlet_table_passes_dirs_in_declared_order(monkeypatch, tmp_path):
+    """R2: swapping quadlets_dir and systemd_dir at the status.py call site
+    kept all 382 tests green - the helper was only proven for its own calls,
+    never for how its consumer invokes it."""
+    import vispctl.quadlets as qmod
+    import vispctl.status as status_mod
+
+    seen = {}
+
+    def spy(services, quadlets_dir, systemd_dir, render_fn):
+        seen["quadlets_dir"] = quadlets_dir
+        seen["systemd_dir"] = systemd_dir
+        raise _Sentinel
+
+    monkeypatch.setattr(qmod, "get_quadlet_drift", spy)
+    monkeypatch.setattr(qmod, "get_quadlets_dir", lambda mode: tmp_path / "repo-quadlets")
+
+    systemd_dir = tmp_path / "installed"
+    try:
+        status_mod.show_quadlet_table([_svc("mongo")], "dev", None, systemd_dir, lambda t: t)
+    except _Sentinel:
+        pass
+
+    assert seen["quadlets_dir"] == tmp_path / "repo-quadlets"
+    assert seen["systemd_dir"] == systemd_dir
+
+
+def _proj(tmp_path, emu_example=True, wsrng_example=True):
+    proj = tmp_path / "proj"
+    for svc, has_example in (
+        ("emu-webapp-server", emu_example),
+        ("wsrng-server", wsrng_example),
+    ):
+        ext = proj / "external" / svc
+        ext.mkdir(parents=True)
+        if has_example:
+            (ext / ".env-example").write_text("TEMPLATE-CONTENT\n")
+    return proj
+
+
+def test_setup_env_files_never_clobbers_existing_env(tmp_path, capsys):
+    """R2 M10: printing 'already exists' and then overwriting anyway survived."""
+    proj = _proj(tmp_path)
+    emu_env = proj / "mounts" / "emu-webapp-server"
+    emu_env.mkdir(parents=True)
+    (emu_env / ".env").write_text("OPERATOR-DATA\n")
+    (proj / "external" / "wsrng-server" / ".env").write_text("OPERATOR-DATA\n")
+
+    setup_service_env_files(proj)
+
+    out = capsys.readouterr().out
+    assert out.count("already exists") == 2
+    assert (emu_env / ".env").read_text() == "OPERATOR-DATA\n"
+    assert (proj / "external" / "wsrng-server" / ".env").read_text() == "OPERATOR-DATA\n"
+
+
+def test_setup_env_files_warns_per_service_when_example_missing(tmp_path, capsys):
+    """R2 M11/M13: deleting either individual warning survived the old suite."""
+    proj = _proj(tmp_path, emu_example=False, wsrng_example=True)
+    setup_service_env_files(proj)
+    out = capsys.readouterr().out
+    assert "emu-webapp-server/.env-example not found" in out
+    assert "Created external/wsrng-server/.env" in out
+    assert "wsrng-server/.env-example not found" not in out

@@ -21,7 +21,17 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
         base_cmd.extend(["--filter", "status=exited"])
 
     for prefix in prefix_filters:
-        result = runner.run(base_cmd + ["--filter", f"name={prefix}"], capture=True, check=False)
+        # podman's name filter is an UNANCHORED regex: 'visp-session-' also
+        # matches notvisp-session-... and my-visp-session-backup. Ask for an
+        # anchored regex AND re-check the literal prefix in Python — deletion
+        # must never hinge on regex semantics.
+        result = runner.run(base_cmd + ["--filter", f"name=^{prefix}"], capture=True, check=False)
+        if result.returncode != 0:
+            return {
+                "status": "error",
+                "message": f"podman ps failed ({result.returncode}); nothing was removed.",
+                "removed": 0,
+            }
         output = result.stdout.strip()
         seen_ids = {c[0] for c in containers}
         for line in output.splitlines():
@@ -31,7 +41,12 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
             if len(parts) < 2:
                 continue
             cid, name = parts
-            if "session-manager" in name:
+            if not name.startswith(prefix):
+                continue
+            # The guard is about the infrastructure container, whose name is
+            # exactly session-manager — a substring check would also spare
+            # (or target) user sessions by accident.
+            if name == "session-manager":
                 continue
             if cid not in seen_ids:
                 seen_ids.add(cid)
@@ -60,12 +75,41 @@ def cleanup_containers(mode: str = "stopped", yes: bool = False):
             return {"status": "cancelled", "message": "No containers removed", "removed": 0}
 
     removed = 0
-    for cid, _name in containers:
+    failures = []
+    skipped_running = []
+    for cid, name in containers:
+        # A '-proxy' sidecar of a session whose main container is RUNNING must
+        # survive: the session is alive even if the sidecar itself is exited,
+        # and removing it silently breaks the session's uploads (round-2 F4).
+        if name.endswith("-proxy"):
+            main = name[: -len("-proxy")]
+            ps = runner.run(
+                ["podman", "ps", "--filter", f"name=^{main}$", "--quiet"],
+                capture=True,
+                check=False,
+            )
+            if getattr(ps, "stdout", "").strip():
+                skipped_running.append(name)
+                continue
         # stop if running
         if runner.run(["podman", "ps", "--filter", f"id={cid}", "--quiet"], capture=True, check=False).stdout.strip():
             runner.run(["podman", "stop", cid], check=False)
-        runner.run(["podman", "rm", cid], check=False)
-        removed += 1
+        rm = runner.run(["podman", "rm", cid], check=False)
+        rc = getattr(rm, "returncode", 0)
+        if rc == 0:
+            removed += 1
+        else:
+            failures.append(name)
+
+    if skipped_running:
+        print("  Skipped proxy sidecars of running sessions: " + ", ".join(skipped_running))
+
+    if failures:
+        return {
+            "status": "partial",
+            "message": (f"Removed {removed} of {len(containers)}; failed to remove: " + ", ".join(failures)),
+            "removed": removed,
+        }
 
     return {
         "status": "ok",

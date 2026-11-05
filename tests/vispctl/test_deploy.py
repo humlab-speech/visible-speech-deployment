@@ -54,9 +54,12 @@ def test_rollback_checks_out_locked_version(tmp_path):
     assert ok is True
     assert _head(repo_dir) == sha1  # repo is back at the locked SHA
     assert dm.config.get_version("webclient") == sha1
+    # TD-R2-01: the in-memory dict proves nothing about the file we wrote
+    disk = json.loads((project / "release.json").read_text())["components"]["webclient"]
+    assert disk["ref"] == sha1
 
 
-def test_rollback_noop_when_already_at_locked(tmp_path):
+def test_rollback_noop_when_already_at_locked(tmp_path, capsys):
     """rollback succeeds (no-op) when the repo is already at the locked SHA."""
     project = tmp_path / "proj"
     project.mkdir()
@@ -66,9 +69,13 @@ def test_rollback_noop_when_already_at_locked(tmp_path):
 
     dm = DeployManager(str(project))
     ok = dm.rollback_components(["webclient"])
+    out = capsys.readouterr().out
 
     assert ok is True
     assert _head(repo_dir) == sha2  # unchanged (no-op)
+    # TD-R2-02: without the short-circuit's own message, a plain
+    # `git checkout HEAD` is indistinguishable from the guard working
+    assert "already at" in out
 
 
 def test_rollback_dirty_repo_skips_checkout(tmp_path):
@@ -249,3 +256,36 @@ def test_summary_dirty_build_alone_is_not_clean(tmp_path):
 
     assert not all_clean
     assert "All repositories are clean" not in "\n".join(lines)
+
+
+def test_update_release_mode_honours_pins(tmp_path, capsys):
+    """TD-R2-04, on release.json: in release mode a pinned component must end
+    at its pin, not at the branch tip, while an unpinned one is pulled and
+    says so. Every component is a local clone with a local origin, so nothing
+    is cloned over the network (the default URLs are never used)."""
+    project = tmp_path / "proj"
+    external = project / "external"
+    external.mkdir(parents=True)
+    names = [
+        "webclient",
+        "container-agent",
+        "wsrng-server",
+        "session-manager",
+        "emu-webapp-server",
+        "artic",
+        "WhisperVault",
+    ]
+    shas = {name: _make_local_component(external, name) for name in names}
+    # Pin webclient to the first commit while its remote tip is the second;
+    # every other component is left unpinned (ref null).
+    sha1, sha2 = shas["webclient"]
+    manifest = {"visp": "1.0.0", "components": {name: {"ref": None} for name in names}}
+    manifest["components"]["webclient"]["ref"] = sha1
+    (project / "release.json").write_text(json.dumps(manifest, indent=2))
+
+    dm = DeployManager(str(project))
+    dm.update_components(release=True)
+    out = capsys.readouterr().out
+    assert _head(external / "webclient") == sha1  # at the pin, not the tip
+    assert "artic is not pinned in release.json" in out
+    assert _head(external / "artic") == shas["artic"][1]  # unpinned: pulled to the tip

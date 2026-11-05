@@ -11,9 +11,12 @@ def test_mongosh_json_passes_password_via_stdin(monkeypatch):
         stdout = '{"ok":1}\n'
         stderr = "Enter password: *********\n"
 
+    calls["all"] = []
+
     def fake_run(cmd, **kwargs):
         calls["cmd"] = cmd
         calls["kwargs"] = kwargs
+        calls["all"].append((list(cmd), kwargs))
         return FakeCompleted()
 
     monkeypatch.setattr(mongo_mod, "subprocess", type("S", (), {"run": staticmethod(fake_run)}))
@@ -23,8 +26,14 @@ def test_mongosh_json_passes_password_via_stdin(monkeypatch):
     result = mongo_mod.mongosh_json("db.users.countDocuments({})")
 
     assert result == {"ok": 1}
-    # The password must not appear anywhere on the process command line.
-    assert "s3cret" not in calls["cmd"]
+    # No process EVER launched may carry the password in argv — substring on
+    # every element of every call (a '-p$pw' pre-flight or a mongodb:// URI
+    # element would be ps-visible; checking only the last call or only whole
+    # elements let both mutants survive round 2).
+    for cmd, _kw in calls["all"]:
+        for element in cmd:
+            assert "s3cret" not in element
+    assert calls["all"], "expected at least one subprocess call"
     assert "-p" in calls["cmd"]
     # ...but it must be supplied via stdin, which podman exec forwards with -i.
     assert "-i" in calls["cmd"]

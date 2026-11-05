@@ -55,12 +55,13 @@ def _podman_ps_json(filters: list[str] | None = None, all_: bool = True) -> list
         cmd.extend(["--filter", f])
     result = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if result.returncode != 0:
-        return []
+        # None means 'no evidence' — distinct from [] which means 'confirmed: none'
+        return None
     try:
         data = json.loads(result.stdout)
-        return data if isinstance(data, list) else []
+        return data if isinstance(data, list) else None
     except json.JSONDecodeError:
-        return []
+        return None
 
 
 def _podman_inspect(name_or_id: str) -> dict | None:
@@ -90,7 +91,10 @@ def _collect_session_containers() -> dict[str, dict]:
     """
     containers = {}
     for prefix in ("visp-session-", "hsapp-session-"):
-        for c in _podman_ps_json(filters=[f"name={prefix}"]):
+        listed = _podman_ps_json(filters=[f"name={prefix}"])
+        if listed is None:
+            return None
+        for c in listed:
             names = c.get("Names", [])
             name = names[0] if names else c.get("Name", "")
             # Skip session-manager itself, and proxy sidecars
@@ -132,7 +136,10 @@ def _collect_proxy_containers() -> dict[str, dict]:
     Returns {proxy_name: {id, state, labels, claims_session, ...}}.
     """
     proxies = {}
-    for c in _podman_ps_json(filters=["name=-proxy"]):
+    listed = _podman_ps_json(filters=["name=-proxy"])
+    if listed is None:
+        return None
+    for c in listed:
         names = c.get("Names", [])
         name = names[0] if names else c.get("Name", "")
         labels = c.get("Labels") or {}
@@ -353,6 +360,10 @@ def _diagnose(
             continue
         # Also not an orphaned proxy's socket dir
         if any(p.get("claims_session") == dirname for p in proxies.values()):
+            continue
+        # Only touch directories that carry session-socket evidence; a
+        # directory holding unrelated files must never enter the cleanup plan.
+        if not (dirinfo["has_ui_sock"] or dirinfo["has_proxy_sock"] or dirinfo["has_api_sock"]):
             continue
         report = {
             "name": dirname,
@@ -654,6 +665,13 @@ def run_session_doctor(
     """
     sessions = _collect_session_containers()
     proxies = _collect_proxy_containers()
+    if sessions is None or proxies is None:
+        # Without podman evidence every directory looks stale; deleting on that
+        # basis destroyed live data once already. Refuse instead.
+        print(
+            f"{_C.RED}podman is not reachable — cannot tell live sessions from stale data; nothing will be cleaned{_C.NC}"
+        )
+        return 1
     socket_dirs = _collect_socket_dirs()
 
     # Query session-manager for its in-memory session list.

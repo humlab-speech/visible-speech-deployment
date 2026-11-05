@@ -56,7 +56,9 @@ def test_load_env_vars_missing_file(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("val", ["1", "true", "True", "TRUE", "yes", "YES", "on", "ON"])
 def test_parse_env_bool_truthy(val: str) -> None:
-    assert parse_env_bool(val) is True
+    # default=False: with the old default=True the assertion was a tautology —
+    # emptying the truthy set kept all 8 green (R2 F1).
+    assert parse_env_bool(val, default=False) is True
 
 
 @pytest.mark.parametrize("val", ["0", "false", "False", "FALSE", "no", "NO", "off", "OFF"])
@@ -75,3 +77,31 @@ def test_parse_env_bool_none_uses_default_false() -> None:
 def test_parse_env_bool_unknown_value_falls_back_to_default() -> None:
     assert parse_env_bool("maybe", default=True) is True
     assert parse_env_bool("maybe", default=False) is False
+
+
+# ── R2 pins: defaults, quote stripping, comment fixtures ─────────────────────
+
+
+def test_parse_env_bool_none_default_false() -> None:
+    assert parse_env_bool(None, default=False) is False
+
+
+def test_load_env_vars_strips_quotes(tmp_path: Path) -> None:
+    # Documented quote-stripping is in the loader (R2 F2), never pinned.
+    f = tmp_path / "q.env"
+    f.write_text('a="q uoted"\nb=\'yes\'\nc=unbalanced"\n')
+    assert load_env_vars(f) == {"a": "q uoted", "b": "yes", "c": "unbalanced"}
+
+
+def test_parse_env_bool_case_insensitive_via_lower_pinned() -> None:
+    # A single case variant pinned with default=False kills .lower() removal
+    # even if the parametrized truthy set ever narrows.
+    assert parse_env_bool("TrUe", default=False) is True
+
+
+def test_load_env_vars_ignores_comment_with_equals(tmp_path: Path) -> None:
+    # env.py:18 mutant survived because no fixture had '# key=value' (R2 F3).
+    f = tmp_path / "x.env"
+    f.write_text("# key=value\nreal=1\n")
+    result = load_env_vars(f)
+    assert result == {"real": "1"}

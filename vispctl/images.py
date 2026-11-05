@@ -300,10 +300,20 @@ class ImageManager:
             # only networks get that prefix).
             container_name = svc.name
 
-            # Get the image ID the running container was launched with
-            rc, running_id, _ = self.runner.run_quiet(["podman", "inspect", container_name, "--format", "{{.ImageID}}"])
-            if rc != 0 or not running_id.strip():
-                continue  # not running
+            # Get the image ID the RUNNING container was launched with.
+            # 'podman inspect' succeeds for exited containers too, so the
+            # status must be read explicitly — a stopped service is an admin
+            # decision, not staleness (round-2 R2-1: apply resurrected
+            # admin-stopped services because 'exited' counted as stale).
+            rc, out, _ = self.runner.run_quiet(
+                ["podman", "inspect", container_name, "--format", "{{.State.Status}} {{.ImageID}}"]
+            )
+            out = out.strip()
+            if rc != 0 or not out or not out.split()[0] == "running":
+                continue  # not running (or gone) — never a restart candidate
+            running_id = out.split(" ", 1)[1] if " " in out else ""
+            if not running_id.strip():
+                continue
 
             # Derive expected image tag from the container name
             image_tag = f"localhost/visp-{svc.name}:latest"

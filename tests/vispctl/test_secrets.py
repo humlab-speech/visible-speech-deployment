@@ -156,3 +156,61 @@ def test_uninstall_keeps_shared_secret_for_other_services():
     assert secrets_to_remove_for_uninstall({"mongo"}, secret_map, existing) == []
     # session-manager's exclusive secret (api token) is removed; shared one kept.
     assert secrets_to_remove_for_uninstall({"session-manager"}, secret_map, existing) == ["visp_api_access_token"]
+
+
+# ── round-2 pins: failure paths and value-never-in-argv ──────────────────────
+
+import types  # noqa: E402
+
+
+class ScriptedRunner:
+    def __init__(self, script):
+        self.script = script
+        self.calls = []
+
+    def run(self, cmd, **kwargs):
+        self.calls.append((list(cmd), kwargs))
+        rc = self.script(len(self.calls) - 1) if callable(self.script) else self.script
+        return types.SimpleNamespace(returncode=rc, stdout="", stderr="nope")
+
+
+def _mgr(runner, tmp_path):
+    return SecretManager(runner, project_dir=tmp_path)
+
+
+def test_existing_secret_is_removed_before_create(tmp_path):
+    fr = ScriptedRunner(0)
+    _mgr(fr, tmp_path).create_secrets({"visp_x": "v"})
+    tools = [c[2] for c, _k in fr.calls]
+    assert tools[:3] == ["inspect", "rm", "create"]
+
+
+def test_create_failure_is_reported(capsys, tmp_path):
+    fr = ScriptedRunner(lambda i: 0 if i == 0 else 1)  # inspect ok, create fails
+    _mgr(fr, tmp_path).create_secrets({"visp_x": "v"})
+    out = capsys.readouterr().out
+    assert "failed" in out and "✓" not in out
+
+
+def test_secret_value_never_enters_argv(tmp_path):
+    # The value must travel via input= (stdin); a ps-visible argv leak is the
+    # manual mutant that kept the pre-round-2 suite green.
+    fr = ScriptedRunner(0)
+    _mgr(fr, tmp_path).create_secrets({"visp_x": "sup3r-s3cret"})
+    create = [(c, k) for c, k in fr.calls if c[2:3] == ["create"]]
+    assert create, "expected a create call"
+    for cmd, kwargs in fr.calls:
+        assert not any("sup3r-s3cret" in el for el in cmd)
+    assert create[0][1].get("input") == "sup3r-s3cret"
+
+
+def test_remove_failure_is_reported(capsys, tmp_path):
+    fr = ScriptedRunner(1)
+    _mgr(fr, tmp_path).remove_secrets(["visp_x"])
+    out = capsys.readouterr().out
+    assert "remove failed" in out
+
+
+def test_list_secrets_returns_empty_on_failure(tmp_path):
+    fr = ScriptedRunner(1)
+    assert _mgr(fr, tmp_path).list_secrets() == []

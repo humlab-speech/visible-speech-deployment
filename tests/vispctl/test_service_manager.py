@@ -1,15 +1,28 @@
+import pytest
+
 from vispctl.service import DEFAULT_SERVICES
 from vispctl.service_manager import ServiceManager
+
+
+@pytest.fixture(autouse=True)
+def _no_wall_clock(monkeypatch):
+    # stop() verifies pull-up after a 3s pause and _unit_came_up polls with
+    # 0.4s spacing; faking the clock keeps the polling logic exercised without
+    # costing 6s per suite run.
+    monkeypatch.setattr("vispctl.service_manager.time.sleep", lambda s: None)
 
 
 class FakeRunner:
     def __init__(self):
         self.systemctl_calls = []
+        self.started_units = set()
 
     def run_quiet(self, cmd):
-        # Simulate units that are not running, so start/stop take the real path
+        # Simulate units that are not running, so start/stop take the real
+        # path — except ones this fake has been told to start: those come up.
         if cmd and "is-active" in cmd:
-            return 0, "inactive", ""
+            unit = cmd[-1].replace(".service", "")
+            return 0, ("active" if unit in self.started_units else "inactive"), ""
         if cmd and cmd[0] == "podman":
             # podman network exists -> returncode 0 to indicate existence
             return 0, "", ""
@@ -21,6 +34,8 @@ class FakeRunner:
 
     def systemctl(self, *args, **kwargs):
         self.systemctl_calls.append(args)
+        if args and args[0] == "start" and len(args) > 1:
+            self.started_units.add(args[1].replace(".service", ""))
 
         class R:
             def __init__(self):
@@ -71,15 +86,28 @@ def test_status_distinguishes_failed_from_inactive(capsys):
 
 
 def test_network_status_shows_active(capsys):
-    # Ensure network services are shown as active when podman network exists
-    services = DEFAULT_SERVICES
+    # R2 BROKEN: the old assertion scanned ALL output for "active", which is
+    # a substring of the "inactive" lines every other service prints, and the
+    # fake always answered exists=rc0. Pin the visp-net ROW and its negative.
     fr = FakeRunner()
-    m = ServiceManager(fr, services)
-    m.status()
-    captured = capsys.readouterr().out
-    # visp-net is a network in default services and should show as active
-    assert "visp-net" in captured
-    assert "active" in captured.splitlines()[1] or "active" in captured
+    ServiceManager(fr, DEFAULT_SERVICES).status()
+    lines = capsys.readouterr().out.splitlines()
+    row = [ln for ln in lines if "visp-net:" in ln]
+    assert row, "network row missing"
+    assert "active" in row[0]
+
+    missing = FakeRunner()
+    original = missing.run_quiet
+
+    def rc_when_absent(cmd):
+        if "network" in cmd and "exists" in cmd:
+            return 1, "", ""
+        return original(cmd)
+
+    missing.run_quiet = rc_when_absent
+    ServiceManager(missing, DEFAULT_SERVICES).status()
+    row2 = [ln for ln in capsys.readouterr().out.splitlines() if "visp-net:" in ln]
+    assert "not found" in row2[0] and "active" not in row2[0]
 
 
 def test_start_stop(capsys):
@@ -152,12 +180,15 @@ def test_enable_disable_skip_networks(tmp_path, capsys):
     m.disable("visp-net")
     out = capsys.readouterr().out
     assert "skipped" in out
-    assert not (tmp_path / "visp-net.network.d").exists()
 
     m.enable("visp-net")
     out = capsys.readouterr().out
     assert "skipped" in out
-    assert not (tmp_path / "visp-net.network.d").exists()
+    # R2 TAUTOLOGY fix: the .network.d directory never existed in this
+    # fixture, so its absence proved nothing. Pin behaviour instead: no
+    # systemctl verb may ever name the network unit.
+    assert not [c for c in fr.systemctl_calls if "visp-net" in " ".join(c)]
+    assert not list(tmp_path.glob("visp-net*"))
 
 
 class IsEnabledRunner:
@@ -170,6 +201,8 @@ class IsEnabledRunner:
 
     def systemctl(self, *args, **kwargs):
         self.systemctl_calls.append(args)
+        if args and args[0] == "start" and len(args) > 1:
+            self.started_units.add(args[1].replace(".service", ""))
 
         class R:
             returncode = 0
@@ -226,6 +259,8 @@ def test_enable_removes_dropin_and_reports_enabled(tmp_path, capsys):
     out = capsys.readouterr().out
 
     assert not (dropin_dir / "90-visp-autostart.conf").exists()
+    # R2: leaving the empty drop-in dir behind survives the old suite
+    assert not dropin_dir.exists(), "enable must remove the emptied drop-in dir"
     assert "Enabled" in out
     assert ("enable", "mongo.service") not in fr.systemctl_calls
 
@@ -258,7 +293,10 @@ def test_enable_disable(tmp_path, capsys):
     assert "Disabling autostart for mongo.service" in out
     assert "Disabled" in out
     assert dropin.exists()
-    assert "WantedBy=" in dropin.read_text()
+    dropin_text = dropin.read_text()
+    assert "WantedBy=" in dropin_text
+    # R2 F3: the old assertion also passed on a drop-in that ENABLES boot
+    assert "WantedBy=default.target" not in dropin_text
     assert ("daemon-reload",) in fr.systemctl_calls
 
     m.enable("mongo")
@@ -267,3 +305,38 @@ def test_enable_disable(tmp_path, capsys):
     assert "Enabled" in out
     assert not dropin.exists()
     assert fr.systemctl_calls.count(("daemon-reload",)) == 2
+
+
+def test_stop_order_is_reverse_of_declaration_order():
+    # Requires= chains mean dependents must die before their networks and
+    # early-declared backends; a flipped iteration order passes every older
+    # assertion, so pin the exact sequence.
+    fr = FakeRunner()
+    ServiceManager(fr, DEFAULT_SERVICES).stop("all")
+    stopped = [u for action, u in fr.systemctl_calls if action == "stop"]
+    containers = [f"{s.name}.service" for s in DEFAULT_SERVICES if s.type == "container"]
+    assert stopped == list(reversed(containers))
+
+
+def test_stopped_unit_pulled_back_up_is_warned(capsys):
+    # FakeRunner models 'stop does not clear running state' -> the stopped
+    # unit must be reported as pulled back up.
+    fr = FakeRunner()
+    m = ServiceManager(fr, DEFAULT_SERVICES)
+    m.start("mongo")
+    m.stop("mongo")
+    out = capsys.readouterr().out
+    assert "came back up" in out
+
+
+def test_clean_stop_is_not_warned(capsys):
+    class CleanStopRunner(FakeRunner):
+        def systemctl(self, *args, **kwargs):
+            res = super().systemctl(*args, **kwargs)
+            if args and args[0] == "stop" and len(args) > 1:
+                self.started_units.discard(args[1].replace(".service", ""))
+            return res
+
+    ServiceManager(CleanStopRunner(), DEFAULT_SERVICES).stop("mongo")
+    out = capsys.readouterr().out
+    assert "Stopped" in out and "came back up" not in out

@@ -110,3 +110,74 @@ def test_ensure_on_branch_detached_no_remote_returns_none(tmp_path):
 
     assert repo.ensure_on_branch() is None
     assert repo.is_detached() is True  # unchanged
+
+
+# ── round-2 GR-R2-03: pull must be config-immune and reason-visible ─────────
+
+
+def test_pull_is_ff_only_and_config_immune(monkeypatch):
+    import subprocess
+
+    from vispctl.git_repo import GitRepository
+
+    seen = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    repo = GitRepository("/nonexistent", "http://example.invalid/x.git")
+    repo.pull()
+    argv = seen[-1]
+    assert argv[:1] == ["git"]
+    assert ["-c", "pull.rebase=false", "pull", "--ff-only"] == argv[1:5], argv
+
+
+def test_deploy_update_surfaces_git_stderr(monkeypatch, capsys, tmp_path):
+    import subprocess
+
+    import vispctl.deploy as deploy_mod
+
+    class FakeRepo:
+        url = "u"
+
+        def __init__(self, path, url=None):
+            pass
+
+        def exists(self):
+            return True
+
+        def fetch(self, quiet=False):
+            pass
+
+        def is_dirty(self):
+            return False
+
+        def is_detached(self):
+            return False
+
+        def ensure_on_branch(self):
+            return "main"
+
+        def pull(self):
+            raise subprocess.CalledProcessError(
+                128, ["git", "pull"], stderr=b"fatal: Not possible to fast-forward, aborting."
+            )
+
+    class Cfg:
+        def get_components(self):
+            return [("demo", {"url": "u", "version": "latest"})]
+
+        def is_locked(self, name):
+            return False
+
+    dm = deploy_mod.DeployManager.__new__(deploy_mod.DeployManager)
+    dm.config = Cfg()
+    dm.external_dir = tmp_path
+    dm.runner = None
+    monkeypatch.setattr(deploy_mod, "GitRepository", FakeRepo)
+
+    dm.update_components()
+    out = capsys.readouterr().out
+    assert "Not possible to fast-forward" in out
