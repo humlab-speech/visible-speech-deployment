@@ -8,7 +8,7 @@ image line and cover the display path too.
 """
 
 import pytest
-from test_base_freshness import _OCTRA, _err_statuses, _Runner
+from test_base_freshness import _OCTRA, _err_statuses, _project, _RecordingClient, _Runner
 
 import vispctl.build as build_mod
 import vispctl.images as images_mod
@@ -54,7 +54,7 @@ def _mixed(specs):
         def __init__(self, runner):
             self.runner = runner
 
-        def base_freshness(self, client):
+        def base_freshness(self, client, only_files=None):
             return {
                 img: {
                     "files": [("docker/octra/Dockerfile", None)],
@@ -90,25 +90,32 @@ def test_refused_does_not_feed_the_transport_streak(monkeypatch, capsys):
     assert runner.pulled == ["docker.io/library/c:1"], out
 
 
-def test_refused_then_two_blips_stops_only_at_two(monkeypatch, capsys):
-    """The other edge: refused must not count, but the two real blips still stop."""
-    runner = _Runner({})
-    monkeypatch.setattr(
-        images_mod,
-        "ImageManager",
-        _mixed(
-            [
-                ("a:1", "unknown", "realm outside registry", "refused"),
-                ("b:1", "unknown", "no route", "transport"),
-                ("c:1", "unknown", "no route", "transport"),
-                ("d:1", "stale", None, None),
-            ]
-        ),
+def test_refused_then_two_blips_stops_only_at_two(tmp_path, monkeypatch, capsys):
+    """The other edge: refused must not count, but the two real blips still stop.
+
+    Driven through the real base_freshness, which owns the stop: d:1 is never
+    probed, so it is never pulled.
+    """
+    _project(
+        tmp_path,
+        monkeypatch,
+        {"docker/octra/Dockerfile": ["reg.example/a:1", "reg.example/b:1", "reg.example/c:1", "reg.example/d:1"]},
     )
-    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
+    client = _RecordingClient(
+        {
+            "a": images_mod.RegistryTrustError("realm outside registry"),
+            "b": images_mod.RegistryTransportError("no route"),
+            "c": images_mod.RegistryTransportError("no route"),
+            "d": "sha256:z",
+        }
+    )
+    runner = _Runner({})
+    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=client)
     out = capsys.readouterr().out
-    assert "two consecutive" in out
-    assert runner.pulled == []  # d:1 sits behind the stop
+    assert client.asked == ["a", "b", "c"], out  # d:1 sits behind the stop
+    assert "REFUSED" in _line_for(out, "reg.example/a:1")
+    assert out.count("two consecutive") == 1, out
+    assert runner.pulled == []
 
 
 @pytest.mark.parametrize("answered", ["current", "stale", "absent"])

@@ -604,7 +604,7 @@ class ImageManager:
         for container, nets in container_networks.items():
             print(f"  {container}: {nets}")
 
-    def base_freshness(self, client=None) -> Dict[str, Dict[str, Any]]:
+    def base_freshness(self, client=None, only_files: set[str] | None = None) -> Dict[str, Dict[str, Any]]:
         """Per registry base tag: what we hold locally versus what the registry serves now.
 
         Statuses: ``pinned`` (a @sha256 ref — cannot drift), ``current``
@@ -614,11 +614,20 @@ class ImageManager:
         consulted or unreachable). Bases on localhost never talk to a registry
         and are omitted. Comparison is set membership over RepoDigests: a
         pulled image stores both the index and the manifest digest there.
+
+        *only_files* (Dockerfile paths as scan_base_images reports them)
+        limits the sweep to the bases those files use. Every other base is
+        dropped before any podman or registry call, so a build asks only about
+        what it builds, and failures on unrelated bases cannot trip the
+        two-unreachable stop below. Bases are swept in sorted order, the order
+        both reporters print them in.
         """
         out: Dict[str, Dict[str, Any]] = {}
         transport_streak = 0
         unreachable = False
-        for image, files in self.scan_base_images().items():
+        for image, files in sorted(self.scan_base_images().items()):
+            if only_files is not None and not any(f in only_files for f, _stage in files):
+                continue  # not used by a Dockerfile in this run
             ref = ImageRef.parse(image)
             if "." not in ref.registry:
                 continue  # localhost/other local builds

@@ -716,9 +716,9 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
     run actually own (see _service_base_claims).
 
     Registry failures sort into four classes with different meanings:
-    transport (never answered — after two in a row we stop checking the rest,
-    since the network is clearly down and every further probe is the same
-    question), gone (404), auth (401/403, needs credentials), and refused
+    transport (never answered — after two in a row base_freshness stops
+    checking the rest, since the network is clearly down and every further
+    probe is the same question; only this run's bases count), gone (404), auth (401/403, needs credentials), and refused
     (our token-realm host-trust guard stopped an auth walk — a security
     event: the registry aimed our token elsewhere; loud, never worded as an
     outage; an off-registry pagination link is dropped inside the client and
@@ -737,13 +737,26 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
     from .images import ImageManager
     from .registry import RegistryClient
 
-    statuses = ImageManager(runner).base_freshness(client if client is not None else RegistryClient())
-    transport_streak = 0
+    # base_freshness checks only the claimed bases and owns the two-unreachable
+    # stop: the bases it did not probe come back marked 'skipped', after the
+    # failures that caused the stop (both sides sweep in sorted order).
+    statuses = ImageManager(runner).base_freshness(
+        client if client is not None else RegistryClient(), only_files=claims
+    )
     for image, st in sorted(statuses.items()):
         if not any(f in claims for f, _stage in st["files"]):
-            continue  # base belongs to a Dockerfile outside this build run
+            continue  # defensive: base_freshness already left these out
         if st["error"]:
             kind = st.get("error_class") or "other"
+            if kind == "skipped":
+                print(
+                    color(
+                        "  ⚠ two consecutive registry transport failures — skipping the remaining base checks"
+                        " (--no-pull to silence)",
+                        Colors.YELLOW,
+                    )
+                )
+                break  # every entry after the first skipped one is skipped too
             if kind == "refused":
                 print(
                     color(
@@ -751,7 +764,6 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
                         Colors.RED,
                     )
                 )
-                transport_streak = 0  # answered (and a security event to chase, not an outage)
             elif kind == "gone":
                 print(
                     color(
@@ -759,16 +771,12 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
                         Colors.YELLOW,
                     )
                 )
-                transport_streak = 0
             elif kind == "auth":
                 print(
                     color(
                         f"  ⚠ {image}: registry needs credentials ({st['error']}) — base NOT refreshed", Colors.YELLOW
                     )
                 )
-                transport_streak = 0
-            elif kind == "skipped":
-                print(color(f"  ○ {image}: {st['error']} — base NOT refreshed", Colors.YELLOW))
             elif kind == "transport":
                 print(
                     color(
@@ -776,16 +784,6 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
                         Colors.YELLOW,
                     )
                 )
-                transport_streak += 1
-                if transport_streak >= 2:
-                    print(
-                        color(
-                            "  ⚠ two consecutive registry transport failures — skipping the remaining base checks"
-                            " (--no-pull to silence)",
-                            Colors.YELLOW,
-                        )
-                    )
-                    break
             else:
                 print(
                     color(
@@ -793,9 +791,7 @@ def refresh_base_images(runner, build_configs, ordered, no_pull=False, client=No
                         Colors.YELLOW,
                     )
                 )
-                transport_streak = 0
             continue
-        transport_streak = 0  # an answered question (current/stale/absent) ends any outage run
         if st["status"] not in ("stale", "absent"):
             continue
         rc, _, err = runner.run_quiet(["podman", "pull", _pull_ref(image)])

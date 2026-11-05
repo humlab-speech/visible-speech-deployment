@@ -12,7 +12,7 @@ import pytest
 import vispctl.build as build_mod
 import vispctl.images as images_mod
 from vispctl.images import ImageManager
-from vispctl.registry import RegistryError
+from vispctl.registry import RegistryError, RegistryTransportError
 
 
 class _Runner:
@@ -22,10 +22,12 @@ class _Runner:
         self.digests = digests or {}  # image -> list[RepoDigests] or None for absent
         self.pull_rc = pull_rc
         self.pulled = []
+        self.inspected = []
 
     def run_quiet(self, cmd, **kwargs):
         if cmd[:3] == ["podman", "image", "inspect"]:
             image = cmd[-1]
+            self.inspected.append(image)
             if image not in self.digests:
                 return 1, "", "no such image"
             return 0, str(self.digests[image] or []).replace("'", '"'), ""
@@ -46,6 +48,32 @@ class _Client:
         if self.error:
             raise RegistryError(self.error)
         return self.digests[ref.tag if hasattr(ref, "tag") else ref]
+
+
+class _RecordingClient:
+    """Answers tag_digest per repository basename: a digest string, or an exception to raise."""
+
+    def __init__(self, answers):
+        self.answers = answers
+        self.asked = []
+
+    def tag_digest(self, ref):
+        name = ref.repository.rsplit("/", 1)[-1]
+        self.asked.append(name)
+        answer = self.answers[name]
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+
+def _project(tmp_path, monkeypatch, dockerfiles):
+    """A project dir holding {relative Dockerfile path: [FROM images]}, wired into images.get_config."""
+    for rel, bases in dockerfiles.items():
+        path = tmp_path / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(f"FROM {b}\n" for b in bases))
+    monkeypatch.setattr(images_mod, "get_config", lambda: types.SimpleNamespace(project_dir=tmp_path))
+    return tmp_path
 
 
 def _freshness_client_for(tag_digests):
@@ -124,7 +152,7 @@ def _statuses(st_map):
         def __init__(self, runner):
             self.runner = runner
 
-        def base_freshness(self, client):
+        def base_freshness(self, client, only_files=None):
             return {
                 img: {
                     "files": [("docker/octra/Dockerfile", None)],
@@ -293,7 +321,7 @@ def _err_statuses(spec_map, files=None):
         def __init__(self, runner):
             self.runner = runner
 
-        def base_freshness(self, client):
+        def base_freshness(self, client, only_files=None):
             return {
                 img: {
                     "files": files or [("docker/octra/Dockerfile", None)],
@@ -335,6 +363,7 @@ def test_auth_and_gone_are_answered_and_do_not_stop_the_sweep(monkeypatch, capsy
 
 
 def test_two_transport_failures_stop_the_sweep(monkeypatch, capsys):
+    """base_freshness marks what it did not probe 'skipped'; the build prints one stop line for them."""
     runner = _Runner({})
     monkeypatch.setattr(
         images_mod,
@@ -343,12 +372,14 @@ def test_two_transport_failures_stop_the_sweep(monkeypatch, capsys):
             {
                 "a:1": ("no route", "transport"),
                 "b:1": ("no route", "transport"),
-                "c:1": ("no route", "transport"),  # never reached
+                "c:1": ("not checked (two unreachable bases in a row)", "skipped"),
             }
         ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
-    assert "two consecutive registry transport failures" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert out.count("two consecutive registry transport failures") == 1, out
+    assert "c:1" not in out  # the stop line speaks for the unprobed bases
 
 
 def test_one_transport_then_answered_never_stops_the_sweep(monkeypatch, capsys):
@@ -378,7 +409,7 @@ def test_answered_then_single_blip_then_work_all_gets_checked(monkeypatch, capsy
         def __init__(self, runner):
             self.runner = runner
 
-        def base_freshness(self, client):
+        def base_freshness(self, client, only_files=None):
             return {
                 "a:1": {
                     "files": [("docker/octra/Dockerfile", None)],
@@ -524,47 +555,20 @@ def test_real_exception_flows_to_auth_wording(tmp_path, monkeypatch, capsys):
     assert "not reachable" not in out and "REFUSED" not in out, out
 
 
-def test_two_transport_failures_stop_before_remaining_work(monkeypatch, capsys):
-    """The stop is at TWO, and it protects the rest: a stale base after the
-    second blip must NOT be pulled (the loop broke, it never saw it)."""
-    runner = _Runner({})
-
-    class IM:
-        def __init__(self, runner):
-            self.runner = runner
-
-        def base_freshness(self, client):
-            return {
-                "a:1": {
-                    "files": [("docker/octra/Dockerfile", None)],
-                    "local_digests": set(),
-                    "remote_digest": None,
-                    "error": "no route",
-                    "error_class": "transport",
-                    "status": "unknown",
-                },
-                "b:1": {
-                    "files": [("docker/octra/Dockerfile", None)],
-                    "local_digests": set(),
-                    "remote_digest": None,
-                    "error": "no route",
-                    "error_class": "transport",
-                    "status": "unknown",
-                },
-                "c:1": {
-                    "files": [("docker/octra/Dockerfile", None)],
-                    "local_digests": set(),
-                    "remote_digest": "sha256:z",
-                    "error": None,
-                    "error_class": None,
-                    "status": "stale",
-                },
-            }
-
-    monkeypatch.setattr(images_mod, "ImageManager", IM)
-    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
+def test_two_transport_failures_stop_before_remaining_work(tmp_path, monkeypatch, capsys):
+    """The stop is at TWO, and it protects the rest: a base after the second
+    blip is never probed, so it is never pulled even if it would be stale."""
+    _project(
+        tmp_path, monkeypatch, {"docker/octra/Dockerfile": ["reg.example/a:1", "reg.example/b:1", "reg.example/c:1"]}
+    )
+    client = _RecordingClient(
+        {"a": RegistryTransportError("no route"), "b": RegistryTransportError("no route"), "c": "sha256:z"}
+    )
+    runner = _Runner({"reg.example/c:1": ["reg.example/c@sha256:old"]})  # c:1 would be stale
+    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=client)
     out = capsys.readouterr().out
-    assert "two consecutive" in out
+    assert client.asked == ["a", "b"], out
+    assert out.count("two consecutive") == 1, out
     assert runner.pulled == []  # c:1 never reached
 
 
@@ -619,8 +623,8 @@ def test_display_reports_unchecked_bases_honestly(tmp_path, monkeypatch, capsys)
     assert state["n"] == 2
 
 
-def test_build_sweep_labels_skipped_entries_without_counting_them(monkeypatch, capsys):
-    """A skipped marker is neither a failure to count nor an answered question."""
+def test_build_sweep_stops_at_the_first_skipped_entry(monkeypatch, capsys):
+    """Every entry after the first 'skipped' one is skipped too; the build prints one stop line and acts on none."""
     runner = _Runner({})
     monkeypatch.setattr(
         images_mod,
@@ -628,16 +632,67 @@ def test_build_sweep_labels_skipped_entries_without_counting_them(monkeypatch, c
         _statuses(
             {
                 "a:1": ("unknown", "no route", "transport"),
-                "b:1": ("unknown", "answered HTTP 404", "gone"),
+                "b:1": ("unknown", "no route", "transport"),
                 "c:1": ("unknown", "not checked (two unreachable bases in a row)", "skipped"),
-                "d:1": ("unknown", "still down", "transport"),
-                "e:1": ("absent", None),
+                "d:1": ("unknown", "not checked (two unreachable bases in a row)", "skipped"),
             }
         ),
     )
     build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=object())
     out = capsys.readouterr().out
-    assert "not checked" in out
-    assert "two consecutive" not in out  # transport, reset, (skipped: no count), transport: never two in a row
+    assert out.count("two consecutive") == 1, out
+    assert "c:1" not in out and "d:1" not in out, out
     assert "answered oddly" not in out
-    assert sorted(runner.pulled) == ["docker.io/library/e:1"]  # swept past the marker to real work
+    assert runner.pulled == []
+
+
+# ---- scope: a build asks the registry only about the bases it builds ----
+
+
+def test_build_asks_the_registry_only_about_its_own_bases(tmp_path, monkeypatch):
+    """Bases of Dockerfiles outside this run are never inspected, probed or pulled."""
+    _project(
+        tmp_path,
+        monkeypatch,
+        {"docker/octra/Dockerfile": ["reg.example/mine:1"], "docker/other/Dockerfile": ["reg.example/theirs:1"]},
+    )
+    client = _RecordingClient({"mine": "sha256:new", "theirs": "sha256:new"})
+    runner = _Runner({})  # nothing local: both would be 'absent' and pulled if checked
+    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=client)
+    assert client.asked == ["mine"]
+    assert runner.inspected == ["reg.example/mine:1"]
+    assert runner.pulled == ["reg.example/mine:1"]
+
+
+def test_unrelated_unreachable_bases_cannot_stop_the_build_sweep(tmp_path, monkeypatch, capsys):
+    """Two dead bases elsewhere in the repo (sorting first) must not leave this run's base unrefreshed."""
+    _project(
+        tmp_path,
+        monkeypatch,
+        {
+            "docker/other/Dockerfile": ["reg.example/a:1", "reg.example/b:1"],
+            "docker/octra/Dockerfile": ["reg.example/zz:1"],
+        },
+    )
+    client = _RecordingClient(
+        {"a": RegistryTransportError("no route"), "b": RegistryTransportError("no route"), "zz": "sha256:new"}
+    )
+    runner = _Runner({})
+    build_mod.refresh_base_images(runner, _OCTRA, ["octra"], client=client)
+    out = capsys.readouterr().out
+    assert client.asked == ["zz"]
+    assert "two consecutive" not in out
+    assert runner.pulled == ["reg.example/zz:1"]
+
+
+def test_images_base_without_a_filter_still_checks_every_base(tmp_path, monkeypatch):
+    """The unfiltered sweep ('images base') is unchanged: it reports every base in the repo."""
+    _project(
+        tmp_path,
+        monkeypatch,
+        {"docker/octra/Dockerfile": ["reg.example/mine:1"], "docker/other/Dockerfile": ["reg.example/theirs:1"]},
+    )
+    client = _RecordingClient({"mine": "sha256:new", "theirs": "sha256:new"})
+    st = ImageManager(runner=_Runner({})).base_freshness(client)
+    assert sorted(st) == ["reg.example/mine:1", "reg.example/theirs:1"]
+    assert client.asked == ["mine", "theirs"]
