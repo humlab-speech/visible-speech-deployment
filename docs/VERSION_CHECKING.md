@@ -59,8 +59,9 @@ When you run `./visp.py deploy status`:
 
 2. **For each external component** (webclient, session-manager, etc.):
    - Reads current git commit from `external/<component>/`
-   - Checks versions.json for locked/recommended version
-   - Queries the corresponding container image for its `git.commit` label
+   - Reads the component's pin from `release.json`
+   - Queries the corresponding container image for its `git.commit` label (or, for
+     webclient and container-agent, the build marker in their `dist/` directory)
    - Compares all three to determine status
    - Checks if local repo is ahead/behind remote
 
@@ -101,19 +102,19 @@ behind = repo.count_commits_between(f"origin/{branch}", "HEAD")
 
 Uses `git rev-list --count` to calculate commit distances.
 
-#### 4. Locked Version Comparison
+#### 4. Pinned Version Comparison
 ```python
-from vispctl.versions import ComponentConfig
+from vispctl.versions import RELEASE_FILE, ComponentConfig
 
-config = ComponentConfig("versions.json")
-locked = config.get_locked_version("webclient")
-# Returns: "f23595ffb943..." (recommended production version)
+config = ComponentConfig(RELEASE_FILE)  # release.json, the release manifest
+pinned = config.get_locked_version("webclient")
+# Returns: "f23595ffb943..." (the commit pinned for this release), or None if unpinned
 
 # Compare with current
-if current_commit == locked:
-    # On recommended version
+if current_commit == pinned:
+    # At the pinned commit
 else:
-    # Drifted from recommended version
+    # Drifted from the pin
 ```
 
 ### Main Deployment Repository
@@ -181,6 +182,10 @@ The system compares the **image commit** with the **current source commit**:
 | ⚠️ **UNKNOWN** | No git.commit label | Old image, pre-labeling | Rebuild to add label |
 | **N/A** | Component not buildable | Not a container image | Not applicable |
 
+A status ending in **⚠ DIRTY BUILD** means the image was built from a checkout with
+uncommitted changes (its `git.dirty` label is `true`), so the commit alone does not
+describe what is in it.
+
 ## Status Check Output
 
 ### Command
@@ -228,9 +233,9 @@ The system compares the **image commit** with the **current source commit**:
 ```
 
 **Columns:**
-- **Lock Status**: 🔒 LOCKED (fixed version) or 🔓 UNLOCKED (tracking latest)
+- **Lock Status**: 🔒 LOCKED (pinned in `release.json`) or 🔓 UNLOCKED (no pin: tracking latest)
 - **Current Commit**: What's checked out on disk right now
-- **Locked Version**: Recommended production version from versions.json
+- **Locked Version**: The commit pinned in `release.json`
 - **Status**: Git working tree state (✅ CLEAN or ⚠️ HAS CHANGES)
 - **Build Status**: Does image match current source? (NEW in this system)
 - **Sync Status**: Relationship with remote (✅ SYNCED, 🚀 AHEAD, ⬇️ BEHIND)
@@ -257,16 +262,21 @@ The system compares the **image commit** with the **current source commit**:
 
 ## Component-to-Image Mapping
 
-The system knows which external repo builds into which container image:
+The system knows what each external repo builds into, and checks that:
 
-| External Repository | Container Image | Notes |
+| External Repository | Checked against | Notes |
 |---------------------|-----------------|-------|
-| `webclient` | `visp-apache:latest` | Built into Apache image |
+| `webclient` | `external/webclient/dist/` build marker | Node build (`./visp.py build webclient`); prod also bakes it into `visp-apache` |
+| `container-agent` | `external/container-agent/dist/` build marker | Node build; prod also bakes it into `visp-jupyter-session` |
 | `session-manager` | `visp-session-manager:latest` | Direct mapping |
 | `wsrng-server` | `visp-wsrng-server:latest` | Direct mapping |
 | `emu-webapp-server` | `visp-emu-webapp-server:latest` | Direct mapping |
 | `artic` | `visp-artic:latest` | Direct mapping |
-| `container-agent` | `visp-operations-session:latest` | Bundled into session images |
+| `WhisperVault` | `visp-whisperx:latest` | Build target is `whisperx` |
+
+For the two Node builds, `./visp.py build` writes a `.build-marker` file into `dist/`
+recording the commit it built from; the status compares that commit instead of an
+image label.
 
 This mapping is defined in `vispctl/deploy.py` in the `_get_build_status()` method.
 
@@ -325,14 +335,13 @@ $ ./visp.py deploy status
 # Now shows: Build Status: ✅ UP TO DATE
 ```
 
-### Example 4: Production Lock Workflow
+### Example 4: Pin a Component for Production
 
 ```bash
-# 1. Lock current version for production
+# 1. Pin the checked-out commit in release.json
 $ ./visp.py deploy lock webclient
-✓ webclient: Locked to f23595ff
+✓ webclient: pinned to f23595ff (HEAD)
   Date: 2026-02-08
-  Commit: Update Angular to v17
 
 # 2. Verify everything is consistent
 $ ./visp.py deploy status
@@ -341,8 +350,11 @@ $ ./visp.py deploy status
 # - Build Status: ✅ UP TO DATE
 # - Status: ✅ CLEAN
 
-# 3. If not, rebuild from locked version
+# 3. If not, rebuild from the pinned commit
 $ ./visp.py build webclient
+
+# 4. Commit the pin
+$ git add release.json && git commit -m "chore(release): pin webclient to f23595ff"
 ```
 
 ## Troubleshooting
@@ -415,9 +427,9 @@ git branch
   - `GitRepository.is_dirty()`: Uncommitted changes check
   - `GitRepository.count_commits_between()`: Ahead/behind calculation
 
-- **vispctl/versions.py**: versions.json management
-  - `ComponentConfig.get_locked_version()`: Read recommended versions
-  - `ComponentConfig.is_locked()`: Check lock state
+- **vispctl/versions.py**: the component pins in `release.json`
+  - `ComponentConfig.get_locked_version()`: Read a component's pin
+  - `ComponentConfig.is_locked()`: Whether a component is pinned
 
 - **vispctl/build.py**: Build with labels
   - `BuildManager.build_image()`: Adds git.commit label during build
@@ -464,7 +476,8 @@ podman build --label git.commit=<hash> \
    ./visp.py build <component>
    ```
 
-2. **Lock versions in production**
+2. **Pin versions for production** (and commit `release.json`; a full release is
+   cut with `./visp.py release create`, see AGENTS.md)
    ```bash
    ./visp.py deploy lock --all
    ```
@@ -473,13 +486,14 @@ podman build --label git.commit=<hash> \
    ```bash
    # After git pull
    ./visp.py deploy status  # Check what's stale
-   ./visp.py build all      # Rebuild affected
+   ./visp.py build          # Rebuild (everything, or name the stale services)
    ```
 
-4. **Use version checks in build command**
+4. **Let the build check the pins**
    ```bash
-   # Build will warn about version mismatches in production
-   ./visp.py build session-manager
+   # In prod mode, build refuses webclient and container-agent when their
+   # checkout is not at its pin (--force overrides)
+   ./visp.py build webclient
    ```
 
 5. **Keep local repos clean**
@@ -492,7 +506,7 @@ podman build --label git.commit=<hash> \
 
 ## Related Documentation
 
-- [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) - Lock/unlock/rollback workflows
+- [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) - The pins in `release.json`: lock/unlock/rollback workflows
 - [BACKUP_RESTORE.md](BACKUP_RESTORE.md) - Backup and restore procedures
 
 ## Summary
@@ -502,6 +516,6 @@ The version checking system provides **forensic-level tracking** of your deploym
 ✅ **Know exactly** what commit each image contains
 ✅ **See immediately** if source and images are out of sync
 ✅ **Track precisely** which repos are ahead/behind remotes
-✅ **Verify easily** that production matches locked versions
+✅ **Verify easily** that production matches the pinned versions
 
 This eliminates the guesswork from "do I need to rebuild?" and ensures consistent, reproducible deployments.
