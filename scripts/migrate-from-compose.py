@@ -900,7 +900,7 @@ def phase_config(ctx: Ctx) -> None:
     env, carried = plan_env(old, load_env_file(ctx.new / ".env-example"), overrides)
     for key in carried:
         say(f"  from the old .env: {key}={env[key]}")
-    for key in ("ABS_ROOT_PATH", "HTTP_PORT", "TRATT_SUBDOMAIN", "LOCAL_IDP_ENABLED", "WHISPERX_ENABLED"):
+    for key in overrides:
         say(f"  set:               {key}={env[key]}")
     if not env.get("PROXY_BLOCKED_CIDRS"):
         warn("PROXY_BLOCKED_CIDRS is empty: Jupyter sessions can reach internal networks (--proxy-blocked-cidrs)")
@@ -1373,7 +1373,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--branch", default="master", help="branch of this repository to deploy")
     parser.add_argument("--webclient-config", default="visp", help="webclient build config (default: visp)")
     parser.add_argument("--tratt-subdomain", default="octra", help="TRATT subdomain; 'octra' keeps the old DNS name")
-    parser.add_argument("--proxy-blocked-cidrs", help="PROXY_BLOCKED_CIDRS for the new .env (internal networks)")
+    parser.add_argument(
+        "--proxy-blocked-cidrs",
+        help="PROXY_BLOCKED_CIDRS for the new .env: space-separated internal networks Jupyter sessions must not reach",
+    )
     parser.add_argument("--sysadmin", action="append", default=[], help="grant sys_admin to this user (repeatable)")
     parser.add_argument("--whisper-models-from", help="local directory with a complete WhisperVault models set")
     parser.add_argument("--proxy-conf", default="/opt/tls-proxy/proxy.conf", help="host TLS proxy config file")

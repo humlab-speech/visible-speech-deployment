@@ -787,6 +787,10 @@ def run_install(
     """
     from .exceptions import InstallationError
     from .network import NetworkManager
+    from .release import has_existing_data
+
+    # Decided before anything starts mongo: a server without data is a fresh install.
+    fresh_install = not has_existing_data(project_dir)
 
     # --- Phase 1: first-time env-file generation ---
     env_file_path = project_dir / ".env"
@@ -1038,8 +1042,40 @@ def run_install(
         else:
             print(color("No container services to restart.", Colors.GREEN))
 
-    # --- Phase 17: tell the user what is still left to do ---
+    # --- Phase 17: record the installed VISP version ---
+    _record_installed_version(project_dir, fresh_install)
+
+    # --- Phase 18: tell the user what is still left to do ---
     print_next_steps(project_dir, systemd_dir, runner, mode, all_services, disabled_optional)
+
+
+def _record_installed_version(project_dir: Path, fresh_install: bool) -> None:
+    """Write mounts/visp-state.json on a fresh install; point an unrecorded existing server at 'version mark'."""
+    from .exceptions import ConfigError
+    from .release import InstallState, Manifest, deploy_commit
+
+    try:
+        manifest = Manifest.load(project_dir)
+        state = InstallState.load(project_dir)
+    except ConfigError:
+        return
+    if state.in_progress:  # install is running as part of './visp.py upgrade'
+        return
+    if state.version:
+        if state.version != manifest.version:
+            print()
+            print(color(f"⚠  Installed VISP {state.version}, this checkout is {manifest.version}.", Colors.YELLOW))
+            print("   Run './visp.py upgrade' to apply the upgrade steps in between.")
+        return
+    if fresh_install:
+        state.record(manifest.version, "install", deploy_commit(project_dir))
+        print()
+        print(color(f"✓ Recorded VISP {manifest.version} as installed (mounts/visp-state.json).", Colors.GREEN))
+    else:
+        print()
+        print(color("⚠  This server holds data but has no recorded VISP version.", Colors.YELLOW))
+        print("   Record the release it runs, so './visp.py upgrade' knows where to start:")
+        print("     ./visp.py version mark <x.y.z>")
 
 
 def _unresolved_hosts(hostnames: list[str]) -> list[str]:

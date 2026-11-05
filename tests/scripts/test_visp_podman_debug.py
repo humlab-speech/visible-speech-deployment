@@ -72,9 +72,9 @@ def test_cmd_debug_shows_quadlet_link(tmp_path, capsys, monkeypatch):
     # Wave-7 BROKEN: nothing pinned WHICH container debug inspects — the
     # header alone survives any target mutation. Pin the argv correlation.
     joined = [" ".join(c) for c in calls]
-    assert any("session-manager.service" in c for c in joined), (
-        "diagnostics never targeted session-manager specifically"
-    )
+    assert any(
+        "session-manager.service" in c for c in joined
+    ), "diagnostics never targeted session-manager specifically"
 
 
 def test_cmd_debug_absent_quadlet_says_so(tmp_path, capsys, monkeypatch):

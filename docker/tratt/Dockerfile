@@ -1,5 +1,5 @@
 # Stage 1: Build the project
-FROM docker.io/node:24.15.0 AS build
+FROM docker.io/library/node:24.22.2 AS build
 
 WORKDIR /app
 
@@ -29,7 +29,14 @@ RUN npm ci --legacy-peer-deps
 RUN npm run build:release
 
 # Stage 2: Serve the built files with Apache HTTPD
-FROM docker.io/httpd:2.4.67
+FROM docker.io/library/httpd:2.4.69
+
+# The httpd tag pins Apache itself; the Debian packages underneath are only as
+# new as the tag's build date. Upgrade them so a --no-cache rebuild picks up
+# every Debian security fix (openssl, perl, …) whatever the tag's age.
+RUN apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create the media directory
 RUN mkdir -p /usr/local/apache2/htdocs/media
