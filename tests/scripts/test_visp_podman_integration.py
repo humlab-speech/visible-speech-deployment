@@ -46,6 +46,7 @@ def test_cmd_build_delegates_to_buildmanager(monkeypatch):
     runner = _FakeRunner()
     monkeypatch.setattr(build_mod, "BuildManager", FakeBM)
     monkeypatch.setattr(build_mod, "Runner", lambda: runner)
+    monkeypatch.setattr(build_mod, "refresh_base_images", lambda *a, **k: None)
 
     all_buildable = list(build_mod.BUILD_CONFIGS.keys()) + list(build_mod.NODE_BUILD_CONFIGS.keys())
 

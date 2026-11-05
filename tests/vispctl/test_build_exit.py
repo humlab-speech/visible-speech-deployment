@@ -39,6 +39,9 @@ def _run_build(monkeypatch, result):
     runner = _FakeRunner()
     monkeypatch.setattr(build_mod, "BuildManager", _fake_bm(result))
     monkeypatch.setattr(build_mod, "Runner", lambda: runner)
+    # The base refresh has its own tests (test_base_freshness.py); here it would
+    # ask the real registry about apache's base.
+    monkeypatch.setattr(build_mod, "refresh_base_images", lambda *a, **k: None)
     args = types.SimpleNamespace(services=["apache"], list=False, no_cache=False, pull=False, config=None, force=True)
     return build_mod.cmd_build(
         args,

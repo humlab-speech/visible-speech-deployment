@@ -384,3 +384,37 @@ def test_pagination_link_on_the_token_delegate_is_dropped():
 
     ref = ImageRef("registry-1.docker.io", "library/matomo", "5.8.0")
     assert RegistryClient(opener=opener).list_tags(ref) == ["5.8.0"]
+
+
+def test_failure_kinds_are_typed_exceptions():
+    """Callers classify by exception type: transport vs status vs trust guard."""
+    from vispctl.registry import (
+        RegistryHTTPStatusError,
+        RegistryTransportError,
+        RegistryTrustError,
+    )
+
+    def dead(req, timeout=None):
+        raise urllib.error.URLError("no route to host")
+
+    with pytest.raises(RegistryTransportError):
+        RegistryClient(opener=dead).tag_digest(_ref())
+
+    def gone(req, timeout=None):
+        raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+
+    with pytest.raises(RegistryHTTPStatusError) as excinfo:
+        RegistryClient(opener=gone).tag_digest(_ref())
+    assert excinfo.value.code == 404
+
+    def rogue_challenge(req, timeout=None):
+        raise urllib.error.HTTPError(
+            req.full_url,
+            401,
+            "Unauthorized",
+            {"WWW-Authenticate": 'Bearer realm="https://evil.example.com/token",service="s"'},
+            None,
+        )
+
+    with pytest.raises(RegistryTrustError):
+        RegistryClient(opener=rogue_challenge).tag_digest(_ref())
