@@ -222,6 +222,8 @@ def cmd_apply(
         project_dir = get_config().project_dir
     if systemd_dir is None:
         systemd_dir = get_config().systemd_dir
+    if runner is None:
+        runner = get_config().runner
 
     service = getattr(args, "service", "all")
     mode = get_current_mode()
@@ -238,10 +240,21 @@ def cmd_apply(
     if not drifted and not not_installed and not stale_image_only:
         print(
             color(
-                f"All quadlets are up to date and all containers are running the latest images ({mode} mode).",
+                f"Nothing to apply ({mode} mode): quadlets are up to date and no running container"
+                " uses an outdated image.",
                 Colors.GREEN,
             )
         )
+        # Stopped services are invisible to the checks above — say so, or
+        # "nothing to apply" reads as "everything is running".
+        not_running = [
+            s.name
+            for s in services
+            if s.type == "container" and (systemd_dir / s.file).exists() and not runner.unit_is_active(s.name)
+        ]
+        if not_running:
+            print(color(f"  ⚠ Not running ({len(not_running)}): {', '.join(not_running)}", Colors.YELLOW))
+            print("    Start them with './visp.py start all' (see './visp.py status').")
         return
 
     to_update = drifted + not_installed

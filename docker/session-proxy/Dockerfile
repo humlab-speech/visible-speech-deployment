@@ -1,4 +1,4 @@
-FROM docker.io/library/alpine:3.23
+FROM docker.io/library/alpine:3.24.3
 
 LABEL maintainer="Visible Speech <visp@umu.se>"
 LABEL description="Tinyproxy sidecar for network-isolated VISP session containers"
@@ -7,7 +7,10 @@ LABEL description="Tinyproxy sidecar for network-isolated VISP session container
 # iptables (nft backend) and iptables-legacy both fail: nft needs CAP_NET_ADMIN
 # in the root user namespace, and iptables-legacy can't find its xtables .so
 # plugins inside the minimal Alpine image.
-RUN apk add --no-cache tinyproxy socat nftables
+# 'upgrade' first: 'add' only fetches the packages it names, so busybox, musl,
+# libcrypto etc. would stay as old as the base tag.
+RUN apk upgrade --no-cache && \
+    apk add --no-cache tinyproxy socat nftables
 
 COPY tinyproxy.conf /etc/tinyproxy/tinyproxy.conf
 COPY entrypoint.sh /entrypoint.sh

@@ -68,10 +68,13 @@ _DOCKER_HUB_TOKEN_HOST = "auth.docker.io"
 
 def _bare_host(netloc: str) -> str:
     """Lowercase hostname of a netloc (``[::1]:5000`` → ``::1``), port and
-    userinfo stripped, brackets removed. Empty for anything unparseable —
-    callers must treat empty as untrusted, never as a wildcard: cutting the
-    host at the first colon (an earlier draft) turned ``[::1]`` into ``""``
-    and made every trailing-dot realm a trusted subdomain of "nothing".
+    userinfo stripped, brackets removed.
+
+    Empty means absent or unparseable, and callers treat empty as untrusted —
+    never as a wildcard: an empty host equals no registry name and is a suffix
+    of no name, so it can only ever deny trust. An IPv6 literal is unbracketed
+    whole rather than split at its first colon, which is why an address such as
+    ``[::1]`` yields ``::1`` and never collapses to the empty string.
     """
     try:
         host = urllib.parse.urlsplit(f"//{netloc}").hostname
@@ -90,12 +93,14 @@ def _port_is_sane(parts: "urllib.parse.SplitResult") -> bool:
 
 
 def _host_is_self_or_subdomain(host: str, registry: str) -> bool:
-    """True when *host* is the registry itself or lives under it on a dot boundary.
+    """True when *host* is the registry itself or a subdomain of it on a dot boundary.
 
-    Comparing whole suffixes (not last-two-labels, which made every tenant of a
-    shared provider one registry: ``evil.azurecr.io`` for ``mine.azurecr.io``,
-    any ``*.amazonaws.com`` for ECR, ``library.co.uk`` for ``evil.co.uk``):
-    a subdomain of the exact host we asked for shares that host's owner.
+    The match is dot-boundary exact — equality, or equality after a leading
+    ``.`` — so the trusted set is exactly the names the registry's owner
+    controls: one more label is trusted (``a.mine.azurecr.io`` for
+    ``mine.azurecr.io``), a neighbouring tenant is not (``evil.azurecr.io``),
+    and no public-suffix shortening makes ``library.co.uk`` a subdomain of
+    ``evil.co.uk``.
     """
     return host == registry or host.endswith("." + registry)
 

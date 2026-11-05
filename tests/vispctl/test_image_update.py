@@ -28,7 +28,9 @@ def _quadlets(root, dev_ref=MATOMO, prod_ref=MATOMO):
     for mode, ref in (("dev", dev_ref), ("prod", prod_ref)):
         d = root / "quadlets" / mode
         d.mkdir(parents=True, exist_ok=True)
-        (d / "matomo.container").write_text(f"[Container]\nContainerName=matomo\nImage={ref}\nNetwork=visp-net.network\n")
+        (d / "matomo.container").write_text(
+            f"[Container]\nContainerName=matomo\nImage={ref}\nNetwork=visp-net.network\n"
+        )
 
 
 # --- helpers ---
@@ -176,6 +178,15 @@ def test_update_pulls_then_rewrites_both_quadlets_then_applies(env, capsys):
     out = capsys.readouterr().out
     assert "core:update" in out  # Matomo's post-update step
     assert "git commit quadlets/dev/matomo.container quadlets/prod/matomo.container" in out
+
+
+def test_update_mirrors_the_pin_into_release_json(env, capsys):
+    (env / "release.json").write_text(json.dumps({"visp": "1.0.0", "images": {"matomo": MATOMO}}))
+    rc, _ = _run(env, _Runner([LOCAL_MATOMO]), _Client(["5.8.0", "5.14.0"]), to="5.14.0", yes=True)
+
+    assert rc == 0
+    assert json.loads((env / "release.json").read_text())["images"]["matomo"] == "docker.io/library/matomo:5.14.0"
+    assert "quadlets/prod/matomo.container release.json" in capsys.readouterr().out
 
 
 def test_failed_pull_changes_nothing(env):

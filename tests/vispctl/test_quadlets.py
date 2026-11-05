@@ -160,3 +160,16 @@ def test_setup_creates_wsrng_env_from_example(tmp_path: Path, capsys) -> None:
     target = tmp_path / "external" / "wsrng-server" / ".env"
     assert target.exists()
     assert "PORT=9010" in target.read_text()
+
+
+# ── quadlet contents ───────────────────────────────────────────────────────────
+
+
+def test_no_quadlet_mounts_etc_timezone() -> None:
+    # /etc/timezone is Debian-legacy: Ubuntu 26.04+ and most systemd distros
+    # ship only /etc/localtime, and a missing bind source fails the unit.
+    quadlets = Path(__file__).resolve().parents[2] / "quadlets"
+    offenders = [
+        str(f.relative_to(quadlets)) for f in sorted(quadlets.rglob("*.container")) if "/etc/timezone" in f.read_text()
+    ]
+    assert offenders == []

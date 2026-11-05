@@ -17,7 +17,6 @@ Volume=@@PROJECT_DIR@@/mounts/local-idp/config/config-override.php:/var/simplesa
 Volume=@@PROJECT_DIR@@/mounts/local-idp/metadata/saml20-idp-hosted.php:/var/simplesamlphp/metadata/saml20-idp-hosted.php:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/local-idp/metadata/saml20-sp-remote.php:/var/simplesamlphp/metadata/saml20-sp-remote.php:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/local-idp/log:/var/log/apache2:Z
-Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Security hardening
