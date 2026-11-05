@@ -8,7 +8,7 @@ from typing import Optional
 from .build import BUILD_CONFIGS, NODE_BUILD_CONFIGS
 from .git_repo import GitRepository
 from .runner import Colors, color
-from .versions import ComponentConfig
+from .versions import RELEASE_FILE, ComponentConfig
 
 # Try to import tabulate for nice table formatting
 try:
@@ -50,7 +50,7 @@ class DeployManager:
         """
         self.basedir = Path(basedir) if basedir else Path.cwd()
         self.external_dir = self.basedir / "external"
-        self.config = ComponentConfig(str(self.basedir / "versions.json"))
+        self.config = ComponentConfig(str(self.basedir / RELEASE_FILE))
         self.runner = runner
 
     def _get_image_label(self, image_name: str, label: str) -> Optional[str]:
@@ -673,10 +673,10 @@ class DeployManager:
         if not Path(self.config.filepath).exists():
             print()
             print(
-                "⚠  versions.json not found — no versions are locked; "
+                "⚠  release.json not found — no versions are locked; "
                 "all components show as UNLOCKED (tracking latest)."
             )
-            print("   Run './visp.py deploy lock --all' to record the current versions.")
+            print("   Run './visp.py release pin --all' to record the current versions.")
             print()
 
         if deployment_repo_status:
@@ -867,13 +867,15 @@ class DeployManager:
 
         return summary_lines, all_clean
 
-    def lock_components(self, components: list[str], lock_all: bool = False) -> bool:
+    def lock_components(self, components: list[str], lock_all: bool = False, remote: bool = False) -> bool:
         """
-        Lock components to their current commit versions.
+        Pin components in release.json.
 
         Args:
             components: List of component names to lock
             lock_all: If True, lock all components
+            remote: Pin the tip of the remote's default branch (after a fetch)
+                instead of the local checkout's HEAD
 
         Returns:
             True if successful, False otherwise
@@ -892,7 +894,7 @@ class DeployManager:
         for component in components:
             comp_data = self.config.get_component(component)
             if not comp_data:
-                print(f"⚠  {component}: Not found in versions.json, skipping")
+                print(f"⚠  {component}: Not found in release.json, skipping")
                 continue
 
             repo_path = self.external_dir / component
@@ -903,11 +905,28 @@ class DeployManager:
                 continue
 
             try:
-                # Get current commit using GitRepository
-                commit_info = repo.get_commit_info("HEAD")
-                if not commit_info:
-                    print(f"✗ {component}: Failed to get current commit")
+                ref = "HEAD"
+                if remote:
+                    repo.fetch(quiet=True)
+                    branch = repo.get_default_branch() or next(
+                        (b for b in ("main", "master") if repo.has_remote_branch(b)), None
+                    )
+                    if branch is None:
+                        print(f"✗ {component}: cannot determine the remote's default branch")
+                        continue
+                    ref = f"origin/{branch}"
+                elif repo.is_dirty():
+                    print(f"✗ {component}: has uncommitted changes — commit them first (a pin is a commit)")
                     continue
+
+                commit_info = repo.get_commit_info(ref)
+                if not commit_info:
+                    print(f"✗ {component}: Failed to get commit {ref}")
+                    continue
+                on_remote = repo.run_git(["branch", "-r", "--contains", commit_info["sha"]], check=False)
+                if not on_remote.stdout.strip():
+                    print(f"⚠  {component}: {commit_info['sha_short']} is on no remote branch — push it, or")
+                    print("   servers will not be able to fetch it")
 
                 # Extract date for display
                 commit_date = commit_info["date"][:10] if commit_info["date"] else "N/A"
@@ -915,7 +934,7 @@ class DeployManager:
                 # Lock using ComponentConfig method
                 self.config.lock(component, commit_info["sha"])
 
-                print(f"✓ {component}: Locked to {commit_info['sha_short']}")
+                print(f"✓ {component}: pinned to {commit_info['sha_short']} ({ref})")
                 print(f"  Date: {commit_date}")
                 print(f"  Commit: {commit_info['subject'][:60]}")
                 print()
@@ -931,11 +950,11 @@ class DeployManager:
             try:
                 self.config.save()
                 print(f"\n✅ Successfully locked {locked_count} component(s)")
-                print("   Changes saved to versions.json")
-                print("   Don't forget to commit versions.json to track these locked versions")
+                print("   Changes saved to release.json")
+                print("   Don't forget to commit release.json to track these locked versions")
                 return True
             except Exception as e:
-                print(f"\n❌ Failed to save versions.json: {e}")
+                print(f"\n❌ Failed to save release.json: {e}")
                 return False
         else:
             print("\n⚠  No components were locked")
@@ -965,7 +984,7 @@ class DeployManager:
         unlocked_count = 0
         for component in components:
             if not self.config.get_component(component):
-                print(f"⚠  {component}: Not found in versions.json, skipping")
+                print(f"⚠  {component}: Not found in release.json, skipping")
                 continue
 
             if not self.config.is_locked(component):
@@ -989,11 +1008,11 @@ class DeployManager:
             try:
                 self.config.save()
                 print(f"\n✅ Successfully unlocked {unlocked_count} component(s)")
-                print("   Changes saved to versions.json")
+                print("   Changes saved to release.json")
                 print("   Run 'visp.py deploy update' to pull latest changes")
                 return True
             except Exception as e:
-                print(f"\n❌ Failed to save versions.json: {e}")
+                print(f"\n❌ Failed to save release.json: {e}")
                 return False
         else:
             print("\n⚠  No components were unlocked")
@@ -1042,7 +1061,7 @@ class DeployManager:
             if comp_data.get("submodules", False):
                 repo.submodule_update()
             print(f"   {component} now at {locked_version[:8]} (detached HEAD)")
-            print(f"   To resume tracking the branch: 'deploy unlock {component}' then 'deploy update'")
+            print("   To track the branch again: './visp.py deploy update --latest'")
             return True
         except subprocess.CalledProcessError as e:
             print(f"❌ {component}: checkout failed: {e}")
@@ -1072,7 +1091,7 @@ class DeployManager:
         rollback_count = 0
         for component in components:
             if not self.config.get_component(component):
-                print(f"⚠  {component}: Not found in versions.json, skipping")
+                print(f"⚠  {component}: Not found in release.json, skipping")
                 continue
 
             locked_version = self.config.get_locked_version(component)
@@ -1081,13 +1100,13 @@ class DeployManager:
                 continue
 
             # Check out the locked version in the git repository first. Only update
-            # versions.json if the checkout succeeds, so a failed checkout never
-            # leaves versions.json pointing at a version the repo isn't actually at.
+            # release.json if the checkout succeeds, so a failed checkout never
+            # leaves release.json pointing at a version the repo isn't actually at.
             if not self._checkout_locked_version(component, locked_version):
-                print(f"✗ {component}: checkout failed, versions.json left unchanged")
+                print(f"✗ {component}: checkout failed, release.json left unchanged")
                 continue
 
-            # Update versions.json (version := locked_version)
+            # Update release.json (version := locked_version)
             self.config.rollback(component)
             print(f"✓ {component}: Rolled back to {locked_version[:8]}")
             rollback_count += 1
@@ -1097,27 +1116,36 @@ class DeployManager:
             try:
                 self.config.save()
                 print(f"\n✅ Successfully rolled back {rollback_count} component(s)")
-                print("   Changes saved to versions.json")
+                print("   Changes saved to release.json")
                 print("   Repositories checked out to the locked versions")
                 return True
             except Exception as e:
-                print(f"\n❌ Failed to save versions.json: {e}")
+                print(f"\n❌ Failed to save release.json: {e}")
                 return False
         else:
             print("\n⚠  No components were rolled back")
             return False
 
-    def update_components(self, force: bool = False) -> bool:
+    def update_components(self, force: bool = False, release: Optional[bool] = None) -> bool:
         """
-        Update external repositories to their configured versions.
+        Update external repositories.
 
         Args:
-            force: If True, force update even with uncommitted changes
+            force: If True, pull even with uncommitted changes (never applies to a
+                release checkout, which refuses to touch a dirty repository)
+            release: True checks every pinned component out at its ``release.json``
+                pin; False pulls the latest commit of the current branch. None
+                (default) picks by mode: prod checks out the pins, dev pulls.
 
         Returns:
             True if successful, False otherwise
         """
-        print("🔄 Updating external repositories...\n")
+        if release is None:
+            from .quadlets import get_current_mode
+
+            release = get_current_mode() == "prod"
+        mode_text = "pinned versions from release.json" if release else "latest commit of each branch"
+        print(f"🔄 Updating external repositories ({mode_text})...\n")
 
         updated_count = 0
         skipped_count = 0
@@ -1156,12 +1184,15 @@ class DeployManager:
                 print("Fetching latest from remote...")
                 repo.fetch(quiet=True)
 
-                # Check if locked
-                if is_locked:
-                    print(f"🔒 {repo_name} is LOCKED to version {version[:8]}")
-                    print("   Skipping update (component is locked)")
-                    skipped_count += 1
-                    continue
+                if release:
+                    if not is_locked:
+                        print(f"⚠  {repo_name} is not pinned in release.json; pulling the latest commit instead")
+                    elif self._checkout_locked_version(repo_name, version):
+                        updated_count += 1
+                        continue
+                    else:
+                        error_count += 1
+                        continue
 
                 # Check for uncommitted changes
                 if repo.is_dirty():

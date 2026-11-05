@@ -4,14 +4,15 @@ After=network-online.target visp-net.service
 
 [Container]
 ContainerName=mongo
-Image=docker.io/library/mongo:6.0.27
+Image=docker.io/library/mongo:7.0.45
 Network=visp-net.network
 PublishPort=127.0.0.1:27017:27017
 Environment=MONGO_INITDB_ROOT_USERNAME=root
 Secret=visp_mongo_root_password,type=env,target=MONGO_INITDB_ROOT_PASSWORD
 Volume=@@PROJECT_DIR@@/mounts/mongo/data:/data/db:Z
 Volume=@@PROJECT_DIR@@/mounts/mongo/logs:/var/log/mongodb:Z
-Volume=/etc/timezone:/etc/timezone:ro
+# Seeds the local IdP test users on a fresh database (dev only — never mount in prod)
+Volume=@@PROJECT_DIR@@/mounts/mongo/initdb-dev:/docker-entrypoint-initdb.d:ro,Z
 Volume=/etc/localtime:/etc/localtime:ro
 Exec=--logpath /var/log/mongodb/mongodb.log
 

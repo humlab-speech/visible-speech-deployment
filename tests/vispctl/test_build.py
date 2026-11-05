@@ -420,3 +420,32 @@ def test_container_dependency_still_probes_local_storage():
 
     assert results["success"] == ["app"]
     assert runner.commands == [["podman", "image", "exists", "visp-apache:latest"]]
+
+
+@pytest.mark.parametrize("env_line, expected", [("WEBCLIENT_BUILD_CONFIG=visp-demo\n", "visp-demo"), ("", "visp")])
+def test_apache_build_uses_site_webclient_config(tmp_path, monkeypatch, env_line, expected):
+    """Prod bakes the webclient into the apache image, so the site's config must reach the build."""
+    from types import SimpleNamespace
+
+    import vispctl.build as build_mod
+
+    (tmp_path / ".env").write_text(env_line)
+    monkeypatch.setattr(build_mod, "get_config", lambda: SimpleNamespace(project_dir=tmp_path))
+    runner = FakeRunner()
+    bm = BuildManager(runner, build_configs=build_mod.BUILD_CONFIGS, node_configs={})
+    cfg = dict(build_mod.BUILD_CONFIGS["apache"], context=str(tmp_path), source_repo=None)
+
+    assert bm.build_image("apache", cfg) is True
+    assert f"WEBCLIENT_CONFIG={expected}" in runner.last_cmd
+
+
+def test_apache_build_rejects_invalid_site_config(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    import vispctl.build as build_mod
+
+    (tmp_path / ".env").write_text("WEBCLIENT_BUILD_CONFIG=visp;rm -rf /\n")
+    monkeypatch.setattr(build_mod, "get_config", lambda: SimpleNamespace(project_dir=tmp_path))
+    bm = BuildManager(FakeRunner(), build_configs=build_mod.BUILD_CONFIGS, node_configs={})
+    with pytest.raises(BuildError):
+        bm.build_image("apache", dict(build_mod.BUILD_CONFIGS["apache"], context=str(tmp_path), source_repo=None))

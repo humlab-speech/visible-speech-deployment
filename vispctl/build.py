@@ -43,6 +43,14 @@ def validate_build_config(build_config: str | None) -> str | None:
     return build_config
 
 
+def _site_build_config(project_dir: Path) -> str | None:
+    """``WEBCLIENT_BUILD_CONFIG`` from ``.env``: the Angular configuration this server is built with."""
+    from .env import load_env_file
+
+    env_file = project_dir / ".env"
+    return (load_env_file(env_file).get("WEBCLIENT_BUILD_CONFIG") or None) if env_file.exists() else None
+
+
 class BuildManager:
     def __init__(
         self,
@@ -150,9 +158,9 @@ class BuildManager:
         - is_blocking: True if the build should be aborted (prod mode mismatch)
         """
         from .git_repo import GitRepository
-        from .versions import ComponentConfig
+        from .versions import RELEASE_FILE, ComponentConfig
 
-        comp_config = ComponentConfig()
+        comp_config = ComponentConfig(str(get_config().project_dir / RELEASE_FILE))
         node_names = set(self.node_configs.keys())
         services_to_check = [s for s in ordered if s in node_names and s in dict(comp_config.get_components())]
 
@@ -265,8 +273,13 @@ class BuildManager:
         if target:
             cmd.extend(["--target", target])
 
-        # Pass build arguments (e.g. WEBCLIENT_BUILD)
-        for key, value in config.get("build_args", {}).items():
+        # Pass build arguments (e.g. WEBCLIENT_CONFIG)
+        build_args = dict(config.get("build_args", {}))
+        site_arg = config.get("site_build_arg")
+        site_config = _site_build_config(get_config().project_dir) if site_arg else None
+        if site_config:
+            build_args[site_arg] = validate_build_config(site_config)
+        for key, value in build_args.items():
             cmd.extend(["--build-arg", f"{key}={value}"])
 
         # Add git commit label if we're building from a git repo
@@ -354,7 +367,7 @@ class BuildManager:
 
         build_cmd_template = config.get("build_cmd", "npm run build")
         if "{config}" in build_cmd_template:
-            cfg = build_config or config.get("default_config", "production")
+            cfg = build_config or _site_build_config(project_dir) or config.get("default_config", "production")
             validate_build_config(cfg)
             build_cmd = build_cmd_template.format(config=cfg)
         else:
@@ -591,7 +604,9 @@ BUILD_CONFIGS: dict[str, dict] = {
         "dockerfile": "./docker/apache/Dockerfile",
         "image": "visp-apache",
         "target": "production",
-        "build_args": {"WEBCLIENT_BUILD": "visp-build"},
+        "build_args": {"WEBCLIENT_CONFIG": "visp"},
+        # Replaced by WEBCLIENT_BUILD_CONFIG from .env: prod bakes the site's webclient into the image.
+        "site_build_arg": "WEBCLIENT_CONFIG",
         "source_repo": "./external/webclient",  # git.commit label tracks webclient source
     },
     "session-manager": {

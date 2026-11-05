@@ -24,6 +24,9 @@ Commands:
   debug       Shorthand for 'logs --debug'
   network     Show network info and DNS status
   deploy      Manage deployments: version control, git repos, status
+  version     Installed and checked-out VISP version (and 'version mark')
+  release     Maintain release.json (pin, sync, new, check)
+  upgrade     Upgrade this server to the checked-out VISP release
   users       Manage users in MongoDB
   doctor      Project health overview: tree view + emuDB consistency checks
   session-doctor  Diagnose session containers, proxy sidecars, and socket dirs
@@ -96,6 +99,7 @@ from vispctl.quadlets import (
     render_quadlet_template,
     set_current_mode,
 )
+from vispctl.release_cli import add_release_parsers
 from vispctl.runner import Colors, Runner, color
 from vispctl.service import (
     DEFAULT_SERVICES,
@@ -663,7 +667,7 @@ def cmd_deploy_update(args):
     dm = DeployManager()
     force = getattr(args, "force", False)
 
-    success = dm.update_components(force=force)
+    success = dm.update_components(force=force, release=getattr(args, "release", None))
     if not success:
         sys.exit(1)
 
@@ -946,6 +950,7 @@ Examples:
 
     # test (automated tests, one subcommand each; see vispctl/testing/)
     add_test_parser(subparsers)
+    add_release_parsers(subparsers)
 
     # cleanup-containers
     p_cleanup = subparsers.add_parser(
@@ -1081,24 +1086,40 @@ Examples:
         "--strict", action="store_true", help="Exit with code 1 if any version drift is detected (for CI/CD)"
     )
 
-    p_deploy_lock = p_deploy_sub.add_parser("lock", help="Lock components to their current versions")
+    p_deploy_lock = p_deploy_sub.add_parser("lock", help="Pin components in release.json (same as 'release pin')")
     p_deploy_lock.set_defaults(func=cmd_deploy_lock)
     p_deploy_lock.add_argument("components", nargs="*", help="Components to lock (specify names or use --all)")
     p_deploy_lock.add_argument("--all", action="store_true", help="Lock all components")
 
-    p_deploy_unlock = p_deploy_sub.add_parser("unlock", help="Unlock components to track latest")
+    p_deploy_unlock = p_deploy_sub.add_parser("unlock", help="Remove components' pins from release.json")
     p_deploy_unlock.set_defaults(func=cmd_deploy_unlock)
     p_deploy_unlock.add_argument("components", nargs="*", help="Components to unlock (specify names or use --all)")
     p_deploy_unlock.add_argument("--all", action="store_true", help="Unlock all components")
 
-    p_deploy_rollback = p_deploy_sub.add_parser("rollback", help="Rollback components to their locked versions")
+    p_deploy_rollback = p_deploy_sub.add_parser("rollback", help="Check components out at their release.json pins")
     p_deploy_rollback.set_defaults(func=cmd_deploy_rollback)
     p_deploy_rollback.add_argument("components", nargs="*", help="Components to rollback (specify names or use --all)")
     p_deploy_rollback.add_argument("--all", action="store_true", help="Rollback all components")
 
-    p_deploy_update = p_deploy_sub.add_parser("update", help="Update external repositories to configured versions")
+    p_deploy_update = p_deploy_sub.add_parser(
+        "update", help="Clone/update external repositories (pins in prod, latest in dev)"
+    )
     p_deploy_update.set_defaults(func=cmd_deploy_update)
     p_deploy_update.add_argument("--force", action="store_true", help="Force update even with uncommitted changes")
+    p_deploy_update_how = p_deploy_update.add_mutually_exclusive_group()
+    p_deploy_update_how.add_argument(
+        "--release",
+        dest="release",
+        action="store_true",
+        default=None,
+        help="Check out the commits pinned in release.json (the default in prod mode)",
+    )
+    p_deploy_update_how.add_argument(
+        "--latest",
+        dest="release",
+        action="store_false",
+        help="Pull the latest commit of each branch (the default in dev mode)",
+    )
 
     # fix-permissions
     p_fix = subparsers.add_parser(

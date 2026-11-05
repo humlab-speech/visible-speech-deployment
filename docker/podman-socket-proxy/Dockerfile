@@ -1,7 +1,14 @@
-FROM docker.io/node:22.22.3-alpine3.22
+FROM docker.io/library/node:24.22.2-alpine3.24
 
 LABEL maintainer="Visible Speech <visp@umu.se>"
 LABEL description="Body-inspecting Podman socket proxy for session-manager. Enforces image allowlist, mount path allowlist, and capability allowlist on container create calls."
+
+# Patch the Alpine packages past the tag's build date, and drop npm and yarn:
+# the proxy has no dependencies, and their bundled node_modules are only attack
+# surface (and scanner findings).
+RUN apk upgrade --no-cache && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+           /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 WORKDIR /app
 COPY proxy.js .

@@ -9,7 +9,6 @@ Image=localhost/visp-tratt:latest
 Network=tratt-net.network
 Volume=@@PROJECT_DIR@@/mounts/tratt/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z
 Volume=@@PROJECT_DIR@@/mounts/tratt/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z
-Volume=/etc/timezone:/etc/timezone:ro
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Security hardening
