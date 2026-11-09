@@ -161,7 +161,7 @@ class DeployManager:
         component_to_image = {
             "session-manager": "visp-session-manager:latest",
             "wsrng-server": "visp-wsrng-server:latest",
-            "emu-webapp-server": "visp-emu-webapp-server:latest",
+            "annotation-server": "visp-annotation-server:latest",
             "artic": "visp-artic:latest",
             "container-agent": "visp-jupyter-session:latest",  # bundled in session image
             "WhisperVault": "visp-whisperx:latest",

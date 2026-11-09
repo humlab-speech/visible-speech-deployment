@@ -139,7 +139,7 @@ def normalize_repository_ownership(project_dir: Path) -> bool:
     """Re-own the repository tree to the host repository owner.
 
     Every container that writes into ``mounts/repositories`` (session-manager,
-    emu-webapp-server, wsrng-server, apache) pins its own service UID/GID to the
+    annotation-server, wsrng-server, apache) pins its own service UID/GID to the
     host repo owner with rootless ``--userns=keep-id`` (configured per quadlet), so
     all of them write as one host identity. ``podman unshare`` enters the default
     rootless namespace where container UID/GID 0 *is* that host owner, hence
@@ -174,10 +174,10 @@ def normalize_repository_ownership(project_dir: Path) -> bool:
 # — lands its writes under the single shared host identity. The write probe below
 # reproduces that exact keep-id mapping.
 WSRNG_IMAGE = "localhost/visp-wsrng-server:latest"
-EMU_WEBAPP_IMAGE = "localhost/visp-emu-webapp-server:latest"
+ANNOTATION_SERVER_IMAGE = "localhost/visp-annotation-server:latest"
 REPOSITORY_WRITERS = [
     (WSRNG_IMAGE, "wsrng-server", 1000, 1000),
-    (EMU_WEBAPP_IMAGE, "emu-webapp-server", 1000, 1000),
+    (ANNOTATION_SERVER_IMAGE, "annotation-server", 1000, 1000),
 ]
 
 
@@ -894,7 +894,7 @@ def run_install(
         print("  Mongo mount ownership/permissions already normalized (or paths missing)")
 
     # Re-own the repository tree to the host repository owner that every writer's
-    # keep-id mapping resolves to (session-manager, wsrng-server, emu-webapp-server,
+    # keep-id mapping resolves to (session-manager, wsrng-server, annotation-server,
     # apache), so they can all write each other's files. Migrates any foreign-owned
     # (sub-UID) data left by older pre-keep-id builds.
     if normalize_repository_ownership(project_dir):

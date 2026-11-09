@@ -1,21 +1,24 @@
 [Unit]
-Description=EMU-webapp Server (Production)
+Description=VISP annotation server (EMU-webApp protocol, used by Artic and TRATT) (Production)
 After=network-online.target visp-net.service mongo.service
 Requires=mongo.service
 
 [Container]
-ContainerName=emu-webapp-server
-Image=localhost/visp-emu-webapp-server:latest
+ContainerName=annotation-server
+Image=localhost/visp-annotation-server:latest
 Exec=npm start
 Network=visp-net.network
-# Not published on the host: Apache reaches it as emu-webapp-server:17890 on visp-net.
-EnvironmentFile=@@PROJECT_DIR@@/mounts/emu-webapp-server/.env
+# Not published on the host: Apache reaches it as annotation-server:17890 on visp-net.
+EnvironmentFile=@@PROJECT_DIR@@/mounts/annotation-server/.env
 Environment=LOG_LEVEL=INFO
 Secret=visp_mongo_uri,type=env,target=MONGO_URI
 Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
-Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
+# Websocket origins the server accepts: Artic and TRATT, whose vhosts both proxy
+# the websocket and /file to this server. Audio URLs are built on the origin a
+# connection came from, so each app fetches audio from its own host.
+Environment=ALLOWED_ORIGINS=https://artic.@@BASE_DOMAIN@@,https://@@TRATT_SUBDOMAIN@@.@@BASE_DOMAIN@@
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
-Volume=@@PROJECT_DIR@@/mounts/emu-webapp-server/logs:/home/node/app/logs:Z
+Volume=@@PROJECT_DIR@@/mounts/annotation-server/logs:/home/node/app/logs:Z
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Pin this container's real service identity (node = uid 1000 / gid 1000 in the

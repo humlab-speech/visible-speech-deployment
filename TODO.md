@@ -25,7 +25,7 @@
 - [ ] **Broken GitLab-clone calls in session-manager** (found while doing REVIEW-FIX-PLAN D4): the routes
   `/api/session/user` and `/api/session/new/user` (token-gated, registered unconditionally) still call
   `session.cloneProjectFromGit()`, which no longer exists anywhere (GitLab integration was removed
-  upstream in emu-webapp-server/container-agent). A hit today throws a TypeError into the async IIFE →
+  upstream in annotation-server/container-agent). A hit today throws a TypeError into the async IIFE →
   unhandled rejection, no response. Decision: drop the call (clone integration is gone — likely right)
   or delete the routes if nothing calls them; needs caller evidence from wherever these are invoked.
 - [x] **31 zombie Karma specs in webclient** — RESOLVED 2026-10-07: owner chose delete; all 38

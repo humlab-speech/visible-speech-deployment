@@ -10,7 +10,7 @@ Dockerfiles/Containerfiles define **how to build** container images. They are pa
 
 - `apache/` - Apache + Shibboleth + PHP web server
 - `artic/` - artic build container (multi-stage)
-- `emu-webapp-server/` - EMU backend server
+- `annotation-server/` - EMU backend server
 - `session-manager/` - Session management + RStudio/Jupyter templates
 - `wsrng-server/` - WebSocket recording server
 - `tratt/` - TRATT annotation tool (formerly OCTRA)

@@ -44,7 +44,7 @@ visible-speech-deployment/
 │   ├── session-manager/      # humlab-speech/session-manager
 │   ├── webclient/            # humlab-speech/webclient
 │   ├── wsrng-server/         # humlab-speech/wsrng-server
-│   ├── emu-webapp-server/    # humlab-speech/emu-webapp-server
+│   ├── annotation-server/    # humlab-speech/annotation-server (was emu-webapp-server)
 │   ├── artic/               # humlab-speech/artic
 │   ├── container-agent/      # humlab-speech/container-agent
 │   └── WhisperVault/         # humlab-speech/WhisperVault (with whisperx/ submodule)
@@ -82,8 +82,8 @@ no Apache rebuild needed for changes). Overview:
 |-----------|------------|------------|---------|
 | `BASE_DOMAIN` | `vhost.conf` | (serves directly) | Main webclient (Angular SPA) + PHP API at `/api/v1/` |
 | `app.BASE_DOMAIN` | `app.vhost.conf` | `session-manager:80` | Session iframe — webclient loads Jupyter sessions here (`?token=...`) |
-| `artic.BASE_DOMAIN` | `artic.vhost.conf` | `artic/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
-| `tratt.BASE_DOMAIN` | `tratt.vhost.conf` | `tratt/` | TRATT transcription tool (formerly OCTRA; subdomain prefix from `TRATT_SUBDOMAIN` in `.env`) |
+| `artic.BASE_DOMAIN` | `artic.vhost.conf` | `artic/` + `annotation-server:17890/file` | EMU web annotation interface |
+| `tratt.BASE_DOMAIN` | `tratt.vhost.conf` | `tratt/` + `annotation-server:17890` (`/annotation-ws`, `/file`) | TRATT transcription tool (formerly OCTRA; subdomain prefix from `TRATT_SUBDOMAIN` in `.env`) |
 | `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
 | `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
 | `mongo.BASE_DOMAIN` | `mongo.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
@@ -110,7 +110,7 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
   `docs/MATOMO_INTEGRATION.md`.
 - **matomo-db** (optional) — MariaDB database for Matomo (`docker.io/library/mariadb:10.11`).
   Data stored in `mounts/matomo-db/mysql/`.
-- **emu-webapp-server** — EMU backend
+- **annotation-server** — EMU-webApp websocket protocol server (bundle list, bundles, saves, audio) shared by Artic and TRATT; named emu-webapp-server before VISP 1.2.0
 - **artic** — EMU web interface
 - **tratt** — Transcription tool (TRATT, continued development of OCTRA)
 - **wsrng-server** — Web Speech Recorder server
@@ -782,7 +782,7 @@ localhost/visp-jupyter-session:latest   # Unified session image (Jupyter + R + c
 localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isolation
 localhost/visp-podman-socket-proxy:latest  # Body-inspecting socket proxy between session-manager and Podman
 localhost/visp-artic:latest
-localhost/visp-emu-webapp-server:latest
+localhost/visp-annotation-server:latest
 localhost/visp-tratt:latest
 localhost/visp-wsrng-server:latest
 localhost/visp-whisperx:latest          # WhisperVault main container
@@ -920,7 +920,8 @@ systemd-artic-net     — artic isolation network (apache + artic only, Internal
 TRATT and artic are static web servers that only Apache talks to, so each sits on its
 own internal network shared with Apache alone: a compromised frontend can't reach MongoDB,
 session-manager or the internet. Their backends are reached by the *browser* through
-Apache (TRATT → PHP API / webclient WebSocket, artic → emu-webapp-server), never by the
+Apache (both → annotation-server, on their own host: artic at `/` and `/file`, TRATT at
+`/annotation-ws` and `/file`), never by the
 containers. Give any new static-frontend container the same treatment.
 
 WhisperVault does **not** use a Podman network — it runs with `Network=none` and
@@ -1123,8 +1124,8 @@ to `/var/log/visp-migrate/`; `status` shows progress):
   the host proxy; reach it through an SSH tunnel plus a hosts-file entry, so SWAMID
   logins work under the real domain while everyone else still gets the old system.
 
-In prod, `mongo` and `emu-webapp-server` are **not** published on the host: every
-consumer reaches them over `visp-net` (`mongo:27017`, `emu-webapp-server:17890`), and
+In prod, `mongo` and `annotation-server` are **not** published on the host: every
+consumer reaches them over `visp-net` (`mongo:27017`, `annotation-server:17890`), and
 `visp.py` uses `podman exec`. Only Apache's `8081` is published.
 
 ---
@@ -1203,7 +1204,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | version-pinned ⚠ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
 | `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | version-pinned ⚠ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
 | `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | version-pinned ⚠ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `external/annotation-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | version-pinned ⚠ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | node version-pinned ⚠, debian date-pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
 | `external/wsrng-server/Dockerfile` | `node:24.16.0-alpine3.22` | version-pinned ⚠ | Node 24 = Active LTS (moved off EOL Node 20). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 

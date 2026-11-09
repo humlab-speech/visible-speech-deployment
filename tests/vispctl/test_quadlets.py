@@ -116,29 +116,29 @@ def test_multiple_services_classified_correctly(tmp_path: Path) -> None:
 # ── setup_service_env_files ────────────────────────────────────────────────────
 
 
-def test_setup_creates_emu_env_from_example(tmp_path: Path, capsys) -> None:
-    emu_example = tmp_path / "external" / "emu-webapp-server" / ".env-example"
+def test_setup_creates_annotation_env_from_example(tmp_path: Path, capsys) -> None:
+    emu_example = tmp_path / "external" / "annotation-server" / ".env-example"
     emu_example.parent.mkdir(parents=True)
     emu_example.write_text("NORMAL_KEY=value\nMONGO_URI=secret\n")
 
     setup_service_env_files(tmp_path)
 
-    target = tmp_path / "mounts" / "emu-webapp-server" / ".env"
+    target = tmp_path / "mounts" / "annotation-server" / ".env"
     assert target.exists()
     content = target.read_text()
     assert "NORMAL_KEY=value" in content
     assert "MONGO_URI" not in content  # stripped as a secret key
 
 
-def test_setup_skips_emu_env_if_already_exists(tmp_path: Path, capsys) -> None:
-    emu_env = tmp_path / "mounts" / "emu-webapp-server" / ".env"
-    emu_env.parent.mkdir(parents=True)
-    emu_env.write_text("existing content")
+def test_setup_skips_annotation_env_if_already_exists(tmp_path: Path, capsys) -> None:
+    annotation_env = tmp_path / "mounts" / "annotation-server" / ".env"
+    annotation_env.parent.mkdir(parents=True)
+    annotation_env.write_text("existing content")
 
     setup_service_env_files(tmp_path)
 
     # File should be unchanged
-    assert emu_env.read_text() == "existing content"
+    assert annotation_env.read_text() == "existing content"
     out = capsys.readouterr().out
     assert "already exists" in out
 
@@ -212,7 +212,7 @@ def test_show_quadlet_table_passes_dirs_in_declared_order(monkeypatch, tmp_path)
 def _proj(tmp_path, emu_example=True, wsrng_example=True):
     proj = tmp_path / "proj"
     for svc, has_example in (
-        ("emu-webapp-server", emu_example),
+        ("annotation-server", emu_example),
         ("wsrng-server", wsrng_example),
     ):
         ext = proj / "external" / svc
@@ -225,16 +225,16 @@ def _proj(tmp_path, emu_example=True, wsrng_example=True):
 def test_setup_env_files_never_clobbers_existing_env(tmp_path, capsys):
     """R2 M10: printing 'already exists' and then overwriting anyway survived."""
     proj = _proj(tmp_path)
-    emu_env = proj / "mounts" / "emu-webapp-server"
-    emu_env.mkdir(parents=True)
-    (emu_env / ".env").write_text("OPERATOR-DATA\n")
+    annotation_env = proj / "mounts" / "annotation-server"
+    annotation_env.mkdir(parents=True)
+    (annotation_env / ".env").write_text("OPERATOR-DATA\n")
     (proj / "external" / "wsrng-server" / ".env").write_text("OPERATOR-DATA\n")
 
     setup_service_env_files(proj)
 
     out = capsys.readouterr().out
     assert out.count("already exists") == 2
-    assert (emu_env / ".env").read_text() == "OPERATOR-DATA\n"
+    assert (annotation_env / ".env").read_text() == "OPERATOR-DATA\n"
     assert (proj / "external" / "wsrng-server" / ".env").read_text() == "OPERATOR-DATA\n"
 
 
@@ -243,6 +243,6 @@ def test_setup_env_files_warns_per_service_when_example_missing(tmp_path, capsys
     proj = _proj(tmp_path, emu_example=False, wsrng_example=True)
     setup_service_env_files(proj)
     out = capsys.readouterr().out
-    assert "emu-webapp-server/.env-example not found" in out
+    assert "annotation-server/.env-example not found" in out
     assert "Created external/wsrng-server/.env" in out
     assert "wsrng-server/.env-example not found" not in out

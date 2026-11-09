@@ -14,7 +14,7 @@ Containers are ephemeral — data inside them is lost when containers are recrea
 
 - `apache/` - Apache logs and runtime data
 - `mongo/` - **MongoDB database** (persistent storage!)
-- `emu-webapp-server/` - EMU server logs and config
+- `annotation-server/` - EMU server logs and config
 - `api-logs/` - PHP API logs (webapi.log, webapi.debug.log, php_error.log)
 - `session-manager/` - Session manager logs and data
 - `repositories/` - **User repositories and project data**

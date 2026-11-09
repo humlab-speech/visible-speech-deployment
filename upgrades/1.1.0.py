@@ -20,7 +20,14 @@ from vispctl.upgrade import Step
 MONGO_7 = "docker.io/library/mongo:7.0.45"
 
 # Everything that talks to MongoDB, stopped while its data directory changes.
-MONGO_USERS = ["apache", "session-manager", "wsrng-server", "emu-webapp-server"]
+MONGO_USERS = ["apache", "session-manager", "wsrng-server", "annotation-server"]
+
+# Units of MongoDB users that a later release renamed. This module runs from the
+# newest checkout, whose service registry no longer knows them, so ctx.stop()
+# would skip them without a word: they are stopped by unit name instead.
+# (emu-webapp-server became annotation-server in 1.2.0, whose pre_apply step has
+# normally stopped it already; this is the backstop.)
+LEGACY_MONGO_UNITS = ["emu-webapp-server.service"]
 
 
 def _data_dir(ctx):
@@ -58,6 +65,8 @@ def _mongo_7(ctx):
     users = MONGO_USERS + (["mongo-express"] if ctx.mode == "dev" else [])
     ctx.info(f"stopping {', '.join(users)} and mongo")
     ctx.stop(*users, "mongo")
+    for unit in LEGACY_MONGO_UNITS:
+        ctx.runner.systemctl("stop", unit)
     fcv = mongo_upgrade.hop(ctx, MONGO_7, _data_dir(ctx))
     ctx.info(f"data directory is at FCV {fcv}; the converge starts mongo 7.0 and everything else")
 

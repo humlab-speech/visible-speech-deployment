@@ -621,10 +621,10 @@ BUILD_CONFIGS: dict[str, dict] = {
         "image": "visp-artic",
         "target": "production",
     },
-    "emu-webapp-server": {
-        "context": "./external/emu-webapp-server",
+    "annotation-server": {
+        "context": "./external/annotation-server",
         "dockerfile": "docker/Dockerfile",
-        "image": "visp-emu-webapp-server",
+        "image": "visp-annotation-server",
     },
     "tratt": {
         "context": "./docker/tratt",

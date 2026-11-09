@@ -1,5 +1,8 @@
 {
   "version": "2.0.0",
+  "visp": {
+    "serverUrl": "/annotation-ws"
+  },
   "tratt": {
     "database": {
       "name": "tratt"
