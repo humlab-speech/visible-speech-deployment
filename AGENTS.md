@@ -111,6 +111,13 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
 - **matomo-db** (optional) — MariaDB database for Matomo (`docker.io/library/mariadb:10.11`).
   Data stored in `mounts/matomo-db/mysql/`.
 - **annotation-server** — EMU-webApp websocket protocol server (bundle list, bundles, saves, audio) shared by Artic and TRATT; named emu-webapp-server before VISP 1.2.0
+  - Serves only bundles in the user's own bundle list (`bundlelists`, written by *Assign
+    annotation tasks*); audio URLs are built on the connecting app's origin.
+  - **TRATT launch:** the webclient's *Launch Tratt* dialog asks for an annotation level
+    (unlinked SEGMENT levels only; new projects get `Transcription`), then iframes
+    `tratt.<host>/?workspace=visp&projectId=<id>&level=<name>`. TRATT connects to
+    `wss://tratt.<host>/annotation-ws` (`visp.serverUrl` in `mounts/tratt/appconfig.json`)
+    and writes only that level. session-manager has no TRATT commands any more.
 - **artic** — EMU web interface
 - **tratt** — Transcription tool (TRATT, continued development of OCTRA)
 - **wsrng-server** — Web Speech Recorder server
@@ -121,7 +128,6 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
   - Single source of truth: `external/webclient/api/api.php` (~1700 lines)
   - Accessed at `/api/v1/...` routes through Apache `Alias /api /var/www/html/api` + RewriteRule
   - Also handles `?f=session` session validation (called by session-manager)
-  - Includes file download handler (`getFileDownload`, `getOctraTask`) for TRATT (handler names still say "Octra" — internal, pre-rename)
   - Uses MongoDB-based `userHasProjectAuthorization()` for project access checks
   - Communicates with session-manager via HTTP to manage sessions
   - Application logs written to `/var/log/api/webapi.log` and `/var/log/api/webapi.debug.log`
