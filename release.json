@@ -1,9 +1,9 @@
 {
   "_comment": "VISP release manifest. 'components' pins each external repository to a commit ('./visp.py release pin'); 'images' and 'vendored' mirror the pins in quadlets/ and Dockerfiles ('./visp.py release sync'). './visp.py release check' validates it.",
-  "visp": "1.1.0",
+  "visp": "1.1.1",
   "components": {
     "webclient": {
-      "ref": "a417de108eaf9e0a1b84b3b622a965d3fedbd607"
+      "ref": "b42678185e97f749b52f90be8e94a7e9225ac501"
     },
     "container-agent": {
       "ref": "d2624732d7db01d815b4389e7fbff44ade99ce94"
