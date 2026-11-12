@@ -35,7 +35,7 @@
   "vendored": {
     "tratt": {
       "repo": "https://github.com/humlab-speech/TRATT.git",
-      "ref": "59f9c1f7777ab68e92e10e88ef20cb005ee8b3a4",
+      "ref": "b4c4b2cadcafcb701b9ee6847c350757f2f98821",
       "pinned_in": "docker/tratt/Dockerfile"
     }
   }

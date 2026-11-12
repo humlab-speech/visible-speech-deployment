@@ -10,8 +10,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Clone TRATT (continued development of OCTRA), pinned to a specific commit
-RUN git clone --branch humlab-3.0.1 --depth 1 https://github.com/humlab-speech/TRATT.git . && \
-    git checkout 59f9c1f7777ab68e92e10e88ef20cb005ee8b3a4
+RUN git clone --branch humlab-3.3.2 --depth 1 https://github.com/humlab-speech/TRATT.git . && \
+    git checkout b4c4b2cadcafcb701b9ee6847c350757f2f98821
 
 # Install dependencies (ci = exact lockfile, reproducible build).
 # --legacy-peer-deps: upstream's package-lock.json carries non-optional peer
@@ -22,6 +22,13 @@ RUN git clone --branch humlab-3.0.1 --depth 1 https://github.com/humlab-speech/T
 # keeps the install exact-from-lockfile, it only stops npm auto-resolving the
 # unlisted peers against the live registry.
 RUN npm ci --legacy-peer-deps
+
+# Shim for TRATT build.js: it execs ./node_modules/nx/bin/nx.js, but nx@22 moved
+# its entry to dist/bin/nx.js (upstream bug: TRATT CI never runs the release build).
+# The existence guard keeps this inert on nx <22 (e.g. TRATT 3.0.1's nx 20.8.0,
+# where bin/nx.js exists): without it the ln -sf would replace that real file
+# with a dangling link and break a build that works today.
+RUN if [ ! -e node_modules/nx/bin/nx.js ]; then mkdir -p node_modules/nx/bin && ln -s ../dist/bin/nx.js node_modules/nx/bin/nx.js; fi
 
 # Build the release: production build that strips the bundled appconfig.json,
 # so the deployment's mounted config (mounts/tratt/appconfig.json) is the
