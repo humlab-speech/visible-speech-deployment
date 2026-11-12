@@ -392,7 +392,13 @@ def _converge(ctx: UpgradeContext) -> None:
     from .service import get_runtime_services
     from .service_manager import ServiceManager
 
-    ServiceManager(ctx.runner, get_runtime_services(ctx.project_dir)).start("all")
+    failed = ServiceManager(ctx.runner, get_runtime_services(ctx.project_dir)).start("all")
+    if failed:
+        # start() reports the units that never came up. Ignoring that list let the
+        # upgrade record its version and print "✓ installed" over a box with services
+        # down — and the next run then skips every step, because the state file says
+        # the upgrade already happened.
+        ctx.fail(f"Services did not come up after the converge: {', '.join(failed)}")
 
 
 @dataclass
