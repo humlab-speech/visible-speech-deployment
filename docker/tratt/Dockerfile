@@ -44,5 +44,11 @@ RUN mkdir -p /usr/local/apache2/htdocs/media
 # Copy the built app
 COPY --from=build /app/dist/apps/tratt /usr/local/apache2/htdocs/
 
+# The app is built with --deploy-url=/assets/ so hashed fonts are requested as
+# /assets/media/*.woff*, but the build emits them under dist .../media/. Without
+# this link the SPA fallback answers font requests with index.html and Chromium
+# logs "downloadable font: rejected by sanitizer" (silently degrading to fallback fonts).
+RUN ln -s ../media /usr/local/apache2/htdocs/assets/media
+
 # Copy the demo file
 COPY demo_file.wav /usr/local/apache2/htdocs/media/demo_file.wav
