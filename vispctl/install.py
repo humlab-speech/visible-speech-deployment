@@ -532,8 +532,8 @@ def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> No
     """
     OCTRA was renamed to TRATT. While the deployment serves TRATT under a new
     subdomain (TRATT_SUBDOMAIN != octra), copy the static redirect vhost for the
-    old octra.* name into both vhost directories (old links and the not-yet
-    renamed webclient keep working). When TRATT_SUBDOMAIN == octra (DNS kept
+    old octra.* name into both vhost directories (old links and bookmarks keep
+    working). When TRATT_SUBDOMAIN == octra (DNS kept
     the old name) the redirect vhost would shadow the live vhost and loop —
     remove it instead. The vhost itself uses ${TRATT_SUBDOMAIN}, resolved by
     Apache from the .env EnvironmentFile like every other vhost.
