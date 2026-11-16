@@ -1,6 +1,7 @@
 """Tests for vispctl.upgrade — plan order, resume after failure, manual steps, MIN_FROM."""
 
 import json
+import subprocess
 import textwrap
 from pathlib import Path
 
@@ -256,3 +257,97 @@ def test_invalid_modules_are_rejected(tmp_path, steps, message):
     project = _project(tmp_path, "1.1.0", "1.0.0", {"1.1.0": _module("1.1.0", steps)})
     with pytest.raises(ConfigError, match=message):
         discover_upgrades(project)
+
+
+# --- converge: a box where a unit never came up must not be recorded as upgraded ---
+
+
+REAL_CONVERGE = up._converge  # captured before the autouse fixture stubs the step away
+
+
+class _StartFails:
+    """Runner double: 'systemctl start' fails, every other systemctl call succeeds."""
+
+    def __init__(self):
+        self.calls = []
+
+    def systemctl(self, *args):
+        self.calls.append(args)
+        code = 1 if args[0] == "start" else 0
+        return subprocess.CompletedProcess(["systemctl", *args], code, "", "boom: unit failed")
+
+    def unit_is_active(self, name):
+        return False
+
+
+class _StartSucceeds(_StartFails):
+    """…and the unit is active afterwards."""
+
+    def unit_is_active(self, name):
+        return True
+
+    def run(self, *args, **kwargs):
+        # The stale-image probe ImageManager runs for an already-active unit.
+        return subprocess.CompletedProcess(list(args), 1, "", "")
+
+    def run_quiet(self, cmd, **kwargs):
+        # Same probe, podman-inspect form: non-zero = "nothing to compare", not stale.
+        return 1, "", ""
+
+
+def _converge_ctx(tmp_path, monkeypatch, runner, service_names):
+    """A real UpgradeContext over a real ServiceManager, with the install step stubbed.
+
+    Stubbed: run_install (writes quadlets/secrets), get_config (reads .env), the
+    service list. Not stubbed: UpgradeContext.fail, ServiceManager.start, and the
+    converge call site that consumes its return value.
+    """
+    import types
+
+    import vispctl.config
+    import vispctl.install
+    import vispctl.service
+    from vispctl.release import Manifest
+    from vispctl.service import Service
+    from vispctl.upgrade import UpgradeContext
+
+    monkeypatch.setattr(vispctl.install, "run_install", lambda **kwargs: None)
+    monkeypatch.setattr(vispctl.config, "get_config", lambda: types.SimpleNamespace(systemd_dir=tmp_path / "systemd"))
+    monkeypatch.setattr(vispctl.service, "resolve_services", lambda arg, pd: [])
+    monkeypatch.setattr(vispctl.service, "get_disabled_optional_services", lambda pd: [])
+    monkeypatch.setattr(
+        vispctl.service,
+        "get_runtime_services",
+        lambda pd: [Service(n, "container", f"{n}.container") for n in service_names],
+    )
+    project = _project(tmp_path, "1.2.0", "1.1.1", {})
+    return UpgradeContext(
+        project_dir=project,
+        runner=runner,
+        mode="dev",
+        state=InstallState.load(project),
+        manifest=Manifest.load(project),
+        from_version="1.1.1",
+    )
+
+
+def test_converge_refuses_when_a_service_never_comes_up(tmp_path, monkeypatch):
+    """start() returns the units that failed — converge must act on that list.
+
+    Before the guard the list was discarded, so run_upgrade recorded the new version
+    and printed '✓ VISP <target> is installed' over a box whose services were down.
+    The next run then skips every step, because the state file says it already ran.
+    """
+    ctx = _converge_ctx(tmp_path, monkeypatch, _StartFails(), ["tratt"])
+
+    with pytest.raises(UpgradeError, match="tratt"):
+        REAL_CONVERGE(ctx)
+
+    assert ("start", "tratt.service") in ctx.runner.calls, "the unit was supposed to be started"
+
+
+def test_converge_passes_when_every_service_comes_up(tmp_path, monkeypatch):
+    """The guard must not cry wolf: units that come up converge quietly."""
+    ctx = _converge_ctx(tmp_path, monkeypatch, _StartSucceeds(), ["tratt"])
+
+    REAL_CONVERGE(ctx)  # no exception
