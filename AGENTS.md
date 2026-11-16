@@ -46,6 +46,7 @@ visible-speech-deployment/
 │   ├── wsrng-server/         # humlab-speech/wsrng-server
 │   ├── annotation-server/    # humlab-speech/annotation-server (was emu-webapp-server)
 │   ├── artic/               # humlab-speech/artic
+│   ├── TRATT/                # humlab-speech/TRATT (dev: watch-built by tratt-build)
 │   ├── container-agent/      # humlab-speech/container-agent
 │   └── WhisperVault/         # humlab-speech/WhisperVault (with whisperx/ submodule)
 │
@@ -119,7 +120,10 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
     `wss://tratt.<host>/annotation-ws` (`visp.serverUrl` in `mounts/tratt/appconfig.json`)
     and writes only that level. session-manager has no TRATT commands any more.
 - **artic** — EMU web interface
-- **tratt** — Transcription tool (TRATT, continued development of OCTRA)
+- **tratt** — Transcription tool (TRATT, continued development of OCTRA); httpd serving the
+  static app. Source in `external/TRATT/`. In dev it serves the `tratt-build` watch output
+  instead of the baked app — see "Dev vs Prod: TRATT watch build" below.
+- **tratt-build** (dev only) — `nx build tratt --watch` over `external/TRATT`; not a server.
 - **wsrng-server** — Web Speech Recorder server
 - **whisperx** (optional) — Speech-to-text transcription service
 
@@ -217,6 +221,37 @@ queue does **not**: an item flipped to `processing` when the process dies stays 
 ⚠️ **`./visp.py deploy status` will report session-manager as needing a rebuild** whenever
 you commit source, because it compares the image's `git.commit` label against HEAD. In dev
 that label no longer describes the running code — the bind mount does.
+
+### Dev vs Prod: TRATT watch build (important!)
+
+TRATT is an Angular (Nx) app that httpd serves as static files. Prod bakes a release
+build into `visp-tratt` (`docker/tratt/Dockerfile`, build context `external/TRATT`,
+ignore rules in `docker/tratt/Dockerfile.dockerignore`).
+
+**Dev mode** adds a second container, `tratt-build` (`quadlets/dev/tratt-build.container`,
+plain `node:24.22.2`, `Network=none`), which runs
+`nx build tratt --configuration=development --watch` over the bind-mounted
+`external/TRATT`. The dev tratt quadlet mounts its output over htdocs:
+```
+Volume=…/external/TRATT/dist/apps/tratt:/usr/local/apache2/htdocs:ro,z
+```
+Save a file → incremental rebuild (seconds; `./visp.py logs tratt-build -f`) → reload the
+browser. No image rebuild, no restart. Same httpd, httpd.conf, appconfig and Apache vhost
+as prod; only the Angular configuration differs (`development`: unminified, source maps,
+`environment.dev.ts`).
+
+- **Dependencies:** `./visp.py npm tratt -- ci` (adds `--legacy-peer-deps`, like the
+  Dockerfile) installs `external/TRATT/node_modules` through the same Node image —
+  never host npm (see session-manager above for why). Then `./visp.py restart tratt-build`.
+- **Deployment-owned files live outside htdocs:** `mounts/tratt/` is mounted at
+  `/usr/local/apache2/visp` and `httpd.conf` aliases `/config/appconfig.json` and
+  `/media/demo_file.wav` there. Never mount a file *inside* htdocs: Angular empties the
+  output directory on every watch start (it keeps the directory itself, so the htdocs
+  mount survives), which would detach a nested mount.
+- The tratt quadlet's `ExecStartPre` creates the output directory, since podman refuses a
+  missing bind-mount source.
+- `deploy status` compares the `visp-tratt` image label with `external/TRATT` HEAD, so in
+  dev it reports a rebuild as needed whenever you commit — as for session-manager.
 
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
@@ -694,6 +729,25 @@ When adding a new service or renaming an existing one, update **all** of the fol
 
 ## VISP releases and upgrades
 
+### Required deployment workflow
+
+**Always package deployment updates as a new VISP release**, even when the only
+change is a small webclient or other single-component update. Treat requests such
+as "update the webclient on the demo server" as requests to release and deploy a
+new VISP version.
+
+Use the established `./visp.py` release workflow and scripts: prepare the intended
+component commits and any upgrade steps, run `./visp.py release create <x.y.z>` and
+`./visp.py release check`, and publish the resulting manifest, release commit and
+version tag when authorized. Deploy the tagged release through
+`./visp.py upgrade --dry-run` followed by `./visp.py upgrade`, so the installed
+version and upgrade progress are recorded. Keep every component, image and
+vendored dependency pinned in `release.json`.
+
+**Only update an individual service outside this workflow when the user explicitly
+requests a standalone service update without a VISP release.** Do not substitute
+a component pull, pin change, rebuild and restart for the release workflow.
+
 A **VISP release** is a version `x.y.z`: a tag `vX.Y.Z` on this repository plus
 `release.json`, the manifest of everything that goes into it. The repository commit
 already fixes the quadlets, our Dockerfiles and their base images; `release.json` adds:
@@ -703,7 +757,7 @@ already fixes the quadlets, our Dockerfiles and their base images; `release.json
 | `visp` | the release version | `./visp.py release new x.y.z` |
 | `components` | the commit of every repo under `external/` | `./visp.py release pin <name>` / `--all` (`--remote`: tip of origin's default branch) |
 | `images` | every third-party image, as the quadlets pin it | `./visp.py release sync`; `images update` updates it too |
-| `vendored` | software pinned elsewhere (TRATT, in `docker/tratt/Dockerfile`) | `./visp.py release sync` |
+| `vendored` | software a Dockerfile clones at a fixed commit (none since 1.2.0, when TRATT became the `TRATT` component) | `./visp.py release sync` |
 
 `images` and `vendored` duplicate pins whose source of truth is the quadlet or Dockerfile —
 so the manifest is readable on its own — and `tests/vispctl/test_release.py` fails when
@@ -1197,7 +1251,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
 | `docker/apache/Dockerfile` | `debian:trixie-20261027` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (a cached build fetches nothing). Node 24 (NodeSource) and Composer are only in the `build-tools` stage (webclient build, dev image), never in production. Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `docker/tratt/Dockerfile` | `node:24.22.2` | version-pinned ⚠ | Build stage only. [hub.docker.com/_/node](https://hub.docker.com/_/node/tags) |
+| `docker/tratt/Dockerfile` | `node:24.22.2` | version-pinned ⚠ | Build stage only; builds `external/TRATT`. Keep in step with `quadlets/dev/tratt-build.container` and `NPM_SERVICES` in `vispctl/npm.py`. [hub.docker.com/_/node](https://hub.docker.com/_/node/tags) |
 | `docker/tratt/Dockerfile` | `httpd:2.4.69` + `apt-get upgrade` | version-pinned ⚠ | Runtime. Check [httpd.apache.org/security](https://httpd.apache.org/security/vulnerabilities_24.html) and [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:24.22.2-alpine3.24` | version-pinned ⚠ | Builder stage for container-agent only. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.24) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.3` | version-pinned ⚠ | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
