@@ -64,13 +64,6 @@ def project(tmp_path):
         "visp": "1.0.0",
         "components": {n: {"ref": s} for n, s in shas.items()},
         "images": {"mongo": MONGO},
-        "vendored": {
-            "tratt": {
-                "repo": "https://github.com/example/TRATT.git",
-                "ref": "a" * 40,
-                "pinned_in": "docker/tratt/Dockerfile",
-            }
-        },
     }
     (proj / "release.json").write_text(json.dumps(manifest, indent=2) + "\n")
     _git(proj, "add", ".")

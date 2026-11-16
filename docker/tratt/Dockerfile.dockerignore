@@ -1,0 +1,13 @@
+# Build context: external/TRATT (see "tratt" in vispctl/build.py).
+# Dependencies and outputs are produced inside the image; the dev watch build
+# (tratt-build) leaves its own in the checkout, which must not leak in.
+node_modules
+dist
+tmp
+temp
+.nx
+.angular
+.vscode
+.idea
+coverage
+apps/tratt/src/app/build-info.ts

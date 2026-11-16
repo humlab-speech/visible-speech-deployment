@@ -15,7 +15,7 @@ the repository alone does not:
     so the manifest is readable on its own; ``release check`` (and the test
     suite) fail when it disagrees with ``quadlets/``.
 ``vendored``
-    Software pinned somewhere else, e.g. TRATT inside ``docker/tratt/Dockerfile``,
+    Software pinned somewhere else, e.g. a repository a Dockerfile clones at a fixed commit,
     with the same consistency check.
 
 What a server has installed is recorded in ``mounts/visp-state.json`` — next
@@ -142,10 +142,9 @@ def quadlet_images(project_dir: Path) -> tuple[dict[str, str], list[str]]:
     return images, problems
 
 
-# Software that a Dockerfile clones and checks out at a fixed commit.
-VENDORED_SOURCES = {
-    "tratt": "docker/tratt/Dockerfile",
-}
+# Software that a Dockerfile clones and checks out at a fixed commit. None at
+# the moment: TRATT was one until VISP 1.2.0, now it is a component (external/TRATT).
+VENDORED_SOURCES: dict[str, str] = {}
 
 _CLONE_RE = re.compile(r"git clone\b[^\n]*?\s(https://\S+?)(?:\s|$)")
 _CHECKOUT_RE = re.compile(r"git checkout\s+([0-9a-f]{40})\b")

@@ -55,6 +55,11 @@ DEFAULT_VERSIONS_CONFIG = {
         "npm_install": True,
         "npm_build": True,
     },
+    "TRATT": {
+        "url": "https://github.com/humlab-speech/TRATT.git",
+        "npm_install": True,
+        "npm_build": True,
+    },
     "WhisperVault": {
         "url": "https://github.com/humlab-speech/WhisperVault",
         "submodules": True,

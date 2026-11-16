@@ -20,6 +20,9 @@
     "artic": {
       "ref": "4d93c533d2940896b88fe57ebb332779f084a0a1"
     },
+    "TRATT": {
+      "ref": "8ad3cd4ff0fa65abc1e4aaab94d5be356014839f"
+    },
     "WhisperVault": {
       "ref": "97ee18759470e585fdff9e1eb2a8e2a029be32d2"
     }
@@ -30,13 +33,8 @@
     "matomo-db": "docker.io/library/mariadb:10.11.19",
     "mongo": "docker.io/library/mongo:7.0.45",
     "mongo-express": "docker.io/library/mongo-express:1.0.2-20-alpine3.19",
-    "placeholder": "docker.io/library/nginx:1.30.6-alpine3.24"
+    "placeholder": "docker.io/library/nginx:1.30.6-alpine3.24",
+    "tratt-build": "docker.io/library/node:24.22.2"
   },
-  "vendored": {
-    "tratt": {
-      "repo": "https://github.com/humlab-speech/TRATT.git",
-      "ref": "59f9c1f7777ab68e92e10e88ef20cb005ee8b3a4",
-      "pinned_in": "docker/tratt/Dockerfile"
-    }
-  }
+  "vendored": {}
 }

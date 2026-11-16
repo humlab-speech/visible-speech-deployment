@@ -164,12 +164,14 @@ class DeployManager:
             "annotation-server": "visp-annotation-server:latest",
             "artic": "visp-artic:latest",
             "container-agent": "visp-jupyter-session:latest",  # bundled in session image
+            "TRATT": "visp-tratt:latest",
             "WhisperVault": "visp-whisperx:latest",
         }
 
         # Map component names to the visp.py build target name (when they differ)
         component_to_build_target = {
             "artic": "artic",
+            "TRATT": "tratt",
             "WhisperVault": "whisperx",
         }
 

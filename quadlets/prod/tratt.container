@@ -7,8 +7,10 @@ Requires=tratt-net-network.service
 ContainerName=tratt
 Image=localhost/visp-tratt:latest
 Network=tratt-net.network
-Volume=@@PROJECT_DIR@@/mounts/tratt/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z
-Volume=@@PROJECT_DIR@@/mounts/tratt/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z
+# appconfig.json + demo_file.wav, aliased in httpd.conf. A directory mount, so
+# edits (atomic renames) show up without a restart, unlike a file mount.
+Volume=@@PROJECT_DIR@@/mounts/tratt:/usr/local/apache2/visp:ro,z
+Volume=@@PROJECT_DIR@@/mounts/tratt/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,z
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Security hardening
