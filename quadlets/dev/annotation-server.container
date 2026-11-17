@@ -16,6 +16,9 @@ Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
 # the websocket and /file to this server. Audio URLs are built on the origin a
 # connection came from, so each app fetches audio from its own host.
 Environment=ALLOWED_ORIGINS=https://artic.@@BASE_DOMAIN@@,https://@@TRATT_SUBDOMAIN@@.@@BASE_DOMAIN@@
+# Same access rule as apache and session-manager: with the access list on, a
+# project member without the access grant (users.loginAllowed) is refused.
+Environment=ACCESS_LIST_ENABLED=@@ACCESS_LIST_ENABLED@@
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
 Volume=@@PROJECT_DIR@@/external/annotation-server/src:/home/node/app/src:Z
 Volume=@@PROJECT_DIR@@/external/annotation-server/package.json:/home/node/app/package.json:ro,Z

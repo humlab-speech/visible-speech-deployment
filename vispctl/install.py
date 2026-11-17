@@ -864,7 +864,9 @@ def run_install(
 
     sm = SecretManager(runner)
     env_vars = sm.load_all()
-    backfill_env_keys(project_dir, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
+    # ACCESS_LIST_ENABLED: absent has always meant off (apache, session-manager);
+    # the annotation-server quadlet now renders it, so write that default down.
+    backfill_env_keys(project_dir, env_vars, {"TRATT_SUBDOMAIN": "tratt", "ACCESS_LIST_ENABLED": "false"})
 
     print(color("Creating Podman secrets...", Colors.CYAN))
     sm.create_secrets(sm.get_derived(env_vars))
