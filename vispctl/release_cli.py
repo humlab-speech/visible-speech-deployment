@@ -176,10 +176,14 @@ def _cmd_release_create(args) -> int:
     )
 
 
-def _cmd_release_check(args) -> int:  # noqa: ARG001
+def _cmd_release_check(args) -> int:
     project_dir = get_config().project_dir
     manifest = Manifest.load(project_dir)
     errors = check_manifest(manifest, project_dir)
+    if not args.offline:
+        from .release_create import pin_problems
+
+        errors += pin_problems(manifest, project_dir)
     try:
         upgrades = discover_upgrades(project_dir)
     except ConfigError as e:
@@ -262,7 +266,14 @@ def add_release_parsers(subparsers: argparse._SubParsersAction) -> None:
     new = sub.add_parser("new", help="Start the next release: bump the version, sync, optionally scaffold steps")
     new.add_argument("version", help="x.y.z")
     new.add_argument("--steps", action="store_true", help=f"Create {UPGRADES_DIR}/<version>.py from the template")
-    sub.add_parser("check", help="Validate release.json and the upgrade modules")
+    check = sub.add_parser(
+        "check",
+        help="Validate release.json and the upgrade modules; fetch each component and check that its pin"
+        " exists on origin and contains the previous release's pin",
+    )
+    check.add_argument(
+        "--offline", action="store_true", help="Skip the git checks of the pins (no fetch, shape checks only)"
+    )
 
     p = subparsers.add_parser("upgrade", help="Upgrade this server from its installed version to the checkout's")
     p.set_defaults(func=cmd_upgrade)
