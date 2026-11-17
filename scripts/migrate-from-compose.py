@@ -84,7 +84,7 @@ SUBID_COUNT = 65536
 LOG_DIR = Path("/var/log/visp-migrate")
 STATE_DIR = Path("/var/lib/visp-migrate")
 SYSTEM_DATABASES = {"admin", "config", "local"}
-CORE_CONTAINERS = {"apache", "session-manager", "mongo", "emu-webapp-server", "wsrng-server", "matomo", "matomo-db"}
+CORE_CONTAINERS = {"apache", "session-manager", "mongo", "annotation-server", "wsrng-server", "matomo", "matomo-db"}
 
 # Non-secret settings worth keeping from the old .env. Everything else starts from
 # the new .env-example, and every secret is generated fresh.

@@ -17,6 +17,7 @@ Nothing is pushed — the closing message says what to push.
 from __future__ import annotations
 
 import copy
+import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -49,6 +50,74 @@ def release_tags(project_dir: Path) -> list[str]:
     """Versions of the ``v<x.y.z>`` tags in the deployment repository, oldest first."""
     out = _git(project_dir, "tag", "--list", "v*", check=False).stdout.split()
     return sorted((t[1:] for t in out if is_version(t[1:])), key=parse_version)
+
+
+def previous_release_pins(project_dir: Path, before: str | None = None) -> tuple[str | None, dict[str, str]]:
+    """The newest ``v*`` tag older than *before* (default: the newest tag) and its pins, per component.
+
+    A release that pinned a component as ``vendored`` (TRATT up to 1.1.2) counts:
+    its commit is what the servers ran, whatever the manifest section.
+    """
+    tags = release_tags(project_dir)
+    if before is not None:
+        tags = [t for t in tags if parse_version(t) < parse_version(before)]
+    if not tags:
+        return None, {}
+    shown = _git(project_dir, "show", f"v{tags[-1]}:release.json", check=False)
+    if shown.returncode != 0:
+        return tags[-1], {}
+    data = json.loads(shown.stdout)
+    pins = {name.lower(): entry.get("ref") for name, entry in (data.get("vendored") or {}).items()}
+    pins.update({name.lower(): entry.get("ref") for name, entry in (data.get("components") or {}).items()})
+    return tags[-1], {name: ref for name, ref in pins.items() if ref}
+
+
+def pin_problems(manifest: Manifest, project_dir: Path, fetch: bool = True, fetchable: bool = True) -> list[str]:
+    """What ``release check``'s shape checks cannot see: whether the pinned commits work.
+
+    - every pin must exist and be reachable from a branch or tag on origin, or a
+      server's ``deploy update`` cannot fetch it;
+    - every pin must contain the previous release's pin of that component. A pin
+      that is older, or on a side branch, silently takes back what the servers
+      run today; move it forward (``release pin <name>``).
+
+    *fetchable* False skips the first check (``release create`` makes it itself,
+    with ``--allow-unpushed`` as the way out).
+    """
+    problems: list[str] = []
+    since, previous = previous_release_pins(project_dir, before=manifest.version)
+    for name, defaults in DEFAULT_VERSIONS_CONFIG.items():
+        sha = (manifest.components.get(name) or {}).get("ref")
+        repo = GitRepository(str(project_dir / "external" / name), defaults.get("url"))
+        if not sha or not repo.is_git_repo():
+            if sha:
+                problems.append(f"{name}: external/{name} is not cloned, so {sha[:8]} cannot be checked")
+            continue
+        if fetch:
+            try:
+                repo.fetch(quiet=True)
+            except subprocess.CalledProcessError:
+                problems.append(f"{name}: git fetch failed in external/{name}")
+                continue
+        if repo.run_git(["cat-file", "-e", f"{sha}^{{commit}}"], check=False).returncode != 0:
+            problems.append(f"{name}: {sha[:8]} does not exist in external/{name} (fetched from origin)")
+            continue
+        on_branch = fetchable and repo.run_git(["branch", "-r", "--contains", sha], check=False).stdout.strip()
+        on_tag = fetchable and repo.run_git(["tag", "--contains", sha], check=False).stdout.strip()
+        if fetchable and not on_branch and not on_tag:
+            problems.append(f"{name}: {sha[:8]} is on no remote branch or tag, so servers cannot fetch it")
+        before = previous.get(name.lower())
+        if before and before != sha:
+            known = repo.run_git(["cat-file", "-e", f"{before}^{{commit}}"], check=False).returncode == 0
+            if not known:
+                problems.append(f"{name}: v{since}'s pin {before[:8]} is not in external/{name}; cannot compare")
+            elif repo.run_git(["merge-base", "--is-ancestor", before, sha], check=False).returncode != 0:
+                missing = repo.run_git(["rev-list", "--count", f"{sha}..{before}"], check=False).stdout.strip()
+                problems.append(
+                    f"{name}: {sha[:8]} does not contain v{since}'s pin {before[:8]}"
+                    f" ({missing} commit(s) the servers run would be lost)"
+                )
+    return problems
 
 
 def component_heads(external_dir: Path, remote: bool = False, fetch: bool = True) -> list[ComponentHead]:
@@ -177,6 +246,8 @@ def create_release(
     except ConfigError as e:
         problems.append(str(e))
     problems += check_manifest(manifest, project_dir) if not problems else []
+    # fetched above; unpushed pins were reported (or allowed) above
+    problems += pin_problems(manifest, project_dir, fetch=False, fetchable=False) if not problems else []
     try:
         upgrades = discover_upgrades(project_dir)
     except ConfigError as e:

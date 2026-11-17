@@ -44,8 +44,9 @@ visible-speech-deployment/
 │   ├── session-manager/      # humlab-speech/session-manager
 │   ├── webclient/            # humlab-speech/webclient
 │   ├── wsrng-server/         # humlab-speech/wsrng-server
-│   ├── emu-webapp-server/    # humlab-speech/emu-webapp-server
+│   ├── annotation-server/    # humlab-speech/annotation-server (was emu-webapp-server)
 │   ├── artic/               # humlab-speech/artic
+│   ├── TRATT/                # humlab-speech/TRATT (dev: watch-built by tratt-build)
 │   ├── container-agent/      # humlab-speech/container-agent
 │   └── WhisperVault/         # humlab-speech/WhisperVault (with whisperx/ submodule)
 │
@@ -82,8 +83,8 @@ no Apache rebuild needed for changes). Overview:
 |-----------|------------|------------|---------|
 | `BASE_DOMAIN` | `vhost.conf` | (serves directly) | Main webclient (Angular SPA) + PHP API at `/api/v1/` |
 | `app.BASE_DOMAIN` | `app.vhost.conf` | `session-manager:80` | Session iframe — webclient loads Jupyter sessions here (`?token=...`) |
-| `artic.BASE_DOMAIN` | `artic.vhost.conf` | `artic/` + `emu-webapp-server:17890/file` | EMU web annotation interface |
-| `tratt.BASE_DOMAIN` | `tratt.vhost.conf` | `tratt/` | TRATT transcription tool (formerly OCTRA; subdomain prefix from `TRATT_SUBDOMAIN` in `.env`) |
+| `artic.BASE_DOMAIN` | `artic.vhost.conf` | `artic/` + `annotation-server:17890/file` | EMU web annotation interface |
+| `tratt.BASE_DOMAIN` | `tratt.vhost.conf` | `tratt/` + `annotation-server:17890` (`/annotation-ws`, `/file`) | TRATT transcription tool (formerly OCTRA; subdomain prefix from `TRATT_SUBDOMAIN` in `.env`) |
 | `recorder.BASE_DOMAIN` | `recorder.vhost.conf` | `wsr-client:80` + `wsr-server:9010` | Web Speech Recorder (WSR-NG) |
 | `matomo.BASE_DOMAIN` | `matomo.vhost.conf` | `matomo/` | Matomo analytics UI |
 | `mongo.BASE_DOMAIN` | `mongo.vhost.conf` | `mongo-express:8081` | Mongo Express DB admin (dev only) |
@@ -110,9 +111,33 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
   `docs/MATOMO_INTEGRATION.md`.
 - **matomo-db** (optional) — MariaDB database for Matomo (`docker.io/library/mariadb:10.11`).
   Data stored in `mounts/matomo-db/mysql/`.
-- **emu-webapp-server** — EMU backend
+- **annotation-server** — EMU-webApp websocket protocol server (bundle list, bundles, saves, audio) shared by Artic and TRATT; named emu-webapp-server before VISP 1.2.0
+  - Serves only bundles in the user's own bundle list (`bundlelists`, written by *Assign
+    annotation tasks*); audio URLs are built on the connecting app's origin. No role
+    overrides this, not ProjectAdmin, not SysAdmin (see "Permissions" below).
+  - Identifies the user through PHP's `?f=session`; with `ACCESS_LIST_ENABLED=true` (passed
+    in by the quadlet) it also requires `users.loginAllowed`, like apache and session-manager.
+  - **Every SAVEBUNDLE is validated** (`src/saveValidation.js`): the document must keep the
+    file's levels and their types (it may add a level the DBconfig defines), unique item
+    ids, links between existing items, the same `annotates` and `sampleRate`; SSFF tracks
+    must be strict base64 of an SSFF file. Writes are atomic (temp file + rename), and the
+    bundle list entry is updated positionally, never written back whole.
+  - **Additions to the EMU-webApp protocol**, all opt-in so Artic (stock protocol) is
+    unaffected: GETBUNDLE returns `annotationVersion` (sha256 of the file); SAVEBUNDLE
+    accepts `baseVersion` (refused with `STALE:` unless still current, checked and written
+    with no await in between), `level` (only that unlinked SEGMENT level may change), and
+    `expectedUser` (refused if someone else is now signed in); `WHOAMI` returns the
+    username. TRATT sends all of them and keeps its unsaved drafts per user.
+  - **TRATT launch:** the webclient's *Launch Tratt* dialog asks for an annotation level
+    (unlinked SEGMENT levels only; new projects get `Transcription`), then iframes
+    `tratt.<host>/?workspace=visp&projectId=<id>&level=<name>`. TRATT connects to
+    `wss://tratt.<host>/annotation-ws` (`visp.serverUrl` in `mounts/tratt/appconfig.json`)
+    and writes only that level. session-manager has no TRATT commands any more.
 - **artic** — EMU web interface
-- **tratt** — Transcription tool (TRATT, continued development of OCTRA)
+- **tratt** — Transcription tool (TRATT, continued development of OCTRA); httpd serving the
+  static app. Source in `external/TRATT/`. In dev it serves the `tratt-build` watch output
+  instead of the baked app — see "Dev vs Prod: TRATT watch build" below.
+- **tratt-build** (dev only) — `nx build tratt --watch` over `external/TRATT`; not a server.
 - **wsrng-server** — Web Speech Recorder server
 - **whisperx** (optional) — Speech-to-text transcription service
 
@@ -121,7 +146,6 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
   - Single source of truth: `external/webclient/api/api.php` (~1700 lines)
   - Accessed at `/api/v1/...` routes through Apache `Alias /api /var/www/html/api` + RewriteRule
   - Also handles `?f=session` session validation (called by session-manager)
-  - Includes file download handler (`getFileDownload`, `getOctraTask`) for TRATT (handler names still say "Octra" — internal, pre-rename)
   - Uses MongoDB-based `userHasProjectAuthorization()` for project access checks
   - Communicates with session-manager via HTTP to manage sessions
   - Application logs written to `/var/log/api/webapi.log` and `/var/log/api/webapi.debug.log`
@@ -211,6 +235,37 @@ queue does **not**: an item flipped to `processing` when the process dies stays 
 ⚠️ **`./visp.py deploy status` will report session-manager as needing a rebuild** whenever
 you commit source, because it compares the image's `git.commit` label against HEAD. In dev
 that label no longer describes the running code — the bind mount does.
+
+### Dev vs Prod: TRATT watch build (important!)
+
+TRATT is an Angular (Nx) app that httpd serves as static files. Prod bakes a release
+build into `visp-tratt` (`docker/tratt/Dockerfile`, build context `external/TRATT`,
+ignore rules in `docker/tratt/Dockerfile.dockerignore`).
+
+**Dev mode** adds a second container, `tratt-build` (`quadlets/dev/tratt-build.container`,
+plain `node:24.22.2`, `Network=none`), which runs
+`nx build tratt --configuration=development --watch` over the bind-mounted
+`external/TRATT`. The dev tratt quadlet mounts its output over htdocs:
+```
+Volume=…/external/TRATT/dist/apps/tratt:/usr/local/apache2/htdocs:ro,z
+```
+Save a file → incremental rebuild (seconds; `./visp.py logs tratt-build -f`) → reload the
+browser. No image rebuild, no restart. Same httpd, httpd.conf, appconfig and Apache vhost
+as prod; only the Angular configuration differs (`development`: unminified, source maps,
+`environment.dev.ts`).
+
+- **Dependencies:** `./visp.py npm tratt -- ci` (adds `--legacy-peer-deps`, like the
+  Dockerfile) installs `external/TRATT/node_modules` through the same Node image —
+  never host npm (see session-manager above for why). Then `./visp.py restart tratt-build`.
+- **Deployment-owned files live outside htdocs:** `mounts/tratt/` is mounted at
+  `/usr/local/apache2/visp` and `httpd.conf` aliases `/config/appconfig.json` and
+  `/media/demo_file.wav` there. Never mount a file *inside* htdocs: Angular empties the
+  output directory on every watch start (it keeps the directory itself, so the htdocs
+  mount survives), which would detach a nested mount.
+- The tratt quadlet's `ExecStartPre` creates the output directory, since podman refuses a
+  missing bind-mount source.
+- `deploy status` compares the `visp-tratt` image label with `external/TRATT` HEAD, so in
+  dev it reports a rebuild as needed whenever you commit — as for session-manager.
 
 ### Build Artifacts Bind-Mounted at Runtime (NOT containers)
 - **container-agent** — Node.js CLI tool (`external/container-agent/`); **not a container**.
@@ -688,6 +743,25 @@ When adding a new service or renaming an existing one, update **all** of the fol
 
 ## VISP releases and upgrades
 
+### Required deployment workflow
+
+**Always package deployment updates as a new VISP release**, even when the only
+change is a small webclient or other single-component update. Treat requests such
+as "update the webclient on the demo server" as requests to release and deploy a
+new VISP version.
+
+Use the established `./visp.py` release workflow and scripts: prepare the intended
+component commits and any upgrade steps, run `./visp.py release create <x.y.z>` and
+`./visp.py release check`, and publish the resulting manifest, release commit and
+version tag when authorized. Deploy the tagged release through
+`./visp.py upgrade --dry-run` followed by `./visp.py upgrade`, so the installed
+version and upgrade progress are recorded. Keep every component, image and
+vendored dependency pinned in `release.json`.
+
+**Only update an individual service outside this workflow when the user explicitly
+requests a standalone service update without a VISP release.** Do not substitute
+a component pull, pin change, rebuild and restart for the release workflow.
+
 A **VISP release** is a version `x.y.z`: a tag `vX.Y.Z` on this repository plus
 `release.json`, the manifest of everything that goes into it. The repository commit
 already fixes the quadlets, our Dockerfiles and their base images; `release.json` adds:
@@ -697,7 +771,7 @@ already fixes the quadlets, our Dockerfiles and their base images; `release.json
 | `visp` | the release version | `./visp.py release new x.y.z` |
 | `components` | the commit of every repo under `external/` | `./visp.py release pin <name>` / `--all` (`--remote`: tip of origin's default branch) |
 | `images` | every third-party image, as the quadlets pin it | `./visp.py release sync`; `images update` updates it too |
-| `vendored` | software pinned elsewhere (TRATT, in `docker/tratt/Dockerfile`) | `./visp.py release sync` |
+| `vendored` | software a Dockerfile clones at a fixed commit (none since 1.2.0, when TRATT became the `TRATT` component) | `./visp.py release sync` |
 
 `images` and `vendored` duplicate pins whose source of truth is the quadlet or Dockerfile —
 so the manifest is readable on its own — and `tests/vispctl/test_release.py` fails when
@@ -782,7 +856,7 @@ localhost/visp-jupyter-session:latest   # Unified session image (Jupyter + R + c
 localhost/visp-session-proxy:latest     # Tinyproxy sidecar for UDS network isolation
 localhost/visp-podman-socket-proxy:latest  # Body-inspecting socket proxy between session-manager and Podman
 localhost/visp-artic:latest
-localhost/visp-emu-webapp-server:latest
+localhost/visp-annotation-server:latest
 localhost/visp-tratt:latest
 localhost/visp-wsrng-server:latest
 localhost/visp-whisperx:latest          # WhisperVault main container
@@ -920,7 +994,8 @@ systemd-artic-net     — artic isolation network (apache + artic only, Internal
 TRATT and artic are static web servers that only Apache talks to, so each sits on its
 own internal network shared with Apache alone: a compromised frontend can't reach MongoDB,
 session-manager or the internet. Their backends are reached by the *browser* through
-Apache (TRATT → PHP API / webclient WebSocket, artic → emu-webapp-server), never by the
+Apache (both → annotation-server, on their own host: artic at `/` and `/file`, TRATT at
+`/annotation-ws` and `/file`), never by the
 containers. Give any new static-frontend container the same treatment.
 
 WhisperVault does **not** use a Podman network — it runs with `Network=none` and
@@ -1036,6 +1111,14 @@ button is hidden on the same `deleteBundles` flag); grant the `project_admin` ro
 member with it; run `cleanupOrphanedSessions`. A SysAdmin implicitly holds every project permission in every project, without being
 a member. The creator of a project becomes its ProjectAdmin.
 
+**Annotation work is the exception: it follows the assignment only.** Artic and Tratt (through
+annotation-server) open, and save, only the bundles in the user's own bundle list. A
+ProjectAdmin or SysAdmin who wants to look at or correct a bundle assigns it to
+themselves under *Assign annotation tasks*, like anyone else; there is no override.
+This is the rule as of VISP 1.2.0, chosen so that the assignment stays the record of who
+works on which recording. Reviewing others' work without an assignment would need a
+read-only path, which does not exist yet.
+
 Backend entry points: `getSystemPermissions(user)` for system-level checks,
 `getProjectPermissions(project, user)` for everything project-scoped. Never check
 membership and permission separately — `getProjectPermissions` already returns all-false
@@ -1123,8 +1206,8 @@ to `/var/log/visp-migrate/`; `status` shows progress):
   the host proxy; reach it through an SSH tunnel plus a hosts-file entry, so SWAMID
   logins work under the real domain while everyone else still gets the old system.
 
-In prod, `mongo` and `emu-webapp-server` are **not** published on the host: every
-consumer reaches them over `visp-net` (`mongo:27017`, `emu-webapp-server:17890`), and
+In prod, `mongo` and `annotation-server` are **not** published on the host: every
+consumer reaches them over `visp-net` (`mongo:27017`, `annotation-server:17890`), and
 `visp.py` uses `podman exec`. Only Apache's `8081` is published.
 
 ---
@@ -1190,7 +1273,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | Dockerfile | Base image | Current pin | Notes |
 |---|---|---|---|
 | `docker/apache/Dockerfile` | `debian:trixie-20261027` | date-pinned + `apt-get upgrade` ✅ | Trixie = Debian 13. The Dockerfile runs `apt-get upgrade`, so `./visp.py build apache --no-cache` gets every Debian fix regardless of the date (a cached build fetches nothing). Node 24 (NodeSource) and Composer are only in the `build-tools` stage (webclient build, dev image), never in production. Still bump the date when a new tag appears on [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `docker/tratt/Dockerfile` | `node:24.22.2` | version-pinned ⚠ | Build stage only. [hub.docker.com/_/node](https://hub.docker.com/_/node/tags) |
+| `docker/tratt/Dockerfile` | `node:24.22.2` | version-pinned ⚠ | Build stage only; builds `external/TRATT`. Keep in step with `quadlets/dev/tratt-build.container` and `NPM_SERVICES` in `vispctl/npm.py`. [hub.docker.com/_/node](https://hub.docker.com/_/node/tags) |
 | `docker/tratt/Dockerfile` | `httpd:2.4.69` + `apt-get upgrade` | version-pinned ⚠ | Runtime. Check [httpd.apache.org/security](https://httpd.apache.org/security/vulnerabilities_24.html) and [hub.docker.com/_/httpd](https://hub.docker.com/_/httpd/tags) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `node:24.22.2-alpine3.24` | version-pinned ⚠ | Builder stage for container-agent only. Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.24) |
 | `docker/session-manager/jupyter-session/Dockerfile` | `quay.io/jupyter/datascience-notebook:r-4.5.3` | version-pinned ⚠ | R 4.5.x releases are infrequent. Check [quay.io/repository/jupyter/datascience-notebook](https://quay.io/repository/jupyter/datascience-notebook?tab=tags) |
@@ -1203,7 +1286,7 @@ grep -rh '^FROM' docker/ external/*/Dockerfile external/*/docker/Dockerfile \
 | `external/WhisperVault/container/Containerfile` | `python:3.12.11-slim` | version-pinned ⚠ | **This is the active whisperx build target.** Check [hub.docker.com/_/python](https://hub.docker.com/_/python/tags?name=3.12-slim) |
 | `external/WhisperVault/container/nginx/Containerfile` | `nginx:1.30.0-alpine3.23` | version-pinned ⚠ | nginx sidecar for optional HTTP proxy mode. Check [hub.docker.com/_/nginx](https://hub.docker.com/_/nginx/tags?name=alpine3.23) |
 | `external/webclient/docker/Dockerfile` | `debian:trixie-20260406` | date-pinned ✅ | Check [hub.docker.com/_/debian](https://hub.docker.com/_/debian/tags?name=trixie) |
-| `external/emu-webapp-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | version-pinned ⚠ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
+| `external/annotation-server/docker/Dockerfile` | `node:24.15.0-bookworm-slim` | version-pinned ⚠ | Upgraded from Node 23 (EOL April 2025). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=bookworm-slim) |
 | `external/session-manager/Dockerfile` | `node:24.19.0-bookworm-slim` + `debian:bookworm-20260505-slim` | node version-pinned ⚠, debian date-pinned ✅ | Node 24 = Active LTS. Build stages **and** the NodeSource `node_24.x` repo in the runtime stage must move together. Upgraded from bullseye (EOL June 2026); `libgit2-1.5` for bookworm |
 | `external/wsrng-server/Dockerfile` | `node:24.16.0-alpine3.22` | version-pinned ⚠ | Node 24 = Active LTS (moved off EOL Node 20). Check [hub.docker.com/_/node](https://hub.docker.com/_/node/tags?name=alpine3.22) |
 

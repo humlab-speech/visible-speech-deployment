@@ -1,0 +1,37 @@
+[Unit]
+Description=TRATT watch build (Dev) — rebuilds external/TRATT on every save
+After=network-online.target
+
+[Container]
+ContainerName=tratt-build
+# Same Node as the build stage of docker/tratt/Dockerfile.
+Image=docker.io/library/node:24.22.2
+# Writes external/TRATT/dist/apps/tratt, which the dev tratt container serves
+# (quadlets/dev/tratt.container). node_modules come from the host tree,
+# installed through this same image: './visp.py npm tratt -- ci'.
+Volume=@@PROJECT_DIR@@/external/TRATT:/app:rw,z
+WorkingDir=/app
+Environment=NX_DAEMON=false
+Environment=NX_NO_CLOUD=true
+Environment=NX_TUI=false
+Environment=NX_SKIP_NX_CACHE=true
+# Everything it needs is in node_modules; nothing to fetch.
+Network=none
+# generate-build-info first, so the version popover shows this checkout's commit.
+Exec=/bin/sh -c "node scripts/generate-build-info.mjs && exec node_modules/.bin/nx build tratt --configuration=development --watch"
+
+# Security hardening. Container root is the host user under rootless podman, so
+# it owns the checkout (and what it writes) without any capability.
+DropCapability=ALL
+NoNewPrivileges=true
+
+# An Angular build of TRATT needs a few GB of heap.
+PodmanArgs=--memory=6g --cpus=2.0 --pids-limit=500
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

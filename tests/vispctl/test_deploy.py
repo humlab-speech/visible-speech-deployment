@@ -157,7 +157,7 @@ def test_update_recovers_detached_head_after_rollback(tmp_path, capsys):
         "container-agent",
         "wsrng-server",
         "session-manager",
-        "emu-webapp-server",
+        "annotation-server",
         "artic",
         "WhisperVault",
     ]
@@ -271,7 +271,7 @@ def test_update_release_mode_honours_pins(tmp_path, capsys):
         "container-agent",
         "wsrng-server",
         "session-manager",
-        "emu-webapp-server",
+        "annotation-server",
         "artic",
         "WhisperVault",
     ]

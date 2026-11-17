@@ -35,7 +35,8 @@ DEFAULT_SERVICES: list[Service] = [
     Service("podman-socket-proxy", "container", "podman-socket-proxy.container"),
     Service("session-manager", "container", "session-manager.container"),
     Service("artic", "container", "artic.container"),
-    Service("emu-webapp-server", "container", "emu-webapp-server.container"),
+    Service("annotation-server", "container", "annotation-server.container"),
+    Service("tratt-build", "container", "tratt-build.container", dev_only=True),
     Service("tratt", "container", "tratt.container"),
     Service("apache", "container", "apache.container"),
 ]

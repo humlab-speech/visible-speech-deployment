@@ -116,7 +116,7 @@ See `./visp.py --help` for the full command reference.
 | **Session Manager** | Spawns and manages user session containers via WebSocket |
 | **MongoDB** | Database |
 | **artic** | Web-based speech annotation tool |
-| **emu-webapp-server** | artic backend (Node.js) |
+| **annotation-server** | Artic and TRATT backend: EMU-DB bundles over the EMU-webApp protocol (Node.js) |
 | **TRATT** | Transcription annotation tool (formerly OCTRA) |
 | **wsrng-server** | Web Speech Recorder server |
 | **WhisperX** | Speech-to-text transcription via Unix Domain Socket (optional) |

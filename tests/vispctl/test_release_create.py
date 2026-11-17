@@ -64,13 +64,6 @@ def project(tmp_path):
         "visp": "1.0.0",
         "components": {n: {"ref": s} for n, s in shas.items()},
         "images": {"mongo": MONGO},
-        "vendored": {
-            "tratt": {
-                "repo": "https://github.com/example/TRATT.git",
-                "ref": "a" * 40,
-                "pinned_in": "docker/tratt/Dockerfile",
-            }
-        },
     }
     (proj / "release.json").write_text(json.dumps(manifest, indent=2) + "\n")
     _git(proj, "add", ".")
@@ -173,3 +166,59 @@ def test_declining_changes_nothing(project):
     assert create_release(project, "1.1.0", fetch=False, input_fn=lambda _: "n") == 1
     assert (project / "release.json").read_text() == before
     assert release_tags(project) == ["1.0.0"]
+
+
+# ── pins checked against git (pin_problems) ─────────────────────────────────────
+
+
+def test_refuses_a_pin_that_drops_what_the_last_release_ran(project, capsys):
+    # v1.0.0 pinned artic's tip; a new commit is released, then the checkout goes back
+    work = project / "external" / "artic"
+    _push_new_commit(project, "artic")
+    assert create_release(project, "1.1.0", assume_yes=True, fetch=False) == 0
+    _git(work, "checkout", "-q", "HEAD~1")
+    assert create_release(project, "1.2.0", assume_yes=True, fetch=False) == 1
+    out = capsys.readouterr().out
+    assert "artic" in out and "does not contain v1.1.0's pin" in out and "1 commit(s)" in out
+    assert release_tags(project) == ["1.0.0", "1.1.0"]
+
+
+def test_pin_problems_flags_an_unfetchable_or_missing_pin(project):
+    from vispctl.release import Manifest
+    from vispctl.release_create import pin_problems
+
+    assert pin_problems(Manifest.load(project), project, fetch=False) == []
+    local = _commit(project / "external" / "artic", "f", "local", "not pushed")
+    m = Manifest.load(project)
+    m.components["artic"] = {"ref": local}
+    m.components["webclient"] = {"ref": "f" * 40}
+    problems = pin_problems(m, project, fetch=False)
+    assert any("artic" in p and "no remote branch or tag" in p for p in problems)
+    assert any("webclient" in p and "does not exist" in p for p in problems)
+    # a tag on origin is enough, like a branch
+    _git(project / "external" / "artic", "tag", "keep", local)
+    assert not any("artic" in p for p in pin_problems(m, project, fetch=False))
+
+
+def test_a_previously_vendored_pin_counts_as_the_components(project, capsys):
+    # TRATT was vendored (pinned in a Dockerfile) before it became a component
+    from vispctl.release import Manifest
+    from vispctl.release_create import pin_problems
+
+    work = project / "external" / "TRATT"
+    old = _git(work, "rev-parse", "HEAD")
+    newer = _push_new_commit(project, "TRATT")
+    data = _manifest(project)
+    data["visp"] = "1.0.1"
+    data["components"].pop("TRATT")
+    data["vendored"] = {"tratt": {"repo": "x", "ref": newer, "pinned_in": "docker/tratt/Dockerfile"}}
+    (project / "release.json").write_text(json.dumps(data, indent=2) + "\n")
+    _git(project, "commit", "-qam", "1.0.1")
+    _git(project, "tag", "-a", "v1.0.1", "-m", "VISP 1.0.1")
+
+    m = Manifest.load(project)
+    m.version = "1.1.0"
+    m.components["TRATT"] = {"ref": old}
+    assert any("TRATT" in p and "v1.0.1's pin" in p for p in pin_problems(m, project, fetch=False))
+    m.components["TRATT"] = {"ref": newer}
+    assert pin_problems(m, project, fetch=False) == []

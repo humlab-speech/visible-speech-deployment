@@ -13,7 +13,7 @@ webclient
 webapi
 session-manager
 wsrng-server
-emu-webapp-server
+annotation-server
 container-agent
 
 # Keep artic and docker/artic (needed for build)

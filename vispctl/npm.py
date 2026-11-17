@@ -30,6 +30,24 @@ NPM_SERVICES: dict[str, tuple[str, str, str]] = {
         "localhost/visp-session-manager:latest",
         "/session-manager",
     ),
+    # Dev only: the tratt-build container watch-builds this tree with the same
+    # image (quadlets/dev/tratt-build.container); visp-tratt itself is plain httpd.
+    "tratt": (
+        "external/TRATT",
+        "docker.io/library/node:24.22.2",
+        "/app",
+    ),
+}
+
+# Extra arguments for every npm call of a service — matching its Dockerfile.
+NPM_EXTRA_ARGS: dict[str, list[str]] = {
+    # See docker/tratt/Dockerfile: the lockfile lacks entries for unused React peers.
+    "tratt": ["--legacy-peer-deps"],
+}
+
+# Shown when the image is missing: how to get it.
+_IMAGE_HINTS: dict[str, str] = {
+    "tratt": "Run 'podman pull docker.io/library/node:24.22.2' first.",
 }
 
 
@@ -60,11 +78,12 @@ def run_npm(
     rc, _, _ = runner.run_quiet(["podman", "image", "exists", image])
     if rc != 0:
         print(color(f"Image {image} not found.", Colors.RED))
-        print(f"  Run './visp.py build {service}' first.")
+        print(f"  {_IMAGE_HINTS.get(service, f'Run ./visp.py build {service} first.')}")
         return 1
 
     if not npm_args:
         npm_args = ["install"]
+    npm_args = [*npm_args, *(a for a in NPM_EXTRA_ARGS.get(service, []) if a not in npm_args)]
 
     print(color(f"npm {' '.join(npm_args)} ({service}, in {image})", Colors.BLUE))
 
@@ -103,7 +122,8 @@ def ensure_node_modules(runner: Runner, project_dir: Path, service: str) -> bool
 
     Dev mode bind-mounts the source tree over the image's ``/session-manager``,
     which shadows the node_modules baked into the image — so a fresh clone has
-    nothing to run until this populates the host tree.
+    nothing to run until this populates the host tree. tratt-build runs a plain
+    Node image against ``external/TRATT``, which likewise needs its own.
 
     Best-effort: returns False (with guidance) rather than raising if the image
     is not built yet, since on a first install 'build' has not run.
@@ -126,7 +146,9 @@ def ensure_node_modules(runner: Runner, project_dir: Path, service: str) -> bool
     rc, _, _ = runner.run_quiet(["podman", "image", "exists", image])
     if rc != 0:
         print(color(f"  ⚠ {service}: node_modules missing and {image} not built yet", Colors.YELLOW))
-        print(f"    Run './visp.py build {service}' then './visp.py npm {service} -- ci'")
+        print(
+            f"    {_IMAGE_HINTS.get(service, f'Run ./visp.py build {service}')}, then './visp.py npm {service} -- ci'"
+        )
         return False
 
     print(color(f"  Installing {service} node_modules (dev mode bind-mounts the source tree)...", Colors.CYAN))

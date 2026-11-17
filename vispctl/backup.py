@@ -311,11 +311,11 @@ class BackupManager:
         return None
 
     # Services that write to the databases covered by a full mongodump/
-    # mongorestore (no --db filter): session-manager + apache + emu-webapp-server
+    # mongorestore (no --db filter): session-manager + apache + annotation-server
     # share the 'visp' DB, wsrng-server writes 'wsrng', mongo-express (dev) is a
     # full admin UI. mongo-express is dev-only — absent on prod, so the check
     # is a no-op there.
-    _MONGO_WRITERS = ("session-manager", "apache", "emu-webapp-server", "wsrng-server", "mongo-express")
+    _MONGO_WRITERS = ("session-manager", "apache", "annotation-server", "wsrng-server", "mongo-express")
 
     def _running_writers(self) -> list[str]:
         return [svc for svc in self._MONGO_WRITERS if self.runner.unit_is_active(svc)]

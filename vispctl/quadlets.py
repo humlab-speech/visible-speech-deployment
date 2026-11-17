@@ -171,25 +171,25 @@ def setup_service_env_files(project_dir: Path) -> None:
     """
     print(color("Setting up service environment files...", Colors.CYAN))
 
-    # --- emu-webapp-server ---
-    emu_env_target = project_dir / "mounts/emu-webapp-server/.env"
-    emu_env_example = project_dir / "external/emu-webapp-server/.env-example"
-    if emu_env_target.exists():
-        print("  ○ mounts/emu-webapp-server/.env already exists")
-    elif emu_env_example.exists():
+    # --- annotation-server ---
+    annotation_env_target = project_dir / "mounts/annotation-server/.env"
+    annotation_env_example = project_dir / "external/annotation-server/.env-example"
+    if annotation_env_target.exists():
+        print("  ○ mounts/annotation-server/.env already exists")
+    elif annotation_env_example.exists():
         # Copy template and strip out secrets (they come via Podman Secrets now)
-        content = emu_env_example.read_text()
+        content = annotation_env_example.read_text()
         lines = []
         secret_keys = {"MONGO_URI", "MONGO_ROOT_PASSWORD", "MEDIA_FILE_BASE_URL"}
         for line in content.splitlines():
             key = line.split("=", 1)[0].strip() if "=" in line else ""
             if key not in secret_keys:
                 lines.append(line)
-        emu_env_target.parent.mkdir(parents=True, exist_ok=True)
-        emu_env_target.write_text("\n".join(lines) + "\n")
-        print(color("  ✓ Created mounts/emu-webapp-server/.env (secrets via Podman Secrets)", Colors.GREEN))
+        annotation_env_target.parent.mkdir(parents=True, exist_ok=True)
+        annotation_env_target.write_text("\n".join(lines) + "\n")
+        print(color("  ✓ Created mounts/annotation-server/.env (secrets via Podman Secrets)", Colors.GREEN))
     else:
-        print(color("  ⚠ external/emu-webapp-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
+        print(color("  ⚠ external/annotation-server/.env-example not found — run 'deploy update' first", Colors.YELLOW))
 
     # --- wsrng-server ---
     wsrng_env_target = project_dir / "external/wsrng-server/.env"

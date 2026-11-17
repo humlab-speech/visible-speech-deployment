@@ -101,7 +101,7 @@ nano .env  # Set BASE_DOMAIN, ADMIN_EMAIL, etc.
 sleep 10
 
 # Stop the services that write to MongoDB (mongo itself must stay running)
-./visp.py stop session-manager apache emu-webapp-server wsrng-server
+./visp.py stop session-manager apache annotation-server wsrng-server
 
 # Restore database (a snapshot of the current DB is taken automatically first)
 ./visp.py restore ~/backups/visp_mongodb_YYYYMMDD.tar.gz --force
@@ -172,7 +172,7 @@ After restore, your system should look like:
 ### Database restore fails
 ```bash
 # MongoDB must be RUNNING; the writer services must be stopped
-./visp.py stop session-manager apache emu-webapp-server wsrng-server
+./visp.py stop session-manager apache annotation-server wsrng-server
 # Try restore again
 ./visp.py restore backup.tar.gz --force
 ```

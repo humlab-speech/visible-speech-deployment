@@ -21,7 +21,7 @@ Secret=visp_test_user_login_key,type=env,target=TEST_USER_LOGIN_KEY
 # Pin Apache's PHP/worker identity (www-data = uid 33 / gid 33) to the host
 # repository owner via rootless keep-id. Uploaded audio that PHP writes to
 # /tmp/uploads (shared with session-manager) then lands owned by the single host
-# identity that session-manager, wsrng-server and emu-webapp-server also map to,
+# identity that session-manager, wsrng-server and annotation-server also map to,
 # so session-manager can import and rewrite it instead of seeing foreign-owned
 # (subuid) files. The Apache master still starts as container root — now a harmless
 # subuid, not the host repo owner — to bind :80 and manage its workers. No User=

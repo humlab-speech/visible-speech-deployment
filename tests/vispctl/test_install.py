@@ -10,7 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from vispctl.install import (
-    EMU_WEBAPP_IMAGE,
+    ANNOTATION_SERVER_IMAGE,
     WSRNG_IMAGE,
     _ensure_webclient_dist,
     _map_namespace_id,
@@ -355,7 +355,7 @@ def test_normalize_repository_ownership_reports_failure(monkeypatch, tmp_path):
 
 def test_repository_writer_image_constants():
     assert WSRNG_IMAGE == "localhost/visp-wsrng-server:latest"
-    assert EMU_WEBAPP_IMAGE == "localhost/visp-emu-webapp-server:latest"
+    assert ANNOTATION_SERVER_IMAGE == "localhost/visp-annotation-server:latest"
 
 
 # ---------------------------------------------------------------------------

@@ -490,7 +490,7 @@ def test_real_configs_claim_one_dockerfile_each():
         "docker/session-manager/jupyter-session/Dockerfile",
         "docker/session-proxy/Dockerfile",
         "docker/tratt/Dockerfile",
-        "external/emu-webapp-server/docker/Dockerfile",
+        "external/annotation-server/docker/Dockerfile",
         "external/session-manager/Dockerfile",
         "external/WhisperVault/container/Containerfile",
         "external/wsrng-server/Dockerfile",

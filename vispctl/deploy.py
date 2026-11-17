@@ -161,15 +161,17 @@ class DeployManager:
         component_to_image = {
             "session-manager": "visp-session-manager:latest",
             "wsrng-server": "visp-wsrng-server:latest",
-            "emu-webapp-server": "visp-emu-webapp-server:latest",
+            "annotation-server": "visp-annotation-server:latest",
             "artic": "visp-artic:latest",
             "container-agent": "visp-jupyter-session:latest",  # bundled in session image
+            "TRATT": "visp-tratt:latest",
             "WhisperVault": "visp-whisperx:latest",
         }
 
         # Map component names to the visp.py build target name (when they differ)
         component_to_build_target = {
             "artic": "artic",
+            "TRATT": "tratt",
             "WhisperVault": "whisperx",
         }
 

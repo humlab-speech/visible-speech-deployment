@@ -312,6 +312,10 @@ class BuildManager:
             # If git info fails, just continue without labels
             pass
 
+        ignorefile = config.get("ignorefile")
+        if ignorefile:
+            cmd.extend(["--ignorefile", ignorefile])
+
         cmd.extend(["-t", f"{image}:latest"])
         cmd.extend(
             [
@@ -621,15 +625,18 @@ BUILD_CONFIGS: dict[str, dict] = {
         "image": "visp-artic",
         "target": "production",
     },
-    "emu-webapp-server": {
-        "context": "./external/emu-webapp-server",
+    "annotation-server": {
+        "context": "./external/annotation-server",
         "dockerfile": "docker/Dockerfile",
-        "image": "visp-emu-webapp-server",
+        "image": "visp-annotation-server",
     },
     "tratt": {
-        "context": "./docker/tratt",
-        "dockerfile": "Dockerfile",
+        "context": "./external/TRATT",
+        "dockerfile": "../../docker/tratt/Dockerfile",
         "image": "visp-tratt",
+        # TRATT has no .dockerignore of its own; without this the context would
+        # carry the dev watch build's node_modules (~2 GB) and dist/.
+        "ignorefile": "./docker/tratt/Dockerfile.dockerignore",
     },
     "wsrng-server": {
         "context": "./external/wsrng-server",

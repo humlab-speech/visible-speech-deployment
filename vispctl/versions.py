@@ -45,13 +45,18 @@ DEFAULT_VERSIONS_CONFIG = {
         "npm_install": True,
         "npm_build": False,
     },
-    "emu-webapp-server": {
-        "url": "https://github.com/humlab-speech/emu-webapp-server.git",
+    "annotation-server": {
+        "url": "https://github.com/humlab-speech/annotation-server.git",
         "npm_install": True,
         "npm_build": False,
     },
     "artic": {
         "url": "https://github.com/humlab-speech/artic.git",
+        "npm_install": True,
+        "npm_build": True,
+    },
+    "TRATT": {
+        "url": "https://github.com/humlab-speech/TRATT.git",
         "npm_install": True,
         "npm_build": True,
     },

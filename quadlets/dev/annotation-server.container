@@ -1,22 +1,28 @@
 [Unit]
-Description=EMU-webapp Server
+Description=VISP annotation server (EMU-webApp protocol, used by Artic and TRATT)
 After=network-online.target visp-net.service mongo.service
 Requires=mongo.service
 
 [Container]
-ContainerName=emu-webapp-server
-Image=localhost/visp-emu-webapp-server:latest
+ContainerName=annotation-server
+Image=localhost/visp-annotation-server:latest
 Network=visp-net.network
 PublishPort=127.0.0.1:17890:17890
-EnvironmentFile=@@PROJECT_DIR@@/mounts/emu-webapp-server/.env
+EnvironmentFile=@@PROJECT_DIR@@/mounts/annotation-server/.env
 Environment=LOG_LEVEL=DEBUG
 Secret=visp_mongo_uri,type=env,target=MONGO_URI
 Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
-Secret=visp_media_file_base_url,type=env,target=MEDIA_FILE_BASE_URL
+# Websocket origins the server accepts: Artic and TRATT, whose vhosts both proxy
+# the websocket and /file to this server. Audio URLs are built on the origin a
+# connection came from, so each app fetches audio from its own host.
+Environment=ALLOWED_ORIGINS=https://artic.@@BASE_DOMAIN@@,https://@@TRATT_SUBDOMAIN@@.@@BASE_DOMAIN@@
+# Same access rule as apache and session-manager: with the access list on, a
+# project member without the access grant (users.loginAllowed) is refused.
+Environment=ACCESS_LIST_ENABLED=@@ACCESS_LIST_ENABLED@@
 Volume=@@PROJECT_DIR@@/mounts/repositories:/repositories:Z
-Volume=@@PROJECT_DIR@@/external/emu-webapp-server/src:/home/node/app/src:Z
-Volume=@@PROJECT_DIR@@/external/emu-webapp-server/package.json:/home/node/app/package.json:ro,Z
-Volume=@@PROJECT_DIR@@/external/emu-webapp-server/package-lock.json:/home/node/app/package-lock.json:ro,Z
+Volume=@@PROJECT_DIR@@/external/annotation-server/src:/home/node/app/src:Z
+Volume=@@PROJECT_DIR@@/external/annotation-server/package.json:/home/node/app/package.json:ro,Z
+Volume=@@PROJECT_DIR@@/external/annotation-server/package-lock.json:/home/node/app/package-lock.json:ro,Z
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Pin this container's real service identity (node = uid 1000 / gid 1000 in the

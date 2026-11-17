@@ -139,7 +139,7 @@ def normalize_repository_ownership(project_dir: Path) -> bool:
     """Re-own the repository tree to the host repository owner.
 
     Every container that writes into ``mounts/repositories`` (session-manager,
-    emu-webapp-server, wsrng-server, apache) pins its own service UID/GID to the
+    annotation-server, wsrng-server, apache) pins its own service UID/GID to the
     host repo owner with rootless ``--userns=keep-id`` (configured per quadlet), so
     all of them write as one host identity. ``podman unshare`` enters the default
     rootless namespace where container UID/GID 0 *is* that host owner, hence
@@ -174,10 +174,10 @@ def normalize_repository_ownership(project_dir: Path) -> bool:
 # — lands its writes under the single shared host identity. The write probe below
 # reproduces that exact keep-id mapping.
 WSRNG_IMAGE = "localhost/visp-wsrng-server:latest"
-EMU_WEBAPP_IMAGE = "localhost/visp-emu-webapp-server:latest"
+ANNOTATION_SERVER_IMAGE = "localhost/visp-annotation-server:latest"
 REPOSITORY_WRITERS = [
     (WSRNG_IMAGE, "wsrng-server", 1000, 1000),
-    (EMU_WEBAPP_IMAGE, "emu-webapp-server", 1000, 1000),
+    (ANNOTATION_SERVER_IMAGE, "annotation-server", 1000, 1000),
 ]
 
 
@@ -532,8 +532,8 @@ def sync_octra_redirect_vhost(project_dir: Path, env_vars: dict[str, str]) -> No
     """
     OCTRA was renamed to TRATT. While the deployment serves TRATT under a new
     subdomain (TRATT_SUBDOMAIN != octra), copy the static redirect vhost for the
-    old octra.* name into both vhost directories (old links and the not-yet
-    renamed webclient keep working). When TRATT_SUBDOMAIN == octra (DNS kept
+    old octra.* name into both vhost directories (old links and bookmarks keep
+    working). When TRATT_SUBDOMAIN == octra (DNS kept
     the old name) the redirect vhost would shadow the live vhost and loop —
     remove it instead. The vhost itself uses ${TRATT_SUBDOMAIN}, resolved by
     Apache from the .env EnvironmentFile like every other vhost.
@@ -864,7 +864,9 @@ def run_install(
 
     sm = SecretManager(runner)
     env_vars = sm.load_all()
-    backfill_env_keys(project_dir, env_vars, {"TRATT_SUBDOMAIN": "tratt"})
+    # ACCESS_LIST_ENABLED: absent has always meant off (apache, session-manager);
+    # the annotation-server quadlet now renders it, so write that default down.
+    backfill_env_keys(project_dir, env_vars, {"TRATT_SUBDOMAIN": "tratt", "ACCESS_LIST_ENABLED": "false"})
 
     print(color("Creating Podman secrets...", Colors.CYAN))
     sm.create_secrets(sm.get_derived(env_vars))
@@ -894,7 +896,7 @@ def run_install(
         print("  Mongo mount ownership/permissions already normalized (or paths missing)")
 
     # Re-own the repository tree to the host repository owner that every writer's
-    # keep-id mapping resolves to (session-manager, wsrng-server, emu-webapp-server,
+    # keep-id mapping resolves to (session-manager, wsrng-server, annotation-server,
     # apache), so they can all write each other's files. Migrates any foreign-owned
     # (sub-UID) data left by older pre-keep-id builds.
     if normalize_repository_ownership(project_dir):

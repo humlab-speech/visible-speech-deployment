@@ -79,7 +79,8 @@ def test_quadlet_images_skips_own_images_and_flags_mode_mismatch(tmp_path):
     assert len(problems) == 1 and problems[0].startswith("matomo:")
 
 
-def test_vendored_pins_reads_tratt_dockerfile(tmp_path):
+def test_vendored_pins_reads_a_dockerfile_clone(tmp_path, monkeypatch):
+    monkeypatch.setattr("vispctl.release.VENDORED_SOURCES", {"tratt": "docker/tratt/Dockerfile"})
     d = tmp_path / "docker" / "tratt"
     d.mkdir(parents=True)
     sha = "a" * 40

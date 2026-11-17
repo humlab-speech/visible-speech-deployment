@@ -7,8 +7,14 @@ Requires=tratt-net-network.service
 ContainerName=tratt
 Image=localhost/visp-tratt:latest
 Network=tratt-net.network
-Volume=@@PROJECT_DIR@@/mounts/tratt/appconfig.json:/usr/local/apache2/htdocs/config/appconfig.json:ro,Z
-Volume=@@PROJECT_DIR@@/mounts/tratt/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,Z
+# appconfig.json + demo_file.wav, aliased in httpd.conf. A directory mount, so
+# edits (atomic renames) show up without a restart, unlike a file mount.
+Volume=@@PROJECT_DIR@@/mounts/tratt:/usr/local/apache2/visp:ro,z
+Volume=@@PROJECT_DIR@@/mounts/tratt/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro,z
+# DEV MODE: serve the tratt-build watch output instead of the app baked into
+# the image. Angular empties this directory on rebuild but never removes it,
+# so the mount stays attached. Reload the browser after a rebuild.
+Volume=@@PROJECT_DIR@@/external/TRATT/dist/apps/tratt:/usr/local/apache2/htdocs:ro,z
 Volume=/etc/localtime:/etc/localtime:ro
 
 # Security hardening
@@ -21,6 +27,8 @@ ReadOnly=true
 PodmanArgs=--memory=256m --cpus=0.25 --pids-limit=150 --tmpfs /tmp --tmpfs /run --tmpfs /usr/local/apache2/logs
 
 [Service]
+# podman refuses a missing bind-mount source; tratt-build fills it on its first build.
+ExecStartPre=/usr/bin/mkdir -p @@PROJECT_DIR@@/external/TRATT/dist/apps/tratt
 Restart=always
 TimeoutStartSec=300
 

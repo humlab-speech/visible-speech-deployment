@@ -1,6 +1,6 @@
 # Transitional redirect: OCTRA was renamed to TRATT.
 # Copied verbatim by ./visp.py install into vhosts-http/ while
-# TRATT_SUBDOMAIN != octra, so old links and the (not yet renamed) webclient
+# TRATT_SUBDOMAIN != octra, so old octra.* links and bookmarks
 # keep working. All ${VARS} are resolved by Apache from the .env EnvironmentFile.
 # Do not edit the copied file — edit this template.
 <VirtualHost *:80>
