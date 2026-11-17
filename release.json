@@ -3,7 +3,7 @@
   "visp": "1.2.0",
   "components": {
     "webclient": {
-      "ref": "b42678185e97f749b52f90be8e94a7e9225ac501"
+      "ref": "0102bc9fceecff2e62d515a9a17a8105b65ad255"
     },
     "container-agent": {
       "ref": "d2624732d7db01d815b4389e7fbff44ade99ce94"
@@ -12,16 +12,16 @@
       "ref": "202d517828c3b67044b6f7592ba5d145fc077279"
     },
     "session-manager": {
-      "ref": "cd11d5dd315b0063219a08afe37142ba8029c0f4"
+      "ref": "ff64078af60ad43be962ab3d04210a116725757e"
     },
     "annotation-server": {
-      "ref": "e6b09fc63ed6fb2f301653281d3453e54c930487"
+      "ref": "f7a83bea87425085c7f6ee0ebc7bbdd8a3d90906"
     },
     "artic": {
       "ref": "4d93c533d2940896b88fe57ebb332779f084a0a1"
     },
     "TRATT": {
-      "ref": "8ad3cd4ff0fa65abc1e4aaab94d5be356014839f"
+      "ref": "0b02f36b2f7ad169e9bf193df8c1017bfc8b46c2"
     },
     "WhisperVault": {
       "ref": "97ee18759470e585fdff9e1eb2a8e2a029be32d2"
