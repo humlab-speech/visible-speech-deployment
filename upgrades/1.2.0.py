@@ -85,12 +85,27 @@ def _annotation_files(ctx):
             yield bundle, path
 
 
-def _corrections(bundle, data):
-    """{field: (old, new)} for the values an Octra task open left in *data*."""
+def _media_file(bundle_dir, bundle):
+    """The bundle's audio file name: <bundle>.wav, else its only .wav file, else None."""
+    if (bundle_dir / f"{bundle}.wav").is_file():
+        return f"{bundle}.wav"
+    wavs = sorted(p.name for p in bundle_dir.glob("*.wav") if p.is_file())
+    return wavs[0] if len(wavs) == 1 else None
+
+
+def _corrections(bundle, data, bundle_dir):
+    """{field: (old, new)} for the values an Octra task open left in *data*.
+
+    `annotates` is only pointed at audio that is there: a bundle whose audio
+    cannot be found keeps its value (reported by _scan) rather than getting a
+    name that is just as wrong.
+    """
     fixes = {}
     annotates = data.get("annotates")
     if isinstance(annotates, str) and TASK_ID_AUDIO.fullmatch(annotates):
-        fixes["annotates"] = (annotates, f"{bundle}.wav")
+        media = _media_file(bundle_dir, bundle)
+        if media:
+            fixes["annotates"] = (annotates, media)
     # Always written together with annotates; the EMU-DB format wants the bare bundle name.
     if data.get("name") == f"{bundle}_annot.json":
         fixes["name"] = (data["name"], bundle)
@@ -119,7 +134,11 @@ def _rewrite(text, data, fixes):
 
 
 def _scan(ctx):
-    """[(path, bundle, text, data, fixes)] of the files to fix; [(path, error)] of unreadable ones."""
+    """[(path, bundle, text, data, fixes)] of the files to fix; [(path, error)] of unreadable ones.
+
+    A task id whose bundle has no audio to point at is reported as unreadable
+    too: the file is left alone for that value, and the operator told.
+    """
     todo, unreadable = [], []
     for bundle, path in _annotation_files(ctx):
         try:
@@ -130,7 +149,12 @@ def _scan(ctx):
             continue
         if not isinstance(data, dict):
             continue
-        fixes = _corrections(bundle, data)
+        fixes = _corrections(bundle, data, path.parent)
+        annotates = data.get("annotates")
+        if isinstance(annotates, str) and TASK_ID_AUDIO.fullmatch(annotates) and "annotates" not in fixes:
+            unreadable.append(
+                (path, "annotates names an Octra task, and the bundle has no single .wav to name instead")
+            )
         if fixes:
             todo.append((path, bundle, text, data, fixes))
     return todo, unreadable
@@ -142,7 +166,7 @@ def _project_of(ctx, path):
 
 def _report_unreadable(ctx, unreadable):
     for path, error in unreadable:
-        ctx.warn(f"cannot read {path.relative_to(ctx.project_dir)} (left alone): {error}")
+        ctx.warn(f"{path.relative_to(ctx.project_dir)} left alone: {error}")
 
 
 def _count_task_id_annotations(ctx):

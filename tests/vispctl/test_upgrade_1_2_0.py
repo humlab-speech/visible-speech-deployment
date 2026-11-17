@@ -136,9 +136,11 @@ def test_preflight_passes_on_the_old_layout(tmp_path, upgrade):
 TASK_ID = "V1StGXR8_Z5jdHi6B-myT" + "a" * 43  # nanoid alphabet, 64 chars
 
 
-def _bundle(tmp_path, project, session, bundle, annotation, raw=None):
+def _bundle(tmp_path, project, session, bundle, annotation, raw=None, audio=True):
     d = tmp_path / "mounts/repositories" / project / "Data/VISP_emuDB" / f"{session}_ses" / f"{bundle}_bndl"
     d.mkdir(parents=True)
+    if audio:
+        (d / (audio if isinstance(audio, str) else f"{bundle}.wav")).write_bytes(b"RIFF")
     path = d / f"{bundle}_annot.json"
     path.write_text(raw if raw is not None else json.dumps(annotation, indent=2) + "\n")
     return path
@@ -231,7 +233,7 @@ def test_fix_fails_when_a_file_cannot_be_written(tmp_path, upgrade, monkeypatch)
     with pytest.raises(UpgradeError, match="could not be written"):
         _step(upgrade, "fix-task-id-annotations").run(_ctx(tmp_path, FakeRunner()))
     assert TASK_ID in path.read_text()
-    assert [p.name for p in path.parent.iterdir()] == [path.name]  # no temp file left
+    assert sorted(p.name for p in path.parent.iterdir()) == ["b1.wav", path.name]  # no temp file left
 
 
 def _fake_mongo(monkeypatch, upgrade, collections):
@@ -276,3 +278,16 @@ def test_drop_octra_tasks_asks_when_there_was_no_backup(tmp_path, upgrade, monke
     with pytest.raises(UpgradeError, match="without a backup"):
         _step(upgrade, "drop-octra-tasks").run(ctx)
     assert "db.octravirtualtasks.drop()" not in calls
+
+
+def test_fix_points_annotates_only_at_audio_that_is_there(tmp_path, upgrade, capsys):
+    renamed = _bundle(tmp_path, "p1", "s1", "b1", _annot("b1", f"{TASK_ID}.wav"), audio="recording.wav")
+    missing = _bundle(tmp_path, "p1", "s1", "b2", _annot("b2_annot.json", f"{TASK_ID}.wav"), audio=False)
+
+    _step(upgrade, "fix-task-id-annotations").run(_ctx(tmp_path, FakeRunner()))
+
+    assert json.loads(renamed.read_text())["annotates"] == "recording.wav"
+    data = json.loads(missing.read_text())
+    assert data["annotates"] == f"{TASK_ID}.wav"  # left alone, and reported
+    assert data["name"] == "b2"  # the name is still fixed
+    assert "b2_annot.json" in capsys.readouterr().out
