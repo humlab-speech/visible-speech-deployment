@@ -113,7 +113,21 @@ Subdomains with Matomo tracker injection: `BASE_DOMAIN`, `artic.*`, `tratt.*`, `
   Data stored in `mounts/matomo-db/mysql/`.
 - **annotation-server** — EMU-webApp websocket protocol server (bundle list, bundles, saves, audio) shared by Artic and TRATT; named emu-webapp-server before VISP 1.2.0
   - Serves only bundles in the user's own bundle list (`bundlelists`, written by *Assign
-    annotation tasks*); audio URLs are built on the connecting app's origin.
+    annotation tasks*); audio URLs are built on the connecting app's origin. No role
+    overrides this, not ProjectAdmin, not SysAdmin (see "Permissions" below).
+  - Identifies the user through PHP's `?f=session`; with `ACCESS_LIST_ENABLED=true` (passed
+    in by the quadlet) it also requires `users.loginAllowed`, like apache and session-manager.
+  - **Every SAVEBUNDLE is validated** (`src/saveValidation.js`): the document must keep the
+    file's levels and their types (it may add a level the DBconfig defines), unique item
+    ids, links between existing items, the same `annotates` and `sampleRate`; SSFF tracks
+    must be strict base64 of an SSFF file. Writes are atomic (temp file + rename), and the
+    bundle list entry is updated positionally, never written back whole.
+  - **Additions to the EMU-webApp protocol**, all opt-in so Artic (stock protocol) is
+    unaffected: GETBUNDLE returns `annotationVersion` (sha256 of the file); SAVEBUNDLE
+    accepts `baseVersion` (refused with `STALE:` unless still current, checked and written
+    with no await in between), `level` (only that unlinked SEGMENT level may change), and
+    `expectedUser` (refused if someone else is now signed in); `WHOAMI` returns the
+    username. TRATT sends all of them and keeps its unsaved drafts per user.
   - **TRATT launch:** the webclient's *Launch Tratt* dialog asks for an annotation level
     (unlinked SEGMENT levels only; new projects get `Transcription`), then iframes
     `tratt.<host>/?workspace=visp&projectId=<id>&level=<name>`. TRATT connects to
@@ -1096,6 +1110,14 @@ stored bundle; delete a whole session (the save is refused like a bundle delete,
 button is hidden on the same `deleteBundles` flag); grant the `project_admin` role or add a
 member with it; run `cleanupOrphanedSessions`. A SysAdmin implicitly holds every project permission in every project, without being
 a member. The creator of a project becomes its ProjectAdmin.
+
+**Annotation work is the exception: it follows the assignment only.** Artic and Tratt (through
+annotation-server) open, and save, only the bundles in the user's own bundle list. A
+ProjectAdmin or SysAdmin who wants to look at or correct a bundle assigns it to
+themselves under *Assign annotation tasks*, like anyone else; there is no override.
+This is the rule as of VISP 1.2.0, chosen so that the assignment stays the record of who
+works on which recording. Reviewing others' work without an assignment would need a
+read-only path, which does not exist yet.
 
 Backend entry points: `getSystemPermissions(user)` for system-level checks,
 `getProjectPermissions(project, user)` for everything project-scoped. Never check
